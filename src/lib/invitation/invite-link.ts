@@ -3,7 +3,7 @@
  *
  * `Invitation.uniqueLink` is a bearer token minted as `A-Za-z0-9` (legacy) or
  * base64url `A-Za-z0-9_-` (imports / general passes). Guests almost never type
- * it — they tap a link that has been through WhatsApp, SMS, email clients,
+ * it. They tap a link that has been through WhatsApp, SMS, email clients,
  * QR scanners and clipboard managers first. Those carriers routinely add:
  *
  *   - percent-encoding (`%20`, or a double-encoded `%2520`)
@@ -34,7 +34,7 @@ const TRAILING_WRAPPERS = /[>)\]}"'`»”’]+$/;
 /** Sentence punctuation glued to the end of a pasted link. Never `-` or `_`. */
 const TRAILING_SENTENCE_PUNCTUATION = /[.,;:!?]+$/;
 
-/** Tokens are URL-safe base64 / alphanumeric — nothing else is a real link. */
+/** Tokens are URL-safe base64 / alphanumeric. Nothing else is a real link. */
 const PLAUSIBLE_TOKEN = /^[A-Za-z0-9_-]{6,128}$/;
 
 /**
@@ -88,7 +88,7 @@ function extractLinkSegment(value: string): string {
  * Canonical form of a guest-supplied invitation link.
  *
  * Idempotent: `normalizeInviteLink(normalizeInviteLink(x)) === normalizeInviteLink(x)`.
- * Returns `""` when nothing usable remains — callers must treat that as
+ * Returns `""` when nothing usable remains. Callers must treat that as
  * "not found" rather than querying with an empty token.
  */
 export function normalizeInviteLink(raw: string | null | undefined): string {
@@ -127,7 +127,7 @@ export function isPlausibleInviteToken(value: string | null | undefined): boolea
 }
 
 /**
- * Ordered, de-duplicated lookup candidates — **exact first, always**.
+ * Ordered, de-duplicated lookup candidates. **exact first, always**.
  *
  * Index 0 is the untouched caller value so a case-sensitive token that
  * legitimately differs from its normalised form can never be shadowed by a

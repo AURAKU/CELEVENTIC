@@ -14,7 +14,7 @@ import {
 } from "@/lib/event-guide/signage";
 import type { GuideThemeTokens } from "@/lib/event-guide/types";
 
-/** QR export resolution — plenty for A3 at 300dpi without bloating the PDF. */
+/** QR export resolution. Plenty for A3 at 300dpi without bloating the PDF. */
 const QR_SOURCE_PX = 2048;
 
 function slugify(value: string): string {
@@ -118,7 +118,7 @@ export class GuideSignService {
 
     const ink = toRgb(input.theme.colors.text);
     const primary = toRgb(input.theme.colors.primary);
-    // Every use of the accent on a sign is small print — the eyebrow, the QR
+    // Every use of the accent on a sign is small print. The eyebrow, the QR
     // labels and the Wi-Fi warning. Printed on matte card under warm lighting a
     // decorative gold is unreadable at 9pt, so signs use the derived shade.
     const secondary = toRgb(signLabelColor(input.theme));
@@ -181,7 +181,7 @@ export class GuideSignService {
       box: { x: number; y: number; size: number },
       label: string | null
     ) => {
-      // Guide mode: black modules, wide quiet zone, no center logo — optimised
+      // Guide mode: black modules, wide quiet zone, no center logo. Optimised
       // for iPhone / Android / tablet cameras on printed welcome boards.
       const png = await generateBrandedQrPng(url, null, QR_SOURCE_PX, "guide", "subtle");
       const image = await pdf.embedPng(png);

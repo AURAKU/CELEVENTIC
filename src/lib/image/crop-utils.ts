@@ -295,7 +295,7 @@ export async function cropImageToBlob(
 
   const img = await loadImage(imageSrc);
 
-  // A transparent source must not be encoded to JPEG — JPEG has no alpha, so the
+  // A transparent source must not be encoded to JPEG. JPEG has no alpha, so the
   // canvas backing (transparent black) bakes in as a solid black background.
   // Non-rect shapes always need alpha for the mask they clip with.
   const sourceHasAlpha = canvasHasAlpha(img, img.naturalWidth, img.naturalHeight);
@@ -368,7 +368,7 @@ export async function rotateImage90(src: string, direction: "cw" | "ccw"): Promi
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate(direction === "cw" ? Math.PI / 2 : -Math.PI / 2);
   ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
-  // Intermediate edit step — keep alpha so a transparent logo survives rotation.
+  // Intermediate edit step. Keep alpha so a transparent logo survives rotation.
   const hasAlpha = canvasHasAlpha(img, img.naturalWidth, img.naturalHeight);
   const blob = await canvasToBlob(canvas, hasAlpha ? "image/png" : "image/jpeg", 0.92);
   return URL.createObjectURL(blob);
@@ -384,7 +384,7 @@ export async function flipImageHorizontal(src: string): Promise<string> {
   ctx.translate(canvas.width, 0);
   ctx.scale(-1, 1);
   ctx.drawImage(img, 0, 0);
-  // Intermediate edit step — keep alpha so a transparent logo survives flipping.
+  // Intermediate edit step. Keep alpha so a transparent logo survives flipping.
   const hasAlpha = canvasHasAlpha(img, img.naturalWidth, img.naturalHeight);
   const blob = await canvasToBlob(canvas, hasAlpha ? "image/png" : "image/jpeg", 0.92);
   return URL.createObjectURL(blob);
@@ -428,7 +428,7 @@ export async function imageToBlob(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas unavailable");
   ctx.drawImage(img, 0, 0, w, h);
-  // Same alpha rule as cropImageToBlob — never flatten transparency to JPEG black.
+  // Same alpha rule as cropImageToBlob, never flatten transparency to JPEG black.
   const hasAlpha = canvasHasAlpha(img, img.naturalWidth, img.naturalHeight);
   const mimeType = options?.mimeType ?? (hasAlpha ? "image/png" : "image/jpeg");
   const quality = options?.quality ?? 0.92;

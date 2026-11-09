@@ -86,12 +86,12 @@ export function tableDisplayName(value: string): string {
   return name;
 }
 
-/** Compact value under a "Your table" caption — never repeats the word Table. */
+/** Compact value under a "Your table" caption, never repeats the word Table. */
 export function tableCaptionValue(value: string): string {
   const display = tableDisplayName(value);
   const stripped = display.replace(/^tables?\s*/i, "").trim();
-  // Bare "Table"/"TABLE" with no identifier — avoid a second "TABLE" in the seal.
-  if (!stripped) return "—";
+  // Bare "Table"/"TABLE" with no identifier. Avoid a second "TABLE" in the seal.
+  if (!stripped) return "";
   return stripped;
 }
 

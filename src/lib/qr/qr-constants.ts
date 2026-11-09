@@ -4,13 +4,13 @@ export type QrExportSize = (typeof QR_EXPORT_SIZES)[number];
 
 export const QR_DEFAULT_SIZE: QrExportSize = 1024;
 
-/** Display mode — pass = high-contrast for phone-screen scanning at gates */
+/** Display mode. Pass = high-contrast for phone-screen scanning at gates */
 export type QrDisplayMode = "brand" | "pass" | "guide";
 
 /**
  * Center logo/inset size presets (ratio of QR width for the logo mark).
  * White frame is ~1.24× this (see FRAME_PAD_RATIO in branded-qr-generator).
- * Error-correction H supports ~30% damage — keep the framed inset ≤ ~27%
+ * Error-correction H supports ~30% damage. Keep the framed inset ≤ ~27%
  * width (bold) so the full logo stays visible with padding and remains scannable.
  * Pass mode uses a separate, slightly smaller scale in branded-qr-generator
  * (still larger than the old speck-sized insets for couple photos).
@@ -30,7 +30,7 @@ export type QrDashboardLogoSize = keyof typeof QR_LOGO_SIZE_PRESETS;
 export const QR_HERO_LOGO_RATIO = 0.24;
 export type QrLogoSizePreset = QrDashboardLogoSize | "hero";
 
-/** Default inset — visible brand mark with safe padding for full-logo contain */
+/** Default inset. Visible brand mark with safe padding for full-logo contain */
 export const QR_DEFAULT_LOGO_SIZE: QrDashboardLogoSize = "balanced";
 
 /** Max safe logo mark ratio (bold preset) */
@@ -39,10 +39,10 @@ export const QR_MAX_SAFE_LOGO_RATIO = QR_LOGO_SIZE_PRESETS.bold;
 /**
  * Bump when compositing geometry / center-resolution changes, OR when the
  * *encoded* verify URL logic changes, so disk-cached PNGs regenerate (the
- * cache key doesn't include the encoded URL — see `qr-cache.ts` — only the
+ * cache key doesn't include the encoded URL. See `qr-cache.ts`. Only the
  * token/size/center/logoSize, so a stale PNG baked from an old resolved app
  * URL would otherwise keep being served forever). Bumped for Event Guide
- * `guide` mode — pure black modules, wide quiet zone, no center logo — so
+ * `guide` mode. Pure black modules, wide quiet zone, no center logo, so
  * iPhone / Android / tablet cameras decode printed and on-screen codes reliably.
  */
 export const QR_COMPOSITE_CACHE_VERSION = "v11-aurelia-album-qr-center";
@@ -84,7 +84,7 @@ export function parseQrLogoSizeQuery(raw: unknown): QrLogoSizePreset | null {
 /**
  * Same-origin public image paths only. Album QRs may pin an uploaded photograph,
  * the Aurelia looking-back portrait, the Seraphine hero, or the official
- * Celeventic logo — never other catalogue template stock.
+ * Celeventic logo, never other catalogue template stock.
  */
 const PUBLIC_QR_CENTER_RE =
   /^\/(?:brand|uploads|api\/uploads)\/[A-Za-z0-9._/-]+\.(?:jpe?g|png|webp)$/;
@@ -141,9 +141,9 @@ export const QR_PASS_DISPLAY_SOURCE_PX: QrExportSize = 1024;
 export const QR_SCANNER_FPS = 15;
 /** Phone-screen mode samples slightly faster while staying stable on mid-range devices. */
 export const QR_SCANNER_FPS_SCREEN = 18;
-/** Cooldown between any two successful decodes (ms) — keep short for queue throughput */
+/** Cooldown between any two successful decodes (ms). Keep short for queue throughput */
 export const QR_SCAN_DEBOUNCE_MS = 450;
-/** Same code may re-fire after this window (ms) — never lock forever */
+/** Same code may re-fire after this window (ms), never lock forever */
 export const QR_SCAN_SAME_CODE_MS = 1400;
 
 /** Admission status returned to clients (maps from scan + entity state) */

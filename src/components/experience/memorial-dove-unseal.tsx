@@ -4,7 +4,7 @@ import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 /**
- * Photoreal white doves (transparent WebP only — no scenic backdrop).
+ * Photoreal white doves (transparent WebP only. No scenic backdrop).
  * Cinematic slow-motion: drift in → rest at the seal → lift with it → soar clear.
  */
 
@@ -69,7 +69,7 @@ const DOVES: DoveSpec[] = [
   },
 ];
 
-/** Slow ease-in-out — funeral ceremony pacing, never snappy. */
+/** Slow ease-in-out. Funeral ceremony pacing, never snappy. */
 const EASE_DRIFT = [0.33, 0.12, 0.2, 1] as const;
 const EASE_HOLD = [0.4, 0, 0.2, 1] as const;
 const EASE_RISE = [0.22, 0.61, 0.18, 1] as const;

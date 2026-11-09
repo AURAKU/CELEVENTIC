@@ -13,7 +13,7 @@ import {
   type SealFontChoice,
 } from "@/lib/invitation/seal-design";
 
-/** Memorial photoreal seal — transparent WebP, sits on the envelope paper. */
+/** Memorial photoreal seal. Transparent WebP, sits on the envelope paper. */
 export const MEMORIAL_PORTRAIT_WAX_SEAL_SRC =
   "/experience/memorial/wax-seal-portrait.webp";
 
@@ -134,7 +134,7 @@ function sealTypography(
 }
 
 /**
- * Organic poured-wax silhouette — irregular rim, not a perfect coin.
+ * Organic poured-wax silhouette. Irregular rim, not a perfect coin.
  * Coordinates are relative to a 100×100 viewBox centered near 50,50.
  */
 const WAX_POUR_OUTER =
@@ -153,7 +153,7 @@ const WAX_DRIP_B =
   "M18.6 72.8 C15.2 76.4, 12.4 82.1, 13.8 86.6 C14.9 90.1, 19.2 90.8, 21.6 88.1 C24.2 85.1, 24.1 79.2, 22.8 75.1 C22.1 72.9, 20.4 70.9, 18.6 72.8 Z";
 
 /**
- * Poured wax seal — irregular rim, satin body, impressed well, embedded beads.
+ * Poured wax seal. Irregular rim, satin body, impressed well, embedded beads.
  * Shared by photoreal embroidered envelopes and cinematic CSS envelopes.
  */
 export function PremiumWaxSeal({
@@ -172,7 +172,7 @@ export function PremiumWaxSeal({
   reduceMotion: boolean;
   compact?: boolean;
   sealStyle?: ResolvedSealStyle;
-  /** Idle pulse animation class — defaults to peach pulse. */
+  /** Idle pulse animation class. Defaults to peach pulse. */
   pulseClass?: string;
   /** Transparent photoreal seal plate (memorial). Replaces SVG wax + label. */
   photorealSrc?: string | null;
@@ -287,7 +287,7 @@ export function PremiumWaxSeal({
               <stop key={i} offset={s.offset} stopColor={s.color} />
             ))}
           </radialGradient>
-          {/* Soft satin catch — not glass-chrome */}
+          {/* Soft satin catch, not glass-chrome */}
           <radialGradient id={glossGrad} cx="32%" cy="26%" r="46%">
             <stop offset="0%" stopColor="rgba(255,252,245,0.42)" />
             <stop offset="35%" stopColor="rgba(255,245,230,0.16)" />
@@ -320,7 +320,7 @@ export function PremiumWaxSeal({
         {/* Contact shadow on paper */}
         <ellipse cx="51" cy="56" rx="39" ry="36" fill="rgba(30,20,10,0.28)" opacity="0.7" />
 
-        {/* Outer pour — irregular wax puddle */}
+        {/* Outer pour. Irregular wax puddle */}
         <path d={WAX_POUR_OUTER} fill={`url(#${waxDeep})`} filter={`url(#${waxDisplace})`} />
         {/* Side drips that break the coin silhouette */}
         <path d={WAX_DRIP_A} fill={`url(#${waxDeep})`} opacity="0.95" />
@@ -359,7 +359,7 @@ export function PremiumWaxSeal({
           strokeWidth="0.55"
         />
 
-        {/* Embedded pearl beads — slightly irregular orbit */}
+        {/* Embedded pearl beads. Slightly irregular orbit */}
         {beads.map((b) => (
           <g key={b.key}>
             <circle cx={b.cx} cy={b.cy} r={b.r * 1.15} fill="rgba(40,25,15,0.18)" />

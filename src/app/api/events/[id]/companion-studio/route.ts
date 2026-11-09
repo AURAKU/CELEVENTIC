@@ -13,7 +13,7 @@ import { resolveCompanionTheme } from "@/lib/admission/event-companion-theme";
 import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
 import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
 import { LIVE_PRODUCTION_ORDER_STATUSES } from "@/lib/invitation/studio-access";
-import { mergeWeddingBoard } from "@/lib/invitation/wedding-board";
+import { isMenuProgrammeItem, mergeWeddingBoard } from "@/lib/invitation/wedding-board";
 import {
   COMPANION_STUDIO_FEATURE_KEYS,
   mergeCompanionFeatureConfig,
@@ -67,7 +67,7 @@ async function authorize(eventId: string) {
 }
 
 /**
- * Always target the live Studio / production invitation for the event —
+ * Always target the live Studio / production invitation for the event.
  * never the oldest personalized guest link that merely inherits an order.
  */
 async function resolveStudioInvitation(eventId: string) {
@@ -201,7 +201,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { invitation, productionOrder } = resolved;
   const features = await resolveInvitationFeatures(invitation.id);
   const menuFeature = features.find((f) => f.key === "EVENT_MENU");
-  const menu = readCompanionMenuConfig(menuFeature?.config);
+  const storedMenu = readCompanionMenuConfig(menuFeature?.config);
 
   const designConfig = productionOrder
     ? buildPublishedDesignConfig(productionOrder)
@@ -234,7 +234,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       features: features.filter((f) =>
         (COMPANION_STUDIO_FEATURE_KEYS as readonly string[]).includes(f.key)
       ),
-      menu,
+      menu: {
+        menuBody: storedMenu.menuBody.trim() || theme.menuBody,
+        menuUrl: storedMenu.menuUrl,
+      },
       programmeItems: theme.programmeItems,
       programmeOutline: programmeItemsToOutline(theme.programmeItems),
       theme: {
@@ -367,9 +370,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const existingBoard = mergeWeddingBoard(
       (studio.weddingBoard as Parameters<typeof mergeWeddingBoard>[0]) ?? undefined
     );
+    const preservedMenu = existingBoard.programmeItems.filter(isMenuProgrammeItem);
     studio.weddingBoard = {
       ...existingBoard,
-      programmeItems: items,
+      programmeItems: [
+        ...items.filter((item) => !isMenuProgrammeItem(item)),
+        ...preservedMenu,
+      ],
       features: {
         ...existingBoard.features,
         programme: true,

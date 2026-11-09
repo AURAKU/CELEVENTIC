@@ -8,6 +8,7 @@ import {
   ghsToPesewas,
   isPopularInvitationPackage,
   isQuoteOnlyInvitationPackage,
+  isCustomisationInvitationPackage,
   resolveInvitationPackageSlug,
 } from "../packages";
 
@@ -15,7 +16,7 @@ test("flyer prices and names are the invitation catalogue source of truth", () =
   const catalog = getCatalogInvitationPackages();
   assert.deepEqual(
     catalog.map((pkg) => pkg.slug),
-    ["starter", "celebration", "signature", "bespoke"]
+    ["starter", "celebration", "signature", "bespoke", "customisation"]
   );
   assert.equal(getInvitationPackage("starter")?.name, "Starter");
   assert.equal(getInvitationPackage("starter")?.priceGhs, 450);
@@ -24,6 +25,8 @@ test("flyer prices and names are the invitation catalogue source of truth", () =
   assert.equal(getInvitationPackage("signature")?.priceGhs, 1500);
   assert.equal(getInvitationPackage("ultimate")?.name, "Ultimate Experience");
   assert.equal(getInvitationPackage("bespoke")?.priceGhs, 2950);
+  assert.equal(getInvitationPackage("customisation")?.name, "Customisation");
+  assert.equal(getInvitationPackage("custom")?.priceGhs, 4500);
 });
 
 test("formats GHS amounts with From for Ultimate", () => {
@@ -31,6 +34,7 @@ test("formats GHS amounts with From for Ultimate", () => {
   assert.equal(formatInvitationPriceGhs(getInvitationPackage("celebration")!), "GHS 800");
   assert.equal(formatInvitationPriceGhs(getInvitationPackage("signature")!), "GHS 1,500");
   assert.equal(formatInvitationPriceGhs(getInvitationPackage("bespoke")!), "From GHS 2,950");
+  assert.equal(formatInvitationPriceGhs(getInvitationPackage("customisation")!), "GHS 4,500");
 });
 
 test("Signature is most popular and Ultimate is quotation-only", () => {
@@ -39,6 +43,10 @@ test("Signature is most popular and Ultimate is quotation-only", () => {
   assert.equal(isQuoteOnlyInvitationPackage("bespoke"), true);
   assert.equal(isQuoteOnlyInvitationPackage("ultimate"), true);
   assert.equal(isQuoteOnlyInvitationPackage("starter"), false);
+  assert.equal(isQuoteOnlyInvitationPackage("customisation"), false);
+  assert.equal(isCustomisationInvitationPackage("customisation"), true);
+  assert.equal(isCustomisationInvitationPackage("customize"), true);
+  assert.equal(isCustomisationInvitationPackage("starter"), false);
 });
 
 test("guest entitlements do not downgrade Ultimate below Signature", () => {
@@ -72,6 +80,7 @@ test("Paystack pesewas conversion for self-serve packages", () => {
   assert.equal(ghsToPesewas(450), 45_000);
   assert.equal(ghsToPesewas(800), 80_000);
   assert.equal(ghsToPesewas(1500), 150_000);
+  assert.equal(ghsToPesewas(4500), 450_000);
 });
 
 test("quote-only Ultimate does not produce a fixed checkout total", () => {
@@ -79,9 +88,11 @@ test("quote-only Ultimate does not produce a fixed checkout total", () => {
   assert.equal(calculateOrderTotal("starter", []), 450);
   assert.equal(calculateOrderTotal("celebration", []), 800);
   assert.equal(calculateOrderTotal("signature", []), 1500);
+  assert.equal(calculateOrderTotal("customisation", []), 4500);
 });
 
 test("aliases resolve to stable order slugs", () => {
   assert.equal(resolveInvitationPackageSlug("Classic"), "celebration");
   assert.equal(resolveInvitationPackageSlug("ultimate-experience"), "bespoke");
+  assert.equal(resolveInvitationPackageSlug("customization"), "customisation");
 });

@@ -333,7 +333,7 @@ describe("Open Graph / Twitter metadata", () => {
     const image = decorateSocialPlaceCardImage(APP, "enock-ruth", "abc123");
     const metadata = buildInviteOpenGraphMetadata({
       title: "Enock & Ruth · You're invited",
-      description: "Enock & Ruth invite you to celebrate with them — tap to open your invitation.",
+      description: "Enock & Ruth invite you to celebrate with them. Tap to open your invitation.",
       canonicalUrl: `${APP}/invite/enock-ruth`,
       image,
       imageAlt: "Enock & Ruth",

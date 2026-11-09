@@ -32,7 +32,7 @@ function pathnameOf(value: string): string {
   return value;
 }
 
-/** Dedicated Aurelia/Seraphine album inset — Enock & Ruth looking-back portrait. */
+/** Dedicated Aurelia/Seraphine album inset. Enock & Ruth looking-back portrait. */
 export function isFamilyAlbumQrCenter(value?: string | null): boolean {
   const url = trimUrl(value);
   if (!url) return false;
@@ -41,7 +41,7 @@ export function isFamilyAlbumQrCenter(value?: string | null): boolean {
   );
 }
 
-/** Catalogue family hero — Kojo & Fafa (Seraphine) or Enock & Ruth (Aurelia). */
+/** Catalogue family hero. Kojo & Fafa (Seraphine) or Enock & Ruth (Aurelia). */
 export function isFamilyHeroQrCenter(value?: string | null): boolean {
   const url = trimUrl(value);
   if (!url) return false;
@@ -63,7 +63,7 @@ export function isStockQrCenter(value?: string | null): boolean {
   return STOCK_CENTER_RE.test(pathnameOf(url));
 }
 
-/** Official Celeventic wordmark / square mark — the only non-photo QR inset. */
+/** Official Celeventic wordmark / square mark. The only non-photo QR inset. */
 export function isOfficialCeleventicQrCenter(value?: string | null): boolean {
   const url = trimUrl(value);
   if (!url) return false;
@@ -113,7 +113,7 @@ export type QrCenterResolutionInput = {
  * Guest-facing QR inset.
  * 1. Uploaded invitation hero
  * 2. Event cover photograph (hero equivalent)
- * 3. Explicit QR-center upload (real photo only — not stock, not intro/gallery dump)
+ * 3. Explicit QR-center upload (real photo only, not stock, not intro/gallery dump)
  * 4. Official Celeventic logo
  */
 export function resolveQrCenterMark(input: QrCenterResolutionInput): QrCenterMark {

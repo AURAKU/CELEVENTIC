@@ -134,7 +134,7 @@ export function JourneyPreviewStrip({
 
   return (
     <section
-      aria-label="How Celeventic works — full platform journey"
+      aria-label="How Celeventic works. Full platform journey"
       className="relative overflow-hidden rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-900 via-brand-700 to-slate-900 text-white"
     >
       <div
@@ -152,7 +152,7 @@ export function JourneyPreviewStrip({
             </h2>
             <p className="text-sm text-white/75 leading-relaxed">
               One operating system for celebrations: invitations, RSVP, QR admission, Event Guide,
-              gifts, vendors, and Memory Vault — explained in motion for guests, hosts, door staff,
+              gifts, vendors, and Memory Vault. Explained in motion for guests, hosts, door staff,
               and vendors.
             </p>
             {showWalkthroughLink ? (
@@ -318,7 +318,7 @@ export function JourneyPreviewStrip({
             <div>
               <h3 className="font-display text-lg font-semibold">Who uses Celeventic</h3>
               <p className="mt-1 text-sm text-white/65">
-                The same event, four operating views — tap a lane to see how that role works.
+                The same event, four operating views. Tap a lane to see how that role works.
               </p>
             </div>
             <div
@@ -392,7 +392,7 @@ export function JourneyPreviewStrip({
           <div>
             <h3 className="font-display text-lg font-semibold">Everything in the system</h3>
             <p className="mt-1 text-sm text-white/65 max-w-2xl">
-              From first invite to Memory Vault — every major Celeventic surface, with a deep-dive
+              From first invite to Memory Vault. Every major Celeventic surface, with a deep-dive
               guide for each.
             </p>
           </div>

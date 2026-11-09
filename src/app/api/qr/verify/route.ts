@@ -4,12 +4,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { qrService } from "@/services/qr/qr.service";
 import { createAuditLog } from "@/lib/audit";
-import { verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission } from "@/lib/workspace/event-access";
+import { EventPermissionKey } from "@/lib/workspace/permission-keys";
 import { rateLimit } from "@/lib/rate-limit";
+import type { UserRole } from "@prisma/client";
 
 const verifySchema = z.object({
   token: z.string().min(1),
-  eventId: z.string().optional(),
+  eventId: z.string().min(1),
   gate: z.string().optional(),
 });
 
@@ -40,8 +42,18 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = verifySchema.parse(body);
 
-    if (data.eventId) {
-      await verifyEventAccess(data.eventId, session.user.id, session.user.role);
+    try {
+      await requireEventPermission(
+        data.eventId,
+        session.user.id,
+        session.user.role as UserRole,
+        EventPermissionKey.SCAN_QR
+      );
+    } catch {
+      return NextResponse.json(
+        { success: false, status: "unauthorized", error: "You do not have permission to work this gate" },
+        { status: 403 }
+      );
     }
 
     const result = await qrService.verifyQr(

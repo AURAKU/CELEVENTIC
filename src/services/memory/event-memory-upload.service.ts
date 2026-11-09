@@ -12,14 +12,14 @@ export interface CreateGuestUploadInput {
   guestId?: string;
   uploaderName?: string;
   uploaderPhone?: string;
-  /** Privacy-safe hash — enables guest delete-own. */
+  /** Privacy-safe hash. Enables guest delete-own. */
   uploaderGuestKey?: string | null;
   mediaType: "image" | "video";
   mediaUrl: string;
   thumbnailUrl?: string | null;
   caption?: string;
   consentGiven: boolean;
-  /** Links this row to the async VideoAsset pipeline — populated for video uploads still processing. */
+  /** Links this row to the async VideoAsset pipeline. Populated for video uploads still processing. */
   videoAssetId?: string;
 }
 

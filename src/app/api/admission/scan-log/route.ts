@@ -6,7 +6,7 @@ import { getUnifiedScanLog } from "@/services/admission/scan-log.service";
 
 export const dynamic = "force-dynamic";
 
-/** Every scan at the gate — guest QR, entry pass, vendor card — newest first. */
+/** Every scan at the gate. Guest QR, entry pass, vendor card. Newest first. */
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

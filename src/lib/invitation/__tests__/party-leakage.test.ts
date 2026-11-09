@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { findMislinkedGuests, findPassDisplayMismatches } from "../party-leakage";
 
-describe("findMislinkedGuests — all parties, not one pair", () => {
+describe("findMislinkedGuests. All parties, not one pair", () => {
   const eventId = "evt-1";
   const invitations = [
     { id: "inv-a", name: "The OBUAH Family", uniqueLink: "link-a", eventId },

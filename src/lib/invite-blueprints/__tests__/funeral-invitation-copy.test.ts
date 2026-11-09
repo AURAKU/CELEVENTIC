@@ -55,11 +55,11 @@ describe("funeral invitation copy", () => {
     assert.equal(card.honorific, "OBAAPANIN");
     assert.equal(card.primary, "VIDA SERWAA");
     assert.equal(card.aka, "MADAM VIDA");
-    assert.equal(card.years, "1953 – 2026");
+    assert.equal(card.years, "1953 to 2026");
   });
 
   it("resolves memorial age years from lifespan", () => {
-    assert.equal(resolveMemorialAgeYears("1953 – 2026"), 73);
+    assert.equal(resolveMemorialAgeYears("1953 to 2026"), 73);
     assert.equal(resolveMemorialAgeYears("1953-2026"), 73);
     assert.equal(resolveMemorialAgeYears(null), null);
   });
@@ -70,9 +70,9 @@ describe("funeral invitation copy", () => {
       resolveDeceasedName(
         event,
         "THE FUNERAL",
-        "OBAAPANIN VIDA SERWAA A.K.A MADAM VIDA · 1953 – 2026"
+        "OBAAPANIN VIDA SERWAA A.K.A MADAM VIDA · 1953 to 2026"
       ),
-      "OBAAPANIN VIDA SERWAA A.K.A MADAM VIDA · 1953 – 2026"
+      "OBAAPANIN VIDA SERWAA A.K.A MADAM VIDA · 1953 to 2026"
     );
   });
 
@@ -84,7 +84,7 @@ describe("funeral invitation copy", () => {
     assert.match(steps[0]!.detail, /Presbyterian Church Sunyani Chiraa/);
     assert.match(steps[0]!.detail, /4:30am/);
     assert.equal(steps[0]!.place, "Presbyterian Church Sunyani Chiraa");
-    assert.equal(steps[0]!.time, "4:30am – 9:00am");
+    assert.equal(steps[0]!.time, "4:30am to 9:00am");
     assert.equal(steps[1]!.title, "Interment");
     assert.match(steps[1]!.detail, /Sunyani Chiraa Cemetery/);
     assert.equal(steps[1]!.place, "Sunyani Chiraa Cemetery");

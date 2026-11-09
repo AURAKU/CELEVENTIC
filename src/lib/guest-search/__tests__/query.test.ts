@@ -16,7 +16,7 @@ import {
  *
  * The load-bearing assertions here are the ones about *ordering*. Anyone can
  * make a search return the right row; what makes this usable at a door is that
- * the right row is first — an exact admission code must beat a name that
+ * the right row is first. An exact admission code must beat a name that
  * merely contains the same digits, and a surname prefix must beat a mid-word
  * substring.
  */

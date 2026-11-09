@@ -26,7 +26,7 @@ after(() => {
   process.env = { ...ORIGINAL_ENV };
 });
 
-describe("MediaConvert env gating — production-safe when AWS isn't fully configured", () => {
+describe("MediaConvert env gating. Production-safe when AWS isn't fully configured", () => {
   it("reports not configured without a role ARN", () => {
     assert.equal(isMediaConvertConfigured(), false);
   });
@@ -64,8 +64,8 @@ describe("MediaConvert env gating — production-safe when AWS isn't fully confi
   });
 });
 
-describe("buildMediaConvertJobPlan — HEVC-agnostic input, category-driven output ladder", () => {
-  it("never restricts the input codec — HEVC, H.264, ProRes, etc. all flow through the same input settings", async () => {
+describe("buildMediaConvertJobPlan. HEVC-agnostic input, category-driven output ladder", () => {
+  it("never restricts the input codec. HEVC, H.264, ProRes, etc. all flow through the same input settings", async () => {
     const plan = await buildMediaConvertJobPlan({
       assetId: "asset_hevc",
       category: "EVENT_SHORT",
@@ -75,7 +75,7 @@ describe("buildMediaConvertJobPlan — HEVC-agnostic input, category-driven outp
     });
     const input = plan.settings.Inputs?.[0];
     assert.ok(input?.FileInput?.includes("hevc-clip.mov"));
-    // No VideoSelector / codec restriction on the input — MediaConvert auto-probes and decodes
+    // No VideoSelector / codec restriction on the input. MediaConvert auto-probes and decodes
     // whatever source codec is present (including HEVC) before re-encoding to the outputs below.
     assert.equal((input as Record<string, unknown>).VideoSelector, undefined);
   });
@@ -153,7 +153,7 @@ describe("buildMediaConvertJobPlan — HEVC-agnostic input, category-driven outp
   });
 });
 
-describe("frameCaptureUrl — MediaConvert FRAME_CAPTURE output naming", () => {
+describe("frameCaptureUrl. MediaConvert FRAME_CAPTURE output naming", () => {
   it("zero-pads the frame sequence to 7 digits", () => {
     assert.equal(frameCaptureUrl("https://media.celeventic.com/processed/x/frame", "_poster", 0), "https://media.celeventic.com/processed/x/frame_poster.0000000.jpg");
     assert.equal(frameCaptureUrl("https://media.celeventic.com/processed/x/frame", "_thumb", 3), "https://media.celeventic.com/processed/x/frame_thumb.0000003.jpg");

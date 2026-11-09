@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "We could not match that pass code for this event" }, { status: 404 });
   }
 
-  // Prefer the invitation party label — never a foreign GuestPass.displayName
+  // Prefer the invitation party label, never a foreign GuestPass.displayName
   // that may have been polluted by a cross-party mislink.
   const partyGuests = pass.invitation.guests.filter(
     (g) => !g.invitationId || g.invitationId === pass.invitationId

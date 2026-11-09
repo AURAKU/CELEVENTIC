@@ -14,10 +14,10 @@ export function getSampleEvent(category: InviteCategory): InvitationEventData {
   if (category === "funeral") {
     const raw = isoDaysFromNow(21, 9);
     return {
-      title: "Celebration of Life — Madam Akosua Asantewaa Addo",
+      title: "Celebration of Life. Madam Akosua Asantewaa Addo",
       hostName: "The Addo Family",
       description:
-        "1948 – 2026. A devoted mother, grandmother, and pillar of her community. Her warmth, wisdom, and unwavering faith touched every life she met. We gather to honour a life beautifully lived.",
+        "1948 to 2026. A devoted mother, grandmother, and pillar of her community. Her warmth, wisdom, and unwavering faith touched every life she met. We gather to honour a life beautifully lived.",
       startDate: new Date(raw).toDateString(),
       startDateRaw: raw,
       venueName: "St. Peter's Methodist Church, Kumasi",

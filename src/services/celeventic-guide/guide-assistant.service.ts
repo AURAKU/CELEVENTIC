@@ -25,7 +25,7 @@ const URGENT_ISSUE =
 
 function formatDetailedRetrievalReply(top: RetrievalHit, related: RetrievalHit[]): string {
   const lines: string[] = [];
-  lines.push(`Here’s how to handle that — based on “${top.title}”.`);
+  lines.push(`Here’s how to handle that. Based on “${top.title}”.`);
   lines.push("");
   lines.push(top.summary);
   if (top.body?.trim()) {
@@ -36,7 +36,7 @@ function formatDetailedRetrievalReply(top: RetrievalHit, related: RetrievalHit[]
     lines.push("");
     lines.push("Follow these steps:");
     top.steps.forEach((step, i) => {
-      lines.push(`${i + 1}. ${step.title} — ${step.body}`);
+      lines.push(`${i + 1}. ${step.title}: ${step.body}`);
     });
   }
   lines.push("");
@@ -57,7 +57,7 @@ function formatDetailedRetrievalReply(top: RetrievalHit, related: RetrievalHit[]
 function offTopicReply(): GuideAssistantAnswer {
   return {
     reply:
-      "I’m Celeventic Customer Service — I can only help with this platform (invitations, RSVP, QR admission, Event Guide, gifts, vendors, Memory Vault, and dashboard navigation).\n\n" +
+      "I’m Celeventic Customer Service. I can only help with this platform (invitations, RSVP, QR admission, Event Guide, gifts, vendors, Memory Vault, and dashboard navigation).\n\n" +
       "Tell me what you’re trying to do in Celeventic, or WhatsApp / call Customer Care on " +
       `${GUIDE_SUPPORT_CONTACT.displayPhone} for a live agent.`,
     relatedGuides: [{ slug: "how-celeventic-works", title: "How Celeventic Works" }],
@@ -69,7 +69,7 @@ function offTopicReply(): GuideAssistantAnswer {
 function greetingReply(): GuideAssistantAnswer {
   return {
     reply:
-      "Hello — I’m Celeventic Customer Service. I help you solve platform issues with clear, step-by-step guidance for invitations, RSVP, QR passes, Event Guide, gifts, vendors, Memory Vault, and the organizer dashboard.\n\n" +
+      "Hello. I’m Celeventic Customer Service. I help you solve platform issues with clear, step-by-step guidance for invitations, RSVP, QR passes, Event Guide, gifts, vendors, Memory Vault, and the organizer dashboard.\n\n" +
       `Describe what you need help with (for example: “I can’t RSVP” or “How do I scan guest QR codes?”). For a live agent, WhatsApp or call ${GUIDE_SUPPORT_CONTACT.displayPhone}.`,
     relatedGuides: [{ slug: "how-celeventic-works", title: "How Celeventic Works" }],
     escalate: false,
@@ -82,7 +82,7 @@ function retrievalReply(message: string, escalate: boolean): GuideAssistantAnswe
   if (hits.length === 0) {
     return {
       reply:
-        "I couldn’t find an exact match for that yet. Try describing the goal in plain words — for example invitations, RSVP, scanning QR passes, Event Guide, seating, gifts, or Memory Vault.\n\n" +
+        "I couldn’t find an exact match for that yet. Try describing the goal in plain words, for example invitations, RSVP, scanning QR passes, Event Guide, seating, gifts, or Memory Vault.\n\n" +
         formatSupportHandoff("If you’d rather talk to a person,"),
       relatedGuides: [{ slug: "how-celeventic-works", title: "How Celeventic Works" }],
       escalate: true,
@@ -160,7 +160,7 @@ export async function answerGuideQuestion(input: {
 
   if (!message) {
     return {
-      reply: "Please type a question about Celeventic — what are you trying to do?",
+      reply: "Please type a question about Celeventic. What are you trying to do?",
       relatedGuides: [],
       escalate: false,
       source: "policy",
@@ -181,7 +181,7 @@ export async function answerGuideQuestion(input: {
   if (wantsHuman) {
     return {
       reply: formatSupportHandoff(
-        "Absolutely — our Customer Care team can help you directly."
+        "Absolutely. Our Customer Care team can help you directly."
       ),
       relatedGuides: [],
       escalate: true,

@@ -33,7 +33,7 @@ export type UploadQuotaScope = {
   ownerType: VideoOwnerType;
   /** Real User.id when ownerType is USER. */
   ownerId: string | null;
-  /** Required when ownerType is GUEST_TOKEN — guest quota is per event. */
+  /** Required when ownerType is GUEST_TOKEN. Guest quota is per event. */
   eventId: string | null;
 };
 

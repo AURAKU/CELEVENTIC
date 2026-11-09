@@ -16,7 +16,7 @@ async function cleanup() {
       payload: { path: "$.marker", equals: MARKER },
     },
   }).catch(async () => {
-    // SQLite JSON path support varies — fall back to queue wipe of test payloads.
+    // SQLite JSON path support varies. Fall back to queue wipe of test payloads.
     const rows = await prisma.backgroundJob.findMany({
       where: { queue: { in: [VIDEO_PROCESS_QUEUE, "other-queue"] } },
       select: { id: true, payload: true },
@@ -77,7 +77,7 @@ describe("media-health BackgroundJob queue counting", () => {
         payload: { path: "$.marker", equals: MARKER },
       },
     }).catch(async () => {
-      // Fallback without JSON path filter — count by loading marker rows.
+      // Fallback without JSON path filter. Count by loading marker rows.
       const rows = await prisma.backgroundJob.findMany({
         where: {
           queue: VIDEO_PROCESS_QUEUE,
@@ -91,11 +91,11 @@ describe("media-health BackgroundJob queue counting", () => {
 
     assert.equal(pendingJobs, 2);
 
-    // Obsolete `type` filter must fail validation — proves the production bug shape.
+    // Obsolete `type` filter must fail validation. Proves the production bug shape.
     await assert.rejects(
       () =>
         prisma.backgroundJob.count({
-          // @ts-expect-error intentional obsolete field — must not compile/query
+          // @ts-expect-error intentional obsolete field. Must not compile/query
           where: { type: "video-process" },
         }),
       /Unknown argument `type`|type/

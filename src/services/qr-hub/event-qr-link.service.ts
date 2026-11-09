@@ -76,8 +76,8 @@ const DEFAULTS: Record<
     path: "/event-guide",
   },
   EVENT_GUIDE_OFFLINE: {
-    title: "Event Guide — venue backup",
-    heading: "Event Guide — venue backup",
+    title: "Event Guide. Venue backup",
+    heading: "Event Guide. Venue backup",
     subtitle: "Works only on the event Wi-Fi at this venue.",
     footerText: "Backup · Event Wi-Fi only",
     // Resolved from the link's venue-local destinationUrl, never a hosted path.
@@ -143,7 +143,7 @@ export class EventQrLinkService {
 
   async publicUrl(link: { publicToken: string; type: EventQrLinkType; destinationUrl?: string | null }) {
     // Custom links and the venue-offline guide both point somewhere we don't
-    // host — the latter at a local address only reachable on the event Wi-Fi.
+    // host. The latter at a local address only reachable on the event Wi-Fi.
     if ((link.type === "CUSTOM" || link.type === "EVENT_GUIDE_OFFLINE") && link.destinationUrl) {
       return link.destinationUrl;
     }

@@ -1,5 +1,5 @@
 /**
- * Interactive reveal contract — maps ceremony mechanics onto OpeningExperienceId
+ * Interactive reveal contract. Maps ceremony mechanics onto OpeningExperienceId
  * without rewriting existing reveal components.
  */
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";

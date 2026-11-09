@@ -49,7 +49,7 @@ export interface SearchOptions {
   limit?: number;
   /** 1-based page for empty-query browse. Ignored while searching. */
   page?: number;
-  /** Include archived invitations. Off by default — archive means "hidden". */
+  /** Include archived invitations. Off by default. Archive means "hidden". */
   includeArchived?: boolean;
   /**
    * Include unnamed general-admission passes.
@@ -402,7 +402,7 @@ export async function searchGuests(options: SearchOptions): Promise<SearchRespon
  * Load one invitation as a result card.
  *
  * Used straight after a quick create so the new invitation appears in the
- * results list without waiting for a re-query — and so "create then find" is
+ * results list without waiting for a re-query, and so "create then find" is
  * one continuous flow rather than two disconnected screens.
  */
 export async function getResultCard(

@@ -37,8 +37,8 @@ export function PartyAdmissionSwitch({
   /** Where this banner is rendered. */
   mode: "invitation" | "event-access";
   /**
-   * `fixed` — bottom safe-area banner (ceremony / mid-scroll).
-   * `inline` — above the entry-pass QR, just below Replay Opening.
+   * `fixed`. Bottom safe-area banner (ceremony / mid-scroll).
+   * `inline`. Above the entry-pass QR, just below Replay Opening.
    */
   placement?: "fixed" | "inline";
   pollMs?: number;

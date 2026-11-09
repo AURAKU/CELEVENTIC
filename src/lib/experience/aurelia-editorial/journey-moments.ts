@@ -4,6 +4,8 @@ import type { InvitationMediaAsset } from "@/types/invitation-design";
 import { SERAPHINE_LOOKBOOK_GALLERY } from "./preset";
 import type { AureliaJourneyItem } from "./types";
 
+export type { AureliaJourneyItem };
+
 const SERAPHINE_COUPLE_RE = /\/templates\/seraphine\/couple\//i;
 const STOCK_JOURNEY_RE =
   /\/brand\/|unsplash|picsum|placeholder|lorempixel|monogram-lockup|guest-outfits|hero\.(?:jpe?g|png|webp)$/i;
@@ -129,7 +131,7 @@ export function resolveAureliaJourneyMoments(input: {
 }
 
 export function seraphineLookbookGallery(_coupleGallery?: readonly string[]): string[] {
-  return [...SERAPHINE_LOOKBOOK_GALLERY];
+  return SERAPHINE_LOOKBOOK_GALLERY.map((url) => url);
 }
 
 export function isJourneyFilm(url?: string | null): boolean {

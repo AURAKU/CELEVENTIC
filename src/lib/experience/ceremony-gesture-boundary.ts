@@ -1,5 +1,5 @@
 /**
- * Ceremony gesture arming — prevents Tap-to-Begin from opening the envelope
+ * Ceremony gesture arming. Prevents Tap-to-Begin from opening the envelope
  * on the same pointer sequence.
  *
  * Mount DISARMED → wait until the current pointer sequence ends → ARMED →
@@ -25,13 +25,13 @@ export interface CeremonyGestureBoundary {
   getState(): CeremonyGestureArmState;
   /** Call when the sealed reveal mounts. */
   mountDisarmed(): () => void;
-  /** pointerdown on the seal — returns ownership token, or null if disarmed. */
+  /** pointerdown on the seal. Returns ownership token, or null if disarmed. */
   noteSealPointerDown(): number | null;
-  /** click on the seal — true only for an owned, armed gesture. */
+  /** click on the seal. True only for an owned, armed gesture. */
   mayOpenFromSealClick(token: number | null): boolean;
   /** Keyboard activation on the focused seal once armed. */
   mayOpenFromKeyboard(): boolean;
-  /** Test seam — force armed without waiting for pointer idle. */
+  /** Test seam. Force armed without waiting for pointer idle. */
   forceArmForTests(): void;
 }
 
@@ -104,7 +104,7 @@ export function createCeremonyGestureBoundary(
       window.addEventListener("touchend", onPointerQuiet, true);
 
       // Common path: Tap to Begin already finished its click ~480ms earlier.
-      // Double-rAF arms only if no quiet listener fired yet — not a delay gate,
+      // Double-rAF arms only if no quiet listener fired yet, not a delay gate,
       // just end-of-paint idle when no buttons are held.
       let raf2 = 0;
       const raf1 = requestAnimationFrame(() => {

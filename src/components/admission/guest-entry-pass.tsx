@@ -55,7 +55,7 @@ const QR_IMAGE_RENDERING = { imageRendering: "pixelated" as const };
  * white plate at a fixed minimum size, works from a screenshot, and the
  * fullscreen view maximises brightness contrast for scanning in the dark.
  *
- * Capacity and seating live on the personalised place card — this surface is
+ * Capacity and seating live on the personalised place card. This surface is
  * QR + admission code + save/print actions only.
  */
 export function GuestEntryPass({

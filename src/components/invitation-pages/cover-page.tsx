@@ -26,7 +26,7 @@ function CoverAmbientMedia({ url }: { url: string }) {
   );
 }
 
-/** Dark memorial atmosphere when no guest cover photo is set — keeps the seal blending. */
+/** Dark memorial atmosphere when no guest cover photo is set. Keeps the seal blending. */
 function CoverMemorialAtmosphere() {
   return <div className="inv-cover-media inv-cover-media--memorial-atmosphere" aria-hidden />;
 }
@@ -43,7 +43,7 @@ function CoverParallaxMedia({ url }: { url: string }) {
   );
 }
 
-/** Ornate oval framed memorial portrait — cover hero (not the envelope wax seal). */
+/** Ornate oval framed memorial portrait. Cover hero (not the envelope wax seal). */
 function MemorialCoverPortrait({ alt }: { alt: string }) {
   return (
     <figure className="inv-memorial-cover-portrait">

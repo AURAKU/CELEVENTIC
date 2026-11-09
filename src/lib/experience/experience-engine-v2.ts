@@ -1,5 +1,5 @@
 /**
- * Experience Engine V2 — per-template creative DNA.
+ * Experience Engine V2. Per-template creative DNA.
  * Every layout gets a unique emotional universe: intro, outro, audio, motion, pacing.
  */
 import type { InvitationDesignConfig, InvitationLayoutSlug } from "@/types/invitation-design";
@@ -100,7 +100,7 @@ export const EXPERIENCE_COLLECTIONS: Record<
   ExperienceCollectionId,
   { label: string; description: string }
 > = {
-  luxury: { label: "Luxury Collection", description: "Gold, marble, velvet — palace elegance" },
+  luxury: { label: "Luxury Collection", description: "Gold, marble, velvet. Palace elegance" },
   royal: { label: "Royal Collection", description: "Regal ceremony and crown motifs" },
   minimal: { label: "Minimal Collection", description: "Clean whitespace and refined typography" },
   editorial: { label: "Editorial Collection", description: "Magazine spreads and bold layouts" },
@@ -541,13 +541,13 @@ export function buildExperienceConfigFromDNA(
     pacing: dna.pacing,
     introEnabled: true,
     introDurationSec: dna.pacing === "fast" ? 1.5 : dna.pacing === "slow" ? 3 : 2,
-    // Embroidered TM: template music only — no wax-crack / pop SFX on open.
+    // Embroidered TM: template music only. No wax-crack / pop SFX on open.
     enableRevealSounds: dna.openingExperience !== "envelope-embroidered",
     enabledTabs: layoutTabs ?? DEFAULT_HUB_TABS,
   };
 }
 
-/** Merge V2 DNA into a design config — DNA is authoritative for template identity fields. */
+/** Merge V2 DNA into a design config. DNA is authoritative for template identity fields. */
 export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): InvitationDesignConfig {
   const dna = getTemplateExperienceDNA(design.layout);
   const dnaExperience = buildExperienceConfigFromDNA(dna, design.layout);

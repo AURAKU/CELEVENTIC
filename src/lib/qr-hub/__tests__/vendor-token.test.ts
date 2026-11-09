@@ -19,7 +19,7 @@ test("vendor tokens are signed cvs1 credentials", () => {
   assert.notEqual(hashVendorToken(token), token);
 });
 
-test("vendor manual codes are 6–8 digits", () => {
+test("vendor manual codes are 6 to 8 digits", () => {
   for (let i = 0; i < 20; i++) {
     const code = generateVendorManualCode(6);
     assert.match(code, /^\d{6}$/);

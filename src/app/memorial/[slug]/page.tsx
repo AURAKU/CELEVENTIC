@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       dateOfPassing: p.dateOfPassing,
       format: resolved.experience.lifeDateFormat ?? "sunrise-sunset",
     });
-    const title = `Funeral Invitation — ${name}`;
+    const title = `Funeral Invitation: ${name}`;
     const description =
       (p.familyInformation || "").slice(0, 160) ||
       `The family respectfully invites you to honour ${name}${dates ? ` · ${dates}` : ""}.`;

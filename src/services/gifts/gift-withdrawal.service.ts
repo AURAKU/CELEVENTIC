@@ -26,7 +26,7 @@ import { parsePaginationInput, paginatedResult } from "@/lib/pagination";
  * 1) validates finance permission + settlement policy
  * 2) posts WITHDRAWAL_RESERVE (holds availableMinor)
  * 3) waits for a *different* approver (or platform admin)
- * 4) records MANUAL_PAYOUT with evidence — never claims a Paystack transfer
+ * 4) records MANUAL_PAYOUT with evidence, never claims a Paystack transfer
  *    unless PROVIDER_TRANSFER is explicitly confirmed later.
  */
 

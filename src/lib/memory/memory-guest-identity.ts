@@ -7,7 +7,7 @@ export const MEMORY_GUEST_KEY_STORAGE = "celeventic.memory.guestKey";
 export const MEMORY_CONSENT_STORAGE_PREFIX = "celeventic.memory.consent.";
 export const MEMORY_COMMENT_TOKENS_STORAGE = "celeventic.memory.commentTokens";
 
-/** Client helpers — safe to import from "use client" modules. */
+/** Client helpers. Safe to import from "use client" modules. */
 export function readOrCreateClientGuestKey(): string {
   if (typeof window === "undefined") return "";
   try {

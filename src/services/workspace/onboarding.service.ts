@@ -3,6 +3,7 @@ import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
 import { generateToken, slugify } from "@/lib/utils";
 import type { AccountType, EventCollaboratorRole, UserRole } from "@prisma/client";
 import { createAuditLog } from "@/lib/audit";
+import { complianceService } from "@/services/legal/compliance.service";
 
 const ACCOUNT_ROLE_MAP: Record<AccountType, UserRole> = {
   ORGANIZER: "ORGANIZER",
@@ -142,6 +143,12 @@ export class OnboardingService {
       entityId: user.id,
       details: { accountType: input.accountType },
     });
+
+    try {
+      await complianceService.recordLegalAcceptance(user.id);
+    } catch (error) {
+      console.warn("[onboarding] legal acceptance skipped", error);
+    }
 
     return {
       user,

@@ -24,6 +24,16 @@ export async function POST(req: Request) {
 
   if (body.action === "purchase") {
     const result = await templateMarketplaceService.purchaseTemplate(session.user.id, body.templateId);
+    if ("requiresPayment" in result && result.requiresPayment) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Paid templates require a verified checkout. Direct unlock is not available.",
+          data: result,
+        },
+        { status: 402 }
+      );
+    }
     return NextResponse.json({ success: true, data: result });
   }
 

@@ -3,6 +3,7 @@ import { generateToken } from "@/lib/utils";
 import type { QrScanResult } from "@prisma/client";
 import { QR_TYPES } from "@/lib/qr/qr-types";
 import { ensureGuestManualCode } from "@/lib/qr/manual-code";
+import { sha256Hex } from "@/lib/crypto/sha256-hex";
 
 export class OfflineQrService {
   async verifyDeviceAccess(deviceId: string, userId: string) {
@@ -33,7 +34,7 @@ export class OfflineQrService {
           take: 1,
         },
       },
-      // Hard safety cap — offline packages are per-event; extreme lists stay bounded.
+      // Hard safety cap. Offline packages are per-event; extreme lists stay bounded.
       take: 5000,
       orderBy: { createdAt: "asc" },
     });
@@ -53,7 +54,7 @@ export class OfflineQrService {
       guestRows.push({
         id: g.id,
         name: g.name,
-        qrToken: admissionToken,
+        qrToken: admissionToken ? sha256Hex(admissionToken) : null,
         manualCode,
         status: g.status,
       });
@@ -62,6 +63,8 @@ export class OfflineQrService {
     const ticketQrs = await prisma.qrCode.findMany({
       where: { eventId, type: QR_TYPES.TICKET, isRevoked: false },
       include: { ticket: { select: { id: true, name: true, status: true } } },
+      take: 5000,
+      orderBy: { createdAt: "asc" },
     });
 
     const tickets = ticketQrs
@@ -69,13 +72,14 @@ export class OfflineQrService {
       .map((q) => ({
         id: q.ticket!.id,
         name: q.ticket!.name,
-        qrToken: q.token,
+        qrToken: sha256Hex(q.token),
         status: q.ticket!.status,
       }));
 
     return {
       eventId,
       syncedAt: new Date().toISOString(),
+      tokenScheme: "sha256" as const,
       guests: guestRows,
       tickets,
       checksum: generateToken(16),

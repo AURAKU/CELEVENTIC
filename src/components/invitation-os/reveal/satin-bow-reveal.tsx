@@ -7,15 +7,15 @@ import { triggerHapticLight } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 
 /**
- * Satin Bow ceremony — an ivory card held by a blush satin band.
+ * Satin Bow ceremony. An ivory card held by a blush satin band.
  * The guest unties the bow: loops slip apart, tails fall, the band slides off
  * the card, and the invitation blooms through.
  *
  * The same component renders three ways so a catalogue tile shows the real
  * thing rather than a description of it:
- * - `staticPreview` — tied bow poster, no interaction (picker / card glimpse)
- * - `embedded`      — absolute fill inside a framed preview
- * - default         — viewport-fixed ceremony for live guests
+ * - `staticPreview`. Tied bow poster, no interaction (picker / card glimpse)
+ * - `embedded`. Absolute fill inside a framed preview
+ * - default. Viewport-fixed ceremony for live guests
  */
 
 type Phase = "tied" | "untying" | "opened";
@@ -76,7 +76,7 @@ interface SatinBowRevealProps {
   embedded?: boolean;
   /** Non-interactive tied-bow poster for catalogue tiles. */
   staticPreview?: boolean;
-  /** A tap elsewhere already consumed the gesture — untie without a second tap. */
+  /** A tap elsewhere already consumed the gesture. Untie without a second tap. */
   autoOpen?: boolean;
   enableSounds?: boolean;
 }
@@ -101,7 +101,7 @@ export function SatinBowReveal({
 
   const untied = phase !== "tied";
   const idle = !staticPreview && !reduceMotion && phase === "tied";
-  /** Catalogue tiles anchor a tap pill along the bottom — keep the bow clear of it. */
+  /** Catalogue tiles anchor a tap pill along the bottom. Keep the bow clear of it. */
   const posterInset = staticPreview ? 42 : 0;
   /** No tap caption on a poster, so crop the space it would have occupied. */
   const stageHeight = staticPreview ? CARD_TOP + CARD_H + 18 : STAGE_H;
@@ -174,8 +174,8 @@ export function SatinBowReveal({
       aria-modal={staticPreview ? undefined : true}
       aria-label={
         staticPreview
-          ? `${eventTitle} — ivory card tied with a satin bow`
-          : `${eventTitle} — untie the satin bow to open the invitation`
+          ? `${eventTitle}. Ivory card tied with a satin bow`
+          : `${eventTitle}. Untie the satin bow to open the invitation`
       }
     >
       <div
@@ -324,7 +324,7 @@ export function SatinBowReveal({
             )}
           </motion.div>
 
-          {/* Bow — loops, tails, knot. */}
+          {/* Bow. Loops, tails, knot. */}
           <motion.div
             className="absolute"
             style={{
@@ -439,7 +439,7 @@ export function SatinBowReveal({
               transition={{ duration: untieDuration, delay: reduceMotion ? 0 : 0.04, ease }}
             />
 
-            {/* Pearl at the knot — where the eye lands before the tap. */}
+            {/* Pearl at the knot. Where the eye lands before the tap. */}
             <motion.div
               className="absolute rounded-full"
               style={{

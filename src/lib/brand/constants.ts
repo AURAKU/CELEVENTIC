@@ -1,4 +1,4 @@
-/** Official Celeventic brand assets — full logo (icon + wordmark + tagline) */
+/** Official Celeventic brand assets. Full logo (icon + wordmark + tagline) */
 export const BRAND_LOGO_FULL = "/brand/logo-full.png";
 export const BRAND_LOGO_MARK = "/brand/logo-mark.png";
 export const BRAND_ICON = "/brand/icon.png";

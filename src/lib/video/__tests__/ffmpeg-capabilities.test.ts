@@ -71,7 +71,7 @@ describe("parseFfmpegFiltersOutput", () => {
   });
 });
 
-describe("supportsFilter / getAvailableFfmpegFilters — probing and caching", () => {
+describe("supportsFilter / getAvailableFfmpegFilters. Probing and caching", () => {
   beforeEach(() => {
     resetFfmpegCapabilitiesCacheForTests();
   });
@@ -82,13 +82,13 @@ describe("supportsFilter / getAvailableFfmpegFilters — probing and caching", (
     assert.equal(await supportsFilter("tonemap", mockProbe), true);
   });
 
-  it("reports false for a filter missing from the (mocked) ffmpeg build — never throws", async () => {
+  it("reports false for a filter missing from the (mocked) ffmpeg build, never throws", async () => {
     const mockProbe = async () => HOMEBREW_MACOS_FILTERS_WITHOUT_ZSCALE;
     assert.equal(await supportsFilter("zscale", mockProbe), false);
     assert.equal(await supportsFilter("tonemap", mockProbe), false);
   });
 
-  it("caches the probe result in-process — the probe function only runs once across repeated calls", async () => {
+  it("caches the probe result in-process. The probe function only runs once across repeated calls", async () => {
     let calls = 0;
     const mockProbe = async () => {
       calls++;
@@ -236,7 +236,7 @@ describe("supportsEncoder / supportsDecoder / getAvailableFfmpegEncoders / getAv
     assert.equal(await supportsDecoder("hevc", async () => DECODERS_WITHOUT_HEVC), false);
   });
 
-  it("caches encoders/decoders probes independently — each probe runs at most once", async () => {
+  it("caches encoders/decoders probes independently. Each probe runs at most once", async () => {
     let encoderCalls = 0;
     let decoderCalls = 0;
     const mockEncoders = async () => {

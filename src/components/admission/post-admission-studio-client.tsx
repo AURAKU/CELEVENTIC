@@ -174,7 +174,7 @@ export function PostAdmissionStudioClient({ eventId }: { eventId: string }) {
           </p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900">Event Companion</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Edit what admitted guests see after QR / gate check-in — programme, menu, cash gifts,
+            Edit what admitted guests see after QR / gate check-in. Programme, menu, cash gifts,
             and companion sections. Saves apply to every invitation link for this event (including
             links already sent). Design fonts and colours follow your invitation template.
           </p>
@@ -286,8 +286,8 @@ export function PostAdmissionStudioClient({ eventId }: { eventId: string }) {
               <ClipboardPaste className="h-4 w-4" /> Programme outline
             </CardTitle>
             <p className="text-xs text-slate-500">
-              Paste your order of the day. One line per item — e.g.{" "}
-              <span className="font-medium">2:00 PM — Ceremony — Exchange of vows</span>. Saved into
+              Paste your order of the day. One line per item. E.g.{" "}
+              <span className="font-medium">2:00 PM. Ceremony. Exchange of vows</span>. Saved into
               the invitation wedding board so the companion uses the same template style.
             </p>
           </CardHeader>
@@ -296,7 +296,7 @@ export function PostAdmissionStudioClient({ eventId }: { eventId: string }) {
               value={programmeOutline}
               onChange={(e) => setProgrammeOutline(e.target.value)}
               rows={10}
-              placeholder={"1:30 PM — Guest Arrival — Welcome drinks\n2:00 PM — Ceremony\n4:30 PM — Reception"}
+              placeholder={"1:30 PM. Guest Arrival. Welcome drinks\n2:00 PM. Ceremony\n4:30 PM. Reception"}
               className="font-[family-name:var(--font-cormorant)] text-base leading-relaxed"
             />
             <Button
@@ -329,7 +329,7 @@ export function PostAdmissionStudioClient({ eventId }: { eventId: string }) {
                 value={menuBody}
                 onChange={(e) => setMenuBody(e.target.value)}
                 rows={8}
-                placeholder={"Starter — Garden salad\nMain — Jollof & grilled chicken\nDessert — Cake"}
+                placeholder={"Starter. Garden salad\nMain. Jollof & grilled chicken\nDessert. Cake"}
               />
             </div>
             <div className="space-y-1.5">
@@ -369,7 +369,7 @@ export function PostAdmissionStudioClient({ eventId }: { eventId: string }) {
           {data.gift ? (
             <p className="text-sm text-slate-700">
               Live on companion: <span className="font-medium">{data.gift.title}</span>
-              {data.gift.teaser ? ` — ${data.gift.teaser}` : ""}
+              {data.gift.teaser ? `: ${data.gift.teaser}` : ""}
             </p>
           ) : (
             <p className="text-sm text-amber-800">

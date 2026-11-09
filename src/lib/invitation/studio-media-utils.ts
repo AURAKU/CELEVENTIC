@@ -16,7 +16,7 @@ export function heroUrlFromDesign(design: InvitationDesignConfig): string | null
   return hero?.url ?? null;
 }
 
-/** The dedicated pre-invite welcome photo — soft-intro / "BEGIN" gate only. */
+/** The dedicated pre-invite welcome photo. Soft-intro / "BEGIN" gate only. */
 export function introAtmosphereUrlFromDesign(design: InvitationDesignConfig): string | null {
   const shot = design.media?.find((m) => m.role === "intro");
   return shot?.url ?? null;

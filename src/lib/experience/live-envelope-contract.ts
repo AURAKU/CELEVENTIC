@@ -42,7 +42,7 @@ export function isLiveGuestInviteMount(input: LiveGuestMountInput): boolean {
 
 /**
  * Resolve whether the envelope may auto-open after mount.
- * LIVE guests: always false — even if a stale caller passes autoOpenReveal=true.
+ * LIVE guests: always false, even if a stale caller passes autoOpenReveal=true.
  * Preview/demo: honors explicit autoOpenReveal.
  */
 export function resolveEnvelopeAutoOpen(input: {
@@ -89,13 +89,20 @@ export function resolveShowReveal(input: ShowRevealInput): boolean {
 }
 
 /** Phase after the guest completes Tap to Begin (gesture #1). */
-export function resolvePhaseAfterTapBegin(showReveal: boolean): "reveal" | "portal" {
-  return showReveal ? "reveal" : "portal";
+export function resolvePhaseAfterTapBegin(
+  showReveal: boolean,
+  openingExperience?: string | null
+): "reveal" | "portal" {
+  if (!showReveal) return "portal";
+  // Blush Gate's tap-to-begin already is the open. Mounting a second sealed
+  // envelope left a full-screen hit layer over the visible board until another tap.
+  if (openingExperience === "blush-gate") return "portal";
+  return "reveal";
 }
 
 /**
  * Catalog SKUs whose creative contract mandates the memorial envelope ceremony.
- * Uses explicit memorial-envelope markers — not generic wedding envelope SKUs.
+ * Uses explicit memorial-envelope markers, not generic wedding envelope SKUs.
  */
 export function isCanonicalMemorialEnvelopeSku(catalogSlug: string | null | undefined): boolean {
   if (!catalogSlug) return false;
@@ -295,7 +302,7 @@ const LIVE_REVEAL_DIAG_ENABLED =
   process.env.NEXT_PUBLIC_CELEVENTIC_LIVE_REVEAL_DIAG === "1" ||
   process.env.CELEVENTIC_LIVE_REVEAL_DIAG === "1";
 
-/** Dev / flagged diagnostic — no guest PII. */
+/** Dev / flagged diagnostic. No guest PII. */
 export function logLiveRevealDiagnostic(
   config: LiveRevealConfiguration,
   extras?: {
@@ -332,7 +339,7 @@ export interface LiveInviteRevealDiagnosticInput {
   phase?: string;
 }
 
-/** Server-side invite route diagnostic — no guest names, tokens, or contact info. */
+/** Server-side invite route diagnostic. No guest names, tokens, or contact info. */
 export function logLiveInviteRevealDiagnostic(input: LiveInviteRevealDiagnosticInput): void {
   if (!LIVE_REVEAL_DIAG_ENABLED) return;
   console.info("[live-invite-reveal]", {

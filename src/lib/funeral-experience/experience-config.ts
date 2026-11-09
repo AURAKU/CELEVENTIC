@@ -1,5 +1,5 @@
 /**
- * Funeral Experience config — stored inside FuneralProfile.familyContacts
+ * Funeral Experience config. Stored inside FuneralProfile.familyContacts
  * as `{ contacts, experience }` so we stay SQLite-safe without a hard migration.
  * Legacy array/object contacts remain readable.
  */

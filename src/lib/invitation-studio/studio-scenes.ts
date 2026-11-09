@@ -1,5 +1,5 @@
 /**
- * Studio scene/section model — maps hub tabs + custom sections into an editable list.
+ * Studio scene/section model. Maps hub tabs + custom sections into an editable list.
  * Additive to designConfig.experience; legacy invites without scenes still work via enabledTabs.
  *
  * Legacy compatibility (no Prisma migration):
@@ -66,7 +66,7 @@ export function duplicateScene(scenes: StudioScene[], sceneId: string): StudioSc
   const idx = scenes.findIndex((s) => s.id === sceneId);
   if (idx < 0) return scenes;
   const source = scenes[idx];
-  // Hub tabs are unique in enabledTabs — duplicates become custom sections with copied title/body
+  // Hub tabs are unique in enabledTabs. Duplicates become custom sections with copied title/body
   const copy: StudioScene = {
     ...source,
     id: `scene-dup-${Date.now().toString(36)}`,

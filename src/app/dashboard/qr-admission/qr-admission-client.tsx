@@ -77,7 +77,7 @@ function scanBadgeVariant(status: ScanLogRow["status"]) {
   return "destructive" as const;
 }
 
-/** Full date and clock time — a gate log is worthless without the "when". */
+/** Full date and clock time. A gate log is worthless without the "when". */
 function formatScanStamp(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
     month: "short",
@@ -234,7 +234,7 @@ export function QrAdmissionClient() {
   }, [eventId, isOnline]);
 
   const performOfflineCheckIn = useCallback(
-    (raw: string) => {
+    async (raw: string) => {
       if (!eventId) return;
       const pkg = getOfflinePackage(eventId);
       if (!pkg) {
@@ -243,7 +243,7 @@ export function QrAdmissionClient() {
         return;
       }
 
-      const validation = validateOfflineToken(eventId, raw.trim());
+      const validation = await validateOfflineToken(eventId, raw.trim());
       const syncToken = validation.syncToken ?? raw.trim();
       recordOfflineScan(eventId, {
         qrToken: syncToken,
@@ -373,7 +373,7 @@ export function QrAdmissionClient() {
       const trimmed = raw.trim();
       if (!trimmed) return;
       const platformToken = parseQrToken(trimmed);
-      // Client decode only routes — admit always happens server-side.
+      // Client decode only routes. Admit always happens server-side.
       // Existing guest QR credentials are bridged to their invitation's
       // GuestPass so old links/printouts get the same partial-arrival count.
       if ((prefersEntryPassAdmit(trimmed) || platformToken) && entryPassScanRef.current) {
@@ -538,7 +538,7 @@ export function QrAdmissionClient() {
     >
       <QrFileReaderHost />
 
-      {/* Gate analytics lead the page — the numbers an organiser checks first. */}
+      {/* Gate analytics lead the page. The numbers an organiser checks first. */}
       {stats && eventId && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[

@@ -33,17 +33,17 @@ export type PlatformCapability = {
   guideHref: string;
 };
 
-/** Guest celebration path — Invite → Remember */
+/** Guest celebration path. Invite → Remember */
 export const GUEST_JOURNEY_STAGES: JourneyStage[] = [
   {
     id: "invite",
     label: "Invite",
     headline: "Open a living invitation",
     summary:
-      "Guests open a branded digital invitation from WhatsApp, SMS, or email — no app install required.",
+      "Guests open a branded digital invitation from WhatsApp, SMS, or email. No app install required.",
     details: [
       "Cinematic openings (envelope, seal, curtain) play once guests tap to begin.",
-      "Music and media never autoplay unmuted — guests stay in control.",
+      "Music and media never autoplay unmuted. Guests stay in control.",
       "One link can cover a household or party when the host sends a group invite.",
       "Templates and Design Studio give hosts a polished look in minutes.",
     ],
@@ -55,7 +55,7 @@ export const GUEST_JOURNEY_STAGES: JourneyStage[] = [
     id: "rsvp",
     label: "RSVP",
     headline: "Confirm who is coming",
-    summary: "Guests accept, decline, or update attendance — including plus guests — in a few taps.",
+    summary: "Guests accept, decline, or update attendance, including plus guests. In a few taps.",
     details: [
       "Choose attending, maybe, or decline, then save.",
       "Add meal notes or party size when the host asks for them.",
@@ -88,7 +88,7 @@ export const GUEST_JOURNEY_STAGES: JourneyStage[] = [
     summary:
       "Event Guide is the day-of companion: programme, seating, menu, venue, and help in one place.",
     details: [
-      "Open from a QR or link — programme, seating lookup, menu, and directions.",
+      "Open from a QR or link. Programme, seating lookup, menu, and directions.",
       "Hosts publish updates once; every guest phone stays current.",
       "Place cards and seat lookups reduce usher chaos at reception.",
       "Need help? Guests can call the host or open Celeventic Guide topics.",
@@ -102,7 +102,7 @@ export const GUEST_JOURNEY_STAGES: JourneyStage[] = [
     label: "Celebrate",
     headline: "Less friction, more joy",
     summary:
-      "With passes, seats, and programme sorted, guests focus on the celebration — not logistics.",
+      "With passes, seats, and programme sorted, guests focus on the celebration, not logistics.",
     details: [
       "Optional cash gifts flow securely without fundraising language on celebratory events.",
       "Wishes, seating continuity, and post-admission companion keep the evening clear.",
@@ -119,10 +119,10 @@ export const GUEST_JOURNEY_STAGES: JourneyStage[] = [
     headline: "Keep the moments",
     summary: "Memory Vault collects guest photos and videos into a shared album hosts can treasure.",
     details: [
-      "Guests upload from the invite or companion — common photo and video formats.",
+      "Guests upload from the invite or companion. Common photo and video formats.",
       "Hosts moderate and share approved memories after the day.",
       "Thank-you pages and closing notes wrap the journey with gratitude.",
-      "Everything lives on the web — guests never need a separate app.",
+      "Everything lives on the web. Guests never need a separate app.",
     ],
     durationMs: 5000,
     motionKey: "remember",
@@ -130,13 +130,13 @@ export const GUEST_JOURNEY_STAGES: JourneyStage[] = [
   },
 ];
 
-/** Parallel operating lanes — how the rest of the system works */
+/** Parallel operating lanes. How the rest of the system works */
 export const PLATFORM_LANES: PlatformLane[] = [
   {
     id: "guest",
     label: "Guests",
     title: "Guest journey",
-    summary: "Invitation → RSVP → QR pass → Event Guide → gifts & memories — all from a link.",
+    summary: "Invitation → RSVP → QR pass → Event Guide → gifts & memories. All from a link.",
     steps: GUEST_JOURNEY_STAGES.map((s) => ({ title: s.label, body: s.summary })),
     guideHref: "/guide/how-celeventic-works",
   },
@@ -173,7 +173,7 @@ export const PLATFORM_LANES: PlatformLane[] = [
     id: "door",
     label: "Door",
     title: "Scanning & admission",
-    summary: "Door staff admit guests, groups, and vendors — online or offline — with a clear scan log.",
+    summary: "Door staff admit guests, groups, and vendors. Online or offline, with a clear scan log.",
     steps: [
       {
         title: "Scan guest QR",
@@ -206,7 +206,7 @@ export const PLATFORM_LANES: PlatformLane[] = [
       },
       {
         title: "Show at load-in",
-        body: "Present the pass to door staff — validity windows can match setup times.",
+        body: "Present the pass to door staff. Validity windows can match setup times.",
       },
       {
         title: "Portal & bookings",
@@ -217,7 +217,7 @@ export const PLATFORM_LANES: PlatformLane[] = [
   },
 ];
 
-/** Full system map — every major Celeventic surface */
+/** Full system map. Every major Celeventic surface */
 export const PLATFORM_CAPABILITIES: PlatformCapability[] = [
   {
     id: "invitations",

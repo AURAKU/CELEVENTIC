@@ -1,417 +1,274 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { PrimaryAction } from "@/components/layout/primary-action";
 import { trackUsability } from "@/lib/navigation/usability-analytics";
 import { markPendingWelcomeTour } from "@/lib/celeventic-guide/tour-storage";
+import { findOnboardingIntent } from "@/lib/auth/onboarding-intents";
 import {
-  CalendarHeart,
-  Briefcase,
-  Building2,
-  UserPlus,
-  Store,
   ArrowRight,
+  CalendarHeart,
   CheckCircle2,
-  Sparkles,
   Compass,
-  Lightbulb,
+  Mail,
+  QrCode,
+  Sparkles,
+  Users,
 } from "lucide-react";
 import type { AccountType } from "@prisma/client";
 
-type FlowId = AccountType | "JOIN";
+const HOW_IT_WORKS = [
+  {
+    icon: CalendarHeart,
+    title: "Create the event",
+    body: "Date, venue, and who's hosting. This powers every invitation.",
+  },
+  {
+    icon: Mail,
+    title: "Send the invitation",
+    body: "Pick a live template, share one link. Guests RSVP on their phone.",
+  },
+  {
+    icon: Users,
+    title: "Manage the list",
+    body: "See who's coming, message them, and keep plus-ones tidy.",
+  },
+  {
+    icon: QrCode,
+    title: "Admit on the day",
+    body: "Each guest gets a QR. Scan at the door, even offline.",
+  },
+];
 
-interface StepDef {
-  title: string;
-  description: string;
-  why: string;
-  href: string;
-  cta: string;
+function extractInvitePath(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  try {
+    const url = value.includes("://") ? new URL(value) : new URL(value, "https://celeventic.com");
+    const invite = url.pathname.match(/\/invite\/([^/?#]+)/);
+    if (invite?.[1]) return `/invite/${invite[1]}`;
+  } catch {
+    /* fall through */
+  }
+  if (/^[a-zA-Z0-9_-]{8,}$/.test(value)) return `/invite/${value}`;
+  return null;
 }
-
-const FLOWS: Record<FlowId, StepDef[]> = {
-  EVENT_OWNER: [
-    {
-      title: "Choose your event type",
-      description: "Wedding, birthday, funeral, conference — pick what you're planning.",
-      why: "This unlocks the right templates, guest tools, and packages.",
-      href: "/dashboard/events/create",
-      cta: "Create Event",
-    },
-    {
-      title: "Add the basics",
-      description: "Date, venue, and host details so guests know where to be.",
-      why: "Your invitation and RSVP flow use these details automatically.",
-      href: "/dashboard/events/create",
-      cta: "Add Details",
-    },
-    {
-      title: "Choose your package",
-      description: "Pick the plan that matches your guest list and features.",
-      why: "Packages control guest limits, messaging, and premium tools.",
-      href: "/dashboard/events/create",
-      cta: "View Packages",
-    },
-    {
-      title: "Invite your team",
-      description: "Bring planners or family into the same event workspace.",
-      why: "Collaborators share one guest list, timeline, and invitation studio.",
-      href: "/dashboard/invitations/workspace",
-      cta: "Invite Team",
-    },
-    {
-      title: "You're ready to plan",
-      description: "Finish setup and we'll show you around the dashboard — search, create, alerts, and more.",
-      why: "A 30-second tour means you won't need to ask anyone how Celeventic works.",
-      href: "/dashboard",
-      cta: "Preview Dashboard",
-    },
-  ],
-  ORGANIZER: [
-    {
-      title: "Complete your organizer profile",
-      description: "Help clients find and trust you.",
-      why: "A clear profile makes it easier to win and manage client events.",
-      href: "/dashboard/settings",
-      cta: "Edit Profile",
-    },
-    {
-      title: "Create or join an event",
-      description: "Start a new project or accept a client invite.",
-      why: "Every client celebration lives as an event workspace.",
-      href: "/dashboard/events/create",
-      cta: "Create Event",
-    },
-    {
-      title: "Invite a client",
-      description: "Share access so your client can follow progress.",
-      why: "Clients stay informed without living in your inbox.",
-      href: "/dashboard/invitations/workspace",
-      cta: "Send Invite",
-    },
-    {
-      title: "Add collaborators",
-      description: "Build your planning team for the event.",
-      why: "Vendors and assistants work from the same source of truth.",
-      href: "/dashboard/invitations/workspace",
-      cta: "Add Collaborators",
-    },
-    {
-      title: "Start managing",
-      description: "Finish setup and take a quick tour of how navigation works.",
-      why: "You'll know where Create, Search, and Alerts live before you need them.",
-      href: "/dashboard",
-      cta: "Open Dashboard",
-    },
-  ],
-  ORGANIZATION: [
-    {
-      title: "Set up your organization",
-      description: "Team name, branding, and shared settings.",
-      why: "Your org workspace keeps every group event in one place.",
-      href: "/dashboard/settings?tab=organization",
-      cta: "Organization Settings",
-    },
-    {
-      title: "Create your first event",
-      description: "Launch an event for your company, church, school, or community.",
-      why: "Events inherit your org members and permissions.",
-      href: "/dashboard/events/create",
-      cta: "Create Event",
-    },
-    {
-      title: "Invite your team",
-      description: "Add members with the right access levels.",
-      why: "Everyone sees only what they need — no shared passwords.",
-      href: "/dashboard/settings?tab=team",
-      cta: "Invite Team",
-    },
-    {
-      title: "Configure permissions",
-      description: "Control who can edit guests, invitations, and finances.",
-      why: "Safe collaboration for large teams.",
-      href: "/dashboard/settings?tab=permissions",
-      cta: "Set Permissions",
-    },
-    {
-      title: "Start managing events",
-      description: "Your organization workspace is ready — finish and take a guided tour.",
-      why: "We'll highlight Search, Create, Alerts, and navigation so your team is self-sufficient.",
-      href: "/dashboard",
-      cta: "Go to Dashboard",
-    },
-  ],
-  VENDOR: [
-    {
-      title: "Add business details",
-      description: "Name, location, and contact info.",
-      why: "Hosts find you in the marketplace from this profile.",
-      href: "/vendor/onboarding",
-      cta: "Continue Setup",
-    },
-    {
-      title: "Add services",
-      description: "What you offer and your pricing.",
-      why: "Clear packages convert more booking requests.",
-      href: "/vendor/onboarding",
-      cta: "Add Services",
-    },
-    {
-      title: "Upload portfolio",
-      description: "Show your best work.",
-      why: "Photos build trust before the first message.",
-      href: "/vendor/onboarding",
-      cta: "Upload Photos",
-    },
-    {
-      title: "Set availability",
-      description: "When you're open for bookings.",
-      why: "Hosts only request dates you can take.",
-      href: "/vendor/onboarding",
-      cta: "Set Schedule",
-    },
-    {
-      title: "Publish profile",
-      description: "Go live on the marketplace.",
-      why: "Publishing makes you discoverable to event hosts.",
-      href: "/vendor/onboarding",
-      cta: "Publish",
-    },
-  ],
-  JOIN: [
-    {
-      title: "Check your invitations",
-      description: "Open pending workspace invites.",
-      why: "Invites are how you join someone else's event team.",
-      href: "/dashboard/invitations/workspace",
-      cta: "View Invitations",
-    },
-    {
-      title: "Accept an invite",
-      description: "Join the event team with one tap.",
-      why: "Acceptance unlocks guests, tasks, and messages for that event.",
-      href: "/dashboard/invitations/workspace",
-      cta: "Accept Invite",
-    },
-    {
-      title: "Explore the event",
-      description: "See guests, tasks, and timeline.",
-      why: "You'll know what's already planned before you start helping.",
-      href: "/dashboard/events",
-      cta: "View Events",
-    },
-    {
-      title: "Say hello to the team",
-      description: "Send a message to collaborators.",
-      why: "In-app chat keeps decisions with the event — not lost in WhatsApp.",
-      href: "/dashboard/messages",
-      cta: "Open Messages",
-    },
-    {
-      title: "You're all set",
-      description: "Finish setup and learn where Home, Events, and Alerts live.",
-      why: "A short tour means you can contribute without waiting for a walkthrough call.",
-      href: "/dashboard",
-      cta: "Go to Dashboard",
-    },
-  ],
-};
-
-const FLOW_ICONS: Record<FlowId, typeof CalendarHeart> = {
-  EVENT_OWNER: CalendarHeart,
-  ORGANIZER: Briefcase,
-  ORGANIZATION: Building2,
-  VENDOR: Store,
-  JOIN: UserPlus,
-};
-
-const FLOW_LABELS: Record<FlowId, string> = {
-  EVENT_OWNER: "Planning your own event",
-  ORGANIZER: "Planning for clients",
-  ORGANIZATION: "Organization workspace",
-  VENDOR: "Vendor marketplace",
-  JOIN: "Joining an event team",
-};
 
 function GettingStartedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
-  const [step, setStep] = useState(0);
+  const { data: session, update: updateSession } = useSession();
   const [completing, setCompleting] = useState(false);
+  const [inviteInput, setInviteInput] = useState("");
+  const [inviteError, setInviteError] = useState("");
 
-  const intent = searchParams.get("intent");
+  const intentParam = searchParams.get("intent");
   const accountType = (session?.user as { accountType?: AccountType })?.accountType;
-  const flowKey: FlowId =
-    intent === "join"
-      ? "JOIN"
-      : accountType === "VENDOR"
-        ? "VENDOR"
-        : (accountType ?? "EVENT_OWNER");
+  const joinIntent = intentParam === "join" || intentParam === "guest";
+  const option = findOnboardingIntent(accountType ?? "EVENT_OWNER", joinIntent);
+  const firstName = session?.user?.name?.split(" ")[0] ?? "there";
+  const isVendor = accountType === "VENDOR";
+  const isGuest = joinIntent;
 
-  const steps = FLOWS[flowKey];
-  const FlowIcon = FLOW_ICONS[flowKey];
-  const progress = Math.round(((step + 1) / steps.length) * 100);
-  const isLast = step >= steps.length - 1;
-  const current = steps[step];
+  const primaryHref = useMemo(() => {
+    if (isVendor) return "/vendor/onboarding";
+    if (isGuest) return "/dashboard/invitations/workspace";
+    return option?.primaryHref ?? "/dashboard/events/create";
+  }, [isVendor, isGuest, option]);
 
-  async function finish(opts: { skipped?: boolean; startTour?: boolean } = {}) {
-    const { skipped = false, startTour = !skipped && flowKey !== "VENDOR" } = opts;
+  const primaryCta = isVendor
+    ? "Set up my vendor profile"
+    : isGuest
+      ? "Open workspace invites"
+      : option?.primaryCta ?? "Create my first event";
+
+  async function finishAndGo(href: string, opts: { skipped?: boolean; tour?: boolean } = {}) {
     setCompleting(true);
-    trackUsability(skipped ? "onboarding_skipped" : "onboarding_completed", {
-      step,
-      startTour: startTour ? 1 : 0,
+    trackUsability(opts.skipped ? "onboarding_skipped" : "onboarding_completed", {
+      startTour: opts.tour ? 1 : 0,
     });
     try {
-      const res = await fetch("/api/onboarding/complete", {
+      await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          accountType: flowKey === "JOIN" ? "EVENT_OWNER" : accountType,
-          skipped,
+          accountType: accountType ?? "EVENT_OWNER",
+          skipped: Boolean(opts.skipped),
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { redirect?: string };
-
-      if (flowKey === "VENDOR") {
-        router.push("/vendor/onboarding");
-      } else if (startTour) {
-        markPendingWelcomeTour();
-        router.push("/dashboard?tour=welcome");
-      } else {
-        router.push(data.redirect ?? "/dashboard");
+      try {
+        await updateSession();
+      } catch {
+        /* JWT refresh is best-effort; first-run routes are already allowlisted. */
       }
+      if (opts.tour) markPendingWelcomeTour();
+      router.push(href);
       router.refresh();
     } finally {
       setCompleting(false);
     }
   }
 
+  function openInvite() {
+    const path = extractInvitePath(inviteInput);
+    if (!path) {
+      setInviteError("Paste the full invitation link you were sent, or just the code at the end.");
+      return;
+    }
+    setInviteError("");
+    void finishAndGo(path);
+  }
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8 pb-8">
+    <div className="max-w-3xl mx-auto space-y-8 pb-10">
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-brand-50 text-brand-600">
-          <FlowIcon className="h-8 w-8" />
-        </div>
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
-          {FLOW_LABELS[flowKey]}
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">
+          You are in
         </p>
-        <h1 className="font-display text-2xl sm:text-3xl font-bold text-slate-900">
-          Welcome to Celeventic
+        <h1 className="font-display text-2xl sm:text-4xl font-bold text-slate-900">
+          Welcome, {firstName}
         </h1>
-        <p className="text-slate-500 text-sm sm:text-base max-w-md mx-auto">
-          {steps.length} clear steps — then a short tour so you can use the platform on your own.
+        <p className="text-slate-700 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+          {option?.next ??
+            "Your account is ready. Take one step below. We'll keep the rest of Celeventic out of the way until you need it."}
+        </p>
+        {option ? (
+          <p className="inline-flex items-center rounded-full bg-brand-50 text-brand-800 text-xs font-semibold px-3 py-1">
+            {option.title}
+          </p>
+        ) : null}
+      </div>
+
+      {isGuest ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
+          <div>
+            <h2 className="font-display text-lg font-bold text-slate-900">Find the invitation you were sent</h2>
+            <p className="text-sm text-slate-700 mt-1 leading-relaxed">
+              Paste the link from WhatsApp, SMS, or email. We will open it and you can RSVP.
+            </p>
+          </div>
+          <div className="action-row">
+            <Input
+              value={inviteInput}
+              onChange={(e) => {
+                setInviteInput(e.target.value);
+                setInviteError("");
+              }}
+              placeholder="https://celeventic.com/invite/…"
+              aria-label="Invitation link"
+            />
+            <Button onClick={openInvite} disabled={completing} className="shrink-0">
+              Open invitation
+            </Button>
+          </div>
+          {inviteError ? <p className="text-sm text-red-600">{inviteError}</p> : null}
+        </div>
+      ) : null}
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5 sm:p-7 shadow-[0_12px_40px_rgba(11,138,131,0.08)] space-y-5">
+        <div>
+          <h2 className="font-display text-xl font-bold text-slate-900">Your next step</h2>
+          <p className="text-sm text-slate-700 mt-1 leading-relaxed">
+            {isGuest
+              ? "If a planner invited you to help, open workspace invites. If you're only attending, paste the guest link above."
+              : isVendor
+                ? "Hosts find you from your marketplace profile. We'll ask for your business, services, and photos."
+                : "Create the event first. Then pick a template and share one link with guests."}
+          </p>
+        </div>
+        <div className="action-row">
+          <PrimaryAction
+            onClick={() => void finishAndGo(primaryHref, { tour: false })}
+            disabled={completing}
+            className="min-h-12"
+          >
+            {completing ? "Opening…" : primaryCta}
+            <ArrowRight className="h-4 w-4" />
+          </PrimaryAction>
+          {!isVendor && !isGuest ? (
+            <Button
+              variant="outline"
+              disabled={completing}
+              className="min-h-12"
+              onClick={() => void finishAndGo("/invitations/catalogue")}
+            >
+              Start from an invitation template
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      {!isGuest ? (
+        <div>
+          <h2 className="font-display text-lg font-bold text-slate-900 mb-4">
+            How Celeventic works
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {HOW_IT_WORKS.map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.title}
+                  className="rounded-2xl border border-slate-200 bg-white p-4 flex gap-3"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 font-bold text-sm">
+                    {i + 1}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-900 flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-brand-600" />
+                      {item.title}
+                    </p>
+                    <p className="text-sm text-slate-700 mt-1 leading-relaxed">{item.body}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-700 space-y-2">
+        <p className="font-semibold text-slate-800 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-brand-600" />
+          Finding your way around
+        </p>
+        <p>
+          After this screen, the left menu (or the bar at the bottom on a phone) is home. Look for
+          Events, Invitations, Guests, and Messages. Search is at the top. You can come back to Help
+          anytime.
         </p>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs text-slate-500 font-medium">
-          <span>
-            Step {step + 1} of {steps.length}
-          </span>
-          <span>{progress}%</span>
-        </div>
-        <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-brand-500 to-brand-400 transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-
-      <Card className="border-brand-100 shadow-lg overflow-hidden">
-        <CardContent className="p-6 sm:p-8 space-y-6">
-          <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 font-bold">
-              {step + 1}
-            </div>
-            <div className="min-w-0 space-y-2">
-              <h2 className="font-display text-xl font-bold text-slate-900">{current.title}</h2>
-              <p className="text-slate-600">{current.description}</p>
-              <div className="flex gap-2 rounded-xl bg-slate-50 border border-slate-100 p-3 text-sm text-slate-600">
-                <Lightbulb className="h-4 w-4 text-brand-600 shrink-0 mt-0.5" />
-                <p>
-                  <span className="font-semibold text-slate-800">Why this matters: </span>
-                  {current.why}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            {!isLast ? (
-              <>
-                <PrimaryAction asChild>
-                  <Link href={current.href}>
-                    {current.cta} <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </PrimaryAction>
-                <Button variant="outline" onClick={() => setStep((s) => s + 1)}>
-                  Next Step
-                </Button>
-              </>
-            ) : (
-              <>
-                <PrimaryAction
-                  onClick={() => void finish({ startTour: flowKey !== "VENDOR" })}
-                  disabled={completing}
-                >
-                  <Compass className="h-4 w-4" />
-                  {completing ? "Starting…" : "Finish & take a quick tour"}
-                </PrimaryAction>
-                <Button variant="outline" asChild>
-                  <Link href={current.href}>
-                    {current.cta} <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </>
-            )}
-          </div>
-
-          {isLast && flowKey !== "VENDOR" && (
-            <p className="text-xs text-slate-500 flex items-start gap-2">
-              <CheckCircle2 className="h-3.5 w-3.5 text-brand-600 shrink-0 mt-0.5" />
-              The tour highlights Search, Create, Notifications, your profile, and how to move around —
-              about 30 seconds.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 text-sm">
         <button
           type="button"
-          onClick={() => void finish({ skipped: true, startTour: false })}
+          onClick={() => void finishAndGo("/dashboard", { skipped: true, tour: false })}
           disabled={completing}
-          className="text-slate-500 hover:text-slate-700 underline-offset-2 hover:underline"
+          className="min-h-11 text-slate-700 hover:text-slate-900 underline-offset-2 hover:underline"
         >
-          Skip for now
+          I will explore on my own
         </button>
+        <Button
+          variant="ghost"
+          disabled={completing}
+          onClick={() => void finishAndGo("/dashboard?tour=welcome", { tour: true })}
+        >
+          <Compass className="h-4 w-4" />
+          Finish & take a 30-second tour
+        </Button>
         <Link
           href="/legal/faq"
-          className="inline-flex items-center gap-1.5 text-brand-600 hover:underline"
+          className="inline-flex min-h-11 items-center justify-center gap-1.5 text-brand-700 font-semibold hover:underline"
         >
           <Sparkles className="h-4 w-4" />
           Need help?
         </Link>
-      </div>
-
-      <div className="grid grid-cols-5 gap-2">
-        {steps.map((s, i) => (
-          <button
-            key={s.title}
-            type="button"
-            onClick={() => setStep(i)}
-            className={`h-1.5 rounded-full transition-colors ${
-              i <= step ? "bg-brand-500" : "bg-slate-200"
-            }`}
-            aria-label={`Go to step ${i + 1}: ${s.title}`}
-          />
-        ))}
       </div>
     </div>
   );
@@ -422,7 +279,7 @@ export default function GettingStartedPage() {
     <Suspense
       fallback={
         <div className="max-w-2xl mx-auto py-16 text-center text-sm text-slate-500">
-          Preparing your guide…
+          Preparing your first step…
         </div>
       }
     >

@@ -64,7 +64,7 @@ export function InvitationsLandingContent({ packages, templates }: Props) {
               <Link href="/invitations/catalogue">{t("invitations.explore_catalogue")} <ArrowRight className="h-4 w-4" /></Link>
             </Button>
             <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10" asChild>
-              <Link href="/auth/register">{t("invitations.start_free")}</Link>
+              <Link href="/auth/register?intent=host">{t("invitations.start_free")}</Link>
             </Button>
           </div>
         </div>
@@ -122,7 +122,7 @@ export function InvitationsLandingContent({ packages, templates }: Props) {
             </ul>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {packages.slice(0, 4).map((pkg) => (
+            {packages.slice(0, 5).map((pkg) => (
               <div key={pkg.slug} className="rounded-2xl border border-slate-200/80 p-5 bg-[#FAF8F4]">
                 <p className="font-semibold text-[#0F172A]">{pkg.name}</p>
                 <p className="text-2xl font-bold text-[#0B8A83] mt-1">

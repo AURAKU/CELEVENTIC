@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { InvitationRenderer } from "@/components/invitation/invitation-renderer";
+import { useMemo, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { buildLivePreviewProps } from "@/lib/invitation-mvp/demo-preview-data";
 import { getDemoHeroUrl } from "@/lib/invitation/demo-gallery-assets";
 import { getLayoutVisualProfile } from "@/lib/experience/layout-visual-profiles";
@@ -28,11 +28,17 @@ import {
 } from "@/lib/invitation/vision-board";
 import { resolveSealStyle } from "@/lib/invitation/seal-design";
 import { TapToBeginExperience } from "@/components/invitations/tap-to-begin-experience";
-import { introAtmosphereUrlFromDesign } from "@/lib/invitation/studio-media-utils";
+import { introAtmosphereUrlFromDesign, pageBackgroundFromDesign } from "@/lib/invitation/studio-media-utils";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import { CELEVENTIC_PALETTE } from "@/lib/experience/celeventic-palette";
 
-const FRAME_WIDTH = 390;
+const GuestInvitationPortal = dynamic(
+  () =>
+    import("@/components/guest-portal/guest-invitation-portal").then(
+      (m) => m.GuestInvitationPortal
+    ),
+  { ssr: false }
+);
 
 function isFuneralCategory(category?: string): boolean {
   return category?.toLowerCase() === "funeral";
@@ -52,23 +58,23 @@ interface TemplatePreviewGlimpseProps {
   catalogSlug?: string;
   category?: string;
   features?: string[];
-  /** Scale of the faux phone frame inside the tile (card DNA fallback) */
+  /** Unused visually; kept so catalogue callers can pass variant scale. */
   scale?: number;
   compact?: boolean;
   className?: string;
 }
 
 /**
- * Faithful pre-tap visual of a template: sealed opening cover when the template
- * opens with an envelope/curtain, otherwise a static scaled invitation render.
- * Shown under a soft tap affordance, never a darkened generic blur.
+ * Catalogue / marketing tile: a snippet of the live guest invitation.
+ * the opened event experience guests actually play, not a stock photo or
+ * sealed-only poster. Theatrical openings stay visible as a small cover chip;
+ * tap still plays them.
  */
 export function TemplatePreviewGlimpse({
   layoutSlug,
   catalogSlug,
   category,
   features,
-  scale = 0.36,
   compact = false,
   className,
 }: TemplatePreviewGlimpseProps) {
@@ -107,7 +113,7 @@ export function TemplatePreviewGlimpse({
 
   const coverUrl = preview.event.coverImageUrl ?? getDemoHeroUrl(layoutSlug, category);
   const eventWithCover = { ...preview.event, coverImageUrl: coverUrl };
-  const visibleHeight = compact ? 108 : 200;
+  const background = pageBackgroundFromDesign(preview.design);
 
   const noop = () => undefined;
   const funeral = isFuneralCategory(category);
@@ -121,7 +127,82 @@ export function TemplatePreviewGlimpse({
     preview.design.introText?.trim() ||
     "IN LOVING MEMORY";
 
-  // Funeral: show the exact live tap-to-begin poster (eyebrow + deceased name card).
+  const openingCover = (() => {
+    if (funeral) return null;
+    if (openingId === "blush-gate") {
+      const board = mergeWeddingBoard(
+        (preview.design.studio as { weddingBoard?: Parameters<typeof mergeWeddingBoard>[0] } | undefined)
+          ?.weddingBoard
+      );
+      return (
+        <BlushGateReveal
+          embedded
+          eventTitle={preview.event.title}
+          hostName={preview.event.hostName}
+          guestName={preview.guestName}
+          copy={{
+            monogram: board.sealMonogram,
+            instruction: board.openingInstruction,
+            gateWord: resolveGateTitle(board.gateWord),
+            coupleLine: resolveIntroCoupleLine(board.coupleName1, board.coupleName2),
+            addressLine: board.envelopeAddressLine,
+            envelopeStyle: board.envelopeStyle,
+            gateStyle: board.gateStyle,
+            sealColor: board.sealColor,
+            sealMotif: board.sealMotif,
+            haptics: false,
+            palette: {
+              accentColor: board.accentColor,
+              blushColor: board.blushColor,
+              inkColor: board.inkColor,
+              canvasColor: board.canvasColor,
+            },
+          }}
+          onComplete={noop}
+        />
+      );
+    }
+    if (openingId === "satin-bow") {
+      return (
+        <SatinBowReveal
+          staticPreview
+          eventTitle={preview.event.title}
+          hostName={preview.event.hostName}
+          guestName={preview.guestName}
+          onComplete={noop}
+        />
+      );
+    }
+    if (isEnvelopeExperience(openingId) && envelopeTheme) {
+      return (
+        <EnvelopeCollectionReveal
+          theme={envelopeTheme}
+          eventTitle={preview.event.title}
+          hostName={preview.event.hostName}
+          guestName={preview.guestName}
+          sealInitials={sealInitials}
+          sealStyle={sealStyle}
+          enableSounds={false}
+          staticPreview
+          onComplete={noop}
+        />
+      );
+    }
+    if (isCurtain) {
+      return (
+        <CurtainReveal
+          eventTitle={preview.event.title}
+          guestName={preview.guestName}
+          theme={CURTAIN_THEME_MAP[openingId] ?? "wedding"}
+          staticPreview
+          onComplete={noop}
+        />
+      );
+    }
+    return null;
+  })();
+
+  // Funeral: the live first screen is the tap-to-begin name card.
   if (funeral) {
     return (
       <div
@@ -156,147 +237,60 @@ export function TemplatePreviewGlimpse({
     );
   }
 
-  // Forever Afaris blush-gate: sealed champagne envelope (embedded absolute shell).
-  if (openingId === "blush-gate") {
-    const board = mergeWeddingBoard(
-      (preview.design.studio as { weddingBoard?: Parameters<typeof mergeWeddingBoard>[0] } | undefined)
-        ?.weddingBoard
-    );
-    return (
-      <div
-        className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}
-        style={{ background: visual.background }}
-        aria-hidden
-      >
-        <div className="relative h-full w-full">
-          <BlushGateReveal
-            embedded
-            eventTitle={preview.event.title}
-            hostName={preview.event.hostName}
-            guestName={preview.guestName}
-            copy={{
-              monogram: board.sealMonogram,
-              instruction: board.openingInstruction,
-              gateWord: resolveGateTitle(board.gateWord),
-              coupleLine: resolveIntroCoupleLine(board.coupleName1, board.coupleName2),
-              addressLine: board.envelopeAddressLine,
-              envelopeStyle: board.envelopeStyle,
-              gateStyle: board.gateStyle,
-              sealColor: board.sealColor,
-              sealMotif: board.sealMotif,
-              haptics: false,
-              palette: {
-                accentColor: board.accentColor,
-                blushColor: board.blushColor,
-                inkColor: board.inkColor,
-                canvasColor: board.canvasColor,
-              },
-            }}
-            onComplete={noop}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Satin Bow: the tied ivory card itself is the poster, so the tile shows the
-  // exact cover the guest taps rather than a generic scaled invitation.
-  if (openingId === "satin-bow") {
-    return (
-      <div
-        className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}
-        aria-hidden
-      >
-        <SatinBowReveal
-          staticPreview
-          eventTitle={preview.event.title}
-          hostName={preview.event.hostName}
-          guestName={preview.guestName}
-          onComplete={noop}
-        />
-      </div>
-    );
-  }
-
-  // True opening DNA: sealed envelope / closed curtain fills the tile.
-  if (isEnvelopeExperience(openingId) && envelopeTheme) {
-    return (
-      <div
-        className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}
-        style={{ background: visual.background }}
-        aria-hidden
-      >
-        <EnvelopeCollectionReveal
-          theme={envelopeTheme}
-          eventTitle={preview.event.title}
-          hostName={preview.event.hostName}
-          guestName={preview.guestName}
-          sealInitials={sealInitials}
-          sealStyle={sealStyle}
-          enableSounds={false}
-          staticPreview
-          onComplete={noop}
-        />
-      </div>
-    );
-  }
-
-  if (isCurtain) {
-    return (
-      <div
-        className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}
-        style={{ background: visual.background }}
-        aria-hidden
-      >
-        <CurtainReveal
-          eventTitle={preview.event.title}
-          guestName={preview.guestName}
-          theme={CURTAIN_THEME_MAP[openingId] ?? "wedding"}
-          staticPreview
-          onComplete={noop}
-        />
-      </div>
-    );
-  }
-
-  // Card / layout DNA for templates without a theatrical opening cover.
   return (
     <div
-      className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}
-      style={{ background: visual.background }}
+      className={cn(
+        "template-glimpse-live absolute inset-0 overflow-hidden pointer-events-none bg-[#0a0a0a]",
+        className
+      )}
       aria-hidden
     >
       <InvitationStaticPreviewProvider>
-        <div className="absolute inset-x-0 top-0 flex justify-center pt-1">
-          <div
-            className="overflow-hidden rounded-t-[1.25rem] border border-black/10 bg-[#FAF8F4] shadow-md"
-            style={{
-              width: FRAME_WIDTH * scale,
-              height: visibleHeight,
+        <div className="h-full w-full min-h-0">
+          <GuestInvitationPortal
+            invitation={{
+              id: `preview-glimpse-${layoutSlug}`,
+              name: preview.invitationName,
+              message: preview.message,
+              uniqueLink: "preview",
             }}
-          >
-            <div
-              style={{
-                width: FRAME_WIDTH,
-                transform: `scale(${scale})`,
-                transformOrigin: "top left",
-              }}
-            >
-              <InvitationRenderer
-                invitation={{
-                  id: `glimpse-${layoutSlug}`,
-                  name: preview.invitationName,
-                  message: preview.message,
-                  uniqueLink: "preview",
-                }}
-                event={eventWithCover}
-                design={preview.design}
-                guestName={preview.guestName}
-              />
-            </div>
-          </div>
+            event={eventWithCover}
+            design={preview.design}
+            guestName={preview.guestName}
+            galleryUrls={preview.galleryUrls}
+            templateSlug={catalogSlug ?? layoutSlug}
+            experienceConfig={preview.design.experience}
+            backgroundImageUrl={background.backgroundImageUrl ?? coverUrl}
+            backgroundVideoUrl={background.backgroundVideoUrl}
+            embedded
+            fullScreen
+            cinematicMode
+            rsvpRequired={false}
+          />
         </div>
       </InvitationStaticPreviewProvider>
+      {openingCover ? (
+        <OpeningCoverChip compact={compact}>{openingCover}</OpeningCoverChip>
+      ) : null}
+    </div>
+  );
+}
+
+function OpeningCoverChip({
+  compact,
+  children,
+}: {
+  compact?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "absolute z-10 overflow-hidden rounded-xl border border-white/80 bg-black/20 shadow-[0_8px_24px_rgba(15,23,42,0.28)]",
+        compact ? "left-1.5 top-1.5 h-[52px] w-[40px]" : "left-2 top-2 h-[88px] w-[68px]"
+      )}
+    >
+      <div className="absolute inset-0">{children}</div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 
 /**
- * Shared Invitation Feature Layer — real-time + cache seam.
+ * Shared Invitation Feature Layer. Real-time + cache seam.
  *
  * No real-time transport exists in the repo yet (see discovery), so this is a
  * single, swappable seam: today it invalidates Next caches + logs the event;
@@ -45,7 +45,7 @@ export function invalidateInvitationCaches(link?: string | null) {
     revalidatePath(`/invite/${link}`);
     revalidatePath(`/invite/${link}/event-day`);
   } catch {
-    // revalidatePath throws outside a request/render scope (e.g. scripts) — safe to ignore.
+    // revalidatePath throws outside a request/render scope (e.g. scripts). Safe to ignore.
   }
 }
 

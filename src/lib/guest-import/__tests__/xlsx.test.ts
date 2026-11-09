@@ -9,7 +9,7 @@ import { parseUploadedFile } from "../parse-source";
  *
  * The fixtures are real ZIP archives built here rather than checked-in binary
  * blobs, so the test states exactly what shape of workbook it is asserting
- * against — including the two things that break naive readers: shared strings
+ * against, including the two things that break naive readers: shared strings
  * and sparse rows where an empty cell is simply absent from the XML.
  */
 
@@ -20,7 +20,7 @@ interface ZipFile {
   stored?: boolean;
 }
 
-/** Minimal ZIP writer. CRCs are left zero — the reader never checks them. */
+/** Minimal ZIP writer. CRCs are left zero. The reader never checks them. */
 function buildZip(files: ZipFile[]): Buffer {
   const locals: Buffer[] = [];
   const centrals: Buffer[] = [];

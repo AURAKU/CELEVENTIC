@@ -180,18 +180,35 @@ function mergeTheme(
 }
 
 function mergeCeremonies(
-  stored: AureliaCeremony[] | null | undefined,
+  stored: Array<Partial<AureliaCeremony> & { id?: string }> | null | undefined,
   base: AureliaWeddingConfig
 ): AureliaCeremony[] {
   if (stored == null) return base.ceremonies;
   if (stored.length === 0) return [];
   const canonicalById = new Map(base.ceremonies.map((item) => [item.id, item]));
   return stored
-    .filter((item) => trim(item.title) || trim(item.venueName) || canonicalById.has(item.id))
+    .filter((item) => trim(item.title) || trim(item.venueName) || Boolean(item.id && canonicalById.has(item.id)))
     .map((item) => {
-      const canonical = canonicalById.get(item.id);
-      if (!canonical) return item;
+      const canonical = canonicalById.get(item.id ?? "");
+      if (!canonical) {
+        return {
+          id: item.id ?? "",
+          kicker: item.kicker ?? "",
+          title: item.title ?? "",
+          weekday: item.weekday ?? "",
+          dateLabel: item.dateLabel ?? "",
+          timeLabel: item.timeLabel ?? "",
+          venueName: item.venueName ?? "",
+          address: item.address ?? "",
+          mapsUrl: item.mapsUrl,
+          description: item.description,
+          imageUrl: item.imageUrl,
+          addressPrivate: item.addressPrivate,
+          startAtIso: item.startAtIso,
+        };
+      }
       return {
+        ...canonical,
         ...item,
         title: canonical.title,
         kicker: canonical.kicker,
@@ -207,7 +224,7 @@ function mergeCeremonies(
 }
 
 function mergeVenues(
-  stored: AureliaVenueCard[] | null | undefined,
+  stored: Array<Partial<AureliaVenueCard>> | null | undefined,
   base: AureliaWeddingConfig
 ): AureliaVenueCard[] {
   if (stored == null) return base.venues;
@@ -215,13 +232,23 @@ function mergeVenues(
   return stored
     .filter((item) => {
       if (!(trim(item.venueName) || trim(item.eventLabel))) return false;
-      if (canonicalById.has(item.id)) return true;
+      if (item.id && canonicalById.has(item.id)) return true;
       return item.id !== "traditional" && item.id !== "white";
     })
     .map((item) => {
-      const canonical = canonicalById.get(item.id);
-      if (!canonical) return item;
+      const canonical = canonicalById.get(item.id ?? "");
+      if (!canonical) {
+        return {
+          id: item.id ?? "",
+          eventLabel: item.eventLabel ?? "",
+          venueName: item.venueName ?? "",
+          address: item.address,
+          mapsUrl: item.mapsUrl,
+          addressPrivate: item.addressPrivate,
+        };
+      }
       return {
+        ...canonical,
         ...item,
         eventLabel: canonical.eventLabel,
         venueName: canonical.venueName,
@@ -232,7 +259,7 @@ function mergeVenues(
 }
 
 function mergeDress(
-  stored: AureliaDressCode[] | null | undefined,
+  stored: Array<DeepPartial<AureliaDressCode>> | null | undefined,
   base: AureliaWeddingConfig
 ): AureliaDressCode[] {
   if (stored == null) return base.dressCodes;
@@ -253,15 +280,22 @@ function mergeDress(
 }
 
 function mergeJourney(
-  stored: AureliaJourneyItem[] | null | undefined,
+  stored: Array<Partial<AureliaJourneyItem>> | null | undefined,
   base: AureliaWeddingConfig
 ): AureliaJourneyItem[] {
   if (stored == null) return base.journey;
-  return stored.filter((item) => trim(item.title) || trim(item.imageUrl));
+  return stored
+    .filter((item) => trim(item.title) || trim(item.imageUrl))
+    .map((item) => ({
+      id: item.id ?? "",
+      title: item.title ?? "",
+      imageUrl: item.imageUrl,
+      caption: item.caption,
+    }));
 }
 
 function mergeFaqs(
-  stored: AureliaFaqItem[] | null | undefined,
+  stored: Array<Partial<AureliaFaqItem>> | null | undefined,
   base: AureliaWeddingConfig
 ): AureliaFaqItem[] {
   if (stored == null) return base.faqs;
@@ -269,24 +303,30 @@ function mergeFaqs(
   return stored
     .filter((item) => trim(item.question) && trim(item.answer))
     .map((item) => {
-      const canonical = canonicalById.get(item.id);
+      const canonical = canonicalById.get(item.id ?? "");
       if (item.id === "contact" && canonical) {
         return { ...canonical };
       }
-      return item;
+      return {
+        id: item.id ?? "",
+        question: item.question ?? "",
+        answer: item.answer ?? "",
+      };
     });
 }
 
 function mergeRsvpContacts(
-  stored: AureliaRsvpContact[] | null | undefined,
+  stored: Array<Partial<AureliaRsvpContact>> | null | undefined,
   base: AureliaWeddingConfig
 ): AureliaRsvpContact[] {
   if (stored == null || stored.length === 0) return base.rsvpContacts ?? [];
-  return stored.filter((item) => trim(item.name) && trim(item.phone));
+  return stored
+    .filter((item) => trim(item.name) && trim(item.phone))
+    .map((item) => ({ name: item.name ?? "", phone: item.phone ?? "" }));
 }
 
 function mergeGiftCopy(
-  stored: Partial<AureliaWeddingConfig>,
+  stored: DeepPartial<AureliaWeddingConfig>,
   base: AureliaWeddingConfig
 ): Pick<AureliaWeddingConfig, "giftsEyebrow" | "giftsTitle" | "giftsLede" | "giftsDetails"> {
   const staleHiddenGifts =
@@ -311,8 +351,8 @@ function mergeGiftCopy(
 }
 
 function mergeSections(
-  storedSections: AureliaWeddingConfig["sections"],
-  stored: Partial<AureliaWeddingConfig>,
+  storedSections: DeepPartial<AureliaWeddingConfig>["sections"],
+  stored: DeepPartial<AureliaWeddingConfig>,
   base: AureliaWeddingConfig
 ): AureliaWeddingConfig["sections"] {
   const merged = { ...base.sections, ...storedSections };
@@ -353,8 +393,16 @@ export function aureliaFamilyDefaults(layout?: string | null): AureliaWeddingCon
   return layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_WEDDING_DEFAULTS : AURELIA_WEDDING_DEFAULTS;
 }
 
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends (infer U)[]
+    ? Array<DeepPartial<U>>
+    : T[K] extends object
+      ? DeepPartial<T[K]>
+      : T[K];
+};
+
 export function mergeAureliaWedding(
-  stored?: Partial<AureliaWeddingConfig> | null,
+  stored?: DeepPartial<AureliaWeddingConfig> | null,
   base: AureliaWeddingConfig = AURELIA_WEDDING_DEFAULTS
 ): AureliaWeddingConfig {
   if (!stored) return sanitizeAureliaGuestCopy(base);

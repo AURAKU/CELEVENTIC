@@ -1,7 +1,7 @@
 import { trackInviteEvent } from "@/lib/analytics/invite-events";
 
 /**
- * Fashion flagship analytics — non-PII action names on INVITE_ACTION_CLICK.
+ * Fashion flagship analytics. Non-PII action names on INVITE_ACTION_CLICK.
  * Reuses the existing Celeventic pipeline rather than inventing event types.
  */
 export type FashionInviteAction =

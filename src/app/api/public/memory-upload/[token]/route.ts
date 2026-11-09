@@ -4,6 +4,8 @@ import { eventMemorySettingsService } from "@/services/memory/event-memory-setti
 import { eventMemoryThemeService } from "@/services/memory/event-memory-theme.service";
 import { eventMemorySocialService } from "@/services/memory/event-memory-social.service";
 import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
+import { prisma } from "@/lib/prisma";
+import { canonicalGuestInviteHref } from "@/lib/invitation/canonical-guest-invite";
 
 export async function GET(
   req: Request,
@@ -29,8 +31,16 @@ export async function GET(
     ? await eventMemorySocialService.hasConsent(record.eventId, guestKeyHash)
     : false;
 
-  const viewToken = await eventMemoryTokenService.getOrCreateViewToken(record.eventId);
-  const analytics = await eventMemoryUploadService.getAnalytics(record.eventId);
+  const [viewToken, analytics, invitations] = await Promise.all([
+    eventMemoryTokenService.getOrCreateViewToken(record.eventId),
+    eventMemoryUploadService.getAnalytics(record.eventId),
+    prisma.invitation.findMany({
+      where: { eventId: record.eventId, status: "ACTIVE", archivedAt: null },
+      select: { uniqueLink: true, slug: true, isGeneralPass: true, templateId: true },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+  const invitationHref = canonicalGuestInviteHref(record.event.slug, invitations);
 
   return NextResponse.json({
     success: true,
@@ -41,7 +51,7 @@ export async function GET(
         eyebrow: identity.eyebrow,
         subtitle: identity.subtitle,
       },
-      invitationLink: null,
+      invitationLink: invitationHref ? invitationHref.replace(/^\/invite\//, "") : null,
       viewToken: viewToken.token,
       theme: publicTheme,
       hasConsent,

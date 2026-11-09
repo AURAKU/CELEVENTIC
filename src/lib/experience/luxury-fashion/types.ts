@@ -1,5 +1,5 @@
 /**
- * Reusable luxury fashion flagship opening — house DNA, not a one-off flyer.
+ * Reusable luxury fashion flagship opening. House DNA, not a one-off flyer.
  * Other houses later supply their own LuxuryFashionHouseConfig.
  */
 
@@ -77,7 +77,7 @@ export interface LuxuryFashionHouseConfig {
   teaserDateLine?: string;
   teaserClipUrl?: string | null;
   teaserPosterUrl?: string | null;
-  /** Invitation flyer artwork used as the rising card face — never as hub wallpaper. */
+  /** Invitation flyer artwork used as the rising card face, never as hub wallpaper. */
   flyerCardUrl?: string | null;
   /** Full-screen ENTER EXPERIENCE flyer. When set, replaces the 2.5D boutique. */
   experienceFlyerUrl?: string | null;
@@ -85,7 +85,7 @@ export interface LuxuryFashionHouseConfig {
   visionStoreEnabled?: boolean;
   visionStoreKicker?: string;
   visionStoreTitle?: string;
-  visionStoreLine?: string;
+  visionStoreLine: string;
   visionStoreDeliveryLine?: string;
   visionStoreSoonLabel?: string;
   mapsCtaLabel?: string;
@@ -96,7 +96,7 @@ export interface LuxuryFashionHouseConfig {
   filmChapterTitle?: string;
   filmChapterLede?: string;
   /** Guest notes heading. Femmora default names the host; other houses keep a generic line. */
-  wishesTitle?: string;
+  wishesTitle: string;
   /** Empty guest-notes line. Clothing-opening copy; never a shared Femmora fallback. */
   wishesEmpty?: string;
   markVariant?: "letter" | "botanical";
@@ -109,7 +109,7 @@ export interface LuxuryFashionHouseConfig {
   navLabels: FashionNavLabel[];
   countdownBeforeLabel: string;
   countdownAfterLabel: string;
-  /** Live-day eyebrow. When set, `countdownAfterLabel` is the sentence beneath — never a duplicate. */
+  /** Live-day eyebrow. When set, `countdownAfterLabel` is the sentence beneath, never a duplicate. */
   countdownAfterKicker?: string;
   finaleMessage: string;
   lookbookTitle: string;

@@ -11,7 +11,7 @@ const EVENT_GUIDE_FALLBACK_HREF = "/guide/event-guide-guest";
 
 /**
  * Closing attribution + optional growth CTA.
- * Funeral invitations omit the create CTA — a solemn closing should not
+ * Funeral invitations omit the create CTA. A solemn closing should not
  * prompt guests to start their own invite.
  *
  * Brand mark opens the Event Guide (published for this event when available).
@@ -67,7 +67,7 @@ export function ViralFooterBlock({ context }: { context: PageRenderContext }) {
         href={guideHref}
         className="inv-brand-seal"
         onClick={trackGuideClick}
-        aria-label={`Powered by Celeventic — open Event Guide`}
+        aria-label={`Powered by Celeventic. Open Event Guide`}
         title="Open Event Guide"
       >
         <span className="inv-brand-seal-mark">
@@ -80,7 +80,7 @@ export function ViralFooterBlock({ context }: { context: PageRenderContext }) {
             sizes="56px"
           />
         </span>
-        <span className="inv-brand-seal-powered">— Powered By CELEVENTIC</span>
+        <span className="inv-brand-seal-powered">Powered By CELEVENTIC</span>
       </a>
     </div>
   );

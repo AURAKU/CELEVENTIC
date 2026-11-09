@@ -5,11 +5,11 @@
 
 import { safeSessionStorage } from "@/lib/browser/safe-storage";
 
-/** Canonical intro assets — cache-bust when playback policy / component changes. */
+/** Canonical intro assets. Cache-bust when playback policy / component changes. */
 export const INTRO_VIDEO_SRC = "/brand/celeventic-invitation-intro.mp4?v=20260805a";
 export const INTRO_POSTER_SRC = "/brand/celeventic-invitation-intro-poster.jpg?v=20260805a";
 
-/** Absolute ceiling — invite must reveal by this time if the clip never ends cleanly. */
+/** Absolute ceiling. Invite must reveal by this time if the clip never ends cleanly. */
 export const INTRO_UNKNOWN_DURATION_FALLBACK_MS = 14_000;
 
 /** Never finish before the video has had a fair chance to start buffering/playing. */
@@ -31,7 +31,7 @@ export const INTRO_STALL_GRACE_MS = 8_000;
 const SESSION_PREFIX = "celeventic:soft-intro:session:v1";
 
 /**
- * Invitation-scoped session key — uses invite link (or id), never a global
+ * Invitation-scoped session key. Uses invite link (or id), never a global
  * `introSeen` / `hasSeenIntro` key.
  */
 export function softIntroSessionKey(invitationLinkOrId: string): string {
@@ -53,7 +53,7 @@ export function rememberSoftIntroThisSession(invitationLinkOrId: string): void {
   try {
     safeSessionStorage()?.setItem(softIntroSessionKey(invitationLinkOrId), "1");
   } catch {
-    /* private mode / blocked storage — intro simply plays again */
+    /* private mode / blocked storage. Intro simply plays again */
   }
 }
 
@@ -219,7 +219,7 @@ export function shouldEnableIntroDebug(): boolean {
   }
 }
 
-/** Dev / live diagnostics — never include tokens or guest PII. */
+/** Dev / live diagnostics, never include tokens or guest PII. */
 export function logIntroDiagnostics(
   label: string,
   diagnostics: IntroVideoDiagnostics
@@ -267,7 +267,7 @@ export function prepareIntroVideoElement(video: HTMLVideoElement, muted = true):
 
 /**
  * Live invitation path: prepare unmuted playback from frame zero inside a
- * synchronous user-gesture handler. Does NOT call play() — caller must.
+ * synchronous user-gesture handler. Does NOT call play(). Caller must.
  */
 export function prepareIntroVideoForGesturePlayback(
   video: Pick<
@@ -298,7 +298,7 @@ export function prepareIntroVideoForGesturePlayback(
   try {
     video.currentTime = 0;
   } catch {
-    /* seek may fail until metadata — still attempt play from start */
+    /* seek may fail until metadata. Still attempt play from start */
   }
   video.defaultMuted = false;
   video.muted = false;
@@ -326,7 +326,7 @@ export function prepareIntroVideoForGesturePlayback(
 
 /**
  * Live invitation: one gesture authorizes playback + AAC audio.
- * Never falls back to muted autoplay — rejected play keeps the opening gate.
+ * Never falls back to muted autoplay. Rejected play keeps the opening gate.
  */
 export async function playIntroFromUserGesture(
   video: HTMLVideoElement
@@ -340,7 +340,7 @@ export async function playIntroFromUserGesture(
 }> {
   const prepared = prepareIntroVideoForGesturePlayback(video);
   if (prepared.muted || prepared.defaultMuted || prepared.volume !== 1) {
-    // Force again — some browsers flip muted on attribute sync.
+    // Force again. Some browsers flip muted on attribute sync.
     video.defaultMuted = false;
     video.muted = false;
     video.volume = 1;
@@ -353,7 +353,7 @@ export async function playIntroFromUserGesture(
     } catch {
       /* ignore */
     }
-    // Keep unmuted intent — do not silently switch to muted playback.
+    // Keep unmuted intent. Do not silently switch to muted playback.
     video.defaultMuted = false;
     video.muted = false;
     return {

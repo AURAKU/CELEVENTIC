@@ -6,7 +6,7 @@ import { getClientAppUrl, isLocalHost } from "@/lib/app-url";
 const WORKSPACE_KEY = "celeventic_workspace";
 const LEGAL_ACCEPT_KEY = "celeventic_legal_accepted";
 
-/** Build a same-origin callback URL — never localhost when on a live Celeventic domain. */
+/** Build a same-origin callback URL, never localhost when on a live Celeventic domain. */
 export function resolveLogoutCallbackUrl(callbackPath = "/"): string {
   if (typeof window === "undefined") return callbackPath;
 
@@ -24,7 +24,7 @@ export function resolveLogoutCallbackUrl(callbackPath = "/"): string {
   return `${window.location.origin}${path}`;
 }
 
-/** Clear client-side session hints then sign out — always land on the current live domain. */
+/** Clear client-side session hints then sign out. Always land on the current live domain. */
 export async function performLogout(callbackPath = "/") {
   if (typeof window !== "undefined") {
     try {

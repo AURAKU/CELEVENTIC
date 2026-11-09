@@ -1,7 +1,7 @@
 import { getBrowseCatalogTemplates, type BrowseCatalogOptions, type CatalogTemplate } from "./catalogue";
 
 /**
- * Pure catalogue query with cursor pagination — shared by the public API
+ * Pure catalogue query with cursor pagination. Shared by the public API
  * route and server-side first-batch rendering. The cursor is an opaque
  * base64 offset over the canonical CATALOG_TEMPLATES ordering.
  */

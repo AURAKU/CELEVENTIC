@@ -17,7 +17,7 @@ const LiveTemplatePreviewInner = dynamic(
     loading: () => (
       <div
         className="w-full animate-pulse rounded-xl bg-slate-100/90"
-        style={{ minHeight: 180 }}
+        style={{ minHeight: 360 }}
         aria-hidden
       />
     ),

@@ -12,7 +12,7 @@ const generalPassInFlight = new Set<string>();
 
 /**
  * Kick generation for a guest-import batch if the dedicated worker isn't alive.
- * Safe to call on every progress poll — no-ops when busy, finished, or worker-up.
+ * Safe to call on every progress poll. No-ops when busy, finished, or worker-up.
  */
 export async function maybeKickGuestImportBatch(batchId: string): Promise<void> {
   await maybeKickQueueJob({

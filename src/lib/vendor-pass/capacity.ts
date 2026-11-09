@@ -1,5 +1,5 @@
 /**
- * Pure vendor/team pass capacity arithmetic — unit-tested without Prisma.
+ * Pure vendor/team pass capacity arithmetic. Unit-tested without Prisma.
  *
  * A vendor pass is an access card, not a one-time ticket. `teamCapacity` is the
  * headcount admitted per *entry cycle*; when the cycle fills up, the re-entry
@@ -40,7 +40,7 @@ export function currentEntryCycle(state: VendorCapacityState): number {
 
 /**
  * How many more times this card may re-open after its capacity is used.
- * `remaining: null` means unlimited — the access-card default.
+ * `remaining: null` means unlimited. The access-card default.
  */
 export function reentryAllowance(state: VendorCapacityState): {
   policy: VendorReentryPolicyValue;

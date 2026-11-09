@@ -767,7 +767,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     mapsUrl={ceremony.mapsUrl}
                     venueName={ceremony.venueName}
                     address={ceremony.address}
-                    href={directionsHref || href}
+                    href={directionsHref || href || undefined}
                     label={ceremony.venueName}
                     invitationId={props.invitation.id}
                     previewImageUrl={isSeraphine ? seraphineMapPreview[ceremony.id] : undefined}
@@ -776,7 +776,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                 {hasMaps && (directionsHref || href) ? (
                   <a
                     className={styles.directions}
-                    href={directionsHref || href}
+                    href={directionsHref || href || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() =>
@@ -848,7 +848,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     mapsUrl={venue.mapsUrl}
                     venueName={venue.venueName}
                     address={venue.address}
-                    href={directionsHref || href}
+                    href={directionsHref || href || undefined}
                     label={venue.venueName}
                     invitationId={props.invitation.id}
                   />
@@ -856,7 +856,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                 {directionsHref || href ? (
                   <a
                     className={styles.directions}
-                    href={directionsHref || href}
+                    href={directionsHref || href || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() =>

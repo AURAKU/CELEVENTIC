@@ -7,8 +7,8 @@
  *    the pack was built, the content half of the sync is refused and reported
  *    as a conflict rather than silently rolled back.
  *  - Replaying the same queue never double-counts. Records carry client ids and
- *    the server keeps a high-water mark, so an operator who syncs twice — or
- *    syncs a pack they already synced — gets the same totals.
+ *    the server keeps a high-water mark, so an operator who syncs twice, or
+ *    syncs a pack they already synced. Gets the same totals.
  *
  * The pack has no write path to seating at all. Assignments stay an
  * authenticated organizer workflow.
@@ -157,7 +157,7 @@ export function planOfflineSync(input: {
   }
 
   // Counters are additive facts about what guests did, so they merge even when
-  // the guide has since been republished — only content would conflict, and the
+  // the guide has since been republished. Only content would conflict, and the
   // pack never sends content.
   const seen = new Set<string>();
   const apply: OfflineQueueRecord[] = [];

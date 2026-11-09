@@ -99,7 +99,7 @@ export async function GET(
   // Prefer static Nginx / Next public delivery whenever the file lives under public/uploads.
   // Redirect avoids buffering large videos through the Node app (and TransformStream bugs).
   if (uploadRootIsPublicFolder() && process.env.MEDIA_FORCE_API_PROXY !== "1") {
-    // Build a same-site absolute path using the public Host the browser sent —
+    // Build a same-site absolute path using the public Host the browser sent.
     // never trust req.url alone behind Nginx (it can be http://localhost:3001/...).
     const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
     const host = forwardedHost || req.headers.get("host") || "";
@@ -159,7 +159,7 @@ export async function GET(
       });
     }
 
-    // Cap un-ranged full-body responses — browsers seeking video always send Range.
+    // Cap un-ranged full-body responses. Browsers seeking video always send Range.
     // Large files without Range redirect to static when possible; otherwise refuse to
     // allocate multi-hundred-MB buffers in the Node process.
     const MAX_FULL_BODY = 32 * 1024 * 1024;

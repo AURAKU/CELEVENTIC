@@ -111,7 +111,7 @@ export function buildInviteCanonicalUrl(
   return guest ? `${base}?guest=${encodeURIComponent(guest)}` : base;
 }
 
-/** @deprecated Use buildSocialInvitationSurface — kept for existing Aurelia tests. */
+/** @deprecated Use buildSocialInvitationSurface. Kept for existing Aurelia tests. */
 export function resolveSocialPlaceCardVariant(input: {
   catalogSlug?: string | null;
   layoutSlug?: string | null;

@@ -20,6 +20,10 @@ import { useStudioAutosave } from "@/hooks/use-studio-autosave";
 import { hasFullPackageAccess } from "@/lib/access/package-access";
 import { isStudioUnlocked, isLiveInvitation } from "@/lib/invitation/studio-access";
 import { displayHostNameFromOrder } from "@/lib/invitation/catalog-event-type";
+import {
+  customisationThreadId,
+  isCustomisationInvitationPackage,
+} from "@/lib/invitation-mvp/packages";
 
 export default function StudioPage() {
   const router = useRouter();
@@ -239,6 +243,7 @@ export default function StudioPage() {
     status: order.status as string | null,
     shareUrl: order.shareUrl as string | null,
   });
+  const customisationChat = isCustomisationInvitationPackage(String(order.packageSlug ?? ""));
 
   return (
     <MvpShell
@@ -251,6 +256,21 @@ export default function StudioPage() {
           : "Design the guest experience, live preview matches publish"
       }
     >
+      {customisationChat ? (
+        <div className="mb-4 rounded-2xl border border-[#D4A63A]/40 bg-[#0F172A] px-5 py-4 text-white flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1">
+            <p className="text-sm font-semibold">Customisation package unlocked</p>
+            <p className="text-sm text-white/70 mt-0.5">
+              Chat with the Celeventic team about your brief. We build this template with you.
+            </p>
+          </div>
+          <Button asChild className="shrink-0 bg-[#D4A63A] text-[#0F172A] hover:bg-[#F7EFD8]">
+            <a href={`/dashboard/messages?thread=${encodeURIComponent(customisationThreadId(orderId))}`}>
+              Open team chat
+            </a>
+          </Button>
+        </div>
+      ) : null}
       <InvitationStudioHub
         ref={hubRef}
         design={snapshot.design}

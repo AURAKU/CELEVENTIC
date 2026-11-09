@@ -33,7 +33,7 @@ export class CommunicationProviderError extends Error {
 }
 
 /**
- * Communication Hub — sends via admin-configured providers (no mock success paths).
+ * Communication Hub. Sends via admin-configured providers (no mock success paths).
  */
 export class CommunicationService {
   calculateCost(channel: CampaignChannel, recipientCount: number): number {
@@ -175,7 +175,7 @@ export class CommunicationService {
           where: { id: message.id },
           data: {
             status: "FAILED",
-            // store last error in a safe field if schema allows — otherwise log
+            // store last error in a safe field if schema allows. Otherwise log
           },
         });
         console.error("[comms.send]", campaign.channel, message.recipient, error);
@@ -392,6 +392,33 @@ export class CommunicationService {
     }
 
     return { success: true, provider };
+  }
+
+  /** Best-effort transactional send. Never throws. Used by renewal jobs. */
+  async trySendDirect(input: {
+    channel: CampaignChannel;
+    to: string;
+    subject?: string;
+    body: string;
+  }): Promise<{ ok: boolean; error?: string }> {
+    try {
+      if (input.channel === "EMAIL") {
+        await this.sendTransactionalEmail({
+          to: input.to,
+          subject: input.subject || "Celeventic",
+          body: input.body,
+        });
+      } else if (input.channel === "SMS") {
+        await this.sendSMS(input.to, input.body);
+      } else {
+        await this.sendWhatsApp(input.to, input.body);
+      }
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Send failed";
+      console.error("[comms.trySendDirect]", input.channel, message);
+      return { ok: false, error: message };
+    }
   }
 }
 

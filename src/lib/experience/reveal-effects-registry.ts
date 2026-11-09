@@ -46,14 +46,14 @@ const REVEAL_ICON: Partial<Record<OpeningExperienceId, string>> = {
   "palace-entrance": "♛",
 };
 
-/** Showcase grid — the 10 hero reveal interactions from the Experience Engine mockup */
+/** Showcase grid. The 10 hero reveal interactions from the Experience Engine mockup */
 export const SHOWCASE_REVEAL_EFFECTS: RevealEffectMeta[] = [
   { id: "scratch", label: "Scratch to Reveal", description: "Scratch gold foil to unveil", category: "interactive", accent: "#D4AF37", icon: "✦" },
   { id: "pop-reveal", label: "Pop to Reveal", description: "Tap to pop and celebrate", category: "interactive", accent: "#EC4899", icon: "◎" },
   { id: "swipe-reveal", label: "Swipe to Reveal", description: "Swipe across to unveil", category: "interactive", accent: "#6366F1", icon: "→" },
   { id: "flip-reveal", label: "Flip to Reveal", description: "3D card flip ceremony", category: "interactive", accent: "#38BDF8", icon: "↻" },
   { id: "zoom-reveal", label: "Zoom to Reveal", description: "Camera zoom into moment", category: "interactive", accent: "#F59E0B", icon: "⊕" },
-  { id: "curtain-wedding", label: "Curtain Rise", description: "Velvet curtains part after tap — theatrical reveal", category: "curtain", accent: "#DC2626", icon: "🎭" },
+  { id: "curtain-wedding", label: "Curtain Rise", description: "Velvet curtains part after tap. Theatrical reveal", category: "curtain", accent: "#DC2626", icon: "🎭" },
   { id: "glass", label: "Glass Swipe", description: "Frosted acrylic swipe", category: "interactive", accent: "#38BDF8", icon: "◇" },
   { id: "confetti-burst", label: "Particle Burst", description: "Instant confetti celebration", category: "interactive", accent: "#A855F7", icon: "✨" },
   { id: "light-beam", label: "Light Beam", description: "Luxury spotlight reveal", category: "interactive", accent: "#FDE68A", icon: "☀" },

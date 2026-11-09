@@ -63,7 +63,7 @@ function InstagramOfficialGlyph({ size }: { size: number }) {
 
 /**
  * Official TikTok musical-note path (Simple Icons / brand kit). Same geometry as
- * the consumer app mark — not Lucide Music2, not a play triangle, not a redraw.
+ * the consumer app mark, not Lucide Music2, not a play triangle, not a redraw.
  */
 const TIKTOK_NOTE =
   "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.69 2.58-4.82 1.36-1.06 3.1-1.64 4.88-1.65v4.07c-.51-.17-1.06-.26-1.61-.26-1.31.02-2.5.86-2.96 2.07-.3.78-.23 1.65.19 2.36.5.85 1.45 1.35 2.45 1.28.84-.06 1.61-.54 2.05-1.24.18-.3.29-.64.32-.99.02-3.47.01-6.94 0-10.41z";

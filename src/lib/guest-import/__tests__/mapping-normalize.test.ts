@@ -12,7 +12,7 @@ import { DEFAULT_IMPORT_OPTIONS, ImportField, mergeImportOptions } from "../type
  * Mapping, normalisation, duplicates and CSV safety.
  *
  * These are the rules that decide what an organiser is shown before anything
- * is created — the last checkpoint before a wrong guest list becomes a
+ * is created. The last checkpoint before a wrong guest list becomes a
  * thousand wrong invitations.
  */
 
@@ -271,7 +271,7 @@ describe("markDuplicates", () => {
     assert.equal(rows[0].duplicateOfGuestId, "g1");
   });
 
-  it("never merges silently — the default decision is skip until reviewed", () => {
+  it("never merges silently. The default decision is skip until reviewed", () => {
     const table = parsePastedText("Kofi Mensah\nKofi Mensah");
     const rows = markDuplicates(
       normalizeRows(table, { 0: ImportField.NAME }, OPTIONS),

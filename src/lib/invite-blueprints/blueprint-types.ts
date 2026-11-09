@@ -3,7 +3,7 @@ import type { InvitationThemeTokens } from "@/lib/invitation-theme/theme-types";
 
 /**
  * Invitation page blueprints (Studio 2.0). A blueprint is an ordered list of
- * page definitions rendered by the paged viewer — templates are data
+ * page definitions rendered by the paged viewer. Templates are data
  * (blueprint × theme × motif × motion), not bespoke code.
  *
  * Not to be confused with src/lib/blueprints/ (event-workspace navigation).

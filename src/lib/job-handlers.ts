@@ -21,14 +21,14 @@ export function registerAllJobHandlers() {
   });
 
   // Kicks off (or resumes) MediaConvert processing for a video that just finished uploading.
-  // This handler only *creates* the MediaConvert job — it never transcodes on the VPS itself.
+  // This handler only *creates* the MediaConvert job. It never transcodes on the VPS itself.
   registerJobHandler(VIDEO_PROCESS_QUEUE, async (payload) => {
     const assetId = payload.assetId as string;
     await processQueuedVideoAsset(assetId);
   });
 
   // Bulk Guest Import. Each handler drains as many chunks as fit in the job
-  // budget, then re-queues while work remains — resumable after a restart.
+  // budget, then re-queues while work remains. Resumable after a restart.
   registerJobHandler(GUEST_IMPORT_QUEUE, async (payload) => {
     const { runGuestImportJob } = await import("@/services/guest-import/generation.service");
     await runGuestImportJob(payload.batchId as string);

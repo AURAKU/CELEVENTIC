@@ -13,7 +13,7 @@ export async function runStartupChecks(): Promise<void> {
   const missing = getMissingCriticalEnv();
   if (missing.length > 0) {
     console.error(
-      `[celeventic/startup] CRITICAL — missing environment variables: ${missing.join(", ")}`
+      `[celeventic/startup] CRITICAL. Missing environment variables: ${missing.join(", ")}`
     );
   }
 

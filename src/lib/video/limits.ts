@@ -8,7 +8,7 @@ export interface VideoCategoryLimits {
   maxDurationSeconds: number | null;
 }
 
-/** Hardcoded fallbacks per the product spec — never a single platform-wide max. */
+/** Hardcoded fallbacks per the product spec, never a single platform-wide max. */
 const HARD_DEFAULTS: Record<VideoCategory, number> = {
   EVENT_SHORT: 250,
   INVITATION_BACKGROUND: 150,
@@ -100,7 +100,7 @@ export async function getVideoCategoryLimits(category: VideoCategory): Promise<V
   } catch {
     // `unstable_cache` requires a live Next.js request/data-cache context. It's unreachable
     // from the standalone `video-jobs-worker` process (plain `tsx`, no Next server) and from
-    // plain-script test runs — fall back to the same computation, uncached, so both
+    // plain-script test runs. Fall back to the same computation, uncached, so both
     // environments still get correct limits instead of a hard crash.
     all = await computeAllVideoCategoryLimits();
   }

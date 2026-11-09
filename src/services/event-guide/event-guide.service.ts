@@ -113,7 +113,7 @@ export class EventGuideService {
   }
 
   /**
-   * The venue-offline QR link. Separate row, separate token, separate status —
+   * The venue-offline QR link. Separate row, separate token, separate status.
    * rotating or revoking one never touches the other, and this one is only ever
    * created when the organizer explicitly configures a local address.
    */
@@ -149,7 +149,7 @@ export class EventGuideService {
         publicToken: generatePublicLinkToken(),
         status: "ACTIVE",
         title: OFFLINE_LINK_TITLE,
-        heading: "Event Guide — venue backup",
+        heading: "Event Guide. Venue backup",
         subtitle: "Works only on the event Wi-Fi at this venue.",
         footerText: "Backup · Event Wi-Fi only",
         destinationUrl: validated.url,
@@ -215,7 +215,7 @@ export class EventGuideService {
   /**
    * Build the guest-facing payload from current (draft) state.
    *
-   * Every field is assigned explicitly — there is no spread of a database row
+   * Every field is assigned explicitly. There is no spread of a database row
    * anywhere on this path, which is what keeps ids and contact details out of
    * the public surface by construction rather than by review.
    */
@@ -273,7 +273,7 @@ export class EventGuideService {
     };
   }
 
-  /** Draft preview for the builder — identical rendering, never public. */
+  /** Draft preview for the builder. Identical rendering, never public. */
   async previewPayload(eventId: string): Promise<EventGuidePayload | null> {
     const [guide, event] = await Promise.all([
       prisma.eventGuide.findUnique({ where: { eventId } }),
@@ -330,7 +330,7 @@ export class EventGuideService {
 
     if (payload.programme.length === 0 && !payload.menu.body.trim() && !payload.menu.url) {
       throw new GuideError(
-        "Add a programme or a menu before publishing — guests would see an empty guide.",
+        "Add a programme or a menu before publishing. Guests would see an empty guide.",
         422
       );
     }
@@ -484,7 +484,7 @@ export class EventGuideService {
 
   async guideUrl(publicToken: string): Promise<string> {
     const base = await getServerAppUrl();
-    // Always encode a live HTTPS URL — never localhost — so printed/on-screen
+    // Always encode a live HTTPS URL, never localhost, so printed/on-screen
     // QRs open the production Event Guide on any guest phone camera.
     const path = `/event-guide/${encodeURIComponent(publicToken)}`;
     return sanitizePublicUrl(`${base}${path}`, getAppUrlFromEnv());
@@ -515,7 +515,7 @@ export class EventGuideService {
     return `/event-guide/${encodeURIComponent(link.publicToken)}`;
   }
 
-  /** Aggregate counters only — never a per-visitor row. */
+  /** Aggregate counters only, never a per-visitor row. */
   async recordActivity(input: {
     guideId: string;
     tab: EventGuideTabKey;

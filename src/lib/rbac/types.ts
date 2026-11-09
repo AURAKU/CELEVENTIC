@@ -1,6 +1,6 @@
 import type { UserRole } from "@prisma/client";
 
-/** Logical RBAC roles — maps onto Prisma `UserRole` + org context. */
+/** Logical RBAC roles. Maps onto Prisma `UserRole` + org context. */
 export type RbacRole =
   | "SUPER_ADMIN"
   | "ADMIN"
@@ -16,7 +16,7 @@ export const RBAC_ROLES: readonly RbacRole[] = [
   "USER",
 ] as const;
 
-/** Fine-grained permissions — never compare role strings in route handlers. */
+/** Fine-grained permissions, never compare role strings in route handlers. */
 export const Permission = {
   ACCESS_ADMIN_PANEL: "ACCESS_ADMIN_PANEL",
   ACCESS_DASHBOARD: "ACCESS_DASHBOARD",

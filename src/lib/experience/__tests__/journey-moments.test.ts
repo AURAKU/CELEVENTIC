@@ -11,7 +11,7 @@ import {
 } from "@/lib/experience/aurelia-editorial";
 
 test("Seraphine journey slideshow uses different photographs than the lookbook", () => {
-  const lookbook = seraphineLookbookGallery();
+  const lookbook: string[] = seraphineLookbookGallery();
   const journeyUrls = SERAPHINE_JOURNEY_CHAPTERS.map((item) => item.imageUrl);
   assert.equal(SERAPHINE_JOURNEY_CHAPTERS[0]?.title, "Where it began");
   assert.equal(SERAPHINE_JOURNEY_CHAPTERS.length, 6);
@@ -19,15 +19,16 @@ test("Seraphine journey slideshow uses different photographs than the lookbook",
     SERAPHINE_JOURNEY_CHAPTERS.at(-1)?.imageUrl,
     "/templates/seraphine/couple/06-journey.mp4"
   );
-  assert.deepEqual(lookbook, [...SERAPHINE_LOOKBOOK_GALLERY]);
-  assert.equal(lookbook.includes("/templates/seraphine/couple/11-studio-black.jpg"), true);
-  assert.equal(lookbook.includes("/templates/seraphine/couple/06-journey.mp4"), false);
-  assert.equal(lookbook.some((url) => journeyUrls.includes(url)), false);
+  assert.equal(lookbook.some((url) => url === "/templates/seraphine/couple/11-studio-black.jpg"), true);
+  assert.equal(lookbook.some((url) => url === "/templates/seraphine/couple/06-journey.mp4"), false);
+  assert.equal(lookbook.some((url) => journeyUrls.some((journey) => journey === url)), false);
   for (const item of SERAPHINE_JOURNEY_CHAPTERS) {
     assert.ok(item.imageUrl);
     assert.equal(existsSync(`public${item.imageUrl}`), true, item.imageUrl);
-    assert.equal(lookbook.includes(item.imageUrl), false);
+    const imageUrl = item.imageUrl;
+    assert.equal(lookbook.some((url) => url === imageUrl), false);
   }
+  assert.deepEqual(lookbook, [...SERAPHINE_LOOKBOOK_GALLERY]);
 });
 
 test("uploaded journey photos beat catalogue chapters", () => {

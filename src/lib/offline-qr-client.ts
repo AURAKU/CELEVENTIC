@@ -3,6 +3,7 @@ const STORAGE_PREFIX = "celeventic_offline_";
 export interface OfflinePackage {
   eventId: string;
   syncedAt: string;
+  tokenScheme?: "sha256" | "plain";
   guests: {
     id: string;
     name: string;
@@ -12,6 +13,17 @@ export interface OfflinePackage {
   }[];
   tickets: { id: string; name: string; qrToken: string | null; status: string }[];
   checksum: string;
+}
+
+async function sha256HexBrowser(value: string): Promise<string> {
+  const encoded = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function storedTokenMatches(stored: string | null | undefined, raw: string, hashed: string): boolean {
+  if (!stored) return false;
+  return stored === raw || stored === hashed;
 }
 
 export interface OfflineScanLog {
@@ -65,54 +77,55 @@ function alreadyScannedOffline(
   });
 }
 
-export function validateOfflineToken(
+export async function validateOfflineToken(
   eventId: string,
   rawToken: string
-): {
+): Promise<{
   result: "VALID" | "ALREADY_USED" | "INVALID" | "WRONG_EVENT";
   guestId?: string;
   ticketId?: string;
   name?: string;
   /** Canonical admission token to sync when online */
   syncToken?: string;
-} {
+}> {
   const pkg = getOfflinePackage(eventId);
   if (!pkg) return { result: "INVALID" };
 
   const token = rawToken.trim();
+  const hashed = await sha256HexBrowser(token);
 
   const guest = pkg.guests.find(
-    (g) => g.qrToken === token || (g.manualCode != null && g.manualCode === token)
+    (g) => storedTokenMatches(g.qrToken, token, hashed) || (g.manualCode != null && g.manualCode === token)
   );
   if (guest) {
-    const syncToken = guest.qrToken ?? token;
+    const syncToken = token;
     if (
       guest.status === "CHECKED_IN" ||
-      alreadyScannedOffline(eventId, [guest.qrToken, guest.manualCode, token], guest.id)
+      alreadyScannedOffline(eventId, [guest.qrToken, guest.manualCode, token, hashed], guest.id)
     ) {
       return { result: "ALREADY_USED", guestId: guest.id, name: guest.name, syncToken };
     }
     return { result: "VALID", guestId: guest.id, name: guest.name, syncToken };
   }
 
-  const ticket = pkg.tickets.find((t) => t.qrToken === token);
+  const ticket = pkg.tickets.find((t) => storedTokenMatches(t.qrToken, token, hashed));
   if (ticket) {
     if (
       ticket.status === "USED" ||
-      alreadyScannedOffline(eventId, [ticket.qrToken, token], undefined, ticket.id)
+      alreadyScannedOffline(eventId, [ticket.qrToken, token, hashed], undefined, ticket.id)
     ) {
       return {
         result: "ALREADY_USED",
         ticketId: ticket.id,
         name: ticket.name,
-        syncToken: ticket.qrToken ?? token,
+        syncToken: token,
       };
     }
     return {
       result: "VALID",
       ticketId: ticket.id,
       name: ticket.name,
-      syncToken: ticket.qrToken ?? token,
+      syncToken: token,
     };
   }
 

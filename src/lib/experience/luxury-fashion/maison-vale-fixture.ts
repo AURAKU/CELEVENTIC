@@ -1,5 +1,5 @@
 /**
- * Synthetic second house — proves the luxury-fashion engine is template DNA,
+ * Synthetic second house. Proves the luxury-fashion engine is template DNA,
  * not a Femmora microsite. Not a catalogue SKU.
  */
 
@@ -36,7 +36,7 @@ export const MAISON_VALE_HOUSE: LuxuryFashionHouseConfig = mergeFashionHouse(
     portalWelcome: "Welcome to Maison Vale",
     portalPrompt: "The atelier is waiting",
     rsvpHeading: "Will we see you at Maison Vale?",
-    rsvpAcceptedLabel: "Yes — I'll be there",
+    rsvpAcceptedLabel: "Yes. I'll be there",
     finaleKicker: "Cut from night and gold.",
     hoursLabel: "10 AM TO 7 PM EACH DAY",
     datesLabel: "12TH & 13TH SEPTEMBER",

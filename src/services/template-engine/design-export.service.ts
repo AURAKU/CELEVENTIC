@@ -107,7 +107,7 @@ export class DesignExportService {
       message:
         input.format === "WEB"
           ? "Web invitation page ready"
-          : `${input.format} export ready — download your design`,
+          : `${input.format} export ready. Download your design`,
     };
   }
 

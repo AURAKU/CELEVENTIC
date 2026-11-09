@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type {
   EventWalletAccount,
+  EventWalletBook,
   EventWalletLedgerEntry,
   EventWalletLedgerType,
 } from "@prisma/client";
@@ -8,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { GIFT_DEFAULT_CURRENCY } from "@/lib/gifts/money";
 
 /**
- * Event wallet — ledger first.
+ * Event wallet. Ledger first.
  *
  * `EventWalletLedgerEntry` is the source of truth for every pesewa a gift
  * moves. The balances on `EventWalletAccount` are a cache recomputed inside the
@@ -21,6 +22,8 @@ export type LedgerTxClient = Prisma.TransactionClient | typeof prisma;
 
 export interface PostLedgerEntryInput {
   eventId: string;
+  /** Defaults to GIFT so existing gift callers stay on the gift book. */
+  book?: EventWalletBook;
   type: EventWalletLedgerType;
   /** Signed minor units: positive credits, negative debits. */
   amountMinor: number;
@@ -47,6 +50,8 @@ const CREDIT_TYPES: EventWalletLedgerType[] = [
   "DISPUTE_RELEASE",
   "ADJUSTMENT_CREDIT",
   "WITHDRAWAL_REVERSAL",
+  "TICKET_GROSS_CREDIT",
+  "TICKET_COMMISSION_REVERSAL",
 ];
 
 /** Soft holds: signed debit amount, but balance stays put while reserved rises. */
@@ -60,15 +65,20 @@ export class EventWalletService {
   async getOrCreateAccount(
     eventId: string,
     currency = GIFT_DEFAULT_CURRENCY,
-    client: LedgerTxClient = prisma
+    client: LedgerTxClient = prisma,
+    book: EventWalletBook = "GIFT"
   ): Promise<EventWalletAccount> {
-    const existing = await client.eventWalletAccount.findUnique({ where: { eventId } });
+    const existing = await client.eventWalletAccount.findUnique({
+      where: { eventId_book: { eventId, book } },
+    });
     if (existing) return existing;
     try {
-      return await client.eventWalletAccount.create({ data: { eventId, currency } });
+      return await client.eventWalletAccount.create({ data: { eventId, currency, book } });
     } catch (error) {
       if (isUniqueViolation(error)) {
-        const raced = await client.eventWalletAccount.findUnique({ where: { eventId } });
+        const raced = await client.eventWalletAccount.findUnique({
+          where: { eventId_book: { eventId, book } },
+        });
         if (raced) return raced;
       }
       throw error;
@@ -103,18 +113,21 @@ export class EventWalletService {
       throw new Error(`${input.type} must be a debit (negative amount)`);
     }
 
+    const book = input.book ?? "GIFT";
+
     const existing = await client.eventWalletLedgerEntry.findUnique({
       where: { idempotencyKey: input.idempotencyKey },
     });
     if (existing) {
-      const account = await this.getOrCreateAccount(input.eventId, input.currency, client);
+      const account = await this.getOrCreateAccount(input.eventId, input.currency, client, book);
       return { entry: existing, account, alreadyApplied: true };
     }
 
     const account = await this.getOrCreateAccount(
       input.eventId,
       input.currency ?? GIFT_DEFAULT_CURRENCY,
-      client
+      client,
+      book
     );
 
     if (account.status === "CLOSED") {
@@ -196,6 +209,21 @@ export class EventWalletService {
         ...(input.type === "WITHDRAWAL_DEBIT"
           ? { lifetimeWithdrawnMinor: { increment: Math.abs(input.amountMinor) } }
           : {}),
+        ...(input.type === "TICKET_GROSS_CREDIT"
+          ? {
+              lifetimeTicketGrossMinor: { increment: input.amountMinor },
+              ticketSaleCount: { increment: 1 },
+            }
+          : {}),
+        ...(input.type === "TICKET_COMMISSION_DEBIT"
+          ? { lifetimeTicketCommissionMinor: { increment: absAmount } }
+          : {}),
+        ...(input.type === "TICKET_REFUND_DEBIT"
+          ? { lifetimeTicketRefundMinor: { increment: absAmount } }
+          : {}),
+        ...(input.type === "TICKET_REVERSAL"
+          ? { lifetimeTicketRefundMinor: { increment: absAmount } }
+          : {}),
       },
     });
 
@@ -225,14 +253,17 @@ export class EventWalletService {
     });
   }
 
-  /** Ledger truth vs. cached projection — used by the reconcile action. */
-  async reconcile(eventId: string): Promise<{
+  /** Ledger truth vs. cached projection. Used by the reconcile action. */
+  async reconcile(
+    eventId: string,
+    book: EventWalletBook = "GIFT"
+  ): Promise<{
     ledgerBalanceMinor: number;
     accountBalanceMinor: number;
     drifted: boolean;
     entryCount: number;
   }> {
-    const account = await this.getOrCreateAccount(eventId);
+    const account = await this.getOrCreateAccount(eventId, undefined, prisma, book);
     const [aggregate, entryCount] = await Promise.all([
       prisma.eventWalletLedgerEntry.aggregate({
         where: { accountId: account.id },

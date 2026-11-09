@@ -29,9 +29,9 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   /**
    * Rates are a nicety, never a reason to take the page down.
    *
-   * This polls every 45s on every page of the app, so a single blip — an
+   * This polls every 45s on every page of the app, so a single blip. An
    * offline phone, a redeploy, a 500 whose body is empty and blows up
-   * `res.json()` — used to escape as an unhandled rejection and surface as the
+   * `res.json()`. Used to escape as an unhandled rejection and surface as the
    * app-wide error card. The last known rates stay on screen instead.
    */
   const refreshRates = useCallback(async () => {

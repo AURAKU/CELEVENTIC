@@ -4,6 +4,7 @@ import {
   isPlausibleInviteToken,
   normalizeInviteLink,
 } from "@/lib/invitation/invite-link";
+import { inviteLinkIdentityKeys } from "@/lib/invitation/public-invite-alias";
 
 /**
  * Server-side resolution of a guest-supplied invite link to the canonical
@@ -12,7 +13,7 @@ import {
  * Ordering is deliberate and never fuzzy-first:
  *   1. the untouched value (exact, case-sensitive `@unique` lookup)
  *   2. normalised variants, highest-confidence first
- *   3. a case-insensitive match — only when it resolves to exactly one row
+ *   3. a case-insensitive match. Only when it resolves to exactly one row
  *
  * Step 3 exists because some carriers lower-case the whole URL. SQLite has no
  * Prisma `mode: "insensitive"`, so it runs as an explicit `LOWER()` query that
@@ -56,7 +57,7 @@ async function findCaseInsensitiveUnambiguous(needle: string): Promise<string | 
     if (rows.length !== 1) return null;
     return rows[0].uniqueLink;
   } catch (error) {
-    // A dialect/schema surprise must never take a live invitation down —
+    // A dialect/schema surprise must never take a live invitation down.
     // the exact-match answer ("not found") still stands.
     console.warn("[invite-link] case-insensitive fallback unavailable", {
       message: error instanceof Error ? error.message : String(error),
@@ -79,8 +80,11 @@ export async function resolveCanonicalInviteLink(
   const candidates = inviteLinkCandidates(rawLink).filter((c) => !skip.has(c));
 
   for (const candidate of candidates) {
-    const found = await findExact(candidate);
-    if (found) return found;
+    for (const identity of inviteLinkIdentityKeys(candidate)) {
+      if (skip.has(identity)) continue;
+      const found = await findExact(identity);
+      if (found) return found;
+    }
   }
 
   if (options.allowCaseInsensitive === false) return null;
@@ -92,12 +96,19 @@ export async function resolveCanonicalInviteLink(
 
 /**
  * Convenience for callers that already ran their own exact `findUnique` on the
- * raw param and got nothing — skips repeating that query.
+ * raw param and got nothing. Skips repeating that query.
  */
 export async function repairInviteLink(
   rawLink: string | null | undefined
 ): Promise<string | null> {
   const raw = rawLink == null ? "" : String(rawLink);
+  // Pretty path ↔ published token is an identity, not mangling. Live guests
+  // open /invite/edwin-and-lordina while the row still stores the opaque link.
+  for (const identity of inviteLinkIdentityKeys(raw)) {
+    if (identity === raw) continue;
+    const found = await findExact(identity);
+    if (found) return found;
+  }
   // Nothing to repair when the value is already canonical: the caller's exact
   // lookup has proven there is no such invitation.
   if (inviteLinkCandidates(raw).length <= 1) {
@@ -106,4 +117,17 @@ export async function repairInviteLink(
     return findCaseInsensitiveUnambiguous(normalized);
   }
   return resolveCanonicalInviteLink(raw, { skip: [raw] });
+}
+
+/** Canonical uniqueLink for a route param, including public aliases. */
+export async function resolveInviteUniqueLink(
+  rawLink: string | null | undefined
+): Promise<string | null> {
+  const raw = rawLink == null ? "" : String(rawLink).trim();
+  if (!raw) return null;
+  for (const identity of inviteLinkIdentityKeys(raw)) {
+    const found = await findExact(identity);
+    if (found) return found;
+  }
+  return resolveCanonicalInviteLink(raw, { skip: inviteLinkIdentityKeys(raw) });
 }

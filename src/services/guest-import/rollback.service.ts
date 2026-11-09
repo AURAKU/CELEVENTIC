@@ -8,13 +8,13 @@ import { createAuditLog } from "@/lib/audit";
  * "these guests are no longer coming" are different problems:
  *
  *  **Rollback** deletes what the import created. It is only available while
- *  nothing has been admitted — once a QR from this batch has opened the gate,
+ *  nothing has been admitted, once a QR from this batch has opened the gate,
  *  deleting the invitation would erase an admission record, so rollback
  *  refuses and points at archive instead.
  *
  *  **Archive** always works. Passes are revoked (so an old printout is
  *  recognised and refused rather than reading as unknown), invitations stop
- *  serving, guests leave the counts — and every row survives for the audit.
+ *  serving, guests leave the counts, and every row survives for the audit.
  */
 
 const DELETE_CHUNK = 200;

@@ -71,7 +71,7 @@ export type QrHubAssetKind =
   | "VENUE"
   | "HELP"
   | "EVENT_GUIDE"
-  /** Venue-local Event Guide — points at the event Wi-Fi, not at us. */
+  /** Venue-local Event Guide. Points at the event Wi-Fi, not at us. */
   | "EVENT_GUIDE_OFFLINE"
   | "CUSTOM";
 

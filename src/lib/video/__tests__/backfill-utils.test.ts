@@ -50,7 +50,7 @@ describe("isBackfillCandidatePath", () => {
     assert.equal(isBackfillCandidatePath("invitations/user1/1700-abc.mov"), true);
   });
 
-  it("accepts a raw MP4 (HEVC could be inside — must still probe/convert)", () => {
+  it("accepts a raw MP4 (HEVC could be inside. Must still probe/convert)", () => {
     assert.equal(isBackfillCandidatePath("invitations/user1/1700-abc.mp4"), true);
   });
 
@@ -188,8 +188,8 @@ describe("manifestEntryIsUpToDate / createEmptyManifest", () => {
       sourceMtimeMs: 12345,
     };
     assert.equal(manifestEntryIsUpToDate(entry, 100, 12345), true);
-    assert.equal(manifestEntryIsUpToDate(entry, 100, 99999), false, "mtime changed — file was replaced");
-    assert.equal(manifestEntryIsUpToDate(entry, 999, 12345), false, "size changed — file was replaced");
+    assert.equal(manifestEntryIsUpToDate(entry, 100, 99999), false, "mtime changed. File was replaced");
+    assert.equal(manifestEntryIsUpToDate(entry, 999, 12345), false, "size changed. File was replaced");
   });
 
   it("treats SKIPPED_COMPATIBLE as terminal (already verified compatible, no re-check needed)", () => {

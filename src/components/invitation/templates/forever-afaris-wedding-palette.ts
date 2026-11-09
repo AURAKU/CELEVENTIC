@@ -39,7 +39,7 @@ function clean(value?: string | null): string | null {
   return v && HEX.test(v) ? v : null;
 }
 
-/** Mix a hex colour toward white (amount 0–1), used to derive soft variants. */
+/** Mix a hex colour toward white (amount 0 to 1), used to derive soft variants. */
 function lighten(hex: string, amount: number): string {
   const full =
     hex.length === 4
@@ -53,7 +53,7 @@ function lighten(hex: string, amount: number): string {
   return `#${mix((n >> 16) & 255)}${mix((n >> 8) & 255)}${mix(n & 255)}`;
 }
 
-/** Mix a hex colour toward black (amount 0–1). */
+/** Mix a hex colour toward black (amount 0 to 1). */
 function darken(hex: string, amount: number): string {
   const full =
     hex.length === 4

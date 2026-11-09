@@ -1,4 +1,4 @@
-/** Background Engine — unique atmospheric layers per template */
+/** Background Engine. Unique atmospheric layers per template */
 export type BackgroundTypeId =
   | "static"
   | "video"

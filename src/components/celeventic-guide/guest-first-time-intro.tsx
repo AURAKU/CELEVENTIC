@@ -23,7 +23,7 @@ export function GuestFirstTimeIntro({
   invitationId: string;
   guestId?: string | null;
   className?: string;
-  /** Replay from Help — ignores remembered skip/complete until closed. */
+  /** Replay from Help. Ignores remembered skip/complete until closed. */
   forceOpen?: boolean;
   onFinished?: () => void;
 }) {
@@ -194,7 +194,7 @@ export function GuestFirstTimeIntro({
   );
 }
 
-/** Replay entry for Guide / Help — clears memory then opens. */
+/** Replay entry for Guide / Help. Clears memory then opens. */
 export function replayGuestIntro(invitationId: string, guestId?: string | null) {
   clearGuestIntro(invitationId, guestId);
 }

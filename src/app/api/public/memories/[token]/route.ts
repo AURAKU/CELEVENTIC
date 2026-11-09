@@ -13,6 +13,7 @@ import {
 import { parsePaginationFromUrl } from "@/lib/pagination";
 import { resolvePublicMemoryMediaType } from "@/lib/memory/memory-vault-policy";
 import { prisma } from "@/lib/prisma";
+import { canonicalGuestInviteHref } from "@/lib/invitation/canonical-guest-invite";
 
 export async function GET(
   req: Request,
@@ -59,12 +60,11 @@ export async function GET(
     }),
     eventMemoryTokenService.getOrCreateUploadToken(record.eventId),
     prisma.invitation.findMany({
-      where: { eventId: record.eventId, status: "ACTIVE" },
-      select: { uniqueLink: true },
-      orderBy: { updatedAt: "desc" },
+      where: { eventId: record.eventId, status: "ACTIVE", archivedAt: null },
+      select: { uniqueLink: true, slug: true, isGeneralPass: true, templateId: true },
+      orderBy: { createdAt: "asc" },
     }),
   ]);
-  const invitation = invitations[0] ?? null;
 
   return NextResponse.json({
     success: true,
@@ -78,9 +78,7 @@ export async function GET(
         eyebrow: identity.eyebrow,
         subtitle: identity.subtitle,
         lede: identity.lede,
-        invitationHref: invitation
-          ? `/invite/${encodeURIComponent(invitation.uniqueLink)}`
-          : null,
+        invitationHref: canonicalGuestInviteHref(record.event.slug, invitations),
       },
       allowDownloads: settings.allowDownloads,
       upload: {

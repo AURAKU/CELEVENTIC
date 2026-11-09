@@ -609,7 +609,7 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
                   onChange={(e) => setForm({ ...form, audioUrl: e.target.value })}
                   placeholder="/uploads/... or https://..."
                 />
-                <p className="text-xs text-slate-500">Guests tap Play — never autoplays with sound.</p>
+                <p className="text-xs text-slate-500">Guests tap Play, never autoplays with sound.</p>
               </div>
               <div className="lg:col-span-2">
                 <Button variant="outline" className="gap-2" asChild>

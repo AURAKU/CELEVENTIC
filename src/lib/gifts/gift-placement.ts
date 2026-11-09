@@ -106,7 +106,7 @@ export function buildCompanionGiftUrl(
 
 /**
  * Compare pending gift vs Paystack verification before crediting.
- * Amount/currency/reference must all match — never trust the client.
+ * Amount/currency/reference must all match, never trust the client.
  */
 export function detectGiftVerificationMismatch(
   expected: { reference: string; amountMinor: number; currency: string },

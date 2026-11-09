@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getServerSession } from "next-auth";
+import { getServerSession, type Session } from "next-auth";
 import type { UserRole } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import {
@@ -33,7 +33,7 @@ const createSchema = z
     guestId: z.preprocess(blankToUndefined, z.string().min(1).optional()),
     authorName: z.string().trim().min(1, "Please enter your name").max(80),
     message: z.string().trim().min(2, "Please write a short note").max(1000),
-    /** Invite uniqueLink — enough to authorize a public guest post. */
+    /** Invite uniqueLink. Enough to authorize a public guest post. */
     link: z.preprocess(blankToUndefined, z.string().min(1).optional()),
   })
   .refine((value) => Boolean(value.eventId || value.invitationId || value.link), {
@@ -166,7 +166,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "eventId or invite link required" }, { status: 400 });
   }
 
-  let session = null as Awaited<ReturnType<typeof getServerSession>>;
+  let session: Session | null = null;
   try {
     session = await getServerSession(authOptions);
   } catch {
@@ -203,7 +203,7 @@ export async function GET(req: Request) {
       page,
       Math.min(limit, 25),
       {
-        // Authorized via invitation link above — feed itself is event-wide approved wishes.
+        // Authorized via invitation link above. Feed itself is event-wide approved wishes.
         publicOnly: !canModerate,
         includeHidden: canModerate,
       }

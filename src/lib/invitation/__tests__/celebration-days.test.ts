@@ -11,7 +11,7 @@ const EDWIN = [
     id: "traditional",
     time: "THU 24 DEC · 9:00 AM",
     title: "Traditional Ceremony",
-    description: "Bride’s house, Tema Community 12",
+    description: "Bride's Family Residence",
   },
   {
     id: "white",
@@ -39,7 +39,7 @@ describe("celebration days", () => {
     assert.deepEqual(
       moments.map((moment) => [moment.weekday, moment.day, moment.timeLabel, moment.place]),
       [
-        ["Thursday", 24, "9:00 AM", "Bride’s house, Tema Community 12"],
+        ["Thursday", 24, "9:00 AM", "Bride's Family Residence"],
         ["Saturday", 26, "9:00 AM", "Assemblies of God Tema Community 12 TCC"],
         ["Saturday", 26, "3:00 PM", "Combos & Casa, East Legon Hills"],
       ]
@@ -73,13 +73,13 @@ describe("celebration days", () => {
     const reception = "https://www.google.com/maps/place/Combos+%26+Casa/@5.706804,-0.11083,17z";
     const venue = "ASSEMBLIES OF GOD TEMA COMMUNITY 12 TCC";
     assert.equal(
-      programmeMapUrl(undefined, "Bride’s house, Tema Community 12", venue, church),
+      programmeMapUrl(undefined, "Bride's Family Residence", venue, church),
       ""
     );
     const house =
       "https://www.google.com/maps/place/Bride's+house,+Tema+Community+12/@5.669508,-0.033181,17z";
     assert.equal(
-      programmeMapUrl({ mapUrl: house }, "Bride’s house, Tema Community 12", venue, church),
+      programmeMapUrl({ mapUrl: house }, "Bride's Family Residence", venue, church),
       house
     );
     assert.equal(

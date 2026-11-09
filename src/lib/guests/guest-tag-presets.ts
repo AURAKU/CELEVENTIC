@@ -1,6 +1,6 @@
 /**
  * Default wedding-side relationship labels for Guest CRM.
- * Organizer/admin only — never rendered on guest invitations or passes.
+ * Organizer/admin only, never rendered on guest invitations or passes.
  */
 
 export interface GuestTagPreset {

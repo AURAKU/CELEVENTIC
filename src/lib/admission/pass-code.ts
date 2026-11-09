@@ -6,7 +6,7 @@
  * that the 4-digit space would be uncomfortably dense (collision retries turn
  * into a slow allocation loop, and a near-full space makes guessing cheap).
  *
- * Pure module — no Prisma, no crypto secrets — so both the allocator and the
+ * Pure module. No Prisma, no crypto secrets, so both the allocator and the
  * scanner can share it, and it is fully unit-testable.
  */
 

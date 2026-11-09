@@ -41,7 +41,7 @@ export const START_HERE_JOURNEYS: StartHereJourney[] = [
     id: "scanner",
     role: "SCANNER",
     title: "Scanner Start Here",
-    summary: "Scan guests, groups, and vendors — online or offline.",
+    summary: "Scan guests, groups, and vendors. Online or offline.",
     slugs: ["scan-guest", "scan-group", "scan-vendor", "offline-scanning"],
   },
 ];

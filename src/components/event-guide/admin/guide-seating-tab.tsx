@@ -146,7 +146,7 @@ export function GuideSeatingTab({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1.5 text-sm text-slate-600">
-          <p>A guest only ever sees their own party&rsquo;s table — never a list of other guests.</p>
+          <p>A guest only ever sees their own party&rsquo;s table, never a list of other guests.</p>
           <p>
             Searches are limited to 12 attempts a minute per guest, so the finder cannot be used to
             work through codes.

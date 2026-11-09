@@ -1,5 +1,5 @@
 /**
- * Phase 2 Experience Engine — pure-function unit tests (node:test).
+ * Phase 2 Experience Engine. Pure-function unit tests (node:test).
  * Run: npm run test:experience-engine
  */
 import { describe, it } from "node:test";
@@ -344,7 +344,7 @@ describe("soft-intro gate", () => {
     );
   });
 
-  it("never resumes DNA intro after soft intro — brand video is the only intro", () => {
+  it("never resumes DNA intro after soft intro. Brand video is the only intro", () => {
     assert.equal(shouldShowSoftIntro({ skipSoftIntro: true, skipIntro: false }), false);
     assert.equal(
       resolveInitialInvitePhase({

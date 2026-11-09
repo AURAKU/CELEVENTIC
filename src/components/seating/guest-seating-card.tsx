@@ -106,8 +106,8 @@ export interface GuestSeatingCardProps {
   directions?: string[];
   ceremonyDirections?: string[];
   /**
-   * `placeCard` — compact dual-stage embed on the invitation (no gate arrival strip).
-   * `full` — seat lookup / companion with party arrival detail.
+   * `placeCard`. Compact dual-stage embed on the invitation (no gate arrival strip).
+   * `full`. Seat lookup / companion with party arrival detail.
    */
   variant?: "full" | "placeCard";
   className?: string;
@@ -388,7 +388,7 @@ export function GuestSeatingCard({
         )}
       </div>
 
-      {/* Gate / seat-lookup only — place card already shows party capacity above. */}
+      {/* Gate / seat-lookup only. Place card already shows party capacity above. */}
       {!placeCard && (allowance != null || members.length > 0) && (
         <div className="px-4 pb-4 sm:px-5">
           <div className="rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: theme.border }}>

@@ -76,7 +76,7 @@ function decorateShareImage(appUrl: string, pathOrUrl: string): ResolvedShareOgI
 
 /**
  * Fashion-house / Femmora-SKU link preview. Maison Vale and generic houses
- * return null unless they set their own `shareOgImageUrl` — they never inherit
+ * return null unless they set their own `shareOgImageUrl`. They never inherit
  * the Femmora card photo.
  */
 export function resolveFashionShareOgImageForInvitation(input: {
@@ -197,7 +197,7 @@ export function shareOgImageToOpenGraph(image: ResolvedShareOgImage, alt: string
  * crawlers (which cannot resolve relative paths or localhost) can fetch it.
  *
  * Fashion invitations should call `resolveFashionShareOgImageForInvitation`
- * first — Femmora uses the physical card photo, not this logo fallback.
+ * first. Femmora uses the physical card photo, not this logo fallback.
  * Aurelia-family invitations use the couple hero photograph next.
  */
 export async function resolveShareOgImage(eventId: string, appUrl: string): Promise<string> {

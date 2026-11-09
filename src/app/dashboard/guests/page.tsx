@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { RotateCcw, Upload, QrCode, Shield } from "lucide-react";
+import { RotateCcw, Upload, QrCode, Shield, Download } from "lucide-react";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { SmartGuestSearch } from "@/components/guest-search/smart-guest-search";
@@ -17,7 +17,7 @@ import type { SearchResultCard } from "@/lib/guest-search/types";
 const CRM_STATUSES = ["INVITED", "OPENED", "ACCEPTED", "DECLINED", "MAYBE", "CHECKED_IN"] as const;
 
 /**
- * Guest CRM — one create path, one list.
+ * Guest CRM. One create path, one list.
  *
  * Add Guest creates a personalised invitation. The same GuestResultCard list
  * (browse + search) is where organisers and admins edit or delete afterwards.
@@ -128,7 +128,7 @@ function GuestsPageInner() {
         <div className="min-w-0">
           <h1 className="text-xl font-bold sm:text-2xl">Guest CRM</h1>
           <p className="page-subtitle mt-1 max-w-2xl text-sm sm:text-base">
-            Select an event to manage only that celebration&apos;s guests — never mixed with another list.
+            Select an event to manage only that celebration&apos;s guests, never mixed with another list.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end" data-tour="guest-invite">
@@ -143,6 +143,14 @@ function GuestsPageInner() {
             >
               <Shield className="h-4 w-4 shrink-0" />
               Generate Vendor Pass
+            </Button>
+          )}
+          {eventId && (
+            <Button asChild variant="outline" className="w-full justify-center sm:w-auto">
+              <a href={`/api/events/${encodeURIComponent(eventId)}/rsvp-export`}>
+                <Download className="h-4 w-4 shrink-0" />
+                Download RSVP list
+              </a>
             </Button>
           )}
           {eventId && (

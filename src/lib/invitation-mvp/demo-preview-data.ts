@@ -22,12 +22,13 @@ import type { MusicSelection } from "@/lib/music/music-types";
 import type { InvitationDesignConfig, InvitationEventData } from "@/types/invitation-design";
 import type { WeddingBoardContent } from "@/lib/invitation/wedding-board";
 import type { VisionBoardContent } from "@/lib/invitation/vision-board";
+import type { AureliaWeddingConfig } from "@/lib/experience/aurelia-editorial/types";
 
 /**
  * Demo previews render on the server and hydrate on the client, so this date has to
  * resolve to the same instant in both runtimes. A clock offset (`Date.now() + 90d`) is
- * evaluated once per runtime — at build/boot on the server, at bundle load in the
- * browser — so the two drift apart and the rendered time fails hydration. Anchoring to
+ * evaluated once per runtime. At build/boot on the server, at bundle load in the
+ * browser, so the two drift apart and the rendered time fails hydration. Anchoring to
  * a fixed UTC slot in the following calendar year keeps the date plausibly upcoming
  * while only ever changing on a year boundary.
  */
@@ -146,6 +147,64 @@ const CATEGORY_DEMOS: Record<string, DemoContent> = {
 
 const DEFAULT_DEMO = CATEGORY_DEMOS.Wedding;
 
+function firstGivenName(full: string, fallback: string): string {
+  const token = full.trim().split(/\s+/)[0];
+  return token || fallback;
+}
+
+function overlayCatalogEditorialWedding(
+  existing: Partial<AureliaWeddingConfig> | undefined,
+  demo: DemoContent,
+  identitySlug: string,
+  demoHero: string,
+  demoGallery: string[]
+): Partial<AureliaWeddingConfig> | undefined {
+  if (
+    identitySlug !== "aurelia-editorial-wedding" &&
+    identitySlug !== "seraphine-champagne-wedding"
+  ) {
+    return existing;
+  }
+  if (!existing) return existing;
+  const hostParts = demo.hostName.split(/\s*&\s*/).map((part) => part.trim()).filter(Boolean);
+  const name1 = firstGivenName(hostParts[0] ?? "", identitySlug.startsWith("seraphine") ? "Nhyira" : "Selene");
+  const name2 = firstGivenName(hostParts[1] ?? "", identitySlug.startsWith("seraphine") ? "Elikem" : "Raphael");
+  const stills = [demoHero, ...demoGallery.filter((url) => url && url !== demoHero)];
+  const still = (index: number) => stills[index % stills.length] ?? demoHero;
+  return {
+    ...existing,
+    partnerOneName: name1,
+    partnerTwoName: name2,
+    monogram: demo.sealInitials?.replace(/\s+/g, " ") || `${name1.charAt(0)} & ${name2.charAt(0)}`,
+    storySignature: `${name1} & ${name2}`,
+    finaleLine: `${name1} & ${name2}`,
+    familyIntro: "Together with their families",
+    rsvpContacts: [
+      { name: "SAMPLE HOST LINE", phone: "0200000000" },
+      { name: "SAMPLE EVENT DESK", phone: "0200000000" },
+    ],
+    heroImageUrl: demoHero,
+    storyImageUrl: still(1),
+    finaleImageUrl: still(2),
+    ceremonies: (existing.ceremonies ?? []).map((ceremony, index) => ({
+      ...ceremony,
+      venueName: index === 0 ? demo.venueName : `${demo.venueName} Garden`,
+      address: demo.landmark,
+      mapsUrl: "https://maps.google.com",
+    })),
+    venues: (existing.venues ?? []).map((venue, index) => ({
+      ...venue,
+      venueName: index === 0 ? demo.venueName : `${demo.venueName} Garden`,
+      address: demo.landmark,
+      mapsUrl: "https://maps.google.com",
+    })),
+    journey: (existing.journey ?? []).map((item, index) => ({
+      ...item,
+      imageUrl: still(index),
+    })),
+  };
+}
+
 /** Bundled local clips for catalogue previews. */
 const CATEGORY_DEMO_MUSIC: Record<string, { url: string; title: string }> = {
   Wedding: { url: catalogMusicUrl("wedding-romantic", "wedding"), title: "Romantic ambience" },
@@ -213,8 +272,8 @@ export function getDemoContentForCategory(category?: string, layoutOrCatalogSlug
   };
 }
 
-/** Sample guest shown only in catalog / studio live previews — never used on `/invite/{link}`. */
-export const DEMO_PREVIEW_GUEST_NAME = "Mr Alex Mensah";
+/** Sample guest shown only in catalog / studio live previews, never used on `/invite/{link}`. */
+export const DEMO_PREVIEW_GUEST_NAME = "Alex Mensah";
 
 export function buildLivePreviewProps(
   layoutSlug: string,
@@ -251,7 +310,7 @@ export function buildLivePreviewProps(
     isFashionFlagship && fashionStartIso
       ? fashionStart.toISOString()
       : aureliaStartIso || FUTURE_DATE.toISOString();
-  const contactPhone = "+233 25 766 0734";
+  const contactPhone = "+233 20 000 0000";
   const demoIdentity = {
     title: demo.title,
     hostName: demo.hostName,
@@ -283,6 +342,15 @@ export function buildLivePreviewProps(
         ...buildCatalogDemoWeddingBoard(demoIdentity, eventInstantIso),
       }
     : undefined;
+  const demoHero = getDemoHeroUrl(layoutSlug, theme, identitySlug);
+  const demoGallery = getDemoGalleryUrls(layoutSlug, theme, 6, identitySlug);
+  const catalogAureliaWedding = overlayCatalogEditorialWedding(
+    enriched.experience?.aureliaWedding,
+    demo,
+    identitySlug,
+    demoHero,
+    demoGallery
+  );
   const catalogVisionBoard = needsMemorialDemo
     ? {
         ...(existingVisionBoard ?? {}),
@@ -306,6 +374,7 @@ export function buildLivePreviewProps(
       introEnabled: options?.skipIntro ? false : enriched.experience?.introEnabled ?? true,
       hubMode: enriched.experience?.hubMode ?? "scroll",
       enabledTabs: layoutTabs ?? enriched.experience?.enabledTabs ?? DEFAULT_HUB_TABS,
+      ...(catalogAureliaWedding ? { aureliaWedding: catalogAureliaWedding } : {}),
       ...(theme === "Funeral"
         ? {
             collectionId: "funeral" as const,
@@ -351,10 +420,9 @@ export function buildLivePreviewProps(
       : "https://maps.google.com",
     contactPhone,
     dressCode: demo.dressCode ?? null,
-    coverImageUrl: getDemoHeroUrl(layoutSlug, theme, identitySlug),
+    coverImageUrl: demoHero,
   };
 
-  const demoGallery = getDemoGalleryUrls(layoutSlug, theme, 6, identitySlug);
   const themeBg = getDemoBackgroundUrl(layoutSlug, theme, identitySlug);
 
   const designWithMedia = syncDesignPageBackground(design, themeBg, "image");

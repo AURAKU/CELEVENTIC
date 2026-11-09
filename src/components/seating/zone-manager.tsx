@@ -139,7 +139,7 @@ export function ZoneManager({
       <div className="space-y-1.5">
         {zones.length === 0 && !creating && (
           <p className="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-500">
-            No zones yet — create one for reserved, family, or special guest blocks.
+            No zones yet. Create one for reserved, family, or special guest blocks.
           </p>
         )}
         {zones.map((zone) => {

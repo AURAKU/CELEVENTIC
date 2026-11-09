@@ -4,7 +4,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
  * Shared vendor access tokens (server side).
  *
  * Format: cvs1.<nonce>.<hmac>
- * Only sha256(token) is stored. Reusable by design — never marks ALREADY_USED.
+ * Only sha256(token) is stored. Reusable by design, never marks ALREADY_USED.
  */
 
 export const VENDOR_TOKEN_PREFIX = "cvs1";
@@ -77,7 +77,7 @@ export function generatePublicLinkToken(): string {
   return `eql_${b64url(randomBytes(18))}`;
 }
 
-/** 6–8 digit event-scoped vendor codes (never guessable 4-digit by default). */
+/** 6 to 8 digit event-scoped vendor codes (never guessable 4-digit by default). */
 export function generateVendorManualCode(length = 6): string {
   const len = Math.min(8, Math.max(6, length));
   const space = 10 ** len;

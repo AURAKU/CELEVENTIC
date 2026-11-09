@@ -1,5 +1,5 @@
 /**
- * Curated thank-you font pairings — maps to invitation FontId registry.
+ * Curated thank-you font pairings. Maps to invitation FontId registry.
  */
 
 import { FONT_STACKS, resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";

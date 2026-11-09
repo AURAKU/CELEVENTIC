@@ -34,7 +34,7 @@ export const PARTY_TYPE_LABELS: Record<GuestPartyType, string> = {
   GROUP: "Group",
 };
 
-/** Bring any input — string, float, nonsense — into the allowed range. */
+/** Bring any input. String, float, nonsense, into the allowed range. */
 export function clampPartySize(value: unknown, fallback = MIN_PARTY_SIZE): number {
   const numeric = typeof value === "string" ? Number(value) : value;
   if (typeof numeric !== "number" || !Number.isFinite(numeric)) return fallback;
@@ -46,7 +46,7 @@ export interface AllowanceSuggestion {
   partyType: GuestPartyType;
   /**
    * False when the name implies a party whose size cannot be known from the
-   * text — "The Mensah Family". The form pre-fills the number but asks the
+   * text. "The Mensah Family". The form pre-fills the number but asks the
    * organiser to confirm it, and never sends an unconfirmed family through as
    * a single head.
    */
@@ -70,8 +70,8 @@ export function suggestAllowance(name: string): AllowanceSuggestion {
   if (!analysis.allowanceConfirmed) {
     hint =
       analysis.partyType === "FAMILY"
-        ? "A family invitation — set how many people it should admit."
-        : "A group invitation — set how many people it should admit.";
+        ? "A family invitation. Set how many people it should admit."
+        : "A group invitation. Set how many people it should admit.";
   } else if (analysis.explicitCount) {
     hint = `The name says ${partySize} ${partySize === 1 ? "person" : "people"}.`;
   } else if (analysis.partyType === "COUPLE") {

@@ -1,5 +1,5 @@
 /**
- * Experience Engine — public barrel.
+ * Experience Engine. Public barrel.
  * Prefer importing from here in Phase 2+ rather than reaching into internals.
  */
 
@@ -101,6 +101,7 @@ export {
   unlockRevealScroll,
   forceUnlockRevealScroll,
   forceUnlockInvitationViewport,
+  armLiveInvitationScroller,
   assertPortalViewportInteractive,
   createRevealSession,
   markRevealActive,

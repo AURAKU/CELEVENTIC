@@ -3,7 +3,7 @@ import type { Prisma, AiRequestStatus } from "@prisma/client";
 import type { TemplateSchema } from "@/types/template-engine";
 import { THEME_PRESETS } from "@/lib/template-constants";
 /**
- * AI Template Generator — MVP mock with production-ready interface.
+ * AI Template Generator. MVP mock with production-ready interface.
  * Connect OpenAI / Anthropic / Replicate / Stability via AI_PROVIDER env.
  */
 export interface AiGenerateInput {

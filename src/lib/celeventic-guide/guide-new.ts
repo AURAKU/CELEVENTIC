@@ -16,7 +16,7 @@ export function isGuideMarkedNew(input: {
     if (!Number.isNaN(pub.getTime())) {
       const fourteenDays = 14 * 24 * 60 * 60 * 1000;
       if (now.getTime() - pub.getTime() < fourteenDays && now.getTime() >= pub.getTime()) {
-        // Only auto-new when explicitly flagged or within window AND featured path — keep explicit.
+        // Only auto-new when explicitly flagged or within window AND featured path. Keep explicit.
       }
     }
   }

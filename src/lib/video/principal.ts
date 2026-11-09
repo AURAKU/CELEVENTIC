@@ -13,7 +13,7 @@ import {
 } from "@/lib/memory/memory-vault-policy";
 
 /**
- * Who may upload — and how we identify them for DB vs quota/storage.
+ * Who may upload, and how we identify them for DB vs quota/storage.
  *
  * Critical invariant:
  * - USER → ownerId is a real User.id (VideoAsset FK)
@@ -51,7 +51,7 @@ export interface ResolvePrincipalInput {
   guestToken?: string | null;
   guestName?: string | null;
   guestPhone?: string | null;
-  /** Raw client guest key — hashed before persistence on EventMemoryUpload. */
+  /** Raw client guest key. Hashed before persistence on EventMemoryUpload. */
   guestKey?: string | null;
 }
 
@@ -96,7 +96,7 @@ export async function resolveUploadPrincipal(input: ResolvePrincipalInput): Prom
         eventId: record.eventId,
         vendorId: null,
         context: {
-          // Persist token row id only — never the raw bearer credential.
+          // Persist token row id only, never the raw bearer credential.
           uploadTokenId: record.id,
           guestName: input.guestName ?? null,
           guestPhone: input.guestPhone ?? null,
@@ -155,7 +155,7 @@ export async function resolveUploadPrincipal(input: ResolvePrincipalInput): Prom
  * Re-verifies caller identity for every follow-up call on an existing asset (multipart
  * create/part/complete, complete, cancel, status). Session-owned assets require a matching
  * session; guest-token (guestbook) assets require re-presenting a still-valid UPLOAD token
- * for the same event — there is no session to check.
+ * for the same event. There is no session to check.
  */
 export async function assertAssetAccess(
   asset: VideoAsset,

@@ -15,7 +15,7 @@ export interface ServiceHealth {
   message: string;
   /** Optional deep-link for operators (admin UI). */
   href?: string;
-  /** Extra lines — key names / modes only, never secret values. */
+  /** Extra lines. Key names / modes only, never secret values. */
   details?: string[];
 }
 
@@ -107,7 +107,7 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
       message:
         paymentStatus === "healthy"
           ? "Payment provider configured"
-          : "No payment keys configured — set Paystack (or Flutterwave) in env or Integrations",
+          : "No payment keys configured. Set Paystack (or Flutterwave) in env or Integrations",
       href: "/admin/integrations",
     },
     {
@@ -156,13 +156,13 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
       id: "redis",
       label: "Redis",
       status: redisStatus,
-      message: redisStatus === "healthy" ? "Redis configured" : "Redis optional — not configured",
+      message: redisStatus === "healthy" ? "Redis configured" : "Redis optional, not configured",
     },
     {
       id: "pusher",
       label: "Pusher",
       status: pusherStatus,
-      message: pusherStatus === "healthy" ? "Pusher configured" : "Realtime optional — not configured",
+      message: pusherStatus === "healthy" ? "Pusher configured" : "Realtime optional, not configured",
     },
     {
       id: "google_oauth",

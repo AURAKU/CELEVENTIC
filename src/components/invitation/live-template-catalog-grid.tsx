@@ -70,6 +70,7 @@ export function LivePresetTemplateGrid({
         >
           <LiveTemplatePreview
             layoutSlug={template.slug}
+            catalogSlug={template.slug}
             category={template.category}
             variant="card"
           />

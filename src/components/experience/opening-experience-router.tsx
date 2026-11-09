@@ -66,7 +66,7 @@ interface OpeningExperienceRouterProps {
   /** Organizer fashion-house DNA for the silk flagship opening. */
   fashionHouse?: LuxuryFashionHouseConfig;
   /** Organizer Aurelia wedding DNA for the ivory veil opening. */
-  aureliaWedding?: AureliaWeddingConfig;
+  aureliaWedding?: Partial<AureliaWeddingConfig>;
   onComplete: () => void;
   /** Fires on the reveal start gesture (e.g. curtain tap / envelope open) for audio unlock. */
   onBegin?: () => void;
@@ -207,7 +207,7 @@ export function OpeningExperienceRouter({
   }
 
   if (resolvedExperienceId === "blush-gate") {
-    // Blush Gate owns its own seal keyboard path — do NOT mount RevealKeyboardFallback
+    // Blush Gate owns its own seal keyboard path. Do NOT mount RevealKeyboardFallback
     // here. That "Open invitation" control called onComplete and skipped the entire
     // envelope → golden gate ceremony on live Forever Afaris invites.
     // Mount the invitation underneath so the intro can dissolve into it continuously.
@@ -425,7 +425,7 @@ export function OpeningExperienceRouter({
         </>
       );
     default:
-      // Unknown/future experience id: never blank-screen — play a sealed envelope.
+      // Unknown/future experience id: never blank-screen. Play a sealed envelope.
       return (
         <EnvelopeCollectionReveal
           theme={

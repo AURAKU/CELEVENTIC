@@ -11,7 +11,7 @@
  *     Jollof rice
  *     Grilled tilapia
  *
- * — or the same thing on one line, or with `APPETIZER:` instead of asterisks,
+ *, or the same thing on one line, or with `APPETIZER:` instead of asterisks,
  * or with nothing but a blank line between the courses. Set verbatim in a
  * pre-wrapped box, all of those read as a notepad. Read into courses, they
  * read as dinner.
@@ -88,11 +88,11 @@ export function menuCourseKind(heading: string): MenuCourseKind {
   return "course";
 }
 
-/** `- `, `• `, `1. `, `2) ` — the marks a pasted list carries. */
+/** `- `, `• `, `1. `, `2) `. The marks a pasted list carries. */
 const LIST_MARK = /^\s*(?:[-–—•·▪◦*+]+|\(?\d{1,2}[.)])\s+/;
-/** `*APPETIZER*`, `**MAIN**`, `_Dessert_` — a heading an organizer emphasised. */
+/** `*APPETIZER*`, `**MAIN**`, `_Dessert_`. A heading an organizer emphasised. */
 const EMPHASIS_LINE = /^\s*(?:\*{1,3}|_{1,3})\s*([^*_\n][^*_\n]*?)\s*(?:\*{1,3}|_{1,3})\s*$/;
-/** `# Dessert` — a heading an organizer wrote in markdown. */
+/** `# Dessert`. A heading an organizer wrote in markdown. */
 const MD_HEADING = /^\s*#{1,6}\s*(.+?)\s*$/;
 /** An emphasis group written mid-line, which is a heading wherever it appears. */
 const INLINE_EMPHASIS = /\*{1,3}\s*[^*\n]{1,64}?\s*\*{1,3}/g;
@@ -139,7 +139,7 @@ type Read =
  *
  * The order matters. An emphasised or markdown line is a heading because the
  * organizer said so, whatever it says. `Appetizer:` is a heading because of
- * the colon. A bare line is a heading only when it is shouted and short —
+ * the colon. A bare line is a heading only when it is shouted and short.
  * which is the one signal a plain text box gives an organizer who wants a
  * hierarchy.
  */
@@ -157,7 +157,7 @@ function readLine(raw: string): Read {
     return { type: "heading", text: md[1].trim().replace(/:$/, "") };
   }
 
-  // A list mark makes it a dish no matter how it is written — `- STARTERS`
+  // A list mark makes it a dish no matter how it is written. `- STARTERS`
   // under a heading is a dish an organizer typed in capitals.
   const marked = LIST_MARK.test(line);
   const text = stripListMark(line);
@@ -184,7 +184,7 @@ function readLine(raw: string): Read {
 /**
  * Dishes an organizer ran together on one line.
  *
- * Only ever applied where a line break was not available to them — a menu
+ * Only ever applied where a line break was not available to them. A menu
  * written across several lines is trusted exactly as written, because
  * `Grilled tilapia, banku and pepper sauce` is one dish and splitting it
  * would invent two.
@@ -272,7 +272,7 @@ export function parseMenuBody(body: string): MenuCourse[] {
   /*
    * No headings anywhere, which means the organizer gave us no signal at all:
    * nothing emphasised, nothing shouted, no colons, no markdown. A blank line
-   * is then the only grouping they left, and it groups — it does not name.
+   * is then the only grouping they left, and it groups. It does not name.
    *
    * Promoting the first line of each group to a course was tempting and
    * wrong: `Groundnut soup / Kelewele` is two dishes, and reading the first

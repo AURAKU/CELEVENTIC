@@ -124,7 +124,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    // Vendor/team passes always use the Celeventic logo — never event QR center art.
+    // Vendor/team passes always use the Celeventic logo, never event QR center art.
     const centerImage = CELEVENTIC_OFFICIAL_LOGO;
     const logoSize = await qrBrandingService.resolveLogoSize(pass.eventId);
     const safeVendor = pass.vendorName.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "vendor";

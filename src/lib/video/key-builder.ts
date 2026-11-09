@@ -3,7 +3,7 @@ import type { VideoCategory } from "@/lib/video/constants";
 import { RAW_VIDEO_KEY_PREFIX, PROCESSED_VIDEO_KEY_PREFIX } from "@/lib/video/constants";
 
 /**
- * Server-only S3 key generation. Callers NEVER supply a key or bucket —
+ * Server-only S3 key generation. Callers NEVER supply a key or bucket.
  * this is the single choke point that prevents path traversal / key injection.
  *
  * `storageKey` is a quota/storage namespace (e.g. `user:…` / `event:…`), NOT necessarily User.id.
@@ -24,7 +24,7 @@ export function buildProcessedPrefix(category: VideoCategory, assetId: string): 
   return `${PROCESSED_VIDEO_KEY_PREFIX}/${category.toLowerCase()}/${sanitizeSegment(assetId)}`;
 }
 
-/** Strip anything that isn't a safe path segment character — no `..`, `/`, or control chars. */
+/** Strip anything that isn't a safe path segment character. No `..`, `/`, or control chars. */
 function sanitizeSegment(input: string): string {
   const cleaned = input.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
   return cleaned || "unknown";

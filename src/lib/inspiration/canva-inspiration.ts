@@ -21,7 +21,7 @@ export const CANVA_INSPIRATION_CATEGORIES = [
 
 export type CanvaInspirationCategoryId = (typeof CANVA_INSPIRATION_CATEGORIES)[number]["id"];
 
-/** Safe Canva export formats — user-owned assets only */
+/** Safe Canva export formats. User-owned assets only */
 export const CANVA_EXPORT_ACCEPT = {
   "image/png": ".png",
   "image/jpeg": ".jpg",

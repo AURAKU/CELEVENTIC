@@ -8,7 +8,7 @@ import { tableDisplayName } from "@/lib/seating/seating-types";
  * Two rules govern this file:
  *
  *  1. Nothing is ever merged silently. A match flips the row to DUPLICATE and
- *     leaves the decision to the organiser — because "Kwame Mensah" appearing
+ *     leaves the decision to the organiser, because "Kwame Mensah" appearing
  *     twice is just as likely to be two real cousins as one double entry.
  *  2. Contact matches are stronger than name matches. A shared phone number or
  *     email is near-certainly the same person; a shared name is a question.

@@ -1,7 +1,7 @@
 /**
  * Contact normalisation for bulk guest import.
  *
- * Phone and email are optional throughout the import — a name-only guest is a
+ * Phone and email are optional throughout the import. A name-only guest is a
  * first-class guest. Nothing here ever rejects a row; the worst outcome is a
  * warning and a dropped contact, so a typo'd email can never cost somebody
  * their invitation.
@@ -56,7 +56,7 @@ export function normalizeGhanaPhone(input: string | null | undefined): PhoneNorm
   if (digits.startsWith("00")) digits = digits.slice(2);
 
   if (hasPlus && !digits.startsWith(GHANA_DIALING_CODE)) {
-    // Foreign E.164 — sanity-check the length only.
+    // Foreign E.164. Sanity-check the length only.
     const ok = digits.length >= 8 && digits.length <= 15;
     return { value: ok ? `+${digits}` : raw, raw, normalized: false, invalid: !ok };
   }
@@ -92,7 +92,7 @@ export function normalizeGhanaPhone(input: string | null | undefined): PhoneNorm
   };
 }
 
-/** Normalise without the Ghana rules — only strips noise and validates length. */
+/** Normalise without the Ghana rules. Only strips noise and validates length. */
 export function normalizePlainPhone(input: string | null | undefined): PhoneNormalizationResult {
   const raw = input?.trim() ?? "";
   if (!raw) return { value: null, raw: null, normalized: false, invalid: false };
@@ -110,7 +110,7 @@ export function normalizePhone(
 
 /**
  * Pragmatic email check: one @, a dot-bearing domain, no whitespace or commas.
- * Deliberately not RFC 5322 — the goal is catching "kofi@gmail" and
+ * Deliberately not RFC 5322. The goal is catching "kofi@gmail" and
  * "kofi at gmail.com", not litigating quoted local parts.
  */
 const EMAIL_PATTERN = /^[^\s@,;<>()[\]\\]+@[^\s@,;<>()[\]\\]+\.[A-Za-z]{2,}$/;
@@ -124,7 +124,7 @@ export function normalizeEmail(input: string | null | undefined): EmailNormaliza
   const raw = input?.trim() ?? "";
   if (!raw) return { value: null, invalid: false };
 
-  // "Kofi Mensah <kofi@example.com>" — take the addr-spec.
+  // "Kofi Mensah <kofi@example.com>". Take the addr-spec.
   const angled = /<([^>]+)>/.exec(raw)?.[1]?.trim();
   const candidate = (angled ?? raw).toLowerCase();
 

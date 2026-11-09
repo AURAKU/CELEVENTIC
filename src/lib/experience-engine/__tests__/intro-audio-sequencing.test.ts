@@ -5,7 +5,7 @@ import { introGestureAudioAction } from "../soft-intro";
 /**
  * The brand film owns the audio stage for its entire runtime. A guest must
  * hear the intro clip's own soundtrack and nothing else between tapping
- * "Open Invitation" and the end of the film — no template track underneath,
+ * "Open Invitation" and the end of the film. No template track underneath,
  * no uploaded music bleeding in.
  *
  * The single rule these tests protect: the "Open Invitation" gesture may never
@@ -51,7 +51,7 @@ describe("post-film gesture owns the track start", () => {
   });
 
   it("arms silently when the film hands straight to the portal", () => {
-    // No later gesture exists, so this tap is spent on a muted play/pause —
+    // No later gesture exists, so this tap is spent on a muted play/pause.
     // otherwise iOS autoplay policy would block the programmatic play() that
     // follows and the invitation would land in silence.
     assert.equal(

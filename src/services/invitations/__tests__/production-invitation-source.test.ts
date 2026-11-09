@@ -75,7 +75,7 @@ function readerReturning(
   };
 }
 
-/** Production DB shape — detached RSVP/quick-invite invitation on a funeral event. */
+/** Production DB shape. Detached RSVP/quick-invite invitation on a funeral event. */
 const PRODUCTION_EVENT_ID = "cmt4re7wq022elad67v0vdqxx";
 const PRODUCTION_DETACHED_INVITATION_ID = "cmt92f74200hilazf1lofhpr6";
 const PRODUCTION_CANONICAL_INVITATION_ID = "cmt4re7wv022hlad6bky1kyjf";

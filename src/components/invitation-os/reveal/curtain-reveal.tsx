@@ -65,7 +65,7 @@ const CURTAIN_THEMES: Record<
     label: "Reveal invitation",
   },
   birthday: {
-    // Soft pastel garden curtains — not nightclub purple
+    // Soft pastel garden curtains, not nightclub purple
     velvet: "#f9a8d4",
     velvetDeep: "#f472b6",
     fold: "rgba(255, 255, 255, 0.28)",
@@ -85,7 +85,7 @@ const CURTAIN_THEMES: Record<
   },
 };
 
-/** Heavy velvet ease, slow start, decisive finish (~2.5–3.5s theatrical part). */
+/** Heavy velvet ease, slow start, decisive finish (~2.5 to 3.5s theatrical part). */
 const OPEN_EASE = "cubic-bezier(0.22, 0.61, 0.18, 1)";
 export const CURTAIN_OPEN_MS = 3000;
 export const CURTAIN_OPEN_REDUCED_MS = 700;

@@ -62,7 +62,7 @@ import {
   openingMemoryKey,
   rememberOpeningSeen,
 } from "@/lib/experience/opening-visit-memory";
-import { forceUnlockInvitationViewport, assertPortalViewportInteractive } from "@/lib/experience-engine/reveal-runtime";
+import { forceUnlockInvitationViewport, armLiveInvitationScroller, assertPortalViewportInteractive } from "@/lib/experience-engine/reveal-runtime";
 import {
   assertMandatoryMemorialEnvelopeInvariant,
   isLiveGuestInviteMount,
@@ -96,7 +96,7 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   revealEnabled?: boolean;
   revealMode?: RevealMode;
   openingExperience?: OpeningExperienceId;
-  /** Catalog SKU slug — enables live memorial-envelope normalization. */
+  /** Catalog SKU slug. Enables live memorial-envelope normalization. */
   catalogSlug?: string | null;
   musicEnabled?: boolean;
   /** When false, music only loads after tap-to-begin (catalog thumbnails). */
@@ -226,7 +226,7 @@ export function PremiumInviteWrapper({
   } = liveReveal;
 
   /**
-   * LIVE guest mounts must never auto-open the sealed envelope — even if a
+   * LIVE guest mounts must never auto-open the sealed envelope, even if a
    * stale prop or preview helper passes autoOpenReveal=true. Catalogue /
    * studio / embedded demos may still opt in.
    */
@@ -408,7 +408,7 @@ export function PremiumInviteWrapper({
   );
 
   // Every fresh document load plays brand → tap → envelope/gate. Visit memory
-  // only records completion for analytics — it never auto-skips the ceremony.
+  // only records completion for analytics. It never auto-skips the ceremony.
   useEffect(() => {
     if (embedded || skipSoftIntro === true) return;
     forgetSoftIntroThisSession(props.invitation.uniqueLink || props.invitation.id);
@@ -482,7 +482,7 @@ export function PremiumInviteWrapper({
       return;
     }
     if (!wantsAutoplay) return;
-    // Call play() immediately from the gesture stack — do not delay with
+    // Call play() immediately from the gesture stack. Do not delay with
     // unrelated awaits before the first media.play().
     const ok = await audioManager.play();
     if (ok) audioStarted.current = true;
@@ -493,8 +493,8 @@ export function PremiumInviteWrapper({
    * only thing a guest may hear between "Open Invitation" and the end of the
    * clip, so the tap that starts the video must not start template music.
    *
-   * Every live pipeline has a second gesture after the film — "Tap to Begin",
-   * or the envelope/curtain tap when that beat owns the opening — and that
+   * Every live pipeline has a second gesture after the film. "Tap to Begin",
+   * or the envelope/curtain tap when that beat owns the opening, and that
    * gesture is what starts the invitation's own track. Only when no such
    * gesture exists (thumbnail / auto-open previews that jump straight to the
    * portal) do we spend this tap on a silent authorisation, so the later
@@ -517,7 +517,7 @@ export function PremiumInviteWrapper({
   }, [audioManager, introAudioAction]);
 
   /**
-   * The film has started. Nothing else may be audible underneath it — not a
+   * The film has started. Nothing else may be audible underneath it, not a
    * previously primed track, not a manager left running by another invitation
    * preview in the same document.
    */
@@ -540,7 +540,7 @@ export function PremiumInviteWrapper({
     // ceremony itself always continues normally from here.
     const next = phaseAfterSoftIntro(pipelineFlags);
     // Aurelia-style pipelines skip tap + envelope, so the film hands
-    // straight to the invitation. Start the template score now — the
+    // straight to the invitation. Start the template score now. The
     // Open Invitation gesture already armed the element silently.
     if (next === "portal") {
       void startAudio();
@@ -549,18 +549,17 @@ export function PremiumInviteWrapper({
   }, [pipelineFlags, setPhase, startAudio]);
 
   const afterReveal = useCallback(() => {
-    // Unlock BEFORE portal paints — never hand the guest a locked viewport.
+    // Unlock BEFORE portal paints, never hand the guest a locked viewport.
     forceUnlockInvitationViewport("reveal-complete");
     void startAudio();
-    // Soft settle from the top onto the framed cover — never leave guests mid/bottom.
-    setPortalEntrance("from-top");
+    setPortalEntrance("none");
     setPhase("portal", "reveal-complete");
-    // Pin cover immediately, then again after layout/animation frames.
     resetInviteScrollToCover({ smooth: false });
     requestAnimationFrame(() => {
       forceUnlockInvitationViewport("portal-raf");
+      armLiveInvitationScroller();
       assertPortalViewportInteractive();
-      resetInviteScrollToCover({ smooth: false });
+      // Do not snap scroll again. A second reset ate the guest's first swipe.
     });
   }, [startAudio, setPhase]);
 
@@ -595,18 +594,19 @@ export function PremiumInviteWrapper({
 
   const handleTapBegin = useCallback(() => {
     void startAudio();
-    if (showReveal) {
+    const next = resolvePhaseAfterTapBegin(showReveal, openingExperience);
+    if (next === "reveal") {
       // Keep underlay pinned to cover while the envelope opens over it.
       resetInviteScrollToCover({ smooth: false });
-      setPhase(resolvePhaseAfterTapBegin(showReveal), "guest-tap-begin");
+      setPhase("reveal", "guest-tap-begin");
       return;
     }
-    // No envelope ceremony — soft open is appropriate.
-    forceUnlockInvitationViewport("tap-begin-no-reveal");
-    setPortalEntrance("fade");
-    setPhase("portal", "tap-begin-no-reveal");
+    forceUnlockInvitationViewport("tap-begin-portal");
+    armLiveInvitationScroller();
+    setPortalEntrance("none");
+    setPhase("portal", "tap-begin-portal");
     resetInviteScrollToCover({ smooth: false });
-  }, [showReveal, startAudio, setPhase]);
+  }, [showReveal, openingExperience, startAudio, setPhase]);
 
   useEffect(() => {
     if (phase === "portal" && hasMusic && wantsAutoplay && !audioStarted.current) {
@@ -614,7 +614,7 @@ export function PremiumInviteWrapper({
     }
   }, [phase, hasMusic, wantsAutoplay, startAudio]);
 
-  // Guarantee mobile page scroll after ceremony — never leave reveal lock stuck.
+  // Guarantee mobile page scroll after ceremony, never leave reveal lock stuck.
   useEffect(() => {
     if (phase !== "portal" || typeof document === "undefined") return;
     forceUnlockInvitationViewport("portal-effect");
@@ -623,27 +623,9 @@ export function PremiumInviteWrapper({
     document.body.style.touchAction = "";
     document.body.style.pointerEvents = "";
 
-    const scroller = document.querySelector<HTMLElement>(".inv-paged-scroll");
-    if (!scroller) {
-      assertPortalViewportInteractive();
-      return;
-    }
-
-    scroller.classList.add("inv-paged-scroll--settle");
-    scroller.style.pointerEvents = "auto";
-    scroller.style.overflowY = "auto";
-    scroller.style.touchAction = "pan-y";
-    resetInviteScrollToCover({ smooth: false });
-
-    const settleMs = window.setTimeout(() => {
-      scroller.classList.remove("inv-paged-scroll--settle");
-      assertPortalViewportInteractive();
-    }, 420);
-
-    return () => {
-      window.clearTimeout(settleMs);
-      scroller.classList.remove("inv-paged-scroll--settle");
-    };
+    armLiveInvitationScroller();
+    assertPortalViewportInteractive();
+    return undefined;
   }, [phase]);
 
   // While the envelope is on top, freeze the underlay on the cover so peek never
@@ -765,7 +747,7 @@ export function PremiumInviteWrapper({
 
   // Both banners are admission conveniences layered over the ceremony. They poll
   // the network, so they are the likeliest thing here to throw on a flaky
-  // connection — and losing an invitation to a broken banner is never an
+  // connection, and losing an invitation to a broken banner is never an
   // acceptable trade. They degrade to nothing.
   const admissionHandoff =
     watchAdmissionHandoff &&
@@ -991,6 +973,9 @@ export function PremiumInviteWrapper({
                 position: "relative",
                 zIndex: 1,
                 pointerEvents: "none",
+                ...(embedded
+                  ? { opacity: 0, visibility: "hidden" as const, overflow: "hidden" }
+                  : null),
               }
             : undefined
         }

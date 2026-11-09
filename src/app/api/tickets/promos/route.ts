@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission } from "@/lib/workspace/event-access";
+import { EventPermissionKey } from "@/lib/workspace/permission-keys";
+import { rateLimit } from "@/lib/rate-limit";
+import type { UserRole } from "@prisma/client";
 import {
   createTicketPromo,
   deleteTicketPromo,
@@ -26,7 +29,12 @@ export async function GET(req: Request) {
   if (!eventId) return NextResponse.json({ error: "eventId required" }, { status: 400 });
 
   try {
-    await verifyEventAccess(eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.MANAGE_TICKETS
+    );
     const promos = await listTicketPromos(eventId);
     return NextResponse.json({ success: true, data: promos });
   } catch (error) {
@@ -42,8 +50,17 @@ export async function POST(req: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    const limited = await rateLimit(`ticket-promo:${session.user.id}`, 30, 60);
+    if (!limited.success) {
+      return NextResponse.json({ error: "Too many promo changes. Please wait a moment." }, { status: 429 });
+    }
     const data = createSchema.parse(await req.json());
-    await verifyEventAccess(data.eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      data.eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.MANAGE_TICKETS
+    );
     const promo = await createTicketPromo(data.eventId, data);
     return NextResponse.json({ success: true, data: promo }, { status: 201 });
   } catch (error) {
@@ -67,7 +84,12 @@ export async function DELETE(req: Request) {
   if (!eventId || !id) return NextResponse.json({ error: "eventId and id required" }, { status: 400 });
 
   try {
-    await verifyEventAccess(eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.MANAGE_TICKETS
+    );
     await deleteTicketPromo(eventId, id);
     return NextResponse.json({ success: true });
   } catch (error) {

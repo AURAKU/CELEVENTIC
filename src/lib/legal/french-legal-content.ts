@@ -3,7 +3,7 @@ import type { LegalPolicySlug } from "./constants";
 
 const { phone, email, company, jurisdiction } = LEGAL_CONTACT;
 
-/** Full French legal document bodies — mirrored structure to English policies */
+/** Full French legal document bodies. Mirrored structure to English policies */
 export const FRENCH_LEGAL_CONTENT: Record<LegalPolicySlug, string> = {
   terms: `## 1. Accord
 Les présentes Conditions générales (« Conditions ») constituent un accord contraignant entre vous et ${company}, exerçant ses activités en ${jurisdiction}. Contact : ${email} | ${phone}.
@@ -13,10 +13,10 @@ En créant un compte, en passant une commande d'invitation, en utilisant VendorO
 ## 2. Aperçu de la plateforme
 Celeventic est un système d'exploitation événementiel comprenant :
 
-- **InvitationOS** — studio d'invitations numériques, portail invité, RSVP, admission QR et flux de production
-- **VendorOS** — marketplace prestataires, profils, demandes de devis et forfaits vérifiés
-- **Outils événementiels** — CRM invités, billetterie, communications et découverte d'événements
-- **Celeventic Intelligence** — assistance design et outils de contenu (présentés publiquement sous AGI Engine / Celeventic Intelligence)
+- **InvitationOS**. Studio d'invitations numériques, portail invité, RSVP, admission QR et flux de production
+- **VendorOS**. Marketplace prestataires, profils, demandes de devis et forfaits vérifiés
+- **Outils événementiels**. CRM invités, billetterie, communications et découverte d'événements
+- **Celeventic Intelligence**. Assistance design et outils de contenu (présentés publiquement sous AGI Engine / Celeventic Intelligence)
 
 Les fonctionnalités varient selon le forfait, le rôle et l'abonnement.
 
@@ -68,7 +68,7 @@ Lois de la ${jurisdiction}. Contact : ${email}.
 ${email} | ${phone}`,
 
   privacy: `## Date d'effet
-Cette politique s'applique à tous les utilisateurs de Celeventic — organisateurs, prestataires, invités et administrateurs.
+Cette politique s'applique à tous les utilisateurs de Celeventic. Organisateurs, prestataires, invités et administrateurs.
 
 ## Responsable du traitement
 ${company} est le responsable du traitement. Siège principal : ${jurisdiction}.
@@ -108,7 +108,7 @@ Accès, rectification, suppression, limitation et opposition conformément à l'
 Voir [Politique des cookies](/legal/cookie).
 
 ## Contact
-${company} — ${email} | ${phone}`,
+${company}: ${email} | ${phone}`,
 
   refund: `## Nature du service
 Celeventic fournit des invitations numériques personnalisées via InvitationOS. Une fois la production créative commencée, les ressources sont allouées spécifiquement à votre projet.
@@ -122,7 +122,7 @@ Celeventic fournit des invitations numériques personnalisées via InvitationOS.
 | Signature | 1 500 | 3 |
 | Ultimate Experience | À partir de 2 950 (sur devis) | 3 |
 
-## Remboursement intégral — avant production
+## Remboursement intégral. Avant production
 Remboursement possible si annulation avant le début de la production et dans les 48 heures suivant le paiement.
 
 ## Pas de remboursement après production
@@ -132,7 +132,7 @@ Une fois le statut **Production commencée** ou au-delà, les frais ne sont gén
 Les frais Paystack peuvent être déduits des remboursements approuvés.
 
 ## Révisions avant remboursement
-Utilisez d'abord vos révisions incluses — voir [Politique de révision](/legal/revision-policy).
+Utilisez d'abord vos révisions incluses. Voir [Politique de révision](/legal/revision-policy).
 
 ## Demande de remboursement
 Contactez ${email} ou ${phone} avec votre référence de commande. Délai de traitement : 14 jours ouvrables.

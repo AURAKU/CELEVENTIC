@@ -1,5 +1,5 @@
 /**
- * Event Guide — public contract.
+ * Event Guide. Public contract.
  *
  * Everything a guest (or an offline cache) ever receives is described here.
  * The shapes are deliberately narrow: no database ids, no contact details, no
@@ -28,12 +28,12 @@ export function resolveTabFromQuery(
 /**
  * What a line of the programme is doing, when it is not an item of its own.
  *
- * The organizer decides this in their script — `# CEREMONY` is a heading,
- * `> …` is a subscript — and the reader falls back to the same two roles when
+ * The organizer decides this in their script. `# CEREMONY` is a heading,
+ * `> …` is a subscript, and the reader falls back to the same two roles when
  * they did not say.
  *
- *  - `section` — a heading between blocks (`CEREMONY`, `RECEPTION`).
- *  - `note` — a subscript with no item above it to sit under.
+ *  - `section`. A heading between blocks (`CEREMONY`, `RECEPTION`).
+ *  - `note`. A subscript with no item above it to sit under.
  *
  * An ordinary item carries no kind at all, so every payload published before
  * any of this existed still reads exactly as it did.
@@ -106,7 +106,7 @@ export interface GuideThemeTokens {
   /**
    * The ink on a button filled with `colors.accent`.
    *
-   * The guest's page has never painted `colors.background` on the accent — it
+   * The guest's page has never painted `colors.background` on the accent. It
    * has always chosen dark or light ink by the accent's luminance. Recording
    * that choice here is what lets the publish gate measure the pair that
    * actually renders instead of a combination nobody draws, which is what was
@@ -205,13 +205,13 @@ export interface GuideSeatingMatch {
   zone: string | null;
   ceremonyRowLabel: string | null;
   ceremonySeatLabel: string | null;
-  /** Named members of this party only — never anyone from another party. */
+  /** Named members of this party only, never anyone from another party. */
   partyMembers: string[];
   /** Unnamed plus-ones travelling with this party, shown as an allowance. */
   plusOnes: number;
   /**
    * This party's own admission code, for the seat card QR + digits.
-   * Only returned after a successful lookup of *this* party — never for others.
+   * Only returned after a successful lookup of *this* party, never for others.
    */
   admissionCode: string | null;
 }

@@ -2,7 +2,7 @@ import type { IntroVariantId } from "./experience-types";
 
 /**
  * Branded Celeventic intro variants. Every invitation opens with the official
- * logo, but the choreography around it belongs to the template's world —
+ * logo, but the choreography around it belongs to the template's world.
  * a memorial breathes under a spotlight, a garden wedding blooms, a concert
  * bursts. Same brand, never the same animation.
  */

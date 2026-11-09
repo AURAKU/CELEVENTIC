@@ -1,5 +1,5 @@
 /**
- * Static stub — production identity comes from `.next/celeventic-build-meta.json`
+ * Static stub. Production identity comes from `.next/celeventic-build-meta.json`
  * (written by `scripts/write-build-meta.mjs --emit-next`) or process env.
  * Do not regenerate this tracked file during builds (keeps the git worktree clean).
  */

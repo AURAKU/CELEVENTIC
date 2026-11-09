@@ -47,7 +47,7 @@ export class InvitationAnalyticsService {
   }
 
   /**
-   * Opening an invitation is a seating / CRM signal for organisers — never
+   * Opening an invitation is a seating / CRM signal for organisers, never
    * gate admission. Status only advances INVITED → OPENED. ACCEPTED / DECLINED /
    * MAYBE / CHECKED_IN are preserved; inviteOpenedAt still stamps on first open.
    */
@@ -55,7 +55,7 @@ export class InvitationAnalyticsService {
     let targetGuestId = guestId?.trim() || undefined;
     if (!targetGuestId) {
       // Bare personalized links (no ?guest=) still attribute open when the
-      // invitation has exactly one live guest — typical WhatsApp share case.
+      // invitation has exactly one live guest. Typical WhatsApp share case.
       const singles = await prisma.guest.findMany({
         where: { invitationId, archivedAt: null },
         select: { id: true },

@@ -101,7 +101,7 @@ export function GuideAppearanceTab({
                 <XCircle className="h-4 w-4 shrink-0 text-rose-600" />
               )}
               <span className="min-w-0">
-                {finding.pair} — {finding.ratio}:1
+                {finding.pair}: {finding.ratio}:1
                 <span className="text-slate-500"> (needs {finding.required}:1)</span>
               </span>
             </p>
@@ -116,7 +116,7 @@ export function GuideAppearanceTab({
           ))}
           {state.contrast.unmeasured.length > 0 ? (
             <p className="text-xs text-slate-500">
-              Not measured: {state.contrast.unmeasured.join(", ")} — these use a gradient we cannot
+              Not measured: {state.contrast.unmeasured.join(", ")}. These use a gradient we cannot
               score numerically.
             </p>
           ) : null}

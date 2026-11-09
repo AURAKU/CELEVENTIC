@@ -21,7 +21,7 @@ function clientKey(req: Request): string {
  *
  * Returns one party or nothing. Short queries are rejected before any database
  * read, attempts are rate limited per token + client, and an ambiguous result
- * reports only a count — never the candidate names.
+ * reports only a count, never the candidate names.
  */
 export async function POST(
   req: Request,
@@ -51,7 +51,7 @@ export async function POST(
     enabled: seating.enabled,
   });
 
-  // Counters only — the query itself is never recorded.
+  // Counters only. The query itself is never recorded.
   await eventGuideService
     .recordActivity({
       guideId: guide.guideId,

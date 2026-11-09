@@ -68,7 +68,7 @@ export async function updateGuestDetails(input: UpdateGuestInput) {
   };
 
   // Keep the personalised invitation (and entry pass) in step when this guest
-  // is the primary invitee — otherwise the CRM list and guest link diverge.
+  // is the primary invitee. Otherwise the CRM list and guest link diverge.
   if (guest.invitationId) {
     const primary = await prisma.guest.findFirst({
       where: { invitationId: guest.invitationId, archivedAt: null },

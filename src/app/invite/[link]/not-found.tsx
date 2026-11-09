@@ -27,7 +27,7 @@ export default function InviteNotFound() {
             <Link href="/">Back to Celeventic</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/templates">Browse templates</Link>
+            <Link href="/invitations/catalogue">Browse templates</Link>
           </Button>
         </div>
       </main>

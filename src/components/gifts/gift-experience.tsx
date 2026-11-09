@@ -598,7 +598,7 @@ function ConfirmStep({
           </span>
         </Row>
         <Row label="From">{guestName || "A guest"}</Row>
-        <Row label="Via">{method?.label ?? "—"}</Row>
+        <Row label="Via">{method?.label ?? "None"}</Row>
       </dl>
 
       <div className="gift-rule my-6" />

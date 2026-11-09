@@ -15,7 +15,7 @@ function buildCalendarEvent(context: PageRenderContext): CalendarEventInput | nu
   const isFuneral = category === "funeral";
   const deceased = isFuneral ? resolveDeceasedName(event) : null;
   const title = isFuneral
-    ? `Funeral service — ${deceased || event.title}`
+    ? `Funeral service: ${deceased || event.title}`
     : event.title;
 
   const descriptionParts = [
@@ -50,6 +50,7 @@ export function AddToCalendarBlock({ context }: { context: PageRenderContext }) 
   const calendarEvent = useMemo(() => buildCalendarEvent(context), [context]);
 
   if (!calendarEvent) return null;
+  const reminder = calendarEvent;
 
   async function handleClick() {
     if (status === "loading") return;
@@ -62,7 +63,7 @@ export function AddToCalendarBlock({ context }: { context: PageRenderContext }) 
       metadata: { action: "add_to_calendar" },
     });
 
-    const result = await setSmartCalendarReminder(calendarEvent);
+    const result = await setSmartCalendarReminder(reminder);
     setStatus(result.success ? "done" : "error");
     if (result.success) {
       window.setTimeout(() => setStatus("idle"), 4200);

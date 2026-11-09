@@ -253,9 +253,9 @@ export function QrHubClient() {
                     "All vendor badge variants use the same shared event credential. Revoking or regenerating it will affect every printed vendor pass."}
                 </p>
                 <p className="text-sm">
-                  Status: <Badge>{data.vendor?.status ?? "—"}</Badge> · Code:{" "}
-                  <strong className="tracking-widest">{data.vendor?.manualCode ?? "—"}</strong> ·
-                  Version {data.vendor?.tokenVersion ?? "—"}
+                  Status: <Badge>{data.vendor?.status ?? "None"}</Badge> · Code:{" "}
+                  <strong className="tracking-widest">{data.vendor?.manualCode ?? "None"}</strong> ·
+                  Version {data.vendor?.tokenVersion ?? "None"}
                 </p>
                 {data.vendor?.qrPreviewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element

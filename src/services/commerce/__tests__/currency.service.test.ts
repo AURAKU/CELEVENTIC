@@ -8,7 +8,7 @@ import { CurrencyService } from "../currency.service";
  * of `upsert()` writes on EVERY call (every `/api/commerce/currencies` request), exhausting
  * the Prisma connection pool under load. These tests run against the real (local dev) SQLite
  * database and instrument the actual `prisma.currency`/`prisma.exchangeRate` delegates to
- * assert the exact write behavior — no DB writes at all once currencies exist, and exactly
+ * assert the exact write behavior. No DB writes at all once currencies exist, and exactly
  * one seed pass when the table starts empty.
  */
 
@@ -31,7 +31,7 @@ function countCalls<T extends object, K extends keyof T>(obj: T, method: K) {
 
 describe("CurrencyService.ensureCurrenciesSeeded", () => {
   before(async () => {
-    // Isolate from whatever local dev data exists — snapshot is restored in `after`.
+    // Isolate from whatever local dev data exists. Snapshot is restored in `after`.
     await prisma.exchangeRate.deleteMany({});
     await prisma.currency.deleteMany({});
   });
@@ -64,7 +64,7 @@ describe("CurrencyService.ensureCurrenciesSeeded", () => {
 
       const countAfterFirstSeed = countSpy.count;
 
-      // Subsequent calls — same instance — must be pure in-memory no-ops (no DB round trip at all).
+      // Subsequent calls. Same instance. Must be pure in-memory no-ops (no DB round trip at all).
       await service.ensureCurrenciesSeeded();
       await service.ensureCurrenciesSeeded();
       await service.ensureCurrenciesSeeded();
@@ -93,7 +93,7 @@ describe("CurrencyService.ensureCurrenciesSeeded", () => {
       await service.ensureCurrenciesSeeded();
       const currencies = await prisma.currency.findMany();
 
-      assert.equal(currencies.length, 1, "pre-existing row must be untouched — no reseed over existing data");
+      assert.equal(currencies.length, 1, "pre-existing row must be untouched. No reseed over existing data");
       assert.equal(createManySpy.count, 0, "createMany must never run when the table is already non-empty");
       assert.equal(rateCreateManySpy.count, 0, "exchange rate createMany must never run when currencies already exist");
     } finally {

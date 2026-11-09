@@ -11,6 +11,7 @@ import { resolveOrderEventType } from "@/lib/invitation/catalog-event-type";
 interface TemplateCardProps {
   template: CatalogTemplate;
   showActions?: boolean;
+  packageSlug?: string;
 }
 
 const FEATURE_ICONS: Record<string, string> = {
@@ -26,15 +27,19 @@ const FEATURE_ICONS: Record<string, string> = {
   Story: "✦",
 };
 
-export function TemplateCard({ template, showActions = true }: TemplateCardProps) {
+export function TemplateCard({ template, showActions = true, packageSlug }: TemplateCardProps) {
   const signatureFeatures =
     getLayoutSignatureFeatures(template.layoutSlug) ?? template.features;
   // Studio 2.0 paged templates open the real viewer in preview mode.
   const isPaged = Boolean(template.themeId && template.blueprintId);
   const eventType = resolveOrderEventType(template.category);
+  const packageQuery = packageSlug ? `&package=${encodeURIComponent(packageSlug)}` : "";
   const detailHref = isPaged
-    ? `/invitations/preview/${template.slug}`
-    : `/invitations/templates/${template.slug}?eventType=${encodeURIComponent(eventType)}`;
+    ? `/invitations/preview/${template.slug}${packageSlug ? `?package=${encodeURIComponent(packageSlug)}` : ""}`
+    : `/invitations/templates/${template.slug}?eventType=${encodeURIComponent(eventType)}${packageQuery}`;
+  const startHref = packageSlug
+    ? `/invitations/create/start?template=${encodeURIComponent(template.slug)}&package=${encodeURIComponent(packageSlug)}&eventType=${encodeURIComponent(eventType)}`
+    : detailHref;
   const name = withoutCatalogDashes(template.name);
   const description = withoutCatalogDashes(template.description);
   const style = withoutCatalogDashes(template.style);
@@ -96,7 +101,7 @@ export function TemplateCard({ template, showActions = true }: TemplateCardProps
               <Link href={detailHref}>Preview</Link>
             </Button>
             <Button size="sm" className="flex-1 bg-[#0B8A83] hover:bg-[#097068]" asChild>
-              <Link href={detailHref}>Select</Link>
+              <Link href={startHref}>Select</Link>
             </Button>
           </div>
         )}

@@ -66,7 +66,7 @@ export function vendorGateDecision(input: {
 
   const quantity = Math.max(1, input.quantity ?? 1);
 
-  // A filled access card is not "done" — the next scan simply re-opens it.
+  // A filled access card is not "done". The next scan simply re-opens it.
   if (input.dryRun && remaining <= 0 && multiEntry) {
     return {
       outcome: "REVIEW",
@@ -90,7 +90,7 @@ export function vendorGateDecision(input: {
         outcome: "REVIEW",
         tone: "amber",
         reason: "NEEDS_REVIEW",
-        message: `${input.pass.title} — ${input.pass.admittedCount} of ${input.pass.teamCapacity} admitted. ${remaining} remaining.`,
+        message: `${input.pass.title}: ${input.pass.admittedCount} of ${input.pass.teamCapacity} admitted. ${remaining} remaining.`,
         admitQuantity: 0,
         resultingAdmittedCount: input.pass.admittedCount,
         resultingStatus: input.pass.status as AdmissionDecision["resultingStatus"],
@@ -138,7 +138,7 @@ export function vendorGateDecision(input: {
     ? ` Re-entry #${Math.max(1, (input.entryCycle ?? 2) - 1)} recorded.`
     : "";
   const fullNote = multiEntry
-    ? `Admitted ${quantity}. Whole team in — card stays valid for re-entry.`
+    ? `Admitted ${quantity}. Whole team in. Card stays valid for re-entry.`
     : `Admitted ${quantity}. Team capacity reached.`;
 
   return {

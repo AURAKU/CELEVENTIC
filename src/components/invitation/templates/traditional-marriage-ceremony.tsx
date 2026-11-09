@@ -374,7 +374,7 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
       </article>
 
       {/* Guest identity and allowance belong at the start of the invitation,
-          directly beneath its hero card—not after the journey and RSVP. */}
+          directly beneath its hero card: not after the journey and RSVP. */}
       {props.placeCard && (
         <ClientErrorBoundary fallback={null}>
           <PlaceCard
@@ -387,7 +387,7 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
         </ClientErrorBoundary>
       )}
 
-      {/* Lower chrome: journey first, Kindly Respond last — guests meet the day before the form */}
+      {/* Lower chrome: journey first, Kindly Respond last. Guests meet the day before the form */}
       <div className="w-full max-w-[420px] mt-5 space-y-5 pb-8">
         <TraditionalMarriageJourney
           event={event}

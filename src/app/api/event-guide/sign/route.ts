@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       : "classic";
   const format = body?.format === "png" ? "png" : "pdf";
 
-  // A dual sign is only offered when there is genuinely a second destination —
+  // A dual sign is only offered when there is genuinely a second destination.
   // printing an empty "Backup" placeholder would be worse than one clean code.
   const offlineUrl =
     guide?.venueOfflineEnabled && offlineLink?.destinationUrl ? offlineLink.destinationUrl : null;

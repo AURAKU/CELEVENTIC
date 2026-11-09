@@ -3,7 +3,7 @@ import type { VideoAsset } from "@prisma/client";
 /**
  * VideoAsset has BigInt columns (sizeBytes, partSizeBytes) which `JSON.stringify`/`NextResponse.json`
  * cannot serialize directly. This is the single place API routes should use to shape a
- * VideoAsset for a client response — also a good chokepoint to avoid ever leaking internal
+ * VideoAsset for a client response, also a good chokepoint to avoid ever leaking internal
  * fields (multipartUploadId, mediaConvertJobId, context) to guest/anonymous callers.
  */
 export function serializeVideoAsset(asset: VideoAsset) {

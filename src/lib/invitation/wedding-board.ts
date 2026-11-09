@@ -6,7 +6,7 @@
  * (see src/lib/invitation/vision-board.ts): a single serialisable config object
  * stored on `design.studio.weddingBoard`, merged with defaults at render time so
  * every field stays admin/user editable while the template always has a full,
- * premium fallback. No external image URL is required — the envelope, wax seal,
+ * premium fallback. No external image URL is required. The envelope, wax seal,
  * and gate render as CSS/SVG so the template is complete with zero uploads.
  */
 
@@ -29,7 +29,7 @@ export interface WeddingBoardFeatureFlags {
   guestPolicy?: boolean;
   /** Optional couple story section */
   story?: boolean;
-  /** Optional gallery strip (reference / gallery uploads only — never the hero portrait) */
+  /** Optional gallery strip (reference / gallery uploads only, never the hero portrait) */
   gallery?: boolean;
   /** Scratch-to-reveal keepsake message */
   scratch?: boolean;
@@ -137,7 +137,7 @@ export const WEDDING_SECTION_ORDER: WeddingSectionId[] = [
 const SECTION_ID_SET = new Set<string>(WEDDING_SECTION_ORDER);
 
 export interface WeddingBoardContent {
-  // — Opening ceremony —
+  //. Opening ceremony.
   /** Hint shown under the envelope ("Tap anywhere to open") */
   openingInstruction?: string;
   /** Two-letter monogram / short word on the wax seal (e.g. "J | C") */
@@ -157,8 +157,8 @@ export interface WeddingBoardContent {
   /** Fire a soft vibration when the seal lifts (supported devices only) */
   haptics?: boolean;
 
-  // — Palette (blank = template default) —
-  /** Champagne accent — seals, rules, gate filigree */
+  //. Palette (blank = template default).
+  /** Champagne accent. Seals, rules, gate filigree */
   accentColor?: string;
   /** Blush wash behind the envelope and section fills */
   blushColor?: string;
@@ -167,13 +167,13 @@ export interface WeddingBoardContent {
   /** Page canvas / ivory */
   canvasColor?: string;
 
-  // — Hero announcement —
-  /** Single announcement phrase (e.g. “TOGETHER WITH THEIR FAMILIES”) — shown once in the hero */
+  //. Hero announcement.
+  /** Single announcement phrase (e.g. “TOGETHER WITH THEIR FAMILIES”). Shown once in the hero */
   eyebrow?: string;
   scriptTitle?: string;
   /**
    * Optional distinct heading for the family scene only.
-   * Leave blank to avoid repeating the hero eyebrow — defaults and merges strip
+   * Leave blank to avoid repeating the hero eyebrow. Defaults and merges strip
    * any phrase that matches `eyebrow` (case/spacing insensitive).
    */
   familyHeading?: string;
@@ -185,7 +185,7 @@ export interface WeddingBoardContent {
   /** Caption printed under the hero portrait */
   heroCaption?: string;
 
-  // — Event details —
+  //. Event details.
   displayDate?: string;
   weekday?: string;
   timeLabel?: string;
@@ -196,59 +196,64 @@ export interface WeddingBoardContent {
   mapUrl?: string;
   mapButtonLabel?: string;
 
-  // — Countdown —
+  //. Countdown.
   countdownHeading?: string;
   /** ISO date-time the countdown targets; falls back to the event start date */
   countdownTarget?: string;
   countdownExpiredMessage?: string;
 
-  // — Personalised greeting —
+  //. Personalised greeting.
   greetingHeading?: string;
   greetingBody?: string;
   /** Used when a guest opens a link with no name attached */
   greetingFallbackName?: string;
 
-  // — Programme —
+  //. Programme.
   programmeHeading?: string;
   programmeItems?: WeddingBoardProgrammeItem[];
 
-  // — Dress code —
+  //. Dress code.
   dressCodeHeading?: string;
   dressCodeLadies?: string;
   dressCodeGents?: string;
   /** When set, the invitation shows one card per celebration instead of Ladies / Gents. */
   dressCodeOccasions?: WeddingDressOccasion[];
 
-  // — Guest / child policy —
+  //. Guest / child policy.
   guestPolicyHeading?: string;
   guestPolicyBody?: string;
   /** Second question under the guest policy, when a celebration needs both notes. */
   guestPolicyFollowHeading?: string;
   guestPolicyFollowBody?: string;
 
-  // — Optional couple story —
+  //. Optional couple story.
   storyHeading?: string;
   storyBody?: string;
 
-  // — Optional gallery —
+  //. Optional gallery.
   galleryHeading?: string;
 
-  // — Scratch to reveal —
+  //. Scratch to reveal.
   scratchHeading?: string;
   scratchPrompt?: string;
   scratchMessage?: string;
 
-  // — RSVP —
+  //. RSVP.
   rsvpHeading?: string;
   rsvpContacts?: WeddingBoardRsvpContact[];
+  /**
+   * Guest-facing note on Kindly Respond and the Entry Pass.
+   * Use when the QR and admission code apply to one celebration only.
+   */
+  entryPassNote?: string;
 
-  // — Closing —
+  //. Closing.
   closingHeading?: string;
   closingMessage?: string;
   closingSignature?: string;
   replayLabel?: string;
 
-  // — Memory Vault —
+  //. Memory Vault.
   memoryHeading?: string;
   memoryBody?: string;
   memoryCta?: string;
@@ -262,7 +267,7 @@ export interface WeddingBoardContent {
 export const FOREVER_AFARIS_DEFAULT_SEAL = "J | C";
 
 /**
- * Fully-populated defaults — the exact mandated wedding content. Every field is
+ * Fully-populated defaults. The exact mandated wedding content. Every field is
  * still overridable through `design.studio.weddingBoard`.
  */
 export const DEFAULT_WEDDING_BOARD: Required<
@@ -354,6 +359,7 @@ export const DEFAULT_WEDDING_BOARD: Required<
     "Save the first dance for us, and stay for the champagne tower at sunset.",
 
   rsvpHeading: "R.S.V.P",
+  entryPassNote: "",
   rsvpContacts: [
     { name: "JUSTINE KUFFOUR", phone: "+233 595 968 686" },
     { name: "MAAME YEBOAH", phone: "+233 242 651 828" },
@@ -551,6 +557,51 @@ export function normaliseSectionOrder(order?: WeddingSectionId[] | null): Weddin
   return [...kept, ...WEDDING_SECTION_ORDER.filter((id) => !seen.has(id))];
 }
 
+/** Dining rows live on the post-admission page, never on the open invitation. */
+export function isMenuProgrammeItem(item: { id?: string; title?: string }): boolean {
+  return /menu/i.test(`${item.id ?? ""} ${item.title ?? ""}`);
+}
+
+export function splitProgrammeForGuestSurfaces(
+  items: WeddingBoardProgrammeItem[] | null | undefined
+): { scheduleItems: WeddingBoardProgrammeItem[]; menuBody: string } {
+  const rows = items ?? [];
+  const scheduleItems = rows.filter((item) => !isMenuProgrammeItem(item));
+  const menuBody = rows
+    .filter(isMenuProgrammeItem)
+    .map((item) => item.description?.trim() ?? "")
+    .filter(Boolean)
+    .join("\n\n");
+  return { scheduleItems, menuBody };
+}
+
+export type WeddingMenuSection = { heading: string; dishes: string[] };
+
+/** Course headings stay uppercase; dish lines keep the host’s wording. */
+export function parseWeddingMenuBody(body: string | null | undefined): WeddingMenuSection[] {
+  const lines = (body ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const sections: WeddingMenuSection[] = [];
+  for (const line of lines) {
+    const heading = line === line.toUpperCase() && /[A-Z]/.test(line) && line.length < 24;
+    if (heading) {
+      sections.push({ heading: line, dishes: [] });
+      continue;
+    }
+    if (!sections.length) sections.push({ heading: "", dishes: [] });
+    sections[sections.length - 1]?.dishes.push(line);
+  }
+  return sections.filter((section) => section.heading || section.dishes.length);
+}
+
+/** Gate note from a published invitation design, when the host set one. */
+export function entryPassNoteFromDesign(design: unknown): string {
+  const studio = (design as { studio?: { weddingBoard?: WeddingBoardContent } } | null)?.studio;
+  return mergeWeddingBoard(studio?.weddingBoard).entryPassNote.trim();
+}
+
 /** Merge host-edited copy over the premium defaults (arrays fall back whole). */
 export function mergeWeddingBoard(
   partial?: WeddingBoardContent | null
@@ -587,6 +638,7 @@ export function mergeWeddingBoard(
     "scratchMessage",
     "closingMessage",
     "memoryBody",
+    "entryPassNote",
     "receptionText",
     "accessNote",
     "heroCaption",

@@ -20,13 +20,13 @@ export const MINI_TOURS: MiniTour[] = [
     steps: [
       {
         id: "welcome",
-        title: "You're in — here's the map",
-        body: "This 30-second tour shows where everything lives. No pressure — you can skip anytime and reopen Help later.",
+        title: "You're in. Here's the map",
+        body: "This 30-second tour shows where everything lives. No pressure. You can skip anytime and reopen Help later.",
       },
       {
         id: "search",
         title: "Find anything fast",
-        body: "Search events, guests, and more from the top bar — like the search box on Instagram or X.",
+        body: "Search events, guests, and more from the top bar. Like the search box on Instagram or X.",
         targetSelector: "[data-tour='nav-search']",
       },
       {
@@ -38,13 +38,13 @@ export const MINI_TOURS: MiniTour[] = [
       {
         id: "alerts",
         title: "Stay updated",
-        body: "Notifications appear here — invites, RSVPs, messages, and important event updates.",
+        body: "Notifications appear here. Invites, RSVPs, messages, and important event updates.",
         targetSelector: "[data-tour='nav-notifications']",
       },
       {
         id: "account",
         title: "Your account & settings",
-        body: "Open your profile for settings, Help & Guides, and sign out — always in the same place.",
+        body: "Open your profile for settings, Help & Guides, and sign out. Always in the same place.",
         targetSelector: "[data-tour='nav-account']",
       },
       {
@@ -66,7 +66,7 @@ export const MINI_TOURS: MiniTour[] = [
     title: "Guest List walkthrough",
     guideSlug: "add-guests",
     steps: [
-      { id: "list", title: "Your guest list", body: "This is where every invitee lives — search, tag, and invite from here.", targetSelector: "[data-tour='guest-list']" },
+      { id: "list", title: "Your guest list", body: "This is where every invitee lives. Search, tag, and invite from here.", targetSelector: "[data-tour='guest-list']" },
       { id: "add", title: "Add guests", body: "Add one guest at a time, or import a CSV for bulk uploads.", targetSelector: "[data-tour='guest-add']" },
       { id: "invite", title: "Send invitations", body: "When your invitation is ready, send links from the list actions.", targetSelector: "[data-tour='guest-invite']" },
     ],

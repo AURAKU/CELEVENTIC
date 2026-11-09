@@ -17,7 +17,7 @@ import type { SearchResponse, SearchResultCard } from "@/lib/guest-search/types"
  *
  * One box. A name, a phone number, an email, an admission code or a table all
  * work. With an empty box the same surface browses the live guest list for the
- * selected event only — never mixed with another celebration — 15 at a time.
+ * selected event only, never mixed with another celebration. 15 at a time.
  */
 
 const DEBOUNCE_MS = 220;
@@ -207,7 +207,7 @@ export function SmartGuestSearch({
             className="text-amber-800 underline-offset-2 hover:underline"
             onClick={() => setIncludeArchived(true)}
           >
-            {archivedHidden.toLocaleString()} archived hidden — show them
+            {archivedHidden.toLocaleString()} archived hidden. Show them
           </button>
         )}
       </div>
@@ -243,7 +243,7 @@ export function SmartGuestSearch({
           <CardContent className="py-8 text-center">
             <p className="text-sm text-slate-500">Nobody matches &ldquo;{term}&rdquo;.</p>
             <p className="mt-1 text-xs text-slate-400">
-              Add them with the form — a name on its own is enough.
+              Add them with the form. A name on its own is enough.
             </p>
           </CardContent>
         </Card>

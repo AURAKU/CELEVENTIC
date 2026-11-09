@@ -1,5 +1,5 @@
 /**
- * Guest Admission Identity Audit — invitation-party scoped.
+ * Guest Admission Identity Audit. Invitation-party scoped.
  *
  * Unit of work = Invitation. Unnamed plus-ones / capacity slots never appear
  * as separate missing-identity rows.
@@ -99,7 +99,7 @@ export async function completeAllIncompleteIdentities(input: {
     page: 1,
     limit: 50,
   });
-  // Re-query ids without relying on a single page — scan up to 5000.
+  // Re-query ids without relying on a single page. Scan up to 5000.
   const invitations = await prisma.invitation.findMany({
     where: { eventId: input.eventId, archivedAt: null },
     select: {
@@ -289,7 +289,7 @@ function mapRow(
 }
 
 /**
- * Server-side audit search. Filters + pagination happen here — never ship the
+ * Server-side audit search. Filters + pagination happen here, never ship the
  * full guest database to the browser.
  */
 export async function searchAdmissionIdentityAudit(input: AuditQueryInput) {
@@ -367,13 +367,13 @@ export async function searchAdmissionIdentityAudit(input: AuditQueryInput) {
   }
 
   // When auditing one event, scan the full invitation set for that event so
-  // every party with the same class of defect is visible — not a sample.
+  // every party with the same class of defect is visible, not a sample.
   const candidateTake = input.eventId
     ? 5000
     : Math.min(500, Math.max(limit * 8, 80));
 
   let partyMixIds: Set<string> | null = null;
-  let partyMixHints = new Map<string, string>();
+  const partyMixHints = new Map<string, string>();
   if (input.issue === "party_mix" && input.eventId) {
     const leak = await scanEventPartyIsolation(input.eventId);
     partyMixIds = new Set<string>();
@@ -732,7 +732,7 @@ export async function bulkGenerateAdmissionIdentities(input: {
           results.push({ invitationId, ok: true, status: "COMPLETE" });
           continue;
         }
-        // Skip ambiguous duplicate-code rows from bulk — force individual repair.
+        // Skip ambiguous duplicate-code rows from bulk. Force individual repair.
         if (
           detail.identity.status === "DUPLICATE_CODE" ||
           detail.identity.status === "DUPLICATE_LINK"
@@ -888,7 +888,7 @@ export async function findSuspectedDuplicates(eventId: string): Promise<Duplicat
         reasons.push("similar invitation display names on the same event");
       }
 
-      // Same table alone is NOT a duplicate signal — skipped intentionally.
+      // Same table alone is NOT a duplicate signal. Skipped intentionally.
 
       if (reasons.length === 0) continue;
       // Party members of the same invitation never appear as two invitations here.
@@ -939,7 +939,7 @@ export async function archiveDuplicateInvitation(input: {
     throw new Error("Duplicates must belong to the same event.");
   }
 
-  // Never merge unrelated parties by name resemblance alone — archive only.
+  // Never merge unrelated parties by name resemblance alone. Archive only.
   await setInvitationLifecycle({
     eventId: dup.eventId,
     invitationId: dup.id,

@@ -14,7 +14,7 @@ export interface GuideStoryboard {
   key: string;
   title: string;
   aspect: "9:16" | "16:9" | "1:1";
-  /** Media may be null until recorded — motion beats still work. */
+  /** Media may be null until recorded. Motion beats still work. */
   videoUrl: string | null;
   posterUrl: string | null;
   captionsEnUrl: string | null;
@@ -37,11 +37,11 @@ export const HOW_CELEVENTIC_WORKS_STORYBOARD: GuideStoryboard = {
       id: "invite",
       title: "Invite",
       narration:
-        "Guests open a cinematic digital invitation from a link — no app install. Music and media wait for their tap.",
+        "Guests open a cinematic digital invitation from a link. No app install. Music and media wait for their tap.",
       motionKey: "invite",
       durationMs: 4200,
-      captionEn: "Invite — open your digital invitation",
-      captionFr: "Inviter — ouvrez votre invitation numérique",
+      captionEn: "Invite. Open your digital invitation",
+      captionFr: "Inviter. Ouvrez votre invitation numérique",
     },
     {
       id: "rsvp",
@@ -50,18 +50,18 @@ export const HOW_CELEVENTIC_WORKS_STORYBOARD: GuideStoryboard = {
         "Confirm attendance, add plus guests, and update later. Hosts see live RSVP counts while they plan.",
       motionKey: "rsvp",
       durationMs: 4000,
-      captionEn: "RSVP — confirm who is coming",
-      captionFr: "RSVP — confirmez votre présence",
+      captionEn: "RSVP. Confirm who is coming",
+      captionFr: "RSVP. Confirmez votre présence",
     },
     {
       id: "admit",
       title: "Admit",
       narration:
-        "Each guest gets a personal QR. Door staff scan guests, groups, and vendors — online or offline.",
+        "Each guest gets a personal QR. Door staff scan guests, groups, and vendors. Online or offline.",
       motionKey: "admit",
       durationMs: 4200,
-      captionEn: "Admit — present your QR pass",
-      captionFr: "Admettre — présentez votre pass QR",
+      captionEn: "Admit. Present your QR pass",
+      captionFr: "Admettre. Présentez votre pass QR",
     },
     {
       id: "guide",
@@ -70,18 +70,18 @@ export const HOW_CELEVENTIC_WORKS_STORYBOARD: GuideStoryboard = {
         "Event Guide keeps programme, seating lookup, menu, and venue directions in one day-of companion.",
       motionKey: "guide",
       durationMs: 4200,
-      captionEn: "Guide — programme, seating, and menu",
-      captionFr: "Guide — programme, placement et menu",
+      captionEn: "Guide. Programme, seating, and menu",
+      captionFr: "Guide. Programme, placement et menu",
     },
     {
       id: "celebrate",
       title: "Celebrate",
       narration:
-        "With entry and orientation sorted, guests celebrate — optional gifts, wishes, and companion tools included.",
+        "With entry and orientation sorted, guests celebrate. Optional gifts, wishes, and companion tools included.",
       motionKey: "celebrate",
       durationMs: 3800,
-      captionEn: "Celebrate — enjoy the day",
-      captionFr: "Célébrer — profitez du jour",
+      captionEn: "Celebrate. Enjoy the day",
+      captionFr: "Célébrer. Profitez du jour",
     },
     {
       id: "remember",
@@ -90,8 +90,8 @@ export const HOW_CELEVENTIC_WORKS_STORYBOARD: GuideStoryboard = {
         "Memory Vault gathers guest photos and videos into a shared album hosts can moderate and keep forever.",
       motionKey: "remember",
       durationMs: 4200,
-      captionEn: "Remember — revisit in Memory Vault",
-      captionFr: "Se souvenir — revivez dans Memory Vault",
+      captionEn: "Remember. Revisit in Memory Vault",
+      captionFr: "Se souvenir. Revivez dans Memory Vault",
     },
   ],
 };

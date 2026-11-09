@@ -19,7 +19,7 @@ export interface ServerI18nState {
  * Resolve locale + dictionaries for SSR.
  * Uses the static bundle by default and only merges existing DB rows.
  * Never seeds translations on the request path (seeding lives in /api/i18n/bootstrap
- * and admin routes) — seeding on every layout was locking SQLite and crashing pages.
+ * and admin routes). Seeding on every layout was locking SQLite and crashing pages.
  */
 export async function getServerI18nState(): Promise<ServerI18nState> {
   const staticMessages = buildStaticMessageDictionaries();

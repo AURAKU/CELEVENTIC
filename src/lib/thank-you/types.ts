@@ -1,5 +1,5 @@
 /**
- * Thank You Page — design / section / guestbook config types.
+ * Thank You Page. Design / section / guestbook config types.
  * Stored as additive JSON on ThankYouPage; all fields optional for legacy rows.
  */
 

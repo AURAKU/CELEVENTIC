@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -110,7 +111,7 @@ export function GuideHomeClient({
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search guides — RSVP, seating, QR, Memory Vault…"
+          placeholder="Search guides. RSVP, seating, QR, Memory Vault…"
           className="pl-10 h-12 rounded-xl bg-white/90 border-slate-200"
           aria-label="Search Celeventic Guide"
         />
@@ -144,9 +145,9 @@ export function GuideHomeClient({
         <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center">
           <p className="font-display text-lg text-slate-800">No guides matched</p>
           <p className="text-sm text-slate-500 mt-2">Try another phrase, or browse by role.</p>
-          <a href="/legal/contact" className="inline-block mt-4 text-sm text-brand-700 hover:underline">
+          <Link href="/legal/contact" className="inline-block mt-4 text-sm text-brand-700 hover:underline">
             Still need help? Contact support
-          </a>
+          </Link>
         </div>
       )}
 

@@ -4,7 +4,10 @@ import {
   applyCatalogCreativeIdentity,
 } from "@/lib/invitation-templates";
 import { pageBackgroundFromDesign } from "@/lib/invitation/studio-media-utils";
-import { mergeWeddingBoard } from "@/lib/invitation/wedding-board";
+import {
+  mergeWeddingBoard,
+  splitProgrammeForGuestSurfaces,
+} from "@/lib/invitation/wedding-board";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import type { WeddingBoardProgrammeItem } from "@/lib/invitation/wedding-board";
 
@@ -14,6 +17,8 @@ export type CompanionTheme = {
   layout: string;
   backgroundImageUrl: string | null;
   programmeItems: WeddingBoardProgrammeItem[];
+  /** Dining copy lifted from the wedding-board menu item, shown after admit. */
+  menuBody: string;
   accentWash: string;
   paperWash: string;
 };
@@ -38,7 +43,7 @@ function withAlpha(hex: string, alpha: number): string {
     return `rgba(58, 42, 46, ${alpha})`;
   }
   const trimmed = hex.trim();
-  // Gradients / rgb() / named colors are valid design tokens — leave them intact.
+  // Gradients / rgb() / named colors are valid design tokens. Leave them intact.
   if (!trimmed.startsWith("#")) {
     return trimmed || `rgba(58, 42, 46, ${alpha})`;
   }
@@ -162,19 +167,21 @@ export function resolveCompanionTheme(invitation: {
     | { weddingBoard?: unknown; visionBoard?: { programmeItems?: WeddingBoardProgrammeItem[] } }
     | undefined;
   let programmeItems: WeddingBoardProgrammeItem[] = [];
+  let menuBody = "";
   try {
     // Wedding-board programme is the studio source of truth for Event Companion
-    // (any layout that stores items there — not only Forever Afaris).
+    // (any layout that stores items there, not only Forever Afaris).
     const fromBoard = mergeWeddingBoard(
       studio?.weddingBoard as Parameters<typeof mergeWeddingBoard>[0]
     ).programmeItems;
-    if (fromBoard.length > 0) {
-      programmeItems = fromBoard;
-    } else if (studio?.visionBoard?.programmeItems?.length) {
-      programmeItems = studio.visionBoard.programmeItems;
-    }
+    const source =
+      fromBoard.length > 0 ? fromBoard : studio?.visionBoard?.programmeItems ?? [];
+    const split = splitProgrammeForGuestSurfaces(source);
+    programmeItems = split.scheduleItems;
+    menuBody = split.menuBody;
   } catch {
     programmeItems = [];
+    menuBody = "";
   }
 
   return {
@@ -188,6 +195,7 @@ export function resolveCompanionTheme(invitation: {
     layout: design.layout,
     backgroundImageUrl,
     programmeItems,
+    menuBody,
     accentWash: withAlpha(colors.secondary, 0.14),
     paperWash: withAlpha(colors.background, 0.82),
   };

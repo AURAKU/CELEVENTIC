@@ -22,7 +22,7 @@ import type { GuideSeatingOutcome } from "@/lib/event-guide/types";
  *
  * A name query is scored in memory, so this bounds the work per request. It is
  * generous enough for real events and small enough that the endpoint cannot be
- * used to walk a large guest list — and the scorer only ever returns one party
+ * used to walk a large guest list, and the scorer only ever returns one party
  * regardless of how many were loaded.
  */
 const NAME_SEARCH_SCAN_LIMIT = 400;
@@ -31,7 +31,7 @@ const NAME_SEARCH_SCAN_LIMIT = 400;
  * Ceiling on the parties written into a Venue Offline Pack.
  *
  * Ten thousand invitations is an order of magnitude past the largest wedding
- * anyone builds a pack for, so this never truncates a real event — it exists
+ * anyone builds a pack for, so this never truncates a real event. It exists
  * so a corrupt or runaway guest list fails as a large pack rather than as an
  * out-of-memory build.
  */
@@ -95,7 +95,7 @@ export class GuideSeatingService {
   /**
    * Code mode: an exact, event-scoped `GuestPass.code`.
    *
-   * Mirrors `/api/event-seat/verify` — the pass identifies exactly one
+   * Mirrors `/api/event-seat/verify`. The pass identifies exactly one
    * invitation party, and members are filtered to that party's own invitation.
    */
   private async findByCode(eventId: string, code: string): Promise<GuideSeatingOutcome> {
@@ -139,7 +139,7 @@ export class GuideSeatingService {
    *
    * Candidates are narrowed in SQL by the query's longest token so we are not
    * scanning the whole list, then scored in memory. A tie returns "ambiguous"
-   * with a count — never the candidates themselves.
+   * with a count, never the candidates themselves.
    */
   private async findByName(
     eventId: string,
@@ -234,7 +234,7 @@ export class GuideSeatingService {
         ],
       },
       take: SUGGESTION_SCAN_LIMIT,
-      // Only what a label is built from — no seats, no passes, no contacts.
+      // Only what a label is built from. No seats, no passes, no contacts.
       select: {
         id: true,
         name: true,
@@ -264,7 +264,7 @@ export class GuideSeatingService {
   async offlineSeatingSources(eventId: string) {
     const invitations = await prisma.invitation.findMany({
       where: { eventId, archivedAt: null, isGeneralPass: false },
-      // The whole party list by design — this builds the pack a venue team
+      // The whole party list by design. This builds the pack a venue team
       // works from with no signal. The cap only stops a runaway list from
       // taking the pack build down with it, and is far above any real event.
       take: OFFLINE_PACK_PARTY_CAP,

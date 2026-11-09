@@ -132,7 +132,7 @@ export function ThankYouGuestMessages({
   async function submitMessage(event: React.FormEvent) {
     event.preventDefault();
     if (previewMode) {
-      setError("Preview mode — posting is disabled.");
+      setError("Preview mode. Posting is disabled.");
       return;
     }
     if (!open) {

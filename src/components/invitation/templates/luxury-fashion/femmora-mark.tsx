@@ -8,7 +8,7 @@ export function FashionHouseMark({
 }: {
   house: Pick<LuxuryFashionHouseConfig, "monogram" | "logoUrl" | "markVariant" | "houseName">;
   className?: string;
-  /** Hub masthead crest is above the fold — never lazy-decode a 384w mush slot. */
+  /** Hub masthead crest is above the fold, never lazy-decode a 384w mush slot. */
   priority?: boolean;
 }) {
   if (house.logoUrl?.trim()) {
@@ -39,7 +39,7 @@ export function FashionHouseMark({
   );
 }
 
-/** Original Celeventic botanical stem — reusable mark variant, not a client logo. */
+/** Original Celeventic botanical stem. Reusable mark variant, not a client logo. */
 export function FashionBotanicalMark({ className }: { className?: string }) {
   return (
     <svg

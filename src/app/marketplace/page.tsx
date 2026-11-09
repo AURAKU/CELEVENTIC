@@ -3,8 +3,8 @@ import { HeaderShell } from "@/components/layout/header-shell";
 import { Footer } from "@/components/layout/footer";
 
 export const metadata = {
-  title: "Global Event Marketplace | Celeventic",
-  description: "Discover trusted event professionals worldwide. Book with confidence, secure payments, verified vendors, built for every event.",
+  title: "Vendor Feed | Celeventic Marketplace",
+  description: "Vendors list work, services, rate cards, and quotes. Hosts find them here, connect, and hire on Celeventic Marketplace.",
 };
 
 export default function MarketplacePage() {

@@ -108,7 +108,7 @@ after(async () => {
 });
 
 describe("pass issuance", () => {
-  it("is idempotent — repeated calls never mint a second live pass", async () => {
+  it("is idempotent. Repeated calls never mint a second live pass", async () => {
     const db = await loadPrisma();
     const { ensureInvitationPass } = await import("../guest-pass.service");
     const invitationId = await createInvitation(eventId, "Idempotent Party");

@@ -1,5 +1,5 @@
 /**
- * Runtime FFmpeg *filter* capability detection — server-only.
+ * Runtime FFmpeg *filter* capability detection. Server-only.
  *
  * Different environments ship different FFmpeg builds: Homebrew macOS FFmpeg commonly omits
  * `zscale` (it depends on the optional `libzimg`), while the Ubuntu VPS build has it. Hard-coding
@@ -7,15 +7,15 @@
  * outright with `No such filter: 'zscale'` even though the *fallback* SDR scale pipeline would
  * have worked fine.
  *
- * This module answers one question — "does this FFmpeg binary register filter X?" — by parsing
+ * This module answers one question. "does this FFmpeg binary register filter X?". By parsing
  * `ffmpeg -hide_banner -filters` once per process and caching the result. Callers (the video
  * processor) use it to pick the best filter graph available and never need to special-case a
  * given OS or FFmpeg distribution themselves.
  *
  * Safety:
- *   - Spawned via `execFile` with a literal argument array — never a shell string.
+ *   - Spawned via `execFile` with a literal argument array, never a shell string.
  *   - If the probe fails for any reason (FFmpeg missing, times out, unexpected output), this
- *     resolves to an *empty* capability set rather than throwing — every caller has a filter-free
+ *     resolves to an *empty* capability set rather than throwing. Every caller has a filter-free
  *     fallback pipeline, so "unknown capability" must never itself fail an upload.
  */
 
@@ -25,7 +25,7 @@ function getFfmpegBin(): string {
   return process.env.FFMPEG_PATH?.trim() || "ffmpeg";
 }
 
-/** Filter-graph capabilities only — the minimal set `buildVideoFilter` needs to pick a pipeline. */
+/** Filter-graph capabilities only. The minimal set `buildVideoFilter` needs to pick a pipeline. */
 export interface FfmpegCapabilities {
   hasZscale: boolean;
   hasTonemap: boolean;
@@ -34,7 +34,7 @@ export interface FfmpegCapabilities {
 }
 
 /**
- * Broader, diagnostic capability set — used for preflight checks (e.g. "does this build even
+ * Broader, diagnostic capability set. Used for preflight checks (e.g. "does this build even
  * have an HEVC decoder / libx264 / AAC encoder") so failures are reported clearly up front
  * instead of surfacing as an opaque ffmpeg exit code deep inside a transcode. Extends (rather
  * than replaces) `FfmpegCapabilities` so `buildVideoFilter`/`buildTranscodeArgs` keep their
@@ -60,7 +60,7 @@ function runFfmpegListCommand(flag: "-filters" | "-encoders" | "-decoders"): Pro
       { timeout: 15_000, killSignal: "SIGKILL", maxBuffer: 8 * 1024 * 1024, windowsHide: true },
       (error, stdout) => {
         // Some FFmpeg builds exit non-zero for these list commands under odd conditions even
-        // while still printing a usable list on stdout — prefer using whatever text we got over
+        // while still printing a usable list on stdout. Prefer using whatever text we got over
         // treating every non-zero exit as a hard failure.
         if (error && !stdout) {
           reject(error);
@@ -86,7 +86,7 @@ function defaultDecodersProbe(): Promise<string> {
 
 /**
  * Parses `ffmpeg -hide_banner -filters` output into a set of registered filter names.
- * Pure and dependency-free — safe to unit test with hand-written fixture text.
+ * Pure and dependency-free. Safe to unit test with hand-written fixture text.
  *
  * Real output looks like (flag-column width varies by FFmpeg build, hence the flexible match):
  *   Filters:
@@ -216,7 +216,7 @@ export async function getHdrTonemapCapabilities(probe?: FfmpegFiltersProbe): Pro
 }
 
 /**
- * Full diagnostic capability set for this FFmpeg binary — cached, at most one probe per kind
+ * Full diagnostic capability set for this FFmpeg binary. Cached, at most one probe per kind
  * per process. Used by `video-processor.ts` for a clear preflight error (e.g. "no HEVC decoder
  * in this ffmpeg build") instead of an opaque failure deep inside a transcode.
  */
@@ -236,7 +236,7 @@ export async function getFfmpegFullCapabilities(probes?: {
   return { hasZscale, hasTonemap, hasColorspace, hasLibx264, hasAac, hasHevcDecoder };
 }
 
-/** Test-only escape hatch — clears the in-process cache so tests can probe a fresh mocked binary. */
+/** Test-only escape hatch. Clears the in-process cache so tests can probe a fresh mocked binary. */
 export function resetFfmpegCapabilitiesCacheForTests(): void {
   cachedFilters = null;
   inFlightProbe = null;

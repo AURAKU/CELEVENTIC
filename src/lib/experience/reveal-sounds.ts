@@ -1,4 +1,4 @@
-/** Lightweight Web Audio reveal sounds — no external files required */
+/** Lightweight Web Audio reveal sounds. No external files required */
 
 import { createAudioContext } from "@/lib/browser/safe-storage";
 
@@ -23,7 +23,7 @@ export function playWaxCrackSound() {
     src.start();
     setTimeout(() => void ctx.close(), 500);
   } catch {
-    // silent fail — browsers may block without gesture (we call after tap)
+    // silent fail. Browsers may block without gesture (we call after tap)
   }
 }
 
@@ -48,7 +48,7 @@ export function playPaperUnfoldSound() {
   }
 }
 
-/** Soft silk whisper for ribbon / satin ceremonies — noise swell, no crack. */
+/** Soft silk whisper for ribbon / satin ceremonies. Noise swell, no crack. */
 export function playSilkSlipSound() {
   try {
     const ctx = createAudioContext();
@@ -58,7 +58,7 @@ export function playSilkSlipSound() {
     const data = buffer.getChannelData(0);
     for (let i = 0; i < data.length; i++) {
       const t = i / ctx.sampleRate;
-      // Swell in, then fall away — a ribbon sliding, not a snap.
+      // Swell in, then fall away. A ribbon sliding, not a snap.
       const envelope = Math.sin((Math.PI * t) / duration) ** 2;
       data[i] = (Math.random() * 2 - 1) * envelope * 0.16;
     }

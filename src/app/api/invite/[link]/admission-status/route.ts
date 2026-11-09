@@ -34,7 +34,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ link: st
   });
 
   // The poller inherits whatever token the page was opened with, so it has to
-  // tolerate the same mangled links the page does — otherwise a repaired
+  // tolerate the same mangled links the page does. Otherwise a repaired
   // invitation renders but its admission status silently reports "disabled".
   if (!invitation) {
     const repaired = await repairInviteLink(link);

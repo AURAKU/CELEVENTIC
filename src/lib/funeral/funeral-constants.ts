@@ -1,4 +1,4 @@
-/** Funeral invitation template collections — maps to live catalogue SKUs + Funeral Experience themes */
+/** Funeral invitation template collections. Maps to live catalogue SKUs + Funeral Experience themes */
 export const FUNERAL_TEMPLATE_COLLECTIONS = [
   { slug: "memorial-candle-tribute", name: "Candlelight Elegy", layoutSlug: "memorial-candle-tribute", revealStyle: "CANDLELIGHT", experienceTheme: "burgundy-honour" },
   { slug: "candlelight-farewell", name: "Candlelight Farewell", layoutSlug: "memorial-candle-tribute", revealStyle: "CANDLELIGHT", experienceTheme: "burgundy-honour" },

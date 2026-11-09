@@ -12,7 +12,7 @@ import { getResultCard } from "@/services/guest-search/guest-search.service";
  * Archive, restore, revoke, reissue, or permanently delete a single invitation.
  *
  * Delete is organiser/admin-only cleanup. The published Studio invitation for
- * an event cannot be hard-deleted here — that would take down the live
+ * an event cannot be hard-deleted here, that would take down the live
  * production template for every guest.
  */
 

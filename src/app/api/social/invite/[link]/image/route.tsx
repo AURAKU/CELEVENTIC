@@ -132,7 +132,7 @@ async function jpegResponse(
     quality -= 8;
     jpeg = await sharp(source).jpeg({ quality, mozjpeg: true }).toBuffer();
   }
-  return new Response(jpeg, { headers });
+  return new Response(Uint8Array.from(jpeg), { headers });
 }
 
 function fallbackCard() {

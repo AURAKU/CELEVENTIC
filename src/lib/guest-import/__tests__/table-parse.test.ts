@@ -32,7 +32,7 @@ describe("sniffDelimiter", () => {
   it("does not crown the comma on a list of 'Surname, First' names", () => {
     // Every line has exactly one comma, but so would a real two-column CSV.
     // What matters is that a single-column paste never explodes into two guests
-    // downstream — parsePastedText re-parses as lines. Here we only assert the
+    // downstream. ParsePastedText re-parses as lines. Here we only assert the
     // sniff stays deterministic rather than flapping between delimiters.
     const text = "Mensah, Kofi\nBoateng, Ama\nOsei, Yaw";
     assert.equal(sniffDelimiter(text), ",");

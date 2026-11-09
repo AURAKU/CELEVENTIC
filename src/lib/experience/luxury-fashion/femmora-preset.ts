@@ -1,5 +1,5 @@
 /**
- * Femmora catalogue preset — default template DNA for the first luxury-fashion SKU.
+ * Femmora catalogue preset. Default template DNA for the first luxury-fashion SKU.
  * Organizers replace these values in Studio. Reusable components must not import this
  * as the engine fallback.
  */
@@ -7,23 +7,23 @@
 import type { FashionLookbookItem, LuxuryFashionHouseConfig } from "./types";
 import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "./house-defaults";
 
-/** 29 Aug 2026 09:00 Africa/Nairobi — 30 Aug 2026 20:00. */
+/** 29 Aug 2026 09:00 Africa/Nairobi. 30 Aug 2026 20:00. */
 export const FEMMORA_START_ISO = "2026-08-29T09:00:00+03:00";
 export const FEMMORA_END_ISO = "2026-08-30T20:00:00+03:00";
 
 export const FEMMORA_MAPS_URL =
   "https://www.google.com/maps/search/?api=1&query=Femmora%20GH%20Westlands";
 
-/** Invitation flyer artwork — card face and ENTER EXPERIENCE, never hub wallpaper. */
+/** Invitation flyer artwork. Card face and ENTER EXPERIENCE, never hub wallpaper. */
 export const FEMMORA_SILK_BED = "/templates/femmora/silk-bed.jpg";
 export const FEMMORA_INVITATION_FLYER = "/templates/femmora/invitation-flyer.jpg";
 export const FEMMORA_FLYER_CARD = FEMMORA_INVITATION_FLYER;
 export const FEMMORA_LOGO_MARK = "/templates/femmora/logo-mark.png";
-/** WhatsApp / iMessage / Snapchat link preview — physical card on silk, never hub wallpaper. */
+/** WhatsApp / iMessage / Snapchat link preview. Physical card on silk, never hub wallpaper. */
 export const FEMMORA_SHARE_PLACECARD = "/templates/femmora/share-placecard.jpg";
 export const FEMMORA_SHARE_PLACECARD_WIDTH = 1600;
 export const FEMMORA_SHARE_PLACECARD_HEIGHT = 1234;
-/** Invitation bed — Adrian Berenguer, The Beauty. Femmora SKU only. */
+/** Invitation bed. Adrian Berenguer, The Beauty. Femmora SKU only. */
 export const FEMMORA_INVITE_MUSIC = "/templates/femmora/the-beauty.mp3";
 export const FEMMORA_INVITE_MUSIC_DURATION_SEC = 137.52;
 export const FEMMORA_STORE_FILM = "/templates/femmora/store-preview.mp4";
@@ -84,7 +84,7 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     folioFaceLine: "PRIVATE INVITATION",
     cardCtaLabel: "OPEN",
     teaserPlaceLine: "WESTLANDS",
-    teaserDateLine: "29 — 30 AUGUST",
+    teaserDateLine: "29. 30 AUGUST",
     teaserClipUrl: null,
     teaserPosterUrl: null,
     mapsCtaLabel: "View on Google Maps",

@@ -20,7 +20,7 @@ export class MemoryService {
       data: {
         eventId,
         ownerId,
-        title: event ? `${event.title} — Memory Vault` : "Event Memory Vault",
+        title: event ? `${event.title}. Memory Vault` : "Event Memory Vault",
       },
     });
   }

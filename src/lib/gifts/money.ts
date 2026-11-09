@@ -3,7 +3,7 @@
  *
  * Every amount that touches a gift payment or a wallet ledger entry is an
  * integer in the currency's minor unit (pesewas for GHS). Floating point never
- * participates in a balance calculation — the only place a float appears is at
+ * participates in a balance calculation. The only place a float appears is at
  * the display boundary, and even there we format from the integer.
  */
 
@@ -61,7 +61,35 @@ export function toMinorUnits(value: string | number, currency = GIFT_DEFAULT_CUR
   return minor;
 }
 
-/** Minor units back to a major-unit number. Display only — never for maths. */
+/**
+ * Convert a Prisma Decimal, string, or whole-major number into minor units.
+ * Prefer Decimal.toString() so ticket amounts never pass through IEEE floats.
+ */
+export function decimalToMinorUnits(value: unknown, currency = GIFT_DEFAULT_CURRENCY): number {
+  if (value == null) throw new MoneyError("Amount is required");
+  if (typeof value === "object" && typeof (value as { toString?: () => string }).toString === "function") {
+    const asString = (value as { toString: () => string }).toString();
+    if (asString && asString !== "[object Object]") {
+      return toMinorUnits(asString, currency);
+    }
+  }
+  return toMinorUnits(String(value), currency);
+}
+
+/** Exact major-unit decimal string from integer minor units. Never use for maths. */
+export function minorToDecimalString(minor: number, currency = GIFT_DEFAULT_CURRENCY): string {
+  if (!Number.isInteger(minor)) throw new MoneyError("Amount must be integer minor units");
+  const exponent = currencyExponent(currency);
+  if (exponent === 0) return String(minor);
+  const factor = 10 ** exponent;
+  const negative = minor < 0;
+  const abs = Math.abs(minor);
+  const whole = Math.trunc(abs / factor);
+  const frac = String(abs % factor).padStart(exponent, "0");
+  return `${negative ? "-" : ""}${whole}.${frac}`;
+}
+
+/** Minor units back to a major-unit number. Display only, never for maths. */
 export function toMajorUnits(minor: number, currency = GIFT_DEFAULT_CURRENCY): number {
   return minor / factor(currency);
 }
@@ -137,7 +165,7 @@ export function parseSuggestedAmounts(raw: unknown, fallback: number[] = []): nu
 
 /**
  * Paystack (and every other provider we support) quotes amounts in minor units
- * already, so this is an identity guard rather than a conversion — it exists so
+ * already, so this is an identity guard rather than a conversion. It exists so
  * a mismatch between what we asked for and what the provider charged is caught
  * loudly at verification time.
  */

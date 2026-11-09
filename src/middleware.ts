@@ -34,7 +34,7 @@ export default withAuth(
         return NextResponse.redirect(new URL("/dashboard?error=admin_forbidden", req.url));
       }
       // Organizer “user view” cookie blocks /admin until return-to-admin clears it.
-      // Do not also gate on token.isAdminView here — that JWT flag is optional and
+      // Do not also gate on token.isAdminView here, that JWT flag is optional and
       // was stranding live-domain admins when only the cookie had been cleared.
       if (adminViewMode === "user") {
         return NextResponse.redirect(new URL("/dashboard", req.url));
@@ -57,14 +57,25 @@ export default withAuth(
       return NextResponse.redirect(new URL("/vendor/onboarding", req.url));
     }
 
+    const firstRunAllowed =
+      path === "/dashboard" ||
+      path.startsWith("/dashboard/getting-started") ||
+      path.startsWith("/dashboard/help") ||
+      path.startsWith("/dashboard/events") ||
+      path.startsWith("/dashboard/settings") ||
+      path.startsWith("/dashboard/invitations") ||
+      path.startsWith("/dashboard/messages") ||
+      path.startsWith("/dashboard/guests") ||
+      path.startsWith("/dashboard/design-studio") ||
+      path.startsWith("/dashboard/business-card");
+
     const generalOnboardingIncomplete =
       token &&
       !token.onboardingCompletedAt &&
       !isVendor &&
       Boolean(token.accountType) &&
       path.startsWith("/dashboard") &&
-      !path.startsWith("/dashboard/getting-started") &&
-      !path.startsWith("/dashboard/help");
+      !firstRunAllowed;
 
     if (generalOnboardingIncomplete) {
       const dest = new URL("/dashboard/getting-started", req.url);

@@ -35,6 +35,7 @@ interface EventOverviewClientProps {
   contactPhone?: string | null;
   dressCode?: string | null;
   expectedGuests?: number | null;
+  rsvpDeadline?: string | null;
   children?: React.ReactNode;
 }
 
@@ -53,6 +54,7 @@ export function EventOverviewClient({
   contactPhone,
   dressCode,
   expectedGuests,
+  rsvpDeadline,
   children,
 }: EventOverviewClientProps) {
   const { workspace, loading } = useEventWorkspace(eventId);
@@ -130,6 +132,12 @@ export function EventOverviewClient({
             <div className="space-y-3">
               <div className="flex justify-between"><span className="text-slate-500">Date</span><span>{new Date(startDate).toLocaleDateString()}</span></div>
               {venueName && <div className="flex justify-between"><span className="text-slate-500">Venue</span><span>{venueName}</span></div>}
+              {rsvpDeadline && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-slate-500">RSVP deadline</span>
+                  <span>{new Date(rsvpDeadline).toLocaleString()}</span>
+                </div>
+              )}
               {expectedGuests && <div className="flex justify-between"><span className="text-slate-500">Expected {guestsLabel}</span><span>{expectedGuests}</span></div>}
               {description && (
                 <p className="text-slate-600 pt-1 border-t border-slate-100 whitespace-pre-wrap">{description}</p>

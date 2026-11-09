@@ -40,7 +40,7 @@ interface BlushGateRevealProps {
   autoOpen?: boolean;
   /** Returning guest, surface an honest, opt-in way to move along faster. */
   allowSkip?: boolean;
-  /** Framed catalogue/studio preview — absolute shell instead of viewport-fixed. */
+  /** Framed catalogue/studio preview. Absolute shell instead of viewport-fixed. */
   embedded?: boolean;
   onBegin?: () => void;
   onComplete: () => void;

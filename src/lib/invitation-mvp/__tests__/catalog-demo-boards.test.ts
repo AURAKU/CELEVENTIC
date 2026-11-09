@@ -9,6 +9,26 @@ import { mergeWeddingBoard } from "@/lib/invitation/wedding-board";
 import { mergeVisionBoard } from "@/lib/invitation/vision-board";
 
 describe("catalogue browse uses fictional sample identity", () => {
+  it("Candlelight Tribute Chapters uses a fictional honouree, never a client name", () => {
+    const preview = buildLivePreviewProps("memorial-candle-tribute", "Funeral", {
+      catalogSlug: "candlelight-elegy-pages",
+    });
+    const blob = JSON.stringify({ event: preview.event, message: preview.message, design: preview.design });
+    assert.equal(catalogDemoLeaksClientIdentity(blob), false);
+    assert.match(preview.event.title, /Elom Kofi Addo/);
+    assert.equal(/ama\s*darkoa|enock|fafa/i.test(blob), false);
+  });
+
+  it("Aurelia catalogue preview never leaks the live couple", () => {
+    const preview = buildLivePreviewProps("aurelia-editorial-wedding", "Wedding", {
+      catalogSlug: "aurelia-editorial-wedding",
+    });
+    const blob = JSON.stringify({ event: preview.event, message: preview.message });
+    assert.equal(catalogDemoLeaksClientIdentity(blob), false);
+    assert.match(preview.event.hostName, /Selene Addae/);
+    assert.equal(/enock|\bruth\b/i.test(blob), false);
+  });
+
   it("Forever Afaris preview never leaks client couple or RSVP details", () => {
     const preview = buildLivePreviewProps("forever-afaris-wedding", "Wedding", {
       catalogSlug: "forever-afaris-wedding",

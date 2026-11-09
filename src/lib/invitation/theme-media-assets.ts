@@ -1,5 +1,5 @@
 /**
- * Curated theme media — object/scenery only (no people / AI portraits).
+ * Curated theme media. Object/scenery only (no people / AI portraits).
  * Funeral assets are solemn; wedding allows florals & décor; each category stays distinct.
  */
 
@@ -26,7 +26,7 @@ const LAYOUT_THEME: Record<string, EventThemeCategory> = {
   "floral-garden-romance": "Wedding",
 };
 
-/** Solemn — candles, lilies, stone, stained glass. No wedding or party imagery. */
+/** Solemn. Candles, lilies, stone, stained glass. No wedding or party imagery. */
 const FUNERAL_HERO =
   "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=900&q=80&auto=format&fit=crop";
 const FUNERAL_GALLERY = [
@@ -39,7 +39,7 @@ const FUNERAL_GALLERY = [
 const FUNERAL_BG =
   "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1600&q=60&auto=format&fit=crop&blur=8";
 
-/** Romantic florals, rings, arches — décor only */
+/** Romantic florals, rings, arches. Décor only */
 const WEDDING_HERO =
   "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=900&q=80&auto=format&fit=crop";
 const WEDDING_GALLERY = [
@@ -99,7 +99,7 @@ const CHURCH_BG =
 const CONCERT_BG =
   "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&q=60&auto=format&fit=crop&blur=8";
 
-/** Abstract motion clips — no people. Omitted for Funeral (sensitive). */
+/** Abstract motion clips. No people. Omitted for Funeral (sensitive). */
 const THEME_DEMO_VIDEOS: Partial<Record<EventThemeCategory, string[]>> = {
   Wedding: [
     "https://assets.mixkit.co/videos/preview/mixkit-golden-bokeh-particles-4552-large.mp4",
@@ -256,6 +256,7 @@ export function getThemeBackgroundUrl(
   return THEME_PACKS[theme].background;
 }
 
-export function isVideoUrl(url: string): boolean {
+export function isVideoUrl(url?: string | null): boolean {
+  if (!url) return false;
   return /\.(mp4|webm|mov)(\?|$)/i.test(url);
 }

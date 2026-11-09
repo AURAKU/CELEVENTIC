@@ -12,7 +12,7 @@ function createRedisClient(): Redis | null {
       enableOfflineQueue: false,
     });
     client.on("error", () => {
-      // Redis is optional locally — avoid crashing the Node process on connection failures.
+      // Redis is optional locally. Avoid crashing the Node process on connection failures.
     });
     return client;
   } catch {
@@ -40,7 +40,7 @@ export async function cacheSet(key: string, value: unknown, ttlSeconds = 300): P
   try {
     await redis.setex(key, ttlSeconds, JSON.stringify(value));
   } catch {
-    // Redis unavailable — graceful degradation
+    // Redis unavailable. Graceful degradation
   }
 }
 

@@ -2,7 +2,7 @@
  * Platform-wide invitation-party isolation audit (pure helpers).
  *
  * Detects roster pollution where a named guest on invitation A likely belongs
- * to invitation B on the same event — the class of bug that mixed any two
+ * to invitation B on the same event. The class of bug that mixed any two
  * parties (not just one example couple/family) on public invite pages.
  */
 
@@ -56,7 +56,7 @@ function keysMatch(a: string, b: string): boolean {
   const kb = nameKey(b);
   if (!ka || !kb) return false;
   if (ka === kb) return true;
-  // "Akua & Kelly" vs "Akua" / "Kelly" alone is NOT enough — require substantial overlap.
+  // "Akua & Kelly" vs "Akua" / "Kelly" alone is NOT enough. Require substantial overlap.
   if (ka.length >= 8 && kb.length >= 8 && (ka.includes(kb) || kb.includes(ka))) {
     return true;
   }
@@ -96,7 +96,7 @@ export function findMislinkedGuests(input: {
         recommended:
           matches.length === 1
             ? `Attach guest ${guest.id} to invitation ${matches[0].id}`
-            : "Manual review — do not auto-attach ambiguous orphan",
+            : "Manual review. Do not auto-attach ambiguous orphan",
         confidence: matches.length === 1 ? "high" : "medium",
       });
       continue;
@@ -105,7 +105,7 @@ export function findMislinkedGuests(input: {
     const current = activeInvites.find((i) => i.id === guest.invitationId);
     if (!current) continue;
 
-    // Already matches own party name (primary invitee / family label) — fine.
+    // Already matches own party name (primary invitee / family label). Fine.
     if (keysMatch(guestName, current.name)) continue;
 
     const others = activeInvites.filter(

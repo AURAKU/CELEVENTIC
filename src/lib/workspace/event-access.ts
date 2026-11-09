@@ -137,7 +137,7 @@ export async function requireEventPermission(
 
 /**
  * Single-event access: owner, active collaborator, staff, or active org member.
- * Used by resolveEventAccess / getEventById — not for dashboard “my events” lists.
+ * Used by resolveEventAccess / getEventById, not for dashboard “my events” lists.
  */
 export function eventAccessWhere(userId: string) {
   return {
@@ -156,7 +156,7 @@ export function eventAccessWhere(userId: string) {
 
 /**
  * List / picker scoping for organizers & collaborators.
- * Owner or active EventCollaborator only — not staff, not org-wide membership.
+ * Owner or active EventCollaborator only, not staff, not org-wide membership.
  * Staff still reach events via resolveEventAccess / deep links; full catalog is
  * admin-only via /admin/events.
  */

@@ -1,5 +1,5 @@
 /**
- * Reusable invitation social-links — platform-agnostic DNA for any template.
+ * Reusable invitation social-links. Platform-agnostic DNA for any template.
  * Luxury fashion (and later families) supply configured links; nothing here is Femmora-specific.
  */
 
@@ -106,21 +106,21 @@ export function safeSocialHttpUrl(
 export function resolveInvitationSocialLinks(
   links?: InvitationSocialLink[] | null
 ): ResolvedInvitationSocialLink[] {
-  return (links ?? [])
-    .filter((link) => link.enabled !== false)
-    .map((link) => {
-      const handle = normalizeSocialHandle(link.handle) || undefined;
-      const url = safeSocialHttpUrl(link.url, link.platform);
-      if (!handle && !url) return null;
-      return {
-        platform: link.platform,
-        handle,
-        displayHandle: displaySocialHandle(handle),
-        url,
-        ctaLabel: defaultSocialCta(link.platform, link.ctaLabel),
-      } satisfies ResolvedInvitationSocialLink;
-    })
-    .filter((link): link is ResolvedInvitationSocialLink => Boolean(link));
+  const resolved: ResolvedInvitationSocialLink[] = [];
+  for (const link of links ?? []) {
+    if (link.enabled === false) continue;
+    const handle = normalizeSocialHandle(link.handle) || undefined;
+    const url = safeSocialHttpUrl(link.url, link.platform);
+    if (!handle && !url) continue;
+    resolved.push({
+      platform: link.platform,
+      handle,
+      displayHandle: displaySocialHandle(handle),
+      url,
+      ctaLabel: defaultSocialCta(link.platform, link.ctaLabel),
+    });
+  }
+  return resolved;
 }
 
 export function socialLinkHasDestination(link: ResolvedInvitationSocialLink): boolean {

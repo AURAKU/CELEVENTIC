@@ -94,7 +94,7 @@ function formatWhen(value?: string | Date | null) {
       minute: "2-digit",
     }).format(new Date(value));
   } catch {
-    return "—";
+    return "None";
   }
 }
 
@@ -168,7 +168,7 @@ function SettingsHubContent() {
   const requested: SettingsTab = VALID_TABS.includes(rawTab as SettingsTab)
     ? (rawTab as SettingsTab)
     : "account";
-  // Integrations is admin-only — deep links from non-admins fall back to Account
+  // Integrations is admin-only. Deep links from non-admins fall back to Account
   const tab: SettingsTab =
     requested === "integrations" && status !== "loading" && !isAdmin ? "account" : requested;
 
@@ -461,7 +461,7 @@ function OrganizationSection() {
           <div className="space-y-2">
             <Label>Organization logo</Label>
             <p className="text-xs text-slate-500">
-              Upload a square logo from your phone or computer — no hosting link needed.
+              Upload a square logo from your phone or computer. No hosting link needed.
             </p>
             <ImageUploadCropper
               hint="Choose from your photos or open the camera, then crop to a clean square for your brand."
@@ -641,7 +641,7 @@ function TeamSection() {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <p className="text-xs text-slate-500">
           Event-level staff for the gate still live under each event&apos;s QR Admission and seating
-          tools — organization team is your shared workspace roster.
+          tools. Organization team is your shared workspace roster.
         </p>
         <Link
           href="/dashboard/invitations/workspace"
@@ -775,7 +775,7 @@ function BrandingSection() {
           <div className="space-y-2">
             <Label>Profile avatar</Label>
             <p className="text-xs text-slate-500">
-              Pick a style that stands out — every design uses a unique look and color pair.
+              Pick a style that stands out. Every design uses a unique look and color pair.
             </p>
             <AvatarPicker value={avatarUrl} onChange={setAvatarUrl} />
           </div>
@@ -783,7 +783,7 @@ function BrandingSection() {
           <div className="space-y-2">
             <Label>Organization logo</Label>
             <p className="text-xs text-slate-500">
-              Add a logo from your photo gallery or take a new picture — no URL needed.
+              Add a logo from your photo gallery or take a new picture. No URL needed.
             </p>
             <ImageUploadCropper
               hint="Choose from your photos or open the camera, then crop to a clean square."
@@ -1080,8 +1080,15 @@ function BillingSection({ upgradeHighlight }: { upgradeHighlight?: string | null
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{pkg.name}</CardTitle>
                 <CardDescription>
-                  {pkg.guestLimit.toLocaleString()} guests ·{" "}
-                  {data.adminFullAccess ? "Included (admin)" : `GHS ${pkg.price}/mo`}
+                  {pkg.slug === "starter" || pkg.price === 0
+                    ? "5 guests · 5 invitations · tasting plan"
+                    : `${pkg.guestLimit.toLocaleString()} guests`}
+                  {" · "}
+                  {data.adminFullAccess
+                    ? "Included (admin)"
+                    : pkg.price === 0
+                      ? "No charge"
+                      : `GHS ${pkg.price}/event`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1095,7 +1102,9 @@ function BillingSection({ upgradeHighlight }: { upgradeHighlight?: string | null
                   </Badge>
                 ) : (
                   <Button variant="outline" size="sm" asChild>
-                    <a href={SALES_MAILTO}>Upgrade — contact sales</a>
+                    <Link href={pkg.price === 0 ? "/auth/register" : `/pricing#pricing`}>
+                      {pkg.price === 0 ? "Stay on tasting" : "Unlock package"}
+                    </Link>
                   </Button>
                 )}
               </CardContent>

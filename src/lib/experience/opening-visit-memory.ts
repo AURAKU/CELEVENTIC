@@ -1,7 +1,7 @@
 /**
  * Opening-ceremony visit memory.
  *
- * Tap to Begin and the envelope/gate reveal are never silently skipped —
+ * Tap to Begin and the envelope/gate reveal are never silently skipped.
  * every visit gets the full ceremony, first time or not. What this memory
  * changes is more modest: a guest who has already completed the ceremony
  * once gets a shorter branded preload beat (instead of the full first-visit
@@ -49,7 +49,7 @@ export function rememberOpeningSeen(key: string): void {
   try {
     safeStorage()?.setItem(key, "1");
   } catch {
-    /* quota or blocked storage — the ceremony simply plays again */
+    /* quota or blocked storage. The ceremony simply plays again */
   }
 }
 

@@ -25,7 +25,7 @@ function fallbackPackages(eventType?: string): InvitationPackageDef[] {
 }
 
 function fallbackAddons(packageSlug?: string): CommerceAddon[] {
-  return INVITATION_ADDONS.map((addon) => ({
+  return INVITATION_ADDONS.map((addon): CommerceAddon => ({
     slug: addon.slug,
     name: addon.name,
     description: addon.description,
@@ -41,8 +41,12 @@ function fallbackAddons(packageSlug?: string): CommerceAddon[] {
 
 async function ensureSeeded() {
   try {
-    const count = await prisma.invitationProductPackage.count();
-    if (count === 0) await seedCommerceEngine();
+    const existing = await prisma.invitationProductPackage.findMany({ select: { slug: true } });
+    const have = new Set(existing.map((row) => row.slug));
+    const needed = getCatalogInvitationPackages().map((pkg) => pkg.slug);
+    if (existing.length === 0 || needed.some((slug) => !have.has(slug))) {
+      await seedCommerceEngine();
+    }
   } catch (error) {
     console.warn("[catalog] seed skipped", error);
   }
@@ -109,6 +113,7 @@ function mapPackage(pkg: {
     ctaLabel: bundled?.ctaLabel,
     paymentRequiredToPublish: bundled?.paymentRequiredToPublish,
     includesLabel: bundled?.includesLabel,
+    teamChatAfterPay: bundled?.teamChatAfterPay,
   };
 }
 

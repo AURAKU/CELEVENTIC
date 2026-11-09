@@ -5,7 +5,7 @@ import { isFormDataFile } from "../../../../lib/uploads/form-data-file";
 /**
  * Regression coverage for the "Upload failed with status 500" bug: `/api/uploads/video/local`
  * used `file instanceof File`, which throws `ReferenceError: File is not defined` on Node < 20
- * (no global `File` there) — an uncaught exception that surfaced to the client as an opaque 500
+ * (no global `File` there). An uncaught exception that surfaced to the client as an opaque 500
  * for every single local-fallback video upload. `isFormDataFile` must correctly identify a real
  * FormData file part using only duck-typing, with zero references to the global `File` value.
  */
@@ -34,7 +34,7 @@ describe("isFormDataFile", () => {
   });
 
   it("never throws even when the global `File` constructor doesn't exist on this runtime", () => {
-    // Simulates Node < 20 (no global File) — the whole point of this helper. If the
+    // Simulates Node < 20 (no global File). The whole point of this helper. If the
     // implementation ever regresses to `value instanceof File`, this throws a ReferenceError.
     const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, "File");
     // @ts-expect-error -- intentionally deleting the global for this test only

@@ -4,7 +4,7 @@
  * Going live is not a one-way door: a published invitation stays fully
  * editable so hosts can fix a venue, swap photos or re-theme the whole thing
  * while guests already hold the link. Only unpaid and archived orders are
- * gated — everything past checkout keeps its Studio.
+ * gated. Everything past checkout keeps its Studio.
  */
 export const STUDIO_UNLOCKED_STATUSES = new Set([
   "PAID",
@@ -16,7 +16,7 @@ export const STUDIO_UNLOCKED_STATUSES = new Set([
 
 /**
  * Paid / in-production Studio orders that already have a live guest URL.
- * Secondary guest invitations for the same event must inherit these — waiting
+ * Secondary guest invitations for the same event must inherit these. Waiting
  * for status === PUBLISHED left PAID / IN_PRODUCTION events on catalogue DNA.
  */
 export const LIVE_PRODUCTION_ORDER_STATUSES = [

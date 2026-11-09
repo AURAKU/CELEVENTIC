@@ -22,7 +22,7 @@ const ALLOWED = new Set([
 ]);
 
 /**
- * Guide analytics — privacy enforced (§57).
+ * Guide analytics. Privacy enforced (§57).
  * Never stores guest names, admission codes, QR tokens, payment info, or private invite URLs.
  */
 export async function POST(req: Request) {

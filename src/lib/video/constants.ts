@@ -1,6 +1,6 @@
 /**
  * Universal video upload constants shared by client components and API routes.
- * Keep this the single source of truth for accepted formats — never hardcode
+ * Keep this the single source of truth for accepted formats, never hardcode
  * an `accept` string or extension list anywhere else.
  */
 
@@ -55,7 +55,7 @@ export const ALLOWED_VIDEO_EXTENSIONS = [
 
 export type AllowedVideoExtension = (typeof ALLOWED_VIDEO_EXTENSIONS)[number];
 
-/** MIME types browsers commonly report for the extensions above (best-effort — browsers are inconsistent). */
+/** MIME types browsers commonly report for the extensions above (best-effort. Browsers are inconsistent). */
 export const ALLOWED_VIDEO_MIME_TYPES = [
   "video/mp4",
   "video/quicktime",
@@ -75,7 +75,7 @@ export const ALLOWED_VIDEO_MIME_TYPES = [
   "video/x-ms-asf",
   "video/x-dv",
   "application/mxf",
-  /** HEVC/H.265 is a codec, not a container — it ships inside .mp4/.mov (iPhone, Android, some
+  /** HEVC/H.265 is a codec, not a container. It ships inside .mp4/.mov (iPhone, Android, some
    *  screen recorders). A handful of browsers/OSes report one of these instead of video/mp4|quicktime. */
   "video/hevc",
   "video/h265",
@@ -84,7 +84,7 @@ export const ALLOWED_VIDEO_MIME_TYPES = [
   "application/octet-stream",
 ] as const;
 
-/** Video codec fourCCs/names we recognize as HEVC/H.265 — never a rejection reason by themselves. */
+/** Video codec fourCCs/names we recognize as HEVC/H.265, never a rejection reason by themselves. */
 export const HEVC_CODEC_IDENTIFIERS = ["hevc", "h265", "h.265", "hev1", "hvc1"] as const;
 
 export function isHevcCodec(codec: string | null | undefined): boolean {
@@ -139,7 +139,7 @@ export const DISALLOWED_SIGNATURE_LABELS = [
   "PDF document",
 ] as const;
 
-/** Multipart threshold — files at/above this use S3 multipart upload; below use single presigned PUT. */
+/** Multipart threshold. Files at/above this use S3 multipart upload; below use single presigned PUT. */
 export const MULTIPART_THRESHOLD_BYTES = 8 * 1024 * 1024; // 8MB
 
 /** S3 multipart requires parts >= 5MB (except the last part). */
@@ -147,7 +147,7 @@ export const MIN_PART_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 export const DEFAULT_PART_SIZE_BYTES = 16 * 1024 * 1024; // 16MB
 export const MAX_PARTS = 10_000; // hard S3 ceiling
 
-/** Presigned URL lifetime — kept short per security requirements (5–15 minutes). */
+/** Presigned URL lifetime. Kept short per security requirements (5 to 15 minutes). */
 export const PRESIGN_EXPIRY_SECONDS = 10 * 60; // 10 minutes
 export const MIN_PRESIGN_EXPIRY_SECONDS = 5 * 60;
 export const MAX_PRESIGN_EXPIRY_SECONDS = 15 * 60;

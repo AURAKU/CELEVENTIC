@@ -153,7 +153,7 @@ export function AdminEventsClient() {
                       <Button size="sm" variant="ghost" title="Feature" onClick={() => updateEvent(ev.id, { isFeatured: !ev.isFeatured })}>
                         <Star className={`h-3.5 w-3.5 ${ev.isFeatured ? "text-gold-500 fill-gold-500" : ""}`} />
                       </Button>
-                      <Button size="sm" variant="ghost" title="Public" onClick={() => updateEvent(ev.id, { isPublic: !ev.isPublic })}>
+                      <Button size="sm" variant="ghost" title="List on Discover" onClick={() => updateEvent(ev.id, { isPublic: !ev.isPublic })}>
                         <Eye className={`h-3.5 w-3.5 ${ev.isPublic ? "text-brand-600" : ""}`} />
                       </Button>
                       <Button size="sm" variant="ghost" asChild>

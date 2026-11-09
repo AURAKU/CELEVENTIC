@@ -1,5 +1,5 @@
 /**
- * Wedding creative families — 20 mission concepts mapped onto existing
+ * Wedding creative families. 20 mission concepts mapped onto existing
  * Wedding/Engagement catalogue SKUs. Scope: Wedding + Engagement only.
  *
  * Do not invent empty catalogue SKUs. Families without a dedicated SKU stay
@@ -56,7 +56,7 @@ export interface WeddingFamilyProfile {
 }
 
 /**
- * Mission families 1–20. Primary rows first; studio/wave variants nested after
+ * Mission families 1 to 20. Primary rows first; studio/wave variants nested after
  * their parent concept where an existing SKU supports them.
  */
 export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
@@ -86,7 +86,7 @@ export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
     phase: "shipped",
     dna: {
       openingDefault: "petal-fall",
-      interactionHint: "Tap — petals fall",
+      interactionHint: "Tap. Petals fall",
       motionProfile: "romantic",
       typographySystem: "romantic-script",
       buttonFamily: "pearl",
@@ -95,7 +95,7 @@ export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
       outroType: "butterflies",
       parallax: "subtle",
     },
-    notes: "Secret Garden SKU — watercolor petal ceremony DNA",
+    notes: "Secret Garden SKU. Watercolor petal ceremony DNA",
   },
   {
     familyId: "royal-wax-seal",
@@ -135,7 +135,7 @@ export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
   },
   {
     familyId: "palace-gates",
-    familyName: "Palace Gates — Vine Cathedral",
+    familyName: "Palace Gates. Vine Cathedral",
     catalogSlug: "arch-green",
     role: "studio-variant",
     phase: "metadata",
@@ -213,7 +213,7 @@ export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
     phase: "planned",
     dna: {
       openingDefault: "curtain-wedding",
-      interactionHint: "Touch to begin — pull the velvet curtain",
+      interactionHint: "Touch to begin. Pull the velvet curtain",
       motionProfile: "cinematic",
       typographySystem: "display-serif",
       buttonFamily: "ticket-stub",
@@ -270,7 +270,7 @@ export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
     phase: "shipped",
     dna: {
       openingDefault: "curtain-wedding",
-      interactionHint: "Touch to begin — curtains part",
+      interactionHint: "Touch to begin. Curtains part",
       motionProfile: "traditional",
       typographySystem: "heritage-display",
       buttonFamily: "kente",
@@ -282,7 +282,7 @@ export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
   },
   {
     familyId: "traditional-heritage",
-    familyName: "Traditional Heritage — Covenant",
+    familyName: "Traditional Heritage. Covenant",
     catalogSlug: "kente-heritage-union",
     role: "studio-variant",
     phase: "metadata",
@@ -300,7 +300,7 @@ export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
   },
   {
     familyId: "traditional-heritage",
-    familyName: "Traditional Heritage — Court",
+    familyName: "Traditional Heritage. Court",
     catalogSlug: "kente-court",
     role: "wave1-lite",
     phase: "metadata",
@@ -442,7 +442,7 @@ export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
       outroType: "thank-you-fade",
       parallax: "none",
     },
-    notes: "No leftover minimal wedding SKU — planned for future catalogue wave",
+    notes: "No leftover minimal wedding SKU. Planned for future catalogue wave",
   },
   {
     familyId: "european-manor",
@@ -482,7 +482,7 @@ export const WEDDING_FAMILY_PROFILES: WeddingFamilyProfile[] = [
   },
 ];
 
-/** @deprecated Prefer WEDDING_FAMILY_PROFILES — kept for prior call sites */
+/** @deprecated Prefer WEDDING_FAMILY_PROFILES. Kept for prior call sites */
 export type WeddingFamilyAssignment = {
   familyId: WeddingFamilyId | string;
   familyName: string;

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { onboardingService } from "@/services/workspace/onboarding.service";
 import { generateToken, slugify } from "@/lib/utils";
+import { complianceService } from "@/services/legal/compliance.service";
 import type { AccountType, UserRole } from "@prisma/client";
 import { z } from "zod";
 
@@ -102,6 +103,18 @@ export async function POST(req: Request) {
           isPublic: true,
         },
       });
+    }
+  }
+
+  const existingConsent = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { acceptedTermsVersion: true },
+  });
+  if (!existingConsent?.acceptedTermsVersion) {
+    try {
+      await complianceService.recordLegalAcceptance(session.user.id);
+    } catch (error) {
+      console.warn("[onboarding/intent] legal acceptance skipped", error);
     }
   }
 

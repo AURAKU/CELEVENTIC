@@ -1,5 +1,5 @@
 /**
- * Legacy compatibility adapters — map old reveal / motion / action ids
+ * Legacy compatibility adapters. Map old reveal / motion / action ids
  * onto Experience Engine contracts without breaking published invitations.
  */
 import type { OpeningExperienceId, SceneTransitionId } from "@/lib/experience/experience-types";

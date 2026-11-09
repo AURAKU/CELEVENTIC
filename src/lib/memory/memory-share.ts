@@ -19,7 +19,7 @@ export function buildWhatsAppShareHref(shareUrl: string, title: string): string 
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
-/** No reliable Trendshub public share deep-link in-repo — copy + tip. */
+/** No reliable Trendshub public share deep-link in-repo. Copy + tip. */
 export const TRENDSHUB_SHARE_TIP =
   "Link copied. Open Trendshub and paste it into your post.";
 

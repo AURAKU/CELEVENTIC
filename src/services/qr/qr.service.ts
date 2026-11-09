@@ -55,7 +55,7 @@ interface QrLookupResult {
 }
 
 export class QrService {
-  /** Branded QR PNG data URL — verify URL with event logo overlay */
+  /** Branded QR PNG data URL. Verify URL with event logo overlay */
   async generateBrandedVerifyQr(eventId: string, token: string): Promise<string> {
     return qrBrandingService.generateForEvent(eventId, token);
   }
@@ -279,7 +279,7 @@ export class QrService {
       ? await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, title: true } })
       : null;
 
-    // Event mismatch first — never admit a pass from another celebration
+    // Event mismatch first, never admit a pass from another celebration
     if (eventId && qrCode.eventId !== eventId) {
       const scan = await this.logScan(
         qrCode.id,
@@ -460,7 +460,7 @@ export class QrService {
         data: { status: "CHECKED_IN" },
       });
       // Post-Admission Guest Experience: recompute the invitation admission
-      // projection + append the immutable admission event. Best-effort — the
+      // projection + append the immutable admission event. Best-effort. The
       // scan already succeeded, so this never throws back into check-in.
       const admittedGuest = await prisma.guest.findUnique({
         where: { id: qrCode.guestId },
@@ -509,7 +509,7 @@ export class QrService {
       result,
       scan: { id: logged.scan.id, createdAt: logged.scan.createdAt },
       admittedAt: status === "already_checked_in" ? firstValidScan : status === "valid" ? logged.scan.createdAt : null,
-      guest: qrCode.guest ? { id: qrCode.guest.id, name: qrCode.guest.name, email: qrCode.guest.email } : null,
+      guest: qrCode.guest ? { id: qrCode.guest.id, name: qrCode.guest.name } : null,
       ticket: qrCode.ticket ? { id: qrCode.ticket.id, name: qrCode.ticket.name } : null,
       event: { id: qrCode.event.id, title: qrCode.event.title },
       qrType: qrCode.type,

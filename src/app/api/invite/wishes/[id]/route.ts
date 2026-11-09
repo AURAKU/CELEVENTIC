@@ -27,7 +27,7 @@ const updateSchema = z
   });
 
 const FORBIDDEN =
-  "Forbidden — only the event organizer or a platform admin can change guest wishes";
+  "Forbidden. Only the event organizer or a platform admin can change guest wishes";
 
 async function resolveModeratorForWish(eventId: string): Promise<boolean> {
   const session = await getServerSession(authOptions);

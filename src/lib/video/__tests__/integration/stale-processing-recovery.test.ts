@@ -7,8 +7,8 @@ import { randomUUID } from "node:crypto";
  * process dying mid-transcode (pm2 restart / OOM / VPS reboot) after flipping a `VideoAsset` (and
  * its `BackgroundJob`) to `PROCESSING`, with nothing ever moving it out of that state again.
  *
- *   - `recoverStalledVideoProcessing` (src/lib/video/cleanup.ts) — VideoAsset-level sweep.
- *   - `recoverStalledJobs` (src/lib/queue.ts) — generic BackgroundJob-level sweep.
+ *   - `recoverStalledVideoProcessing` (src/lib/video/cleanup.ts). VideoAsset-level sweep.
+ *   - `recoverStalledJobs` (src/lib/queue.ts). Generic BackgroundJob-level sweep.
  *
  * Both are exercised against the real dev database (same pattern as local-async-pipeline.test.ts).
  */

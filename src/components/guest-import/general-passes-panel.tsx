@@ -380,7 +380,7 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
                   {passes.map((pass) => (
                     <tr key={pass.id} className={pass.archived ? "text-slate-400" : undefined}>
                       <td className="px-3 py-2 font-medium">{pass.name}</td>
-                      <td className="px-3 py-2 font-mono">{pass.code ?? "—"}</td>
+                      <td className="px-3 py-2 font-mono">{pass.code ?? "None"}</td>
                       <td className="px-3 py-2">{pass.partySize}</td>
                       <td className="px-3 py-2">{pass.admittedCount}</td>
                       <td className="px-3 py-2">

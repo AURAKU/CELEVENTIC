@@ -46,7 +46,7 @@ export interface GiftReceiptView {
 }
 
 export class GiftReceiptService {
-  /** Idempotent — safe to call from any fulfilment path. */
+  /** Idempotent. Safe to call from any fulfilment path. */
   async ensureReceipt(giftPaymentId: string): Promise<{ token: string; receiptNumber: string }> {
     const existing = await prisma.eventGiftReceipt.findUnique({ where: { giftPaymentId } });
     if (existing) {

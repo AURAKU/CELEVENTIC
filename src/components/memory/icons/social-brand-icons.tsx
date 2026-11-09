@@ -68,7 +68,7 @@ export function TikTokIcon({ title = "TikTok", ...props }: IconProps) {
   );
 }
 
-/** Stylized mark for Trendshub — copy-link helper (no public share scheme in-repo). */
+/** Stylized mark for Trendshub. Copy-link helper (no public share scheme in-repo). */
 export function TrendshubIcon({ title = "Trendshub", ...props }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden={title ? undefined : true} {...props}>

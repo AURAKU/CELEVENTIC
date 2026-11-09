@@ -1,5 +1,5 @@
 /**
- * Hydration-safety guarantees for invitation rendering — pure-function unit tests
+ * Hydration-safety guarantees for invitation rendering. Pure-function unit tests
  * (node:test). Run: npm run test:live-editability
  *
  * Invitation templates render on the server and hydrate in the guest's browser. Any
@@ -15,7 +15,7 @@ import { formatInvitationDateParts } from "../../invitation-templates";
 import { buildRenderContextFromEvent } from "../../template-variables";
 import { buildLivePreviewProps } from "../../invitation-mvp/demo-preview-data";
 
-// 16:00 UTC — Africa/Accra is UTC+0, so a correctly pinned formatter says 4:00 PM
+// 16:00 UTC. Africa/Accra is UTC+0, so a correctly pinned formatter says 4:00 PM
 // while an unpinned one running in this file's TZ would say 12:00 PM.
 const INSTANT = "2027-06-14T16:00:00.000Z";
 

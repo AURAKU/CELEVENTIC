@@ -1,0 +1,35 @@
+/** Allow only same-app relative paths. Blocks open redirects. */
+export function safeNextPath(raw?: string | null): string | null {
+  if (!raw) return null;
+  let value = raw.trim();
+  try {
+    if (value.startsWith("https://") || value.startsWith("http://")) {
+      const url = new URL(value);
+      value = `${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {
+    return null;
+  }
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return null;
+  if (value.startsWith("/auth")) return null;
+  return value;
+}
+
+export function smartCardStudioPath(plan?: string | null, theme?: string | null): string {
+  const params = new URLSearchParams();
+  if (plan) params.set("plan", plan);
+  if (theme) params.set("theme", theme);
+  const qs = params.toString();
+  return qs ? `/dashboard/business-card?${qs}` : "/dashboard/business-card";
+}
+
+export function smartCardSignupPath(plan?: string | null, theme?: string | null): string {
+  const next = smartCardStudioPath(plan, theme);
+  const params = new URLSearchParams({
+    intent: "smartcard",
+    next,
+  });
+  if (plan) params.set("plan", plan);
+  if (theme) params.set("theme", theme);
+  return `/auth/register?${params.toString()}`;
+}

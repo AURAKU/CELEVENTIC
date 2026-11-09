@@ -45,7 +45,7 @@ import {
  * currency and minor-unit amount all match the pending record we wrote before
  * the guest was sent to the checkout. A redirect back to our callback URL, a
  * client-side poll, or an unverified webhook body are all treated as hints that
- * it is time to go and ask the provider — never as proof of payment.
+ * it is time to go and ask the provider, never as proof of payment.
  */
 
 export class GiftPaymentError extends Error {
@@ -198,7 +198,7 @@ export class GiftPaymentService {
             amountMinor: validation.amountMinor,
             currency: campaign.currency,
             method: method.id,
-            description: `${GIFT_TYPE_LABELS[campaign.giftType]} — ${event.title}`,
+            description: `${GIFT_TYPE_LABELS[campaign.giftType]}: ${event.title}`,
           },
         },
         { reference }
@@ -259,7 +259,7 @@ export class GiftPaymentService {
    * Ask the provider what really happened, then credit exactly once.
    *
    * Safe to call from the webhook, from the guest's status poll, and from an
-   * organiser's manual reconcile — concurrently. The ledger's unique
+   * organiser's manual reconcile. Concurrently. The ledger's unique
    * idempotency key is the backstop that makes all three paths converge on one
    * credit.
    */
@@ -300,7 +300,7 @@ export class GiftPaymentService {
       return { status: failed.status, gift: failed };
     }
 
-    // Success claimed — now prove it matches what we asked for.
+    // Success claimed. Now prove it matches what we asked for.
     const mismatch = this.detectMismatch(gift, verification);
     if (mismatch) {
       await prisma.eventGiftPayment.update({
@@ -364,7 +364,7 @@ export class GiftPaymentService {
           idempotencyKey: ledgerIdempotencyKey(["gift_credit", updated.id]),
           giftPaymentId: updated.id,
           source,
-          description: `${GIFT_TYPE_LABELS[updated.giftType]} — ${updated.reference}`,
+          description: `${GIFT_TYPE_LABELS[updated.giftType]}: ${updated.reference}`,
           metadata: { feeMinor, netAmountMinor, provider: updated.provider },
         },
         tx
@@ -460,7 +460,7 @@ export class GiftPaymentService {
         source: "gift",
         reference: gift.reference,
         paymentId: gift.paymentId,
-        description: `${GIFT_TYPE_LABELS[gift.giftType]} — ${gift.reference}`,
+        description: `${GIFT_TYPE_LABELS[gift.giftType]}: ${gift.reference}`,
         isLocked: true,
       },
     });
@@ -476,7 +476,7 @@ export class GiftPaymentService {
           source: "gift",
           reference: gift.reference,
           paymentId: gift.paymentId,
-          description: `Processing fee — ${gift.reference}`,
+          description: `Processing fee: ${gift.reference}`,
           isLocked: true,
         },
       });
@@ -518,7 +518,7 @@ export class GiftPaymentService {
 
   /**
    * Organiser-initiated refund. Writes a compensating REFUND_DEBIT rather than
-   * editing the original credit — the gift and its reversal both stay on the
+   * editing the original credit. The gift and its reversal both stay on the
    * record forever.
    */
   async refund(input: {
@@ -563,7 +563,7 @@ export class GiftPaymentService {
           idempotencyKey: ledgerIdempotencyKey(["gift_refund", updated.id, amountMinor]),
           giftPaymentId: updated.id,
           source: "organiser_refund",
-          description: `Refund — ${updated.reference}`,
+          description: `Refund: ${updated.reference}`,
           createdById: input.actorId,
           metadata: { reason: input.reason.slice(0, 300) },
         },
@@ -588,7 +588,7 @@ export class GiftPaymentService {
               source: "gift",
               reference: updated.reference,
               paymentId: updated.paymentId,
-              description: `Gift refund — ${updated.reference}`,
+              description: `Gift refund: ${updated.reference}`,
               isLocked: true,
               createdBy: input.actorId,
             },

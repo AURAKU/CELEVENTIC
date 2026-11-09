@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * NFC tap redirect: /n/{token} → paired SmartCard.
- * Tags store only this short URL — never private profile data.
+ * Tags store only this short URL, never private profile data.
  */
 export default async function SmartCardNfcTapPage({
   params,

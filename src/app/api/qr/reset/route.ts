@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = resetSchema.parse(body);
 
-    // Admins / organisers / guest managers only — not scanner-only ushers.
+    // Admins / organisers / guest managers only, not scanner-only ushers.
     try {
       await requireEventPermission(
         data.eventId,

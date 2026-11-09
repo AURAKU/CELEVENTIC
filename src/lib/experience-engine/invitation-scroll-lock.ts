@@ -43,8 +43,9 @@ function readSnapshot(): StyleSnapshot {
 }
 
 function applyLockStyles(): void {
+  // Overflow only. Never set touch-action:none on html/body, that blocks the
+  // first pan on `.invite-viewport-live` until the guest taps the board.
   document.body.style.overflow = "hidden";
-  document.body.style.touchAction = "none";
   if (document.documentElement.style) {
     document.documentElement.style.overflow = "hidden";
   }
@@ -120,7 +121,7 @@ export function unlockRevealScroll(): void {
 }
 
 /**
- * Final safety invariant — never leave the guest stuck with
+ * Final safety invariant, never leave the guest stuck with
  * overflow:hidden / touch-action:none / pointer-events:none on html/body.
  */
 export function forceUnlockInvitationViewport(reason = "force"): void {
@@ -129,28 +130,44 @@ export function forceUnlockInvitationViewport(reason = "force"): void {
   clearLockStylesHard();
   snapshot = null;
 
-  // Paged invitation scrollport — clear residual ceremony freezes.
-  try {
-    const scroller = document.querySelector?.(".inv-paged-scroll") as HTMLElement | null;
-    if (scroller?.style) {
-      if (scroller.style.pointerEvents === "none") {
-        scroller.style.pointerEvents = "";
-      }
-      if (scroller.style.touchAction === "none") {
-        scroller.style.touchAction = "";
-      }
-      if (scroller.style.overflowY === "hidden") {
-        scroller.style.overflowY = "";
-      }
-    }
-  } catch {
-    /* test mocks may omit querySelector */
-  }
+  // Invitation scrollports. Clear residual ceremony freezes and arm pan-y
+  // immediately so the first swipe after Open does not get eaten.
+  armLiveInvitationScroller();
 
   logScrollLock({ action: "force-unlock", reason, phase: "portal" });
 }
 
-/** @deprecated Prefer forceUnlockInvitationViewport — kept for call-site compat. */
+/**
+ * Make the live invitation board the active scroll target without a second tap.
+ * Call as soon as the ceremony overlay is gone.
+ */
+export function armLiveInvitationScroller(): void {
+  if (typeof document === "undefined") return;
+  try {
+    const scrollers = document.querySelectorAll?.(".inv-paged-scroll, .invite-viewport-live");
+    scrollers?.forEach((node) => {
+      const scroller = node as HTMLElement;
+      if (!scroller.style) return;
+      if (scroller.closest?.(".interactive-reveal-root")) return;
+      if (scroller.classList?.contains("overflow-hidden")) return;
+      scroller.style.pointerEvents = "auto";
+      scroller.style.overflowY = "auto";
+      scroller.style.touchAction = "pan-y";
+      try {
+        if (scroller.tabIndex < 0) scroller.tabIndex = -1;
+        if (typeof scroller.focus === "function") {
+          scroller.focus({ preventScroll: true });
+        }
+      } catch {
+        /* not focusable in this document */
+      }
+    });
+  } catch {
+    /* test mocks may omit querySelectorAll */
+  }
+}
+
+/** @deprecated Prefer forceUnlockInvitationViewport. Kept for call-site compat. */
 export function forceUnlockRevealScroll(): void {
   forceUnlockInvitationViewport("legacy-alias");
 }

@@ -19,7 +19,7 @@ export interface IntegrationCatalogEntry {
   docsUrl?: string;
 }
 
-/** Providers removed from the product surface — kept only to disable legacy DB rows. */
+/** Providers removed from the product surface. Kept only to disable legacy DB rows. */
 export const RETIRED_PROVIDERS = [
   "FLUTTERWAVE",
   "HUBTEL",
@@ -42,7 +42,7 @@ export const INTEGRATION_CATEGORIES: { id: IntegrationCategory; label: string }[
 ];
 
 /**
- * Product catalog — only services Celeventic actually uses.
+ * Product catalog. Only services Celeventic actually uses.
  * Admins can still add custom APIs (CUSTOM_*) beyond this list.
  */
 export const INTEGRATION_CATALOG: IntegrationCatalogEntry[] = [

@@ -34,8 +34,8 @@ export type DigitalCardPublicPayload = {
   isLive: boolean;
 };
 
-/** Monthly plan keeps the public card URL live for anyone you share with. */
-export const DIGITAL_CARD_MONTHLY_PRICE_GHS = 49;
+export { DIGITAL_CARD_MONTHLY_PRICE_GHS } from "./plans";
+/** Studio design window. The public card stays offline until a paid plan is active. */
 export const DIGITAL_CARD_TRIAL_DAYS = 14;
 
 export const DIGITAL_CARD_PUBLIC_PATH = "/card";

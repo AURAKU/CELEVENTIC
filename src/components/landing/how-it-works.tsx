@@ -12,7 +12,7 @@ export function HowItWorks() {
   const reduce = useReducedMotion();
 
   return (
-    <section id="how-it-works" className="py-28 relative overflow-hidden">
+    <section id="how-it-works" className="relative overflow-hidden py-16 sm:py-20 lg:py-28">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-50/30 to-transparent" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-14">
         <div className="text-center max-w-3xl mx-auto">
@@ -22,7 +22,7 @@ export function HowItWorks() {
             {t("landing.how_works_suffix")}
           </h2>
           <p className="section-subheading mx-auto">
-            From the first invitation tap to Memory Vault — guests, hosts, door staff, and vendors
+            From the first invitation tap to Memory Vault. Guests, hosts, door staff, and vendors
             each have a clear path. Open the full walkthrough for the interactive journey, or browse
             guides for step-by-step detail.
           </p>

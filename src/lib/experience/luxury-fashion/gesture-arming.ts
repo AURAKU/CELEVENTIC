@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FASHION_GESTURE_ARM_MS } from "./tokens";
 
 /**
- * Explicit gesture arming — Gesture #1 (Tap to Begin) must not fire the
+ * Explicit gesture arming. Gesture #1 (Tap to Begin) must not fire the
  * newly-mounted silk/door ceremony. Re-arm after each scene transition so a
  * completing click cannot tap-through.
  */

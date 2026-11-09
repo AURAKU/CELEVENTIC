@@ -22,7 +22,7 @@ interface UploadedMediaProps {
 }
 
 /**
- * Unified uploaded media renderer — routes through shared URL resolver + CeleventicImage/Video.
+ * Unified uploaded media renderer. Routes through shared URL resolver + CeleventicImage/Video.
  */
 export function UploadedMedia({
   src,

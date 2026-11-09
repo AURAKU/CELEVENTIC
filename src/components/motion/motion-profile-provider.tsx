@@ -17,7 +17,7 @@ import type { MotionProfileId } from "@/lib/invitation-theme/theme-types";
 
 interface MotionProfileContextValue {
   profile: MotionProfileDef;
-  /** Effective intensity after tier/reduced-motion gating, 0–1 */
+  /** Effective intensity after tier/reduced-motion gating, 0 to 1 */
   intensity: number;
   tier: DeviceTier;
   reduced: boolean;

@@ -50,7 +50,7 @@ describe("Event Day phone action gating (regression for .replace crash)", () => 
     assert.doesNotThrow(() => {
       const callable = normalizeCallablePhone(undefined);
       assert.equal(callable, "");
-      // No tel: link when empty — callers gate on Boolean(callablePhone).
+      // No tel: link when empty. Callers gate on Boolean(callablePhone).
       assert.equal(Boolean(callable), false);
     });
   });

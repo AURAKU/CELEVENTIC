@@ -266,7 +266,7 @@ describe("party isolation", () => {
 });
 
 describe("the shape of a match", () => {
-  it("carries the guest-facing fields only — no internal ids or contacts", () => {
+  it("carries the guest-facing fields only. No internal ids or contacts", () => {
     const match = buildSeatingMatch(
       party({
         invitationId: "inv_secret",
@@ -399,7 +399,7 @@ describe("suggesting names while a guest types", () => {
     assert.deepEqual(suggestPartyLabels(LIST, "   "), []);
   });
 
-  it("returns labels and nothing else — no seat, no member, no identifier", () => {
+  it("returns labels and nothing else. No seat, no member, no identifier", () => {
     const seated = party({
       invitationId: "inv_secret",
       partyName: "Kofi Mensah-Boateng",

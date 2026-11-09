@@ -19,7 +19,7 @@ export function truncateForShare(text: string, maxLength = MAX_SHARE_DESCRIPTION
  * `twitter:description` on invite and event-site link previews.
  *
  * Never names an organizer, RSVP contact, or CRM host. WhatsApp already
- * shows the event title — this line only restates the invitation.
+ * shows the event title. This line only restates the invitation.
  */
 export function buildShareDescription(params: {
   hostName?: string | null;

@@ -15,7 +15,7 @@ import path from "node:path";
  *             -> READY, with `processedMp4Url` set
  *
  * The mocked `transcode` function stands in for the real ffmpeg pipeline (mission spec:
- * "mock worker OK") — everything else (DB writes, disk I/O, status transitions, the queue
+ * "mock worker OK"). Everything else (DB writes, disk I/O, status transitions, the queue
  * dispatch row) is real.
  */
 
@@ -27,7 +27,7 @@ before(async () => {
   uploadRoot = await mkdtemp(TEST_UPLOAD_ROOT_PARENT);
   process.env.UPLOAD_DIR = uploadRoot;
 
-  // `VideoAsset.ownerId` has a real FK to `User` — create a throwaway owner for these tests.
+  // `VideoAsset.ownerId` has a real FK to `User`. Create a throwaway owner for these tests.
   const { prisma } = await import("../../../prisma");
   const user = await prisma.user.create({
     data: { name: "Video Pipeline Test User", email: `video-pipeline-test-${randomUUID()}@example.test` },
@@ -43,7 +43,7 @@ after(async () => {
   delete process.env.UPLOAD_DIR;
 });
 
-/** Minimal-but-valid MP4 header: `ftyp` box with an `isom` brand — passes `sniffVideoContainer`/`validateVideoSignature`. */
+/** Minimal-but-valid MP4 header: `ftyp` box with an `isom` brand. Passes `sniffVideoContainer`/`validateVideoSignature`. */
 function fakeMp4Buffer(sizeBytes = 4096): Buffer {
   const buf = Buffer.alloc(sizeBytes);
   buf.writeUInt32BE(0x18, 0);
@@ -89,7 +89,7 @@ describe("local async video pipeline (202 + background worker, no inline ffmpeg)
       const buffer = fakeMp4Buffer(8192);
       const queued = await queueLocalVideoUpload(asset.id, buffer);
 
-      assert.equal(queued.status, "QUEUED", "asset must be QUEUED immediately — never PROCESSING/READY inline");
+      assert.equal(queued.status, "QUEUED", "asset must be QUEUED immediately, never PROCESSING/READY inline");
       assert.equal(Number(queued.sizeBytes), buffer.length);
       assert.equal(queued.detectedContainer, "mp4");
 
@@ -147,7 +147,7 @@ describe("local async video pipeline (202 + background worker, no inline ffmpeg)
       assert.ok(ready.posterUrl);
       assert.ok(ready.readyAt);
 
-      // This is exactly the shape `GET /api/uploads/video/:id` (the poll endpoint) returns —
+      // This is exactly the shape `GET /api/uploads/video/:id` (the poll endpoint) returns.
       // simulating what `VideoUploader.pollUntilReady` / `MediaUploader`'s poller consume.
       const polled = serializeVideoAsset(ready);
       assert.equal(polled.status, "READY");

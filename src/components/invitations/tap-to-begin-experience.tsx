@@ -35,7 +35,7 @@ export interface TapToBeginExperienceProps {
   atmosphereUrl?: string | null;
   /** design.introText or ceremony label */
   ceremonyLabel?: string | null;
-  /** Invitation display name — used as funeral honouree when title is generic. */
+  /** Invitation display name. Used as funeral honouree when title is generic. */
   invitationName?: string | null;
   name1?: string | null;
   name2?: string | null;
@@ -56,7 +56,7 @@ export interface TapToBeginExperienceProps {
    * "on"/"off" let the studio override that per invitation.
    */
   scrim?: "auto" | "on" | "off";
-  /** Catalogue tile poster — absolute fill, no interaction, no motion. */
+  /** Catalogue tile poster. Absolute fill, no interaction, no motion. */
   staticPreview?: boolean;
   /** Replaces the default "Tap to …" chip when a ceremony authors its own CTA. */
   ctaLabelOverride?: string | null;
@@ -69,7 +69,7 @@ export interface TapToBeginExperienceProps {
   kickerLines?: string[] | null;
   /** Hide the pill CTA; the full stage remains the control. */
   hideCtaChip?: boolean;
-  /** Fashion-film silk atmosphere — never a living-room photo. */
+  /** Fashion-film silk atmosphere, never a living-room photo. */
   fashionAtmosphere?: boolean;
   /** Shown under the begin line. Edwin & Lordina use #EdWinsDina26. */
   hashtag?: string | null;
@@ -407,7 +407,7 @@ export function TapToBeginExperience({
   }, [isFuneral, eventTitle, hostName, ceremonyLabel, name1, invitationName]);
 
   // When the couple is the hero signal, don't also print a ceremony title above
-  // them — that was duplicating shortened first names with full legal names.
+  // them, that was duplicating shortened first names with full legal names.
   const showEventBeat = Boolean(
     !couple && (beat.plain?.trim() || (beat.eyebrow && beat.script))
   );
@@ -484,7 +484,6 @@ export function TapToBeginExperience({
     staticPreview ? styles.rootEmbedded : "",
     widePortrait ? styles.widePortrait : "",
     invitationFontVars,
-    "invite-viewport-live",
     staticPreview ? "" : "safe-area-pt safe-area-pb safe-area-pl safe-area-pr",
     reduceMotion ? styles.static : "",
     exiting ? styles.exiting : "",

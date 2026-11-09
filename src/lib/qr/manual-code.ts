@@ -3,7 +3,7 @@ import { isManualAdmissionCode } from "@/lib/qr/manual-code-pattern";
 
 export { isManualAdmissionCode } from "@/lib/qr/manual-code-pattern";
 
-/** Allocate a unique 4-digit code for an event (0000–9999). */
+/** Allocate a unique 4-digit code for an event (0000 to 9999). */
 export async function allocateManualAdmissionCode(eventId: string): Promise<string> {
   for (let attempt = 0; attempt < 40; attempt++) {
     const code = String(Math.floor(Math.random() * 10000)).padStart(4, "0");
@@ -42,7 +42,7 @@ export async function ensureGuestManualCode(guestId: string): Promise<string> {
       });
       return code;
     } catch {
-      // unique race — retry
+      // unique race. Retry
     }
   }
   throw new Error("Could not assign manual admission code");

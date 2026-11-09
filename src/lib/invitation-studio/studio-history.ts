@@ -1,6 +1,6 @@
 /**
  * Studio undo/redo + local version history (MVP).
- * Snapshots are kept in-memory / sessionStorage — no schema migration required.
+ * Snapshots are kept in-memory / sessionStorage. No schema migration required.
  */
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import type { MusicSelection } from "@/lib/music/music-types";

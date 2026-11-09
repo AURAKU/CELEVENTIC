@@ -29,7 +29,7 @@ function toParagraphs(value: string): string[] {
 /**
  * Everything written under an item: a note, a reading, a stanza of the hymn.
  *
- * `whitespace-pre-line` is the whole point — a hymn's lines break where the
+ * `whitespace-pre-line` is the whole point. A hymn's lines break where the
  * organizer broke them, rather than being reflowed into a paragraph, and a
  * blank line between two stanzas stays a blank line.
  */
@@ -58,7 +58,7 @@ function Detail({ text }: { text: string }) {
  * on the clock. Everything is drawn in the guide's own colours and type
  * (`--guide-*`), so the invitation's theme still carries.
  *
- * A PDF is an attachment, never the primary rendering — a guest holding a
+ * A PDF is an attachment, never the primary rendering. A guest holding a
  * phone in a dim hall should not have to pinch-zoom a document to find when
  * dinner is.
  */
@@ -122,7 +122,7 @@ export function GuideProgramme({
  * The rule between the parts of a title page.
  *
  * A sprig rather than a lozenge: the same job, in the language a wedding
- * programme is set in. Drawn in the decorative accent, never the label ink —
+ * programme is set in. Drawn in the decorative accent, never the label ink.
  * it carries no information, so it is not held to the contrast type is.
  */
 function Flourish({ className = "" }: { className?: string }) {
@@ -163,7 +163,7 @@ function ProgrammeCover({ lines, fonts }: { lines: ProgrammeCoverLine[]; fonts: 
         {/*
           The arch stands behind the whole title page rather than beside it, at
           the opacity of a watermark. Nothing is read off it, so it cannot cost
-          the couple's names any contrast — and it is what turns a bordered box
+          the couple's names any contrast, and it is what turns a bordered box
           into the front of an order of service.
         */}
         <CeremonyArch
@@ -187,7 +187,7 @@ function ProgrammeCover({ lines, fonts }: { lines: ProgrammeCoverLine[]; fonts: 
             <>
               <Flourish className="my-4" />
               {/*
-                The date and the hour belong on one line — they are one fact —
+                The date and the hour belong on one line. They are one fact.
                 and a venue that follows them wraps onto the next by itself.
                 Stacked, each on its own row, they read as three separate
                 announcements.
@@ -245,9 +245,9 @@ function CoverLine({ line, fonts }: { line: ProgrammeCoverLine; fonts: Fonts }) 
 
   if (line.role === "name") {
     /*
-     * The people the day is about. Both names get exactly the same treatment —
+     * The people the day is about. Both names get exactly the same treatment.
      * larger, heavier, in the primary ink, on a wash of the guide's own accent
-     * — so neither reads as the guest of the other. The wash comes from
+     *, so neither reads as the guest of the other. The wash comes from
      * `--guide-hairline`, which is already the theme's accent at low alpha, so
      * it tints with the invitation instead of introducing a colour.
      *
@@ -289,7 +289,7 @@ function CoverLine({ line, fonts }: { line: ProgrammeCoverLine; fonts: Fonts }) 
 }
 
 /**
- * A heading the organizer wrote into their programme — `FUNCTIONARIES`,
+ * A heading the organizer wrote into their programme. `FUNCTIONARIES`,
  * `RECEPTION`. It is a signpost between blocks, so it is set as one: centred
  * between two short rules, once per section rather than once per line.
  */
@@ -337,10 +337,10 @@ function ProgrammeSignpost({ title, fonts }: { title: string; fonts: Fonts }) {
  * The people taking part, in three clear tiers.
  *
  * A role that heads a list (`OFFICIATING MINISTERS`) is a label in the guide's
- * accent, tracked and set apart with space above it — and it never takes a
+ * accent, tracked and set apart with space above it, and it never takes a
  * bullet, because it is not a person. The people under it do: a small mark, a
- * name in the display serif, and anything qualifying them — a parish, a title
- * — set smaller and softer beneath.
+ * name in the display serif, and anything qualifying them. A parish, a title
+ *. Set smaller and softer beneath.
  *
  * Where the organizer wrote the role and the name on one line, the roster
  * becomes a two-column list instead: the roles are already the marker, so
@@ -517,7 +517,7 @@ function ProgrammeHymn({
  * The hosts turning from the running order to speak to the room.
  *
  * `APPRECIATION`, and the two sentences under it, are not things that happen
- * at a time — set on the timeline they took a bullet each and read as two
+ * at a time. Set on the timeline they took a bullet each and read as two
  * more items to get through. Here they close the programme: centred, on the
  * accent's own wash, in the script face the invitation is signed in.
  */
@@ -587,7 +587,7 @@ function ProgrammeAppreciation({
  * Times run down their own column against a single continuous rule, so a
  * guest scanning for "when is dinner" reads one line of figures rather than
  * hunting through prose. Below `sm` the column narrows and the time wraps
- * rather than the title being squeezed — a 320px phone is the design target,
+ * rather than the title being squeezed. A 320px phone is the design target,
  * not the fallback.
  */
 function ProgrammeSchedule({

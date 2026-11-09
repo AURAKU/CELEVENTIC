@@ -7,7 +7,7 @@ import {
 } from "../qr-constants";
 
 describe("public QR center allowlist", () => {
-  it("accepts brand, upload, family album, and family hero paths — not other catalogue stock", () => {
+  it("accepts brand, upload, family album, and family hero paths, not other catalogue stock", () => {
     assert.equal(
       toSafePublicQrCenterPath("/templates/aurelia/qr-center.jpg"),
       "/templates/aurelia/qr-center.jpg"

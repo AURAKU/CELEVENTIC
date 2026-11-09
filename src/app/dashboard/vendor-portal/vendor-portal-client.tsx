@@ -394,7 +394,7 @@ export default function VendorPortalClient() {
               <CardContent className="pt-5">
                 <div className="flex justify-between text-xs text-slate-500 mb-1">
                   <span>Portfolio Images</span>
-                  <span>{usage ? `${usage.usage.images}/${usage.limits.imageLimit}` : "—"}</span>
+                  <span>{usage ? `${usage.usage.images}/${usage.limits.imageLimit}` : "None"}</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-[#0B8A83] rounded-full transition-all" style={{ width: `${Math.min(imagePct, 100)}%` }} />

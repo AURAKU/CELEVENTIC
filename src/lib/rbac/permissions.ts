@@ -44,7 +44,8 @@ export function hasPermission(ctx: RbacContext, permission: Permission): boolean
   return permissionsFor(ctx).includes(permission);
 }
 
-export function canAccessAdminPanel(role: UserRole): boolean {
+export function canAccessAdminPanel(role?: UserRole | null): boolean {
+  if (!role) return false;
   return hasPermission({ role }, Permission.ACCESS_ADMIN_PANEL);
 }
 

@@ -36,7 +36,7 @@ function canUseDatabase() {
   return Boolean(process.env.DATABASE_URL?.trim());
 }
 
-/** One seed per process — never re-upsert hundreds of rows on every page load. */
+/** One seed per process, never re-upsert hundreds of rows on every page load. */
 let translationsSeedPromise: Promise<void> | null = null;
 
 export class TranslationService {

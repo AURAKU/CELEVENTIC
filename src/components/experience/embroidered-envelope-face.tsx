@@ -35,7 +35,7 @@ interface EmbroideredEnvelopeFaceProps {
   fitContainer?: boolean;
   /** Designed seal (color/material) + font/size/color overrides. Defaults to classic peach pearl. */
   sealStyle?: ResolvedSealStyle;
-  /** Memorial dove ceremony — accepted for API parity with CSS envelope face. */
+  /** Memorial dove ceremony. Accepted for API parity with CSS envelope face. */
   ceremonialFlyaway?: boolean;
 }
 
@@ -185,7 +185,7 @@ export function EmbroideredEnvelopeFace({
 
   /**
    * Hold the envelope fully visible through seal lift + flap unfold.
-   * Only dissolve once the flap has committed — never mid-lift.
+   * Only dissolve once the flap has committed, never mid-lift.
    */
   const shellFadeDelay = isOpening
     ? Math.round(flapOpenSec * 1000 * 0.55)
@@ -325,7 +325,7 @@ export function EmbroideredEnvelopeFace({
         )}
 
         {/*
-          Top V-flap — soft peel while the seal lifts, then a dramatic unfold.
+          Top V-flap. Soft peel while the seal lifts, then a dramatic unfold.
           Seal is a sibling (not a child) so it can float clear independently.
         */}
         <motion.div
@@ -462,7 +462,7 @@ export function EmbroideredEnvelopeFace({
         </AnimatePresence>
 
         {/*
-          Peach wax stamp — sibling of the flap so it can lift clear first
+          Peach wax stamp. Sibling of the flap so it can lift clear first
           (Forever Afaris seal choreography), then soar away as the flap opens.
         */}
         <motion.div

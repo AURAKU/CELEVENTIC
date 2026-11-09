@@ -44,8 +44,8 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[56px] px-1 py-2 text-[10px] font-medium transition-colors touch-manipulation",
-                active ? "text-brand-600" : "text-slate-500 hover:text-slate-700"
+                "flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[56px] px-1 py-2 text-[11px] font-semibold transition-colors touch-manipulation",
+                active ? "text-brand-700" : "text-slate-600 hover:text-slate-800"
               )}
               aria-current={active ? "page" : undefined}
             >

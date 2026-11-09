@@ -5,13 +5,13 @@ import { describe, it } from "node:test";
  * Product contract:
  * - Approved public guest wishes are EVENT-WIDE (all invited parties see them).
  * - Private invitation data (seating, RSVP, admission, party names) stays party-scoped.
- * - Ownership (invitationId / guestId) is stored on write for moderation — it must NOT
+ * - Ownership (invitationId / guestId) is stored on write for moderation. It must NOT
  *   filter the public guest wish feed.
  */
 
 export function buildPublicWishListWhere(input: {
   eventId: string;
-  /** Viewer invitation — authorizes access; must NOT appear in the public where clause. */
+  /** Viewer invitation. Authorizes access; must NOT appear in the public where clause. */
   viewerInvitationId?: string | null;
   publicOnly?: boolean;
 }) {
@@ -67,7 +67,7 @@ describe("guest wish invitation isolation (event-wide public feed)", () => {
     assert.equal(
       where.invitationId,
       undefined,
-      "approved public wishes must be event-wide — do not scope by viewer invitationId"
+      "approved public wishes must be event-wide. Do not scope by viewer invitationId"
     );
   });
 

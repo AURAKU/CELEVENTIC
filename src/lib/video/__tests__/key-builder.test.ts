@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { buildRawVideoKey, sanitizeDisplayFilename } from "../key-builder";
 import { RAW_VIDEO_KEY_PREFIX } from "../constants";
 
-describe("buildRawVideoKey — server-generated S3 keys", () => {
+describe("buildRawVideoKey. Server-generated S3 keys", () => {
   it("builds a key rooted under the raw video prefix, namespaced by category and owner", () => {
     const { key, id } = buildRawVideoKey("GUESTBOOK", "user_123", "mp4");
     assert.match(key, new RegExp(`^${RAW_VIDEO_KEY_PREFIX}/guestbook/user_123/[^/]+\\.mp4$`));

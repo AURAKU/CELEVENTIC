@@ -21,10 +21,10 @@ const variantStyles = {
     pipe: "text-slate-500",
   },
   hero: {
-    celebrations: "text-brand-400",
-    events: "text-gold-400",
+    celebrations: "text-brand-300",
+    events: "text-gold-300",
     tickets: "text-accent-400",
-    pipe: "text-slate-500",
+    pipe: "text-white/55",
   },
 } as const;
 
@@ -37,13 +37,13 @@ export function BrandMotto({ className, size = "md", variant = "default" }: Bran
       : size === "lg"
         ? "text-sm sm:text-base tracking-[0.18em]"
         : size === "xl"
-          ? "text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.16em] sm:tracking-[0.2em]"
+          ? "text-[0.95rem] sm:text-lg md:text-xl lg:text-2xl tracking-[0.08em] sm:tracking-[0.12em] lg:tracking-[0.16em]"
           : "text-xs sm:text-sm tracking-[0.15em]";
 
   const [celebrations, events, tickets] = BRAND_MOTTO_PARTS;
 
   return (
-    <p className={cn("font-semibold leading-tight inline-flex flex-wrap items-center gap-x-2 sm:gap-x-2.5", sizeClass, className)}>
+    <p className={cn("font-semibold leading-tight inline-flex flex-wrap items-center gap-x-2 sm:gap-x-2.5", size === "xl" && "lg:flex-nowrap", sizeClass, className)}>
       <span className={colors.celebrations}>{celebrations}</span>
       <span className={cn("font-normal opacity-70", colors.pipe)} aria-hidden>|</span>
       <span className={colors.events}>{events}</span>

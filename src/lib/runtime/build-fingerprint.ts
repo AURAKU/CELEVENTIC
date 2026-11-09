@@ -10,7 +10,7 @@ import { EMBEDDED_BUILD_META } from "@/lib/runtime/build-meta.generated";
  * PM2 / `.env` value. Live used to report an old SHA (e.g. 0fa4bd4…) after a
  * successful deploy of a newer main tip because `CELEVENTIC_COMMIT_SHA` in the
  * process environment outlived the build. Prefer `.next/celeventic-build-meta.json`
- * written by `scripts/write-build-meta.mjs --emit-next` — it cannot drift on
+ * written by `scripts/write-build-meta.mjs --emit-next`. It cannot drift on
  * `pm2 restart` and does not dirty the git worktree.
  */
 
@@ -78,7 +78,7 @@ let cachedBuildId: string | null | undefined;
  * Next writes `.next/BUILD_ID` at build time and it changes on every build, so
  * it distinguishes two deploys of the same commit. Read from disk rather than
  * via `generateBuildId`, because overriding that config would change asset
- * URLs and cache behaviour — too invasive for a diagnostic.
+ * URLs and cache behaviour. Too invasive for a diagnostic.
  */
 function resolveBuildId(): string | null {
   if (cachedBuildId !== undefined) return cachedBuildId;
@@ -93,7 +93,7 @@ function resolveBuildId(): string | null {
   return cachedBuildId;
 }
 
-/** Process boot time — reveals whether a deploy actually restarted the server. */
+/** Process boot time. Reveals whether a deploy actually restarted the server. */
 const startedAt = new Date().toISOString();
 
 export interface BuildFingerprint {

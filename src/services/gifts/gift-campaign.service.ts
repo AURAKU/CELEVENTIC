@@ -26,7 +26,7 @@ import { withPublicQrCenter } from "@/lib/qr/qr-constants";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 
 /**
- * Gift campaigns — the organiser-owned configuration behind every gift link.
+ * Gift campaigns. The organiser-owned configuration behind every gift link.
  *
  * One event can run several campaigns (a shared QR on the printed card plus a
  * personalised link per guest, for instance). Public tokens are the only handle
@@ -427,7 +427,7 @@ export class GiftCampaignService {
   /**
    * Post-admission Event Companion TAKE PART placement.
    *
-   * Independent of `showOnInvitation` — organisers can hide the ceremony card
+   * Independent of `showOnInvitation`. Organisers can hide the ceremony card
    * while still offering gifting after gate admission. Still requires an
    * ACTIVE, open campaign (never auto-activates DRAFT).
    */

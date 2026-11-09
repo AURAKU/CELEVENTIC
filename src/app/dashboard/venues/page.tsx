@@ -96,7 +96,7 @@ export default function VenuesPage() {
               <CardContent>
                 <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
                   <span className="flex items-center gap-1"><Users className="h-4 w-4" />{v.capacity} capacity</span>
-                  <span>{formatCurrency(v.priceFrom)}{v.priceTo ? ` – ${formatCurrency(v.priceTo)}` : "+"}</span>
+                  <span>{formatCurrency(v.priceFrom)}{v.priceTo ? ` to ${formatCurrency(v.priceTo)}` : "+"}</span>
                 </div>
                 {bookingVenue === v.id ? (
                   <div className="space-y-2">

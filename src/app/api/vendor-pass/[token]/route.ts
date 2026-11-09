@@ -3,7 +3,7 @@ import { getVendorTeamPassByPublicToken } from "@/services/vendor-pass/vendor-te
 
 export const dynamic = "force-dynamic";
 
-/** Public vendor/team pass view — no guest data, no other passes. */
+/** Public vendor/team pass view. No guest data, no other passes. */
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ token: string }> }

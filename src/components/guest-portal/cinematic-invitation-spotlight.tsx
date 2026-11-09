@@ -37,6 +37,7 @@ import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import { GuestHelpChip } from "@/components/celeventic-guide/guest-contextual-help";
 import { InviteGuestHelpFab } from "@/components/celeventic-guide/guest-quick-actions";
 import { mergeFashionHouse, resolveFashionHouse } from "@/lib/experience/luxury-fashion";
+import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
 
 interface CinematicInvitationSpotlightProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -68,8 +69,9 @@ const DEFAULT_SLIDE_MS = 7200;
 
 export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlightProps) {
   const { t, locale } = useLocale();
+  const staticPreview = useInvitationStaticPreview();
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(staticPreview);
   const [copied, setCopied] = useState(false);
 
   const localized = props.localizedVersions?.[locale];
@@ -531,18 +533,18 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
   const prev = useCallback(() => setIndex((i) => (i - 1 + total) % total), [total]);
 
   useEffect(() => {
-    if (paused || total <= 1) return;
+    if (staticPreview || paused || total <= 1) return;
     const id = setTimeout(next, current?.durationMs ?? slideMs);
     return () => clearTimeout(id);
-  }, [index, paused, total, next, current?.durationMs]);
+  }, [index, paused, staticPreview, total, next, current?.durationMs]);
 
   const bgMedia = props.backgroundVideoUrl || props.backgroundImageUrl || props.event.coverImageUrl;
 
   return (
     <InviteViewportShell
-      mode={props.embedded ? "embedded" : "live"}
+      mode={staticPreview ? "thumbnail" : props.embedded ? "embedded" : "live"}
       scrollable={false}
-      className="overflow-hidden cinematic-spotlight-root inv-text-on-dark"
+      className="overflow-hidden cinematic-spotlight-root inv-text-on-dark h-full"
       style={{
         background: typeof bg === "string" && (bg.startsWith("rgba") || bg.startsWith("linear")) ? bg : bg,
         fontFamily: "var(--font-sans)",
@@ -563,7 +565,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           : {}),
       }}
     >
-      {!hiddenLayers.has("environment") && (
+      {!staticPreview && !hiddenLayers.has("environment") && (
         <div className="pointer-events-none absolute inset-0" style={{ zIndex: layerZ.environment }}>
           <ParticleEnvironment presetId={environmentId} intensity="medium" />
         </div>
@@ -594,10 +596,19 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
         <div className="absolute inset-0 cinematic-vignette pointer-events-none" />
       </div>
 
-      <div className={cn("relative z-10 flex flex-col min-h-0 h-full safe-area-pb", props.embedded ? "min-h-[min(100dvh,640px)]" : "flex-1")}>
+      <div
+        className={cn(
+          "relative z-10 flex flex-col min-h-0 h-full safe-area-pb",
+          staticPreview ? "flex-1" : props.embedded ? "min-h-[min(100dvh,640px)]" : "flex-1"
+        )}
+      >
         <div className="flex-1 flex items-center justify-center relative min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4">
-          <button type="button" aria-label="Previous" className="absolute left-0 top-0 bottom-0 w-1/4 z-20 touch-manipulation" onClick={prev} />
-          <button type="button" aria-label="Next" className="absolute right-0 top-0 bottom-0 w-1/4 z-20 touch-manipulation" onClick={next} />
+          {!staticPreview ? (
+            <>
+              <button type="button" aria-label="Previous" className="absolute left-0 top-0 bottom-0 w-1/4 z-20 touch-manipulation" onClick={prev} />
+              <button type="button" aria-label="Next" className="absolute right-0 top-0 bottom-0 w-1/4 z-20 touch-manipulation" onClick={next} />
+            </>
+          ) : null}
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -613,14 +624,16 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
             </motion.div>
           </AnimatePresence>
 
-          <button
-            type="button"
-            onClick={() => setPaused((p) => !p)}
-            className="absolute safe-area-inset-bottom right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur-md touch-manipulation"
-            aria-label={paused ? "Play" : "Pause"}
-          >
-            {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-          </button>
+          {!staticPreview ? (
+            <button
+              type="button"
+              onClick={() => setPaused((p) => !p)}
+              className="absolute safe-area-inset-bottom right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur-md touch-manipulation"
+              aria-label={paused ? "Play" : "Pause"}
+            >
+              {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            </button>
+          ) : null}
         </div>
 
         <div className="px-4 pb-5 pt-1 space-y-3">
@@ -664,17 +677,19 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
               />
             ))}
           </div>
-          <div className="flex justify-center gap-4 text-white/70">
-            <button type="button" onClick={prev} className="p-2 touch-manipulation hover:text-white" aria-label="Previous scene">
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button type="button" onClick={next} className="p-2 touch-manipulation hover:text-white" aria-label="Next scene">
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
+          {staticPreview ? null : (
+            <div className="flex justify-center gap-4 text-white/70">
+              <button type="button" onClick={prev} className="p-2 touch-manipulation hover:text-white" aria-label="Previous scene">
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button type="button" onClick={next} className="p-2 touch-manipulation hover:text-white" aria-label="Next scene">
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
-      <InviteGuestHelpFab />
+      {staticPreview ? null : <InviteGuestHelpFab />}
     </InviteViewportShell>
   );
 }

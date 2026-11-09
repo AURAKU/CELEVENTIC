@@ -1,5 +1,5 @@
 /**
- * Shared public media URL resolver — client-safe (no AWS SDK / Node fs).
+ * Shared public media URL resolver. Client-safe (no AWS SDK / Node fs).
  *
  * Canonical browser path for local disk media is `/uploads/...` so Nginx (or Next
  * `public/`) can serve Range requests directly. Legacy `/api/uploads/...` URLs are
@@ -18,7 +18,7 @@ const LOCAL_HOSTS = new Set([
  * Hosts that only exist inside the network that authored the media.
  *
  * Studio uploads and CSV/JSON imports have been observed persisting whichever
- * origin the author's browser happened to be on — a laptop on `192.168.1.x`, a
+ * origin the author's browser happened to be on. A laptop on `192.168.1.x`, a
  * staging box on `10.x`, a `*.local` mDNS name. Those absolute URLs are
  * indistinguishable from a real CDN to the old check, so they were written
  * straight into guest payloads and rendered as broken images on every device
@@ -67,7 +67,7 @@ function stripFilesystemPrefixes(input: string): string {
 }
 
 function collapseDuplicateSlashes(pathOnly: string): string {
-  // Keep protocol double-slash intact — this helper is for path segments only.
+  // Keep protocol double-slash intact. This helper is for path segments only.
   return pathOnly.replace(/\/{2,}/g, "/");
 }
 
@@ -102,7 +102,7 @@ export function resolvePublicMediaUrl(url: string | null | undefined): string {
     return trimmed;
   }
 
-  // Absolute http(s) — strip legacy localhost / duplicate public prefixes, keep real CDNs.
+  // Absolute http(s). Strip legacy localhost / duplicate public prefixes, keep real CDNs.
   if (/^https?:\/\//i.test(trimmed)) {
     try {
       const parsed = new URL(trimmed);
@@ -145,7 +145,7 @@ export function resolvePublicMediaUrl(url: string | null | undefined): string {
     return `/uploads/${encoded.replace(/^\/+/, "")}${suffix}`;
   }
 
-  // Relative path without uploads prefix — leave as-is (template assets, etc.).
+  // Relative path without uploads prefix. Leave as-is (template assets, etc.).
   if (trimmed.startsWith("/")) {
     return collapseDuplicateSlashes(trimmed);
   }
@@ -153,7 +153,7 @@ export function resolvePublicMediaUrl(url: string | null | undefined): string {
   return trimmed;
 }
 
-/** @deprecated Prefer `resolvePublicMediaUrl` — kept as a stable alias. */
+/** @deprecated Prefer `resolvePublicMediaUrl`. Kept as a stable alias. */
 export function resolveMediaUrl(url: string | null | undefined): string {
   return resolvePublicMediaUrl(url);
 }
@@ -175,7 +175,8 @@ export function isUploadedMediaUrl(url: string): boolean {
  * Absolute http(s) / data / blob URLs always skip optimization. Demo Unsplash
  * assets and user-uploaded CDNs are already web-sized; missing or stale
  * `images.remotePatterns` must never crash invitation, gallery, or portal pages.
- * Relative `/public` assets still go through the optimizer.
+ * Relative `/public` assets still go through the optimizer, except host
+ * template photographs under `/templates/` which must stay byte-faithful.
  */
 export function shouldUnoptimizeNextImage(url: string | null | undefined): boolean {
   if (!url) return true;
@@ -184,6 +185,7 @@ export function shouldUnoptimizeNextImage(url: string | null | undefined): boole
   if (src.startsWith("blob:") || src.startsWith("data:")) return true;
   if (isUploadedMediaUrl(src)) return true;
   if (/^https?:\/\//i.test(src)) return true;
+  if (src.startsWith("/templates/")) return true;
   return false;
 }
 

@@ -14,7 +14,7 @@ function clientKey(req: Request): string {
  * Aggregate tab-view counter.
  *
  * Increments one `(day, tab)` row. No visitor identifier, no user agent, no
- * address and no referrer is stored — the organizer learns that the menu was
+ * address and no referrer is stored. The organizer learns that the menu was
  * opened 240 times, never who opened it.
  */
 export async function POST(

@@ -1,6 +1,6 @@
 /**
  * Machine-readable Celeventic Guide coverage matrix (§51 / §60).
- * Honest audit of REAL user-facing features in this repo — do not invent.
+ * Honest audit of REAL user-facing features in this repo. Do not invent.
  */
 
 export type CoverageStatus = "COVERED" | "PARTIAL" | "MISSING" | "NOT USER-FACING" | "DEPRECATED" | "N/A";
@@ -51,7 +51,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     priority: "P0",
     lastVerified: COVERAGE_LAST_VERIFIED,
     owner: COVERAGE_OWNER_DEFAULT,
-    notes: "VIDEO PRODUCTION REQUIRED — flagship MP4 not recorded yet; motion + poster ship.",
+    notes: "VIDEO PRODUCTION REQUIRED. Flagship MP4 not recorded yet; motion + poster ship.",
   },
   {
     feature: "Celeventic Guide home",
@@ -511,7 +511,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Event OS — Wedding",
+    feature: "Event OS. Wedding",
     featureKey: "event-os-wedding",
     route: "/dashboard/events/[id] (WEDDING blueprint)",
     audience: "ORGANIZER",
@@ -524,10 +524,10 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     priority: "P1",
     lastVerified: COVERAGE_LAST_VERIFIED,
     owner: COVERAGE_OWNER_DEFAULT,
-    notes: "No dedicated /dashboard/wedding — shared Event OS routes with WEDDING blueprint.",
+    notes: "No dedicated /dashboard/wedding. Shared Event OS routes with WEDDING blueprint.",
   },
   {
-    feature: "Event OS — Funeral / FuneralOS",
+    feature: "Event OS. Funeral / FuneralOS",
     featureKey: "event-os-funeral",
     route: "/dashboard/funeral, /memorial/[slug]",
     audience: "ORGANIZER",
@@ -542,7 +542,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Event OS — Corporate / Conference",
+    feature: "Event OS. Corporate / Conference",
     featureKey: "event-os-corporate",
     route: "/dashboard/events/[id] (CORPORATE_EVENT / CONFERENCE)",
     audience: "ORGANIZER",
@@ -600,14 +600,14 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     priority: "P1",
     lastVerified: COVERAGE_LAST_VERIFIED,
     owner: COVERAGE_OWNER_DEFAULT,
-    notes: "adminOnly — never public.",
+    notes: "adminOnly, never public.",
   },
   {
     feature: "Admin control plane (users, commerce, modules)",
     featureKey: "admin-control-plane",
     route: "/admin/**",
     audience: "ADMIN",
-    existingTutorial: "—",
+    existingTutorial: "None",
     tutorialType: "none",
     videoAvailable: false,
     interactiveWalkthrough: false,
@@ -619,7 +619,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     notes: "Internal ops surfaces; Celeventic Guide focuses on guest/organizer/vendor/scanner journeys. Documented as unnecessary for public help.",
   },
   {
-    feature: "Troubleshooting — invitation won't open",
+    feature: "Troubleshooting. Invitation won't open",
     featureKey: "troubleshoot-invite",
     route: "/guide/troubleshoot-invitation-wont-open",
     audience: "GUEST",
@@ -634,7 +634,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Troubleshooting — QR won't scan",
+    feature: "Troubleshooting. QR won't scan",
     featureKey: "troubleshoot-qr",
     route: "/guide/troubleshoot-qr-wont-scan",
     audience: "GUEST",
@@ -649,7 +649,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Troubleshooting — RSVP fail",
+    feature: "Troubleshooting. RSVP fail",
     featureKey: "troubleshoot-rsvp",
     route: "/guide/troubleshoot-rsvp-fail",
     audience: "GUEST",
@@ -664,7 +664,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Troubleshooting — seat not found",
+    feature: "Troubleshooting. Seat not found",
     featureKey: "troubleshoot-seat",
     route: "/guide/troubleshoot-seat-not-found",
     audience: "GUEST",
@@ -679,7 +679,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Troubleshooting — Event Guide unavailable",
+    feature: "Troubleshooting. Event Guide unavailable",
     featureKey: "troubleshoot-event-guide",
     route: "/guide/troubleshoot-event-guide-unavailable",
     audience: "GUEST",
@@ -694,7 +694,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Troubleshooting — weak internet / offline",
+    feature: "Troubleshooting. Weak internet / offline",
     featureKey: "troubleshoot-offline",
     route: "/guide/troubleshoot-weak-internet",
     audience: "ALL",
@@ -709,7 +709,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Troubleshooting — memory upload failed",
+    feature: "Troubleshooting. Memory upload failed",
     featureKey: "troubleshoot-memory",
     route: "/guide/troubleshoot-memory-upload-failed",
     audience: "GUEST",
@@ -724,7 +724,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Troubleshooting — payment pending",
+    feature: "Troubleshooting. Payment pending",
     featureKey: "troubleshoot-payment",
     route: "/guide/troubleshoot-payment-pending",
     audience: "ORGANIZER",
@@ -739,7 +739,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Troubleshooting — ticket not received",
+    feature: "Troubleshooting. Ticket not received",
     featureKey: "troubleshoot-ticket",
     route: "/guide/troubleshoot-ticket-not-received",
     audience: "GUEST",
@@ -754,7 +754,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     owner: COVERAGE_OWNER_DEFAULT,
   },
   {
-    feature: "Troubleshooting — vendor pass not working",
+    feature: "Troubleshooting. Vendor pass not working",
     featureKey: "troubleshoot-vendor-pass",
     route: "/guide/troubleshoot-vendor-pass",
     audience: "VENDOR",
@@ -783,14 +783,14 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     priority: "N/A",
     lastVerified: COVERAGE_LAST_VERIFIED,
     owner: COVERAGE_OWNER_DEFAULT,
-    notes: "No dedicated route — Wedding is Event OS blueprint on shared event routes.",
+    notes: "No dedicated route. Wedding is Event OS blueprint on shared event routes.",
   },
   {
     feature: "Organizer analytics dashboard page",
     featureKey: "organizer-analytics-page",
     route: "/dashboard/analytics (does not exist)",
     audience: "ORGANIZER",
-    existingTutorial: "—",
+    existingTutorial: "None",
     tutorialType: "n/a",
     videoAvailable: false,
     interactiveWalkthrough: false,
@@ -806,7 +806,7 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     featureKey: "conference-extras",
     route: "FeatureKeys alias workspace tabs",
     audience: "ORGANIZER",
-    existingTutorial: "—",
+    existingTutorial: "None",
     tutorialType: "n/a",
     videoAvailable: false,
     interactiveWalkthrough: false,
@@ -815,12 +815,12 @@ export const CELEVENTIC_HELP_COVERAGE: CoverageRow[] = [
     priority: "N/A",
     lastVerified: COVERAGE_LAST_VERIFIED,
     owner: COVERAGE_OWNER_DEFAULT,
-    notes: "FeatureKeys exist but no dedicated page.tsx folders — not user-facing as separate products.",
+    notes: "FeatureKeys exist but no dedicated page.tsx folders, not user-facing as separate products.",
   },
   {
     feature: "/dashboard/admission page",
     featureKey: "dashboard-admission-alias",
-    route: "/dashboard/admission (no page — use /dashboard/qr)",
+    route: "/dashboard/admission (no page. Use /dashboard/qr)",
     audience: "ORGANIZER",
     existingTutorial: "qr-admission-organizer",
     tutorialType: "n/a",
@@ -910,7 +910,7 @@ export function toCoverageMarkdown(rows: CoverageRow[] = CELEVENTIC_HELP_COVERAG
           r.videoAvailable ? "yes" : "no"
         } | ${r.interactiveWalkthrough ? "yes" : "no"} | ${r.contextualHelp ? "yes" : "no"} | ${r.status} | ${
           r.priority
-        } | ${r.lastVerified} | ${r.owner}${r.notes ? ` — ${r.notes.replace(/\|/g, "/")}` : ""} |`
+        } | ${r.lastVerified} | ${r.owner}${r.notes ? `: ${r.notes.replace(/\|/g, "/")}` : ""} |`
     )
     .join("\n");
 
@@ -931,7 +931,7 @@ export function toCoverageMarkdown(rows: CoverageRow[] = CELEVENTIC_HELP_COVERAG
 | Coverage % (COVERED + 0.5×PARTIAL) | **${report.coveragePercent}%** |
 | Unexplained high-priority MISSING | ${report.unexplainedHighPriorityMissing.length} |
 
-Gate: **${coverageGatePasses(report).ok ? "PASS" : "FAIL"}** — ${coverageGatePasses(report).reason}
+Gate: **${coverageGatePasses(report).ok ? "PASS" : "FAIL"}**: ${coverageGatePasses(report).reason}
 
 PARTIALs are mostly **VIDEO PRODUCTION REQUIRED** (interactive/motion tutorials ship; MP4s not recorded).
 

@@ -8,7 +8,7 @@ import type { FontId } from "./theme-types";
  * small tracked "eyebrow" label (e.g. Traditional Marriage's "WITH GRATITUDE").
  *
  * All FontIds must already be registered in `invitation-fonts.ts` +
- * `FONT_STACKS` — no arbitrary families / runtime font fetches.
+ * `FONT_STACKS`. No arbitrary families / runtime font fetches.
  */
 export interface InvitationFontPreset {
   id: string;
@@ -22,7 +22,7 @@ export interface InvitationFontPreset {
   scriptFont: FontId;
   /** Readable body copy font. */
   bodyFont: FontId;
-  /** First preset is the Traditional Marriage default — keeps existing designs unchanged. */
+  /** First preset is the Traditional Marriage default. Keeps existing designs unchanged. */
   isDefault?: boolean;
 }
 
@@ -31,7 +31,7 @@ export const INVITATION_FONT_PRESETS: InvitationFontPreset[] = [
     id: "with-gratitude",
     label: "With Gratitude",
     description:
-      "The signature Traditional Marriage thank-you pairing — a tracked Cormorant eyebrow, sweeping Great Vibes script, and warm Cormorant body copy.",
+      "The signature Traditional Marriage thank-you pairing. A tracked Cormorant eyebrow, sweeping Great Vibes script, and warm Cormorant body copy.",
     eyebrowFont: "cormorant",
     headingFont: "cinzel",
     scriptFont: "great-vibes",

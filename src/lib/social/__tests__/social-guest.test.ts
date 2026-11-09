@@ -143,7 +143,7 @@ describe("resolveSocialInvitationGuest", () => {
     assert.equal(resolved, null);
   });
 
-  it("never uses cookies, session, or browser state — only URL and invitation records", () => {
+  it("never uses cookies, session, or browser state. Only URL and invitation records", () => {
     const params = [
       "guestToken",
       "tokenGuest",

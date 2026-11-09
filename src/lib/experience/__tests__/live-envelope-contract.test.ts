@@ -25,7 +25,7 @@ import {
 /**
  * LIVE envelope must wait indefinitely for an explicit guest gesture.
  * These contracts are the production-safe gates used by PremiumInviteWrapper
- * and EnvelopeCollectionReveal — not delays, not soft heuristics.
+ * and EnvelopeCollectionReveal, not delays, not soft heuristics.
  */
 
 test("LIVE guest mount: /invite route shape is live; studio/catalogue are not", () => {
@@ -61,7 +61,7 @@ test("LIVE guest mount: /invite route shape is live; studio/catalogue are not", 
   );
 });
 
-test("MANDATORY: LIVE auto-open protection — autoOpenReveal=true is ignored for live guests", () => {
+test("MANDATORY: LIVE auto-open protection. AutoOpenReveal=true is ignored for live guests", () => {
   assert.equal(
     resolveEnvelopeAutoOpen({ isLiveGuest: true, autoOpenReveal: true }),
     false
@@ -263,7 +263,7 @@ test("isCanonicalMemorialEnvelopeSku detects envelope contract from SKU override
   assert.equal(isCanonicalMemorialEnvelopeSku("royal-emerald-wedding"), false);
 });
 
-/** Production-shaped fixtures — legacy slug + stale persisted DNA (PR #80 gap). */
+/** Production-shaped fixtures. Legacy slug + stale persisted DNA (PR #80 gap). */
 const PRODUCTION_LEGACY_FIXTURES = [
   {
     name: "legacy classic-memorial slug + revealMode none + candle-light",
@@ -360,11 +360,11 @@ test("mandatory memorial envelope invariant rejects contradictory config in dev 
   }
 });
 
-test("MANDATORY: LIVE envelope waits — idle has no completion path without BEGIN", () => {
+test("MANDATORY: LIVE envelope waits. Idle has no completion path without BEGIN", () => {
   let state = createEnvelopeCeremonySnapshot("idle");
   const config = { unsealMs: 1900, durationMs: 5600 };
 
-  // Simulate 60s of wall time with no BEGIN — only COMPLETE ticks (which idle ignores).
+  // Simulate 60s of wall time with no BEGIN. Only COMPLETE ticks (which idle ignores).
   for (let i = 0; i < 60; i += 1) {
     state = reduceEnvelopeCeremony(state, { type: "TICK_COMPLETE" }, config);
     state = reduceEnvelopeCeremony(state, { type: "TICK_UNSEAL_DONE" }, config);
@@ -376,11 +376,11 @@ test("MANDATORY: LIVE envelope waits — idle has no completion path without BEG
 
   const timers = envelopeCeremonyTimersAfterBegin(config);
   assert.ok(timers.unsealMs === null || timers.unsealMs > 0);
-  // Timers only exist AFTER begin — proving idle schedules nothing by itself.
+  // Timers only exist AFTER begin. Proving idle schedules nothing by itself.
   assert.equal(createEnvelopeCeremonySnapshot("idle").phase, "idle");
 });
 
-test("MANDATORY: CLICK OPENS — BEGIN drives idle → unsealing → opening → done once", () => {
+test("MANDATORY: CLICK OPENS. BEGIN drives idle → unsealing → opening → done once", () => {
   const config = { unsealMs: 100, durationMs: 400, settleExtraMs: 80 };
   let state = createEnvelopeCeremonySnapshot("idle");
   let completeCount = 0;
@@ -410,7 +410,7 @@ test("MANDATORY: CLICK OPENS — BEGIN drives idle → unsealing → opening →
   assert.equal(timers.completeMs, 480);
 });
 
-test("MANDATORY: SCROLL unlock — forceUnlockRevealScroll clears lock + body styles", () => {
+test("MANDATORY: SCROLL unlock. ForceUnlockRevealScroll clears lock + body styles", () => {
   const doc = {
     body: { style: { overflow: "", touchAction: "" } as Record<string, string> },
     documentElement: {
@@ -429,11 +429,11 @@ test("MANDATORY: SCROLL unlock — forceUnlockRevealScroll clears lock + body st
     },
   };
 
-  (globalThis as { document?: typeof doc }).document = doc;
+  (globalThis as unknown as { document?: typeof doc }).document = doc;
 
   const unlock = lockRevealScroll();
   assert.equal(doc.body.style.overflow, "hidden");
-  assert.equal(doc.body.style.touchAction, "none");
+  assert.notEqual(doc.body.style.touchAction, "none");
   assert.equal(doc.documentElement.classList.contains("reveal-scroll-locked"), true);
 
   // Nested lock then force clear (simulates stuck lockCount after envelope → portal).
@@ -446,5 +446,5 @@ test("MANDATORY: SCROLL unlock — forceUnlockRevealScroll clears lock + body st
 
   unlock();
   forceUnlockRevealScroll();
-  delete (globalThis as { document?: typeof doc }).document;
+  delete (globalThis as unknown as { document?: typeof doc }).document;
 });

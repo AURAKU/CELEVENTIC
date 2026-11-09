@@ -14,7 +14,7 @@ import { calendarBundleForEvents } from "@/lib/invitation/smart-calendar";
 
 describe("calendar reminders", () => {
   const event = {
-    title: "Funeral service — Madam Vida",
+    title: "Funeral service. Madam Vida",
     startDateRaw: "2026-09-25T08:00:00.000Z",
     venue: "Presbyterian Church Sunyani Chiraa",
     description: "Memorial service",
@@ -109,16 +109,16 @@ describe("calendar reminders", () => {
 describe("celebration calendar bundle", () => {
   const events = [
     {
-      title: "Edwin & Lordina — Traditional Ceremony",
+      title: "Edwin & Lordina. Traditional Ceremony",
       startDateRaw: "2026-12-24T09:00:00.000Z",
       endDateRaw: "2026-12-24T12:00:00.000Z",
-      venue: "Bride’s house, Tema Community 12",
+      venue: "Bride's Family Residence",
       timeZone: "Africa/Accra",
       reminderMinutesBefore: [1440, 60],
       description: "Thursday 24 December 2026 · 9:00 AM",
     },
     {
-      title: "Edwin & Lordina — White Wedding",
+      title: "Edwin & Lordina. White Wedding",
       startDateRaw: "2026-12-26T09:00:00.000Z",
       endDateRaw: "2026-12-26T16:00:00.000Z",
       venue: "Assemblies of God Tema Community 12 TCC",
@@ -126,7 +126,7 @@ describe("celebration calendar bundle", () => {
       reminderMinutesBefore: [1440, 60],
     },
     {
-      title: "Edwin & Lordina — Reception",
+      title: "Edwin & Lordina. Reception",
       startDateRaw: "2026-12-26T16:00:00.000Z",
       endDateRaw: "2026-12-26T21:00:00.000Z",
       venue: "Combos & Casa, East Legon Hills",

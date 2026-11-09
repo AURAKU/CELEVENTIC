@@ -1,8 +1,8 @@
 import { DigitalCardStudioClient } from "@/components/digital-business-card/digital-card-studio-client";
 
 export const metadata = {
-  title: "Digital business card · Celeventic",
-  description: "Create a shareable digital business card with QR, NFC, and social links.",
+  title: "CeleCard · Celeventic",
+  description: "Design your living CeleCard. Share with QR, NFC, Wallet, or link.",
 };
 
 export default function DigitalBusinessCardDashboardPage() {

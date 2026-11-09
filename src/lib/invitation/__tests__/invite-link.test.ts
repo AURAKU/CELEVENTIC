@@ -15,7 +15,7 @@ import {
  */
 const TOKEN = "aB3_dE-fGh9JkLmN0pQrS2tUvW4xYz67";
 
-describe("normalizeInviteLink — carriers that mangle links", () => {
+describe("normalizeInviteLink. Carriers that mangle links", () => {
   it("leaves a clean token untouched", () => {
     assert.equal(normalizeInviteLink(TOKEN), TOKEN);
   });
@@ -101,10 +101,10 @@ describe("normalizeInviteLink — carriers that mangle links", () => {
 
 /**
  * The token is a bearer credential. Normalisation may only ever *repair
- * transport damage* — it must never fold two distinct tokens together, and it
+ * transport damage*. It must never fold two distinct tokens together, and it
  * must never change the token's own characters.
  */
-describe("normalizeInviteLink — never weakens the token", () => {
+describe("normalizeInviteLink, never weakens the token", () => {
   it("preserves case exactly", () => {
     assert.equal(normalizeInviteLink(TOKEN), TOKEN);
     assert.notEqual(normalizeInviteLink(TOKEN), TOKEN.toLowerCase());
@@ -174,7 +174,7 @@ describe("isPlausibleInviteToken", () => {
  * the caller's untouched value, so a token that legitimately differs from its
  * normalised form can never be shadowed by a more permissive variant.
  */
-describe("inviteLinkCandidates — exact match always first", () => {
+describe("inviteLinkCandidates. Exact match always first", () => {
   it("yields exactly one candidate for a clean token", () => {
     assert.deepEqual(inviteLinkCandidates(TOKEN), [TOKEN]);
   });
@@ -211,7 +211,7 @@ describe("inviteLinkCandidates — exact match always first", () => {
   });
 });
 
-describe("inviteLinkIsCanonical — keeps the clean path at one query", () => {
+describe("inviteLinkIsCanonical. Keeps the clean path at one query", () => {
   it("is true for a clean token", () => {
     assert.ok(inviteLinkIsCanonical(TOKEN));
   });
@@ -237,7 +237,7 @@ describe("inviteLinkIsCanonical — keeps the clean path at one query", () => {
 
 /**
  * Legacy links already in guests' hands. These were minted before normalisation
- * existed and must keep resolving byte-for-byte — a normalisation change that
+ * existed and must keep resolving byte-for-byte. A normalisation change that
  * alters them would silently invalidate every invitation already sent.
  *
  * Synthetic values that reproduce every shape in production (32-char legacy

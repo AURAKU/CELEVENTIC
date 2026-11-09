@@ -13,7 +13,7 @@ import { toMajorUnits } from "@/lib/gifts/money";
  * are idempotent so a repeated webhook is a no-op.
  */
 export class GiftLifecycleService {
-  /** A chargeback was raised — hold the money out of the available balance. */
+  /** A chargeback was raised. Hold the money out of the available balance. */
   async markDisputed(reference: string, event: string): Promise<void> {
     const gift = await prisma.eventGiftPayment.findUnique({ where: { reference } });
     if (!gift) return;
@@ -34,7 +34,7 @@ export class GiftLifecycleService {
           idempotencyKey: ledgerIdempotencyKey(["gift_dispute", gift.id]),
           giftPaymentId: gift.id,
           source: "payment_webhook",
-          description: `Dispute hold — ${gift.reference}`,
+          description: `Dispute hold: ${gift.reference}`,
           metadata: { event },
         },
         tx
@@ -86,7 +86,7 @@ export class GiftLifecycleService {
           idempotencyKey: ledgerIdempotencyKey(["gift_reversal", gift.id]),
           giftPaymentId: gift.id,
           source: "payment_webhook",
-          description: `Gift reversed — ${gift.reference}`,
+          description: `Gift reversed: ${gift.reference}`,
         },
         tx
       );
@@ -109,7 +109,7 @@ export class GiftLifecycleService {
               source: "gift",
               reference: gift.reference,
               paymentId: gift.paymentId,
-              description: `Gift reversed — ${gift.reference}`,
+              description: `Gift reversed: ${gift.reference}`,
               isLocked: true,
             },
           });

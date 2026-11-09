@@ -14,7 +14,7 @@ import type { InvitationDesignConfig } from "@/types/invitation-design";
  * Query:
  *   ?scenario=memorial-production (default)
  *   ?skipSoftIntro=1
- *   ?throwReveal=1 — InteractiveReveal throws; mandatory hold must NOT portal
+ *   ?throwReveal=1. InteractiveReveal throws; mandatory hold must NOT portal
  */
 function buildMemorialProductionDesign(): InvitationDesignConfig {
   const preview = buildLivePreviewProps("memorial-candle-tribute", "Funeral", {

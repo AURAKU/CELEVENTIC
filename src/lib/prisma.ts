@@ -1,7 +1,12 @@
 import { PrismaClient } from "@prisma/client";
+import {
+  applySqlitePragmas,
+  assertSqliteSingleWriterDeployment,
+} from "@/lib/db/sqlite-runtime";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
+  prismaSqliteReady: Promise<void> | undefined;
 };
 
 /**
@@ -17,6 +22,18 @@ function ensureLocalDatabaseUrl() {
 }
 
 ensureLocalDatabaseUrl();
+
+function applySqliteSocketTimeout() {
+  const url = process.env.DATABASE_URL?.trim();
+  if (!url || !url.startsWith("file:")) return;
+  if (/[?&]socket_timeout=/.test(url)) return;
+  process.env.DATABASE_URL = url.includes("?")
+    ? `${url}&socket_timeout=30`
+    : `${url}?socket_timeout=30`;
+}
+
+applySqliteSocketTimeout();
+assertSqliteSingleWriterDeployment();
 
 function createPrismaClient() {
   return new PrismaClient({
@@ -64,3 +81,11 @@ export async function prismaQueryWithTimeout<T>(
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 globalForPrisma.prisma = prisma;
+
+if (!globalForPrisma.prismaSqliteReady) {
+  globalForPrisma.prismaSqliteReady = applySqlitePragmas(prisma).catch((error) => {
+    if (process.env.NODE_ENV === "production") {
+      console.error("[sqlite] pragma setup failed", error);
+    }
+  });
+}

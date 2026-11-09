@@ -155,7 +155,7 @@ export interface CeleventicVideoProps {
 }
 
 /**
- * Shared resilient video renderer — wraps progressive MP4 with poster, retry, and offscreen pause.
+ * Shared resilient video renderer. Wraps progressive MP4 with poster, retry, and offscreen pause.
  * Prefer this (or `VideoPlayer` for processing-status-aware assets) over raw `<video src>`.
  */
 export function CeleventicVideo({

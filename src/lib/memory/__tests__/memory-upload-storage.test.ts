@@ -36,6 +36,22 @@ describe("memory-upload-storage extension + validation", () => {
     assert.ok(bad.reason);
   });
 
+  it("accepts BMP, TIFF, AVIF, GIF, and nameless phone dumps as photos", () => {
+    assert.equal(validateMemoryFile("image/bmp", 1024, 50, 200, "scan.bmp").mediaType, "image");
+    assert.equal(validateMemoryFile("image/tiff", 2048, 50, 200, "scan.tiff").mediaType, "image");
+    assert.equal(validateMemoryFile("image/avif", 1024, 50, 200, "shot.avif").mediaType, "image");
+    assert.equal(validateMemoryFile("image/gif", 1024, 50, 200, "clip.gif").mediaType, "image");
+    assert.equal(validateMemoryFile("image/x-ms-bmp", 1024, 50, 200).mediaType, "image");
+    assert.equal(validateMemoryFile("application/octet-stream", 2048, 50, 200).mediaType, "image");
+    assert.equal(validateMemoryFile("", 2048, 50, 200, "IMG_0001").mediaType, "image");
+  });
+
+  it("rejects SVG even when labelled as an image", () => {
+    const svg = validateMemoryFile("image/svg+xml", 1024, 50, 200, "logo.svg");
+    assert.equal(svg.valid, false);
+    assert.match(svg.reason ?? "", /svg/i);
+  });
+
   it("rejects MP4 and MOV while guest album is photos-only", () => {
     const mp4 = validateMemoryFile("video/mp4", 1024, 50, 200, "clip.mp4");
     assert.equal(mp4.valid, false);

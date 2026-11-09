@@ -12,6 +12,7 @@ import {
   type RecentEventSummary,
 } from "@/components/dashboard/recent-events-list";
 import { formatCurrency } from "@/lib/utils";
+import { FreePlanReminder } from "@/components/billing/free-plan-reminder";
 
 interface DashboardStats {
   eventsCreated: number;
@@ -47,6 +48,7 @@ export function EventOwnerDashboard({
         primaryHref="/dashboard/events/create"
         primaryLabel="Create Event"
       />
+      {!isAdmin && <FreePlanReminder />}
       <StatsRow stats={stats} />
       <div className="grid lg:grid-cols-3 gap-6">
         <RecentEventsList
@@ -88,6 +90,7 @@ export function OrganizerDashboard({
         primaryHref="/dashboard/events/create"
         primaryLabel="Create Event"
       />
+      {!isAdmin && <FreePlanReminder />}
       <StatsRow stats={stats} />
       <div className="grid lg:grid-cols-3 gap-6">
         <RecentEventsList
@@ -131,6 +134,7 @@ export function OrganizationDashboard({
         primaryHref="/dashboard/events/create"
         primaryLabel="Create Event"
       />
+      {!isAdmin && <FreePlanReminder />}
       <StatsRow stats={stats} />
       <div className="grid lg:grid-cols-3 gap-6">
         <RecentEventsList

@@ -1,5 +1,5 @@
 /**
- * Per-layout catalogue signatures — unique hub tabs, marketing features, and copy hooks.
+ * Per-layout catalogue signatures. Unique hub tabs, marketing features, and copy hooks.
  * No two templates share the same feature bundle or tab set.
  */
 import type { HubTabId } from "@/lib/experience/experience-types";
@@ -41,7 +41,7 @@ export const LAYOUT_ENABLED_TABS: Record<string, HubTabId[]> = {
   "custom-media": ["invitation", "gallery", "rsvp", "memory", "venue", "gifts"],
 };
 
-/** Marketing feature chips — each layout lists a distinct signature set */
+/** Marketing feature chips. Each layout lists a distinct signature set */
 export const LAYOUT_SIGNATURE_FEATURES: Record<string, string[]> = {
   "classic-gold": ["Wax seal reveal", "Gold royal countdown", "Ivory serif card", "Romantic piano", "RSVP"],
   "luxury-rings": ["Light beam reveal", "Onyx film-strip gallery", "Violin elegance", "QR admission", "RSVP"],

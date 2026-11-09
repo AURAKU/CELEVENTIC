@@ -250,7 +250,7 @@ export function GuestPassCard({
               {dearLine}
             </p>
             <GuestPlaceName
-              name={greeting.name || greeting.honorific}
+              name={greeting.name || greeting.honorific || ""}
               palette={palette}
             />
           </>

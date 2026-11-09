@@ -4,7 +4,7 @@
  * idle  --(user gesture only)-->  unsealing  --(timer)-->  opening  --(timer)-->  done
  *
  * No timer may leave idle. Auto-open is a separate explicit preview path that
- * still enters through the same begin() entry — never a hidden idle→done jump.
+ * still enters through the same begin() entry, never a hidden idle→done jump.
  */
 
 export type EnvelopeCeremonyPhase = "idle" | "unsealing" | "opening" | "done";
@@ -70,7 +70,7 @@ export function reduceEnvelopeCeremony(
   }
 }
 
-/** Scheduled timer lengths after BEGIN — idle has none. */
+/** Scheduled timer lengths after BEGIN. Idle has none. */
 export function envelopeCeremonyTimersAfterBegin(config: EnvelopeCeremonyConfig): {
   unsealMs: number | null;
   completeMs: number;

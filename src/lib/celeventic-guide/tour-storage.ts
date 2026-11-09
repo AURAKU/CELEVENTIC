@@ -63,7 +63,7 @@ export function markPendingWelcomeTour() {
   }
 }
 
-/** Returns true once, then clears — so the tour only auto-starts after setup. */
+/** Returns true once, then clears, so the tour only auto-starts after setup. */
 export function consumePendingWelcomeTour(): boolean {
   if (typeof window === "undefined") return false;
   try {

@@ -26,7 +26,7 @@ describe("guest wish author delete token", () => {
 });
 
 describe("wish permission matrix", () => {
-  it("anonymous / guest: add only — no delete, no edit", () => {
+  it("anonymous / guest: add only. No delete, no edit", () => {
     const caps = resolveWishCapabilities({
       isModerator: false,
       hasValidAuthorToken: false,
@@ -78,7 +78,7 @@ describe("wish card affordance gating", () => {
     );
   });
 
-  it("shows edit only for organizers/admins — never for guests", () => {
+  it("shows edit only for organizers/admins, never for guests", () => {
     assert.equal(viewerCanEditWish(false), false);
     assert.equal(viewerCanEditWish(true), true);
   });

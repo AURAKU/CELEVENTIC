@@ -50,7 +50,7 @@ export interface NavItem {
   labelKey: string;
   icon: LucideIcon;
   exact?: boolean;
-  /** Platform admin only — hidden from organizer/staff/vendor UIs */
+  /** Platform admin only. Hidden from organizer/staff/vendor UIs */
   adminOnly?: boolean;
 }
 
@@ -97,6 +97,7 @@ export const ORGANIZER_NAV: NavSection[] = [
     items: [
       { href: "/dashboard/design-studio", labelKey: "dashboard.nav_design_studio", icon: Palette },
       { href: "/dashboard/business-card", labelKey: "dashboard.nav_business_card", icon: CreditCard },
+      { href: "/dashboard/business-card/billing", labelKey: "dashboard.nav_smartcard_billing", icon: Receipt },
       { href: "/dashboard/invitations?tab=studio", labelKey: "dashboard.nav_invitation_studio", icon: Mail },
       { href: "/dashboard/flyers", labelKey: "dashboard.nav_flyer_studio", icon: Image },
       { href: "/dashboard/design-studio/assets", labelKey: "dashboard.nav_asset_library", icon: Layers },
@@ -271,7 +272,7 @@ export function getNavSections(workspace: WorkspaceId): NavSection[] {
 
 /**
  * Workspace switcher entries.
- * FuneralOS is intentionally omitted — it is a product module under organizer tools,
+ * FuneralOS is intentionally omitted. It is a product module under organizer tools,
  * not a top-level account workspace.
  */
 export const WORKSPACE_OPTIONS: { id: WorkspaceId; labelKey: string; roles?: string[] }[] = [
@@ -284,7 +285,7 @@ export const WORKSPACE_OPTIONS: { id: WorkspaceId; labelKey: string; roles?: str
   { id: "admin", labelKey: "dashboard.workspace_admin", roles: ["ADMIN", "SUPER_ADMIN"] },
 ];
 
-/** Workspaces the signed-in account may open — one primary role, admins keep organizer + admin. */
+/** Workspaces the signed-in account may open. One primary role, admins keep organizer + admin. */
 export function getWorkspaceOptionsForRole(role: string | null | undefined) {
   if (!role) return WORKSPACE_OPTIONS.filter((o) => o.id === "organizer");
   return WORKSPACE_OPTIONS.filter((o) => !o.roles || o.roles.includes(role));

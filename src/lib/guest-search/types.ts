@@ -5,7 +5,7 @@ import type { MatchField } from "./query";
  * The shape a search result takes on the wire.
  *
  * Invitation-centric, not guest-centric: an organiser searching "Obuah" wants
- * the *invitation* — its link, its allowance, its pass — not three guest rows
+ * the *invitation*. Its link, its allowance, its pass, not three guest rows
  * that happen to share a surname. Named party members ride along on the card.
  */
 

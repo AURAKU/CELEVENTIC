@@ -260,7 +260,7 @@ export function ImageUploadCropper({
         </div>
       )}
 
-      {/* Photos / files — no capture attribute so OS opens the media library */}
+      {/* Photos / files. No capture attribute so OS opens the media library */}
       <input
         ref={galleryRef}
         type="file"
@@ -269,7 +269,7 @@ export function ImageUploadCropper({
         onChange={onFileInputChange}
       />
 
-      {/* Live camera — capture hints mobile browsers to open the camera app */}
+      {/* Live camera. Capture hints mobile browsers to open the camera app */}
       {enableCamera && (
         <input
           ref={cameraRef}

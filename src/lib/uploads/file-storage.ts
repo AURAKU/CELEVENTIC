@@ -8,7 +8,7 @@ import {
   putS3Object,
 } from "@/lib/uploads/aws-s3";
 
-/** Writable upload root — `/tmp` on serverless, `public/uploads` locally. */
+/** Writable upload root. `/tmp` on serverless, `public/uploads` locally. */
 export function getUploadRoot(): string {
   if (process.env.UPLOAD_DIR) return process.env.UPLOAD_DIR;
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
@@ -31,7 +31,7 @@ export function resolveUploadPath(relativePath: string): string {
   return full;
 }
 
-/** Public URL for local disk — prefer `/uploads/` so Nginx (prod) / Next public (dev) serve Range. */
+/** Public URL for local disk. Prefer `/uploads/` so Nginx (prod) / Next public (dev) serve Range. */
 export function getPublicUploadUrl(relativePath: string): string {
   const normalized = normalizeRelativePath(relativePath);
   // When operators force the legacy API proxy (e.g. UPLOAD_DIR outside public/), honour it.
@@ -66,7 +66,7 @@ export async function storeUploadFile(
 
 /**
  * Persist an upload at an exact, pre-built relative path (no `category/subPath/fileName`
- * joining) — used by the video pipeline, which already generates a collision-proof key
+ * joining). Used by the video pipeline, which already generates a collision-proof key
  * (see `key-builder.ts`) at presign time and needs to write/read that exact path later from
  * a different request (upload -> background worker). Same S3-or-local-disk behavior as
  * `storeUploadFile`.

@@ -147,7 +147,7 @@ export function VendorPassCard({
         </div>
       </div>
 
-      {/* Security wristband — code lives here (not the main face) so it isn’t shoulder-readable */}
+      {/* Security wristband. Code lives here (not the main face) so it isn’t shoulder-readable */}
       <div
         data-vendor-security-band
         className="relative overflow-hidden border-y border-brand-900/40 bg-gradient-to-r from-brand-900 via-brand-700 to-brand-900 px-4 py-3 print:py-2.5"
@@ -168,7 +168,7 @@ export function VendorPassCard({
           aria-label={
             codeRevealed
               ? `Admission code ${code}. Tap to hide.`
-              : "Hold privately — tap to reveal admission code"
+              : "Hold privately. Tap to reveal admission code"
           }
         >
           <span className="min-w-0">

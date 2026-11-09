@@ -26,7 +26,7 @@ import {
 import { loadSiblingInvitationLabels } from "@/lib/invitation/sibling-invitations";
 
 /**
- * Personalised Place Card — server resolution.
+ * Personalised Place Card. Server resolution.
  *
  * Reads the organiser's config out of the shared feature layer and binds it to
  * the live party allowance and assigned seating, so a published invitation
@@ -290,7 +290,7 @@ export async function resolvePlaceCard(
     recipient: {
       invitationName: invitation.name,
       guestName: resolvedGuestName,
-      // Never GuestGroup — invitation.name is the only party identity.
+      // Never GuestGroup. Invitation.name is the only party identity.
       groupName: null,
       partySize: allowance,
       assigned,

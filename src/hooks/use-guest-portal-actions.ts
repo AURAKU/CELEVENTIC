@@ -47,7 +47,7 @@ export interface UseGuestPortalActionsInput {
   audioMuted?: boolean;
   onToggleAudio?: () => void;
   onReplay?: () => void;
-  /** Phase 5 — Studio Action Registry mapping for dock buttons */
+  /** Phase 5. Studio Action Registry mapping for dock buttons */
   buttonActions?: StudioButtonActions | null;
 }
 

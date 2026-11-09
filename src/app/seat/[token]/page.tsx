@@ -221,7 +221,7 @@ export default function SeatLookupPage() {
 
         <p className="text-xs text-white/40">
           {canDownloadMap
-            ? "Download the venue map to navigate on the day — or save this page"
+            ? "Download the venue map to navigate on the day, or save this page"
             : "Save this page or scan at the venue"}
         </p>
       </div>

@@ -1,6 +1,6 @@
 /**
  * Server-side Vendor & Team Access Card PNG.
- * Portrait badge sized for phone save / print — Celeventic teal · gold · ivory.
+ * Portrait badge sized for phone save / print. Celeventic teal · gold · ivory.
  */
 
 import sharp from "sharp";

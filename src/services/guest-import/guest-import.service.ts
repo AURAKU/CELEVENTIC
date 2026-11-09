@@ -38,7 +38,7 @@ import {
 import { GUEST_IMPORT_QUEUE } from "./queues";
 
 /**
- * Bulk Guest Import — batch lifecycle.
+ * Bulk Guest Import. Batch lifecycle.
  *
  * A batch moves DRAFT → READY → GENERATING → COMPLETED, and nothing guest-
  * facing exists until the organiser confirms. Parsing, mapping, duplicate
@@ -46,7 +46,7 @@ import { GUEST_IMPORT_QUEUE } from "./queues";
  * staging table: no Invitation, Guest, GuestPass or delivery is created until
  * `confirmBatch` hands the batch to the background worker.
  *
- * Reads are paginated everywhere — a 5,000-row import must never be loaded
+ * Reads are paginated everywhere. A 5,000-row import must never be loaded
  * whole into an API response or a browser.
  */
 
@@ -54,7 +54,7 @@ const ROW_WRITE_CHUNK = 200;
 
 /**
  * Rows the generator will pick up: everything not explicitly skipped and not
- * already dealt with. Merge and update decisions count — a list where every
+ * already dealt with. Merge and update decisions count. A list where every
  * duplicate was resolved as "update the existing guest" is real work, not an
  * empty import. Confirmation, the preview count and the progress screen all
  * read from this one definition so they can never disagree.
@@ -163,7 +163,7 @@ export class GuestImportService {
   /**
    * Stage a parsed list as a DRAFT batch.
    *
-   * Nothing guest-facing is created here — this is the "preview and validate"
+   * Nothing guest-facing is created here. This is the "preview and validate"
    * step, and it is the only place the whole source table is held in memory.
    */
   async createBatch(input: CreateBatchInput): Promise<BatchPreview> {
@@ -230,7 +230,7 @@ export class GuestImportService {
    *
    * This distinction is the whole point. Re-deriving rebuilds every row from
    * the source cells, which silently discards renamed guests, corrected
-   * allowances and — worst of all — the create/skip decisions that unblock
+   * allowances and. Worst of all. The create/skip decisions that unblock
    * confirmation. A message or a tag cannot change how a row was parsed, so
    * saving one must leave the review alone.
    */
@@ -309,7 +309,7 @@ export class GuestImportService {
 
   /**
    * Re-derive every row from the stored source cells under a new mapping or
-   * new options. Cheap because `raw` was kept positionally — the organiser
+   * new options. Cheap because `raw` was kept positionally. The organiser
    * never has to re-upload to fix a mis-detected column.
    */
   async remapBatch(
@@ -463,7 +463,7 @@ export class GuestImportService {
     return { updated };
   }
 
-  /** Apply one decision to every row matching a status — the bulk-action path. */
+  /** Apply one decision to every row matching a status. The bulk-action path. */
   async bulkDecision(
     batchId: string,
     userId: string,
@@ -657,7 +657,7 @@ export class GuestImportService {
       batch,
       rows,
       deliveries,
-      // What confirming right now would actually create — duplicates the
+      // What confirming right now would actually create. Duplicates the
       // organiser resolved as "create" included, skips excluded.
       pendingRows: pendingWork.rows,
       pendingHeads: pendingWork.heads,

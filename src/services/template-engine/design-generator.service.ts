@@ -49,7 +49,7 @@ export class DesignGeneratorService {
     for (const productType of outputs) {
       const dims = this.dimensionsFor(productType);
       const config: TemplateSchema = {
-        name: `${event.title} — ${productType}`,
+        name: `${event.title}: ${productType}`,
         category: template.category,
         style: template.style,
         productType,

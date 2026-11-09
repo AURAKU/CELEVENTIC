@@ -1,4 +1,4 @@
-/** Resolve best playback source — prefer smaller/mobile when available. Never invent MP4s. */
+/** Resolve best playback source. Prefer smaller/mobile when available. Never invent MP4s. */
 
 export type GuideMediaFields = {
   videoUrl?: string | null;

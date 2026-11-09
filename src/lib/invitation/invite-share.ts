@@ -131,7 +131,7 @@ export async function tryNativeInviteShare(
 
   try {
     if (typeof navigator.canShare === "function" && !navigator.canShare(data)) {
-      // Some browsers reject url+text together — retry url-only.
+      // Some browsers reject url+text together. Retry url-only.
       const urlOnly: ShareData = { title: payload.title, url: payload.url };
       if (!navigator.canShare(urlOnly)) return "unavailable";
       await navigator.share(urlOnly);

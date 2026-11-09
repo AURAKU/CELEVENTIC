@@ -1,4 +1,4 @@
-/** Upload FormData with optional progress reporting (XHR — fetch lacks upload progress). */
+/** Upload FormData with optional progress reporting (XHR. Fetch lacks upload progress). */
 export async function uploadFormDataWithProgress(
   url: string,
   formData: FormData,
@@ -34,7 +34,7 @@ export const CLIENT_MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
 /**
  * @param maxBytes Pass `Infinity` when the caller compresses client-side before
- *   upload — the raw file size is then irrelevant to what actually gets sent.
+ *   upload. The raw file size is then irrelevant to what actually gets sent.
  */
 export function validateClientImage(
   file: File,

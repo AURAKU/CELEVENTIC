@@ -1,5 +1,5 @@
 /**
- * Magic-byte container sniffing. Never trust a client-supplied extension or MIME type —
+ * Magic-byte container sniffing. Never trust a client-supplied extension or MIME type.
  * this inspects the actual bytes of the object (first ~4KB, fetched via an S3 ranged GET
  * after upload) to confirm it is really a video container, and to reject disguised
  * executables/archives/HTML even when renamed with a video extension.
@@ -51,7 +51,7 @@ export interface ContainerSniffResult {
 /**
  * Best-effort video codec hint for MP4/MOV-family containers. Looks for the HEVC sample-entry
  * fourCCs (`hev1`/`hvc1`) that QuickTime/Android/iOS write into the `stsd` box. This is a
- * heuristic byte scan, not a full box walk — it only needs to be reliable enough to tag the
+ * heuristic byte scan, not a full box walk. It only needs to be reliable enough to tag the
  * asset as HEVC for informational/analytics purposes. It is NEVER used to reject a file:
  * HEVC is a fully supported source codec that MediaConvert transcodes to H.264 for delivery.
  */
@@ -78,7 +78,7 @@ export function sniffVideoContainer(buf: Buffer): ContainerSniffResult {
     return { container: "mp4", confident: true, disallowed: null };
   }
   if (buf.length >= 4 && buf.readUInt32BE(0) === 0x1a45dfa3) {
-    // EBML — could be WebM or MKV; disambiguate via the DocType string a few bytes in.
+    // EBML. Could be WebM or MKV; disambiguate via the DocType string a few bytes in.
     const window = buf.subarray(0, Math.min(buf.length, 512)).toString("latin1");
     if (window.includes("webm")) return { container: "webm", confident: true, disallowed: null };
     if (window.includes("matroska")) return { container: "mkv", confident: true, disallowed: null };

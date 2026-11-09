@@ -4,10 +4,10 @@
  * Forever Afaris and Traditional Marriage ship with real client ceremony copy as
  * layout defaults (for that couple's live invite). Catalogue browse and studio
  * "tap to open" previews must never show those names, phones, venues, or
- * monograms — guests shopping templates need clearly fictional sample details.
+ * monograms. Guests shopping templates need clearly fictional sample details.
  *
  * Funeral browse envelopes must never show wedding seals (C | J). They use a
- * unique poured wax seal + memorial emblem per concept — not couple initials.
+ * unique poured wax seal + memorial emblem per concept, not couple initials.
  */
 import { formatInvitationDateParts, parseCoupleNames } from "@/lib/invitation-templates";
 import type { WeddingBoardContent } from "@/lib/invitation/wedding-board";
@@ -92,7 +92,7 @@ function resolveCoupleParts(demo: CatalogDemoIdentity): {
 }
 
 function demoRsvpContacts(phone?: string): Array<{ name: string; phone: string }> {
-  const primary = phone?.trim() || "+233 25 766 0734";
+  const primary = phone?.trim() || "+233 20 000 0000";
   return [
     { name: "SAMPLE HOST LINE", phone: primary },
     { name: "SAMPLE EVENT DESK", phone: "+233 20 000 0000" },
@@ -201,7 +201,7 @@ export function buildCatalogDemoVisionBoard(
   };
 }
 
-/** Per-funeral-SKU wax materials — unique poured wax, never peach wedding pearl. */
+/** Per-funeral-SKU wax materials. Unique poured wax, never peach wedding pearl. */
 function funeralSealDesignForSlug(slug: string): SealDesignId {
   return resolveFuneralEnvelopeSeal(slug).design;
 }
@@ -254,7 +254,7 @@ const FUNERAL_BOARD_COPY_BY_SLUG: Record<
 };
 
 /**
- * Funeral catalogue vision board — unique wax seal + memorial emblem (no couple initials).
+ * Funeral catalogue vision board. Unique wax seal + memorial emblem (no couple initials).
  * Clears wedding couple monogram fields so envelopes never show C | J.
  */
 export function buildCatalogDemoMemorialVisionBoard(
@@ -329,7 +329,7 @@ export function buildCatalogDemoMemorialVisionBoard(
 
 /** True when catalogue sample copy still leaks a known client ceremony identity. */
 export function catalogDemoLeaksClientIdentity(text: string): boolean {
-  return /jeffery|francisca|chelsy|owuraku|afari|opoku|forever\s*afaris|maame\s*yeboah|0242651828|242\s*651\s*828|subtle\s*class/i.test(
+  return /jeffery|francisca|chelsy|owuraku|\bafari\b|opoku|maame\s*yeboah|0242651828|242\s*651\s*828|subtle\s*class|\benock\b|\bruth\b|kojo\s*&\s*fafa|\bfafa\b|ama\s*darkoa|ama\s*darko|westville|\btlpci\b|solution\s*centre|edwin\s*lordina|\bprofessor\b|\bdeaconess\b|\bmadam\b|\bmrs\.?\b|\bmr\.?\b|\brev\.?\b/i.test(
     text
   );
 }

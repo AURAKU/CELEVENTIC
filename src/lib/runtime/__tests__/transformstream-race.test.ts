@@ -79,7 +79,7 @@ describe("formatTransformStreamRaceStartupWarning", () => {
   });
 });
 
-describe("probeTransformStreamCancelWriteRace — Node runtime", () => {
+describe("probeTransformStreamCancelWriteRace. Node runtime", () => {
   it("reports vulnerability consistent with Node version", async () => {
     const result = await probeTransformStreamCancelWriteRace(30);
     assert.equal(result.iterations, 30);
@@ -94,7 +94,7 @@ describe("probeTransformStreamCancelWriteRace — Node runtime", () => {
     }
 
     // Node 20.x and 22.x reliably reproduce the cancel/write race (200/200 in local probes).
-    // Older majors (e.g. 18) may not hit the same interleaving — do not require hits there.
+    // Older majors (e.g. 18) may not hit the same interleaving. Do not require hits there.
     const knownVulnerable = parts.major === 20 || parts.major === 22;
     if (knownVulnerable) {
       assert.ok(

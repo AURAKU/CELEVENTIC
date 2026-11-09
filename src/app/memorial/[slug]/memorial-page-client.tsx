@@ -320,7 +320,7 @@ export function MemorialPageClient() {
             : []),
         ];
 
-  const shareText = `Funeral Invitation — ${displayName}${lifeDatesLabel ? ` · ${lifeDatesLabel}` : ""}`;
+  const shareText = `Funeral Invitation: ${displayName}${lifeDatesLabel ? ` · ${lifeDatesLabel}` : ""}`;
   const audioSrc = AUDIO_BY_CATEGORY[p.invitationAudioCategory || "piano"] || "/music/memorial-piano.mp3";
   const galleryPhotos = (data.gallery?.items ?? [])
     .filter((m) => m.kind !== "VIDEO")
@@ -376,7 +376,7 @@ export function MemorialPageClient() {
 
         <CeremonialOrnament variant={ornamentVariant} />
 
-        <MemorialShareBar title={`Funeral Invitation — ${displayName}`} text={shareText} />
+        <MemorialShareBar title={`Funeral Invitation: ${displayName}`} text={shareText} />
 
         {data.stats && (exp.showCandleCount !== false) ? (
           <div

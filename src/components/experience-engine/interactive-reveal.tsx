@@ -26,7 +26,7 @@ interface InteractiveRevealProps {
   /** Editable opening copy for template-authored ceremonies (e.g. Blush Gate). */
   openingCopy?: BlushGateOpeningCopy;
   fashionHouse?: LuxuryFashionHouseConfig;
-  aureliaWedding?: AureliaWeddingConfig;
+  aureliaWedding?: Partial<AureliaWeddingConfig>;
   onComplete: () => void;
   /** User gesture that starts the reveal (audio unlock). */
   onBegin?: () => void;
@@ -97,8 +97,8 @@ export function InteractiveReveal({
       data-reveal-reduced-motion={contract.supportsReducedMotion ? "true" : "false"}
       className={
         embedded
-          ? "interactive-reveal-root absolute inset-0 h-full w-full min-h-full"
-          : "interactive-reveal-root"
+          ? "interactive-reveal-root absolute inset-0 z-[120] h-full w-full min-h-full"
+          : "interactive-reveal-root fixed inset-0 z-[120]"
       }
     >
       <OpeningExperienceRouter

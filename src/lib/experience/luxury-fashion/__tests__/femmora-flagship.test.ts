@@ -93,7 +93,7 @@ test("guest-wishes nameplate and crest stay house-owned, never a shared Femmora 
 
   const wishesSrc = readFileSync("src/components/guest-portal/guest-wishes-card.tsx", "utf8");
   assert.match(wishesSrc, /fashionHouse\?\.wishesEmpty/);
-  assert.match(wishesSrc, /The atelier is still quiet — leave the first compliment/);
+  assert.match(wishesSrc, /The atelier is still quiet. Leave the first compliment/);
   assert.match(wishesSrc, /kicker: fashionHouseNameplate\(resolvedHouseName\)/);
   assert.match(wishesSrc, /fashionHouse\?\.wishesTitle/);
   assert.match(wishesSrc, /Your note is now visible to every guest/);
@@ -117,11 +117,11 @@ test("guest-wishes nameplate and crest stay house-owned, never a shared Femmora 
   assert.equal(FEMMORA_HOUSE_DEFAULTS.wishesEmpty.includes("—"), false);
   assert.equal(
     LUXURY_FASHION_HOUSE_DEFAULTS.wishesEmpty,
-    "The atelier is still quiet — leave the first compliment."
+    "The atelier is still quiet. Leave the first compliment."
   );
   assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.wishesEmpty.includes("Femmora"), false);
   assert.equal(MAISON_VALE_HOUSE.wishesEmpty?.toLowerCase().includes("femmora"), false);
-  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.wishesTitle.includes("Femmora"), false);
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.wishesTitle?.includes("Femmora"), false);
   assert.equal(MAISON_VALE_HOUSE.wishesTitle?.toLowerCase().includes("femmora"), false);
 });
 
@@ -318,7 +318,7 @@ test("share, maps and calendar CTAs produce real destinations", () => {
     "utf8"
   );
   assert.match(rsvpScene, /lede\?\.trim\(\)/);
-  assert.equal(rsvpScene.includes("attend — we"), false);
+  assert.equal(rsvpScene.includes("attend. We"), false);
   assert.equal(rsvpScene.includes("deliver wherever"), false);
   assert.equal(
     FEMMORA_HOUSE_DEFAULTS.rsvpLede,
@@ -374,7 +374,7 @@ test("share, maps and calendar CTAs produce real destinations", () => {
   );
   assert.equal(FEMMORA_HOUSE_DEFAULTS.visionStoreLine.includes("salon"), false);
   assert.equal(
-    LUXURY_FASHION_HOUSE_DEFAULTS.visionStoreLine.includes("Bespoke"),
+    LUXURY_FASHION_HOUSE_DEFAULTS.visionStoreLine?.includes("Bespoke"),
     false
   );
   assert.equal(FEMMORA_HOUSE_DEFAULTS.visionStoreSoonLabel, "Opening");
@@ -639,7 +639,7 @@ test("Maison Vale can replace Instagram through house DNA without code changes",
   assert.equal(chapters.social, true);
 });
 
-test("fashion RSVP keeps name only — optional email and phone stay off the card", () => {
+test("fashion RSVP keeps name only. Optional email and phone stay off the card", () => {
   const rsvp = readFileSync(
     "src/components/invitation/templates/luxury-fashion/fashion-rsvp-scene.tsx",
     "utf8"
@@ -697,7 +697,7 @@ test("live countdown uses a shop-open kicker and walk-in lede, never a duplicate
   assert.doesNotMatch(countdown, /open \? afterLabel : beforeLabel[\s\S]*afterLabel/);
 });
 
-test("presented card can receive OPEN — flap and overlay do not trap the guest", () => {
+test("presented card can receive OPEN. Flap and overlay do not trap the guest", () => {
   const css = readFileSync(
     "src/components/experience/luxury-fashion/luxury-fashion-opening.module.css",
     "utf8"

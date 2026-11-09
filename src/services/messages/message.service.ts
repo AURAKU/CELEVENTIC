@@ -159,6 +159,19 @@ export class MessageService {
     };
   }
 
+  async resolveThreadRecipient(userId: string, threadId: string): Promise<string | null> {
+    const last = await prisma.userMessage.findFirst({
+      where: {
+        threadId,
+        OR: [{ senderId: userId }, { recipientId: userId }],
+      },
+      orderBy: { createdAt: "desc" },
+      select: { senderId: true, recipientId: true },
+    });
+    if (!last) return null;
+    return last.senderId === userId ? last.recipientId : last.senderId;
+  }
+
   async adminSendToUser(adminId: string, userId: string, subject: string, body: string) {
     return this.send({
       senderId: adminId,

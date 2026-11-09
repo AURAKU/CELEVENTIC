@@ -11,7 +11,7 @@ import { rateLimit } from "@/lib/rate-limit";
  *
  * Importing guests creates invitations, mints entry passes and can send
  * thousands of messages, so it is gated on MANAGE_GUESTS rather than mere
- * event access — a vendor or scanner with a workspace seat must not be able to
+ * event access. A vendor or scanner with a workspace seat must not be able to
  * bulk-invite. Delivery additionally requires MESSAGE_GUESTS.
  */
 
@@ -100,7 +100,7 @@ export async function guardRate(
   const result = await rateLimit(`guest-import:${scope}:${userId}:${clientIp(req)}`, limit, windowSeconds);
   if (!result.success) {
     return NextResponse.json(
-      { error: "Too many requests — wait a moment and try again." },
+      { error: "Too many requests. Wait a moment and try again." },
       { status: 429 }
     );
   }

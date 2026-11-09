@@ -368,7 +368,7 @@ export function MusicPreferenceEditor({
         <div className="flex-1 min-w-0">
           <Label className="text-base font-semibold text-slate-900">Invitation music</Label>
           <p className="text-xs text-slate-500 mt-0.5">
-            Choose from Celeventic&apos;s library or upload your own. Select a 1–2 minute clip.
+            Choose from Celeventic&apos;s library or upload your own. Select a 1 to 2 minute clip.
           </p>
         </div>
       </div>
@@ -473,7 +473,7 @@ export function MusicPreferenceEditor({
                 disabled={!clipValid}
                 title={
                   clipValid
-                    ? `Preview clip (${formatAudioTime(startSec)}–${formatAudioTime(endSec)}), never the full track`
+                    ? `Preview clip (${formatAudioTime(startSec)} to ${formatAudioTime(endSec)}), never the full track`
                     : "Set a valid clip range to preview"
                 }
               >
@@ -581,7 +581,7 @@ export function MusicPreferenceEditor({
 
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={clipValid ? "success" : "warning"}>
-              Clip: {formatAudioTime(clipLen)} ({MUSIC_CLIP_MIN_SEC}–{MUSIC_CLIP_MAX_SEC}s)
+              Clip: {formatAudioTime(clipLen)} ({MUSIC_CLIP_MIN_SEC} to {MUSIC_CLIP_MAX_SEC}s)
             </Badge>
             {clipValid && !validationError && (
               <span className="text-xs text-green-700 flex items-center gap-1">

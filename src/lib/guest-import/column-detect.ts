@@ -8,7 +8,7 @@ import { parsePartyType } from "./name";
  * Two independent signals are combined: what the header says, and what the
  * data underneath actually looks like. Content wins where they disagree,
  * because a column headed "Contact" holding email addresses is an email
- * column no matter what it is called — and because pasted lists often have no
+ * column no matter what it is called, and because pasted lists often have no
  * header at all.
  *
  * Every result is a *suggestion*. The mapping UI shows it, the organiser
@@ -17,9 +17,9 @@ import { parsePartyType } from "./name";
 
 interface HeaderRule {
   field: ImportField;
-  /** Exact header matches (normalised) — strongest signal. */
+  /** Exact header matches (normalised). Strongest signal. */
   exact: string[];
-  /** Substring matches — weaker. */
+  /** Substring matches. Weaker. */
   contains: string[];
 }
 
@@ -188,7 +188,7 @@ export function scoreContent(values: string[]): { field: ImportField; score: num
   const phoneRatio = ratio((v) => {
     const digits = v.replace(/\D+/g, "");
     if (digits.length < 7 || digits.length > 15) return false;
-    // Mostly digits and phone punctuation — not a name that happens to have a number.
+    // Mostly digits and phone punctuation, not a name that happens to have a number.
     return /^[\s+()\-.\d]+$/.test(v) && !normalizeGhanaPhone(v).invalid;
   });
   if (phoneRatio >= 0.6) return { field: ImportField.PHONE, score: Math.round(70 + 30 * phoneRatio) };
@@ -223,7 +223,7 @@ export interface ColumnSuggestion {
  *
  * Each field is claimed by at most one column (the highest scorer), so a sheet
  * with both "Name" and "Nickname" cannot map two columns onto `name` and
- * silently drop one. Losers fall back to `ignore` — except an unclaimed name
+ * silently drop one. Losers fall back to `ignore`, except an unclaimed name
  * column, which is the one field an import cannot proceed without.
  */
 export function suggestColumnMapping(table: ParsedTable): ColumnSuggestion[] {
@@ -301,14 +301,14 @@ export function suggestColumnMapping(table: ParsedTable): ColumnSuggestion[] {
  * splits exactly like a two-column CSV, and reading it as one imports a guest
  * called "Mensah" and throws the rest away without a word in the preview.
  *
- * A recognisable header settles it — that came out of a spreadsheet. Failing
+ * A recognisable header settles it, that came out of a spreadsheet. Failing
  * that, the test is whether the split would lose anything: every column
  * holding text must have a field to go to. An unmapped column with content in
  * it is exactly the "Adjoa" in "Mensah, Adjoa", and dropping it is far worse
  * than keeping the line whole for the organiser to correct in the preview.
  *
  * A rejected paste still goes to `parseLines`, which lifts out a trailing
- * email or phone per line — so a contact-bearing list loses nothing either.
+ * email or phone per line, so a contact-bearing list loses nothing either.
  */
 export function looksLikeDelimitedTable(table: ParsedTable): boolean {
   if (table.columnCount <= 1 || table.rows.length === 0) return false;
@@ -331,7 +331,7 @@ export function mappingFromSuggestions(suggestions: ColumnSuggestion[]): ColumnM
 export function validateMapping(mapping: ColumnMapping): { valid: boolean; error?: string } {
   const fields = Object.values(mapping).filter((f) => f !== ImportField.IGNORE);
   if (!fields.includes(ImportField.NAME)) {
-    return { valid: false, error: "Map one column to the guest name — it is the only required field." };
+    return { valid: false, error: "Map one column to the guest name. It is the only required field." };
   }
   const seen = new Set<ImportField>();
   for (const field of fields) {

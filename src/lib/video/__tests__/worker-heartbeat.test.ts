@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-/** Pure filesystem tests — no DB needed — for the worker liveness heartbeat. */
+/** Pure filesystem tests. No DB needed, for the worker liveness heartbeat. */
 
 let stateDir: string;
 

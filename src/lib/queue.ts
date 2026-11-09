@@ -60,7 +60,7 @@ export async function processJobs(queue: string, batchSize = 10) {
       });
     }
 
-    // Fine-grained liveness signal — written after EVERY job (not just once per tick) so it
+    // Fine-grained liveness signal. Written after EVERY job (not just once per tick) so it
     // stays fresh even while this call is stuck processing one long-running video (up to
     // VIDEO_PROCESSOR_TIMEOUT_MS). `processJobs` only ever runs inside the standalone worker
     // process (see scripts/video-jobs-worker.ts), so this never fires from the Next.js app.
@@ -79,20 +79,20 @@ function staleJobThresholdMs(): number {
 }
 
 /**
- * Recovers `BackgroundJob` rows stuck in `PROCESSING` — happens when the worker process itself
+ * Recovers `BackgroundJob` rows stuck in `PROCESSING`. Happens when the worker process itself
  * dies mid-handler (OOM kill, `pm2 restart`, VPS reboot, an uncaught exception that bypasses the
  * try/catch in `processJobs` above) after claiming a job but before it could ever reach
  * `COMPLETED`/`FAILED`/back to `PENDING`. Without this sweep, such a row (and whatever it was
  * blocking, e.g. a `VideoAsset` stuck in `PROCESSING`) would sit there forever, since
  * `processJobs` only ever looks at `PENDING` rows.
  *
- * Uses `createdAt` as the staleness clock — `BackgroundJob` has no separate `startedAt` column,
+ * Uses `createdAt` as the staleness clock. `BackgroundJob` has no separate `startedAt` column,
  * and adding one would require a schema migration for a value we can approximate safely: a job
  * is claimed (`PENDING` -> `PROCESSING`) within one worker tick of being created, so `createdAt`
  * lags "actually started" by at most `JOB_WORKER_TICK_MS`. This is only safe under the
  * single-worker-process deployment model this queue assumes (see `scripts/video-jobs-worker.ts`):
  * the worker's tick loop is one sequential `await` chain, so a row can only still be genuinely
- * "in flight" here if THIS call is reached — which, because it always runs after `processJobs`
+ * "in flight" here if THIS call is reached, which, because it always runs after `processJobs`
  * has already settled every job it claimed for the current tick, means any row still
  * `PROCESSING` at this point belongs to a *previous* worker process that crashed before finishing it.
  */
@@ -118,7 +118,7 @@ export async function recoverStalledJobs(queue: string, batchSize = 25): Promise
         where: { id: job.id },
         data: {
           status: "FAILED",
-          error: "Stuck in PROCESSING past its max attempts — the worker likely crashed repeatedly mid-job.",
+          error: "Stuck in PROCESSING past its max attempts. The worker likely crashed repeatedly mid-job.",
         },
       });
       failed++;

@@ -11,6 +11,7 @@ import {
 import type { PartySeat } from "@/lib/admission/seating-continuity";
 import { openingMemoryKey } from "@/lib/experience/opening-visit-memory";
 import { filterPartyOwnedRows } from "@/lib/invitation/party-isolation";
+import { EDWIN_PUBLISHED_INVITE_LINK } from "@/lib/invitation/public-invite-alias";
 
 describe("event companion routing", () => {
   it("builds companion href with optional guest token", () => {
@@ -18,6 +19,10 @@ describe("event companion routing", () => {
     assert.equal(
       buildEventCompanionHref("abc", "tok-1"),
       "/invite/abc/event-day?guest=tok-1"
+    );
+    assert.equal(
+      buildEventCompanionHref(EDWIN_PUBLISHED_INVITE_LINK),
+      "/invite/edwin-and-lordina/event-day"
     );
   });
 
@@ -30,6 +35,10 @@ describe("event companion routing", () => {
       buildInviteCeremonyHref("abc", "tok-1"),
       "/invite/abc?view=invite&guest=tok-1"
     );
+    assert.equal(
+      buildInviteCeremonyHref(EDWIN_PUBLISHED_INVITE_LINK),
+      "/invite/edwin-and-lordina?view=invite"
+    );
   });
 
   it("detects explicit invite ceremony view", () => {
@@ -40,7 +49,7 @@ describe("event companion routing", () => {
   });
 
   it("never opens companion for invite-open / RSVP-only signals (admittedCount must be > 0)", () => {
-    // OPENED / ACCEPTED are seating signals only — they do not set admittedCount.
+    // OPENED / ACCEPTED are seating signals only. They do not set admittedCount.
     assert.equal(
       shouldOpenEventCompanionOnly({
         postAdmissionEnabled: true,

@@ -57,12 +57,9 @@ export async function GET(req: Request) {
     prisma.ticket.findMany({
       where: {
         event: { organizerId: userId },
-        OR: [
-          { name: { contains: q } },
-          { qrToken: { contains: q } },
-        ],
+        OR: [{ name: { contains: q } }],
       },
-      select: { id: true, name: true, qrToken: true, eventId: true, event: { select: { title: true } } },
+      select: { id: true, name: true, eventId: true, event: { select: { title: true } } },
       take: 5,
     }),
     prisma.vendor.findMany({

@@ -11,13 +11,13 @@ import { isHostIdentityName } from "@/lib/invitation-features/place-card";
  * Extracted so the bulk importer and the quick-create form mint *the same*
  * objects. If these ever diverged, a name typed into the quick form and the
  * same name pasted into a bulk import would produce invitations that behave
- * differently at the gate — which is exactly the class of bug that is
+ * differently at the gate, which is exactly the class of bug that is
  * invisible until the event day.
  */
 
 const SLUG_ATTEMPTS = 6;
 
-/** Crypto-random invite link — the link is a bearer secret, not a slug. */
+/** Crypto-random invite link. The link is a bearer secret, not a slug. */
 export function newUniqueLink(): string {
   return randomBytes(24).toString("base64url");
 }
@@ -59,7 +59,7 @@ export interface InvitationFeatureOptions {
  *
  * Written as explicit per-invitation overrides rather than event-level flips,
  * so creating one invitation can never change how an organiser's *existing*
- * invitations behave — except companion keys, which are intentionally
+ * invitations behave, except companion keys, which are intentionally
  * inherited from the event companion studio source when provided.
  */
 export function featureConfigFor(
@@ -106,7 +106,7 @@ function updatedTime(value: CeremonyInvitationCandidate["updatedAt"]): number {
 }
 
 /**
- * The event's published ceremony invitation — the page guests should open.
+ * The event's published ceremony invitation. The page guests should open.
  * Personal names are never treated as that source.
  */
 export function pickPublishedCeremonyInvitation<T extends CeremonyInvitationCandidate>(
@@ -212,7 +212,7 @@ export async function ensureGuestGateCode(guestId: string, eventId: string): Pro
     await prisma.guest.update({ where: { id: guestId }, data: { manualCode: code } });
     return code;
   } catch {
-    // Lost a unique race — the pass code still admits them.
+    // Lost a unique race. The pass code still admits them.
     return null;
   }
 }

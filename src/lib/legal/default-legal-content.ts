@@ -27,10 +27,10 @@ By creating an account, placing an invitation order, using VendorOS, or accessin
 ## 2. Platform Overview
 Celeventic is an Event Operating System that includes:
 
-- **InvitationOS** — digital invitation studio, guest portal, RSVP, QR admission, and production workflow
-- **VendorOS** — vendor marketplace, profiles, lead requests, and verified vendor plans
-- **Event tools** — guest CRM, ticketing, communications, and event discovery
-- **Celeventic Intelligence** — smart design assistance and content tools (publicly branded as AGI Engine / Celeventic Intelligence)
+- **InvitationOS**. Digital invitation studio, guest portal, RSVP, QR admission, and production workflow
+- **VendorOS**. Vendor marketplace, profiles, lead requests, and verified vendor plans
+- **Event tools**. Guest CRM, ticketing, communications, and event discovery
+- **Celeventic Intelligence**. Smart design assistance and content tools (publicly branded as AGI Engine / Celeventic Intelligence)
 
 Features vary by package, role, and subscription plan.
 
@@ -107,7 +107,7 @@ Lois de la ${jurisdiction}. Contact : ${email} | ${phone}`,
     descriptionEn: "How Celeventic collects, uses, and protects your personal data across InvitationOS and VendorOS.",
     descriptionFr: "Comment Celeventic collecte, utilise et protège vos données personnelles.",
     contentEn: `## Effective Date
-This Privacy Policy applies to all users of Celeventic — organisers, vendors, guests, and administrators.
+This Privacy Policy applies to all users of Celeventic. Organisers, vendors, guests, and administrators.
 
 ## Data Controller
 ${company} is the data controller for personal information processed through our platform. Primary place of business: ${jurisdiction}.
@@ -166,7 +166,7 @@ Services are not directed at children under 16 without guardian involvement. Org
 Material changes are published in the Legal Center and may require re-acceptance.
 
 ## Contact
-${company} — ${email} | ${phone}`,
+${company}: ${email} | ${phone}`,
     contentFr: `## Responsable
 ${company}, ${jurisdiction}. Contact : ${email}
 
@@ -189,7 +189,7 @@ ${email} | ${phone}`,
     descriptionEn: "Refund rules for Celeventic digital invitation packages and production services.",
     descriptionFr: "Règles de remboursement pour les forfaits d'invitation numérique.",
     contentEn: `## Nature of Service
-Celeventic provides custom digital invitation and design production through InvitationOS. Once creative production begins — including designer assignment, draft creation, or AGI Engine-assisted generation — resources are allocated specifically to your project.
+Celeventic provides custom digital invitation and design production through InvitationOS. Once creative production begins, including designer assignment, draft creation, or AGI Engine-assisted generation. Resources are allocated specifically to your project.
 
 ## Package Reference
 
@@ -202,7 +202,7 @@ Celeventic provides custom digital invitation and design production through Invi
 
 Paid self-serve packages (Starter, Classic, Signature) are subject to the refund rules below. Ultimate Experience is quotation-based and is not charged as a fixed checkout amount.
 
-## Full Refund — Before Production Starts
+## Full Refund, before Production Starts
 You may request a full refund if:
 
 - Payment was made in error
@@ -240,7 +240,7 @@ Les invitations numériques sont produites sur mesure. Après le début de la pr
 Remboursement intégral possible si annulation dans les 48 heures et avant le début du travail créatif.
 
 ## Révisions
-Utilisez d'abord les révisions incluses — voir [Politique de révision](/legal/revision-policy).
+Utilisez d'abord les révisions incluses. Voir [Politique de révision](/legal/revision-policy).
 
 ## Contact
 ${email} | ${phone}`,
@@ -290,7 +290,7 @@ On first visit, a cookie banner lets you choose **Essential Only** or **Accept A
 ## Contact
 ${email} | ${phone}`,
     contentFr: `## Cookies nécessaires
-Authentification, sécurité, langue et consentement — indispensables au service.
+Authentification, sécurité, langue et consentement. Indispensables au service.
 
 ## Consentement
 Bannière au premier visit. Gérez vos choix dans le [Centre de confidentialité](/dashboard/privacy-center).
@@ -360,7 +360,7 @@ ${email} | ${phone}`,
 De 1 (Starter) à 3 (Signature et Ultimate Experience) selon le forfait.
 
 ## Changements mineurs vs majeurs
-Date, heure, lieu — souvent sans utiliser une révision. Changements de thème ou mise en page — comptent comme révision.
+Date, heure, lieu. Souvent sans utiliser une révision. Changements de thème ou mise en page. Comptent comme révision.
 
 ## Révisions supplémentaires
 GHS 79 par tour au-delà du forfait inclus.
@@ -396,8 +396,8 @@ By uploading content, you grant Celeventic a limited licence to host, display, p
 ## Portfolio Consent at Checkout
 At checkout you choose whether Celeventic may showcase your completed invitation in our portfolio, website, or marketing:
 
-- **Allow portfolio showcase** — Celeventic may display your invitation as a sample
-- **Keep private** — we will not use your invitation for promotional purposes without separate written consent
+- **Allow portfolio showcase**. Celeventic may display your invitation as a sample
+- **Keep private**. We will not use your invitation for promotional purposes without separate written consent
 
 This choice is recorded with your order and consent history.
 

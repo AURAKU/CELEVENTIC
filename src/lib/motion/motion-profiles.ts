@@ -3,12 +3,12 @@ import type { MotionProfileId } from "@/lib/invitation-theme/theme-types";
 
 /**
  * Motion is a theme property delivered through one engineered system.
- * Hard constraint: only transform + opacity may animate — AllowedAnimatable
+ * Hard constraint: only transform + opacity may animate. AllowedAnimatable
  * makes any other property a compile error.
  *
  * Experience Engine Phase 2 adds MotionLanguage profiles (romantic, regal, …)
  * in `@/lib/experience-engine/motion-language-profiles`. Those map onto these
- * theme profile ids via `motionLanguageToThemeProfile` — do not duplicate.
+ * theme profile ids via `motionLanguageToThemeProfile`. Do not duplicate.
  */
 export interface AllowedAnimatable {
   x?: number | string;
@@ -65,7 +65,7 @@ export const MOTION_PROFILES: Record<MotionProfileId, MotionProfileDef> = {
     drift: { y: 14, durationSec: 6 },
     parallax: { background: 0.35, midground: 0.6 },
   },
-  // Very slow fades + soft ambient depth — respectful, never playful float.
+  // Very slow fades + soft ambient depth. Respectful, never playful float.
   solemn: {
     id: "solemn",
     entrance: {
@@ -82,7 +82,7 @@ export function getMotionProfile(id: MotionProfileId | undefined): MotionProfile
 }
 
 /**
- * Experience Engine bridge — language profiles live in motion-language-profiles.
+ * Experience Engine bridge. Language profiles live in motion-language-profiles.
  * Import from `@/lib/experience-engine` for MotionLanguage timing; this module
  * remains the theme MotionProfileId source of truth for DriftLayer / useParallax.
  */

@@ -393,7 +393,7 @@ describe("rosters found without a heading", () => {
 /**
  * The bug that started this: an order of service that opens with its
  * ministers and then sings a hymn. Every line of it is time-less and most of
- * them are in capitals, so the roster reader claimed the whole page — and the
+ * them are in capitals, so the roster reader claimed the whole page, and the
  * hymn's six lines came out as footnotes under a person called `Captain of
  * Israel's host, and Guide`.
  */
@@ -474,7 +474,7 @@ describe("a hymn is not a list of people", () => {
 });
 
 /**
- * An order of service that never mentions a clock — the commonest shape a
+ * An order of service that never mentions a clock. The commonest shape a
  * Ghanaian church programme arrives in. Every line is time-less, so the
  * "one signpost per run" rule swallowed all of them: forty-seven bullets in a
  * single column under one heading.
@@ -573,7 +573,7 @@ describe("the organizer's marks reach the page", () => {
  * The page a real church programme produces, end to end.
  *
  * Three different kinds of thing were arriving on one rail: a hymn's verses, a
- * photographer's shot list, and the hosts' closing thank-you — each set as a
+ * photographer's shot list, and the hosts' closing thank-you. Each set as a
  * bullet with a border down its left, indistinguishable from the next. They
  * are read differently and they are now laid out differently.
  */
@@ -695,7 +695,7 @@ describe("the hosts' closing words", () => {
     ]);
     const closing = blocks[blocks.length - 1]!;
     assert.ok(closing.kind === "appreciation");
-    // Already a sentence, so it is the message rather than the card's heading —
+    // Already a sentence, so it is the message rather than the card's heading.
     // set as a heading it would come out in tracked capitals.
     assert.equal(closing.title, "");
     assert.deepEqual(closing.lines, ["THANK YOU FOR YOUR PRESENCE, PRAYERS, AND LOVE."]);
@@ -736,7 +736,7 @@ describe("the layout is safe to render", () => {
     assert.deepEqual(layoutProgramme([]), []);
   });
 
-  it("is stable — the same items always lay out the same way", () => {
+  it("is stable. The same items always lay out the same way", () => {
     const items = parseProgrammeScript(SOLEMNIZATION).items;
     assert.deepEqual(layoutProgramme(items), layoutProgramme(items));
   });

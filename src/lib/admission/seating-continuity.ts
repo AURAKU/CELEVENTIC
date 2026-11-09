@@ -3,8 +3,8 @@
  *
  * A group's seats are reserved in full from the moment the organiser assigns
  * them. Arriving in two waves must never cost the party a seat: when 2 of 3
- * walk in, exactly 2 seats are revealed and the third stays held — at the same
- * table — until that guest turns up or an organiser reassigns it deliberately.
+ * walk in, exactly 2 seats are revealed and the third stays held. At the same
+ * table, until that guest turns up or an organiser reassigns it deliberately.
  *
  * Pure arithmetic over the seat rows the caller already loaded, so the same
  * projection serves the gate, the invitation, the portal and the offline
@@ -24,7 +24,7 @@ export interface PartySeat {
 }
 
 export interface SeatingContinuity {
-  /** Seats belonging to heads already inside — safe to show the guest. */
+  /** Seats belonging to heads already inside. Safe to show the guest. */
   revealed: PartySeat[];
   /** Seats still held for heads who have not arrived yet. */
   reserved: PartySeat[];
@@ -33,7 +33,7 @@ export interface SeatingContinuity {
    * seat them on the spot; the party is never turned away over this.
    */
   unseatedCount: number;
-  /** True when the event seats by table only — no per-seat labels exist. */
+  /** True when the event seats by table only. No per-seat labels exist. */
   tableOnly: boolean;
   /** The party's table when they share exactly one. */
   tableNumber: string | null;
@@ -78,7 +78,7 @@ export function resolveSeatingContinuity(
     revealed,
     reserved,
     // Seats can lag the allowance (a plus-one nobody named yet), never the
-    // other way round — a negative would mean over-seating, which we clamp.
+    // other way round. A negative would mean over-seating, which we clamp.
     unseatedCount: Math.max(0, totalHeads - seats.length),
     tableOnly: seats.length > 0 && seats.every((s) => !s.seatLabel),
     tableNumber,

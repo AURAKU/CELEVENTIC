@@ -49,11 +49,21 @@ export class TemplateMarketplaceService {
     const existing = await prisma.templatePurchase.findFirst({ where: { userId, templateId } });
     if (existing) return { purchased: true, alreadyOwned: true };
 
+    const price = Number(template.price);
+    if (price > 0) {
+      return {
+        purchased: false,
+        requiresPayment: true,
+        amount: price,
+        currency: "GHS",
+      };
+    }
+
     const purchase = await prisma.templatePurchase.create({
       data: { userId, templateId, amount: template.price },
     });
 
-    return { purchased: true, purchase };
+    return { purchased: true, purchase, free: true };
   }
 
   async toggleFavorite(userId: string, templateId: string) {

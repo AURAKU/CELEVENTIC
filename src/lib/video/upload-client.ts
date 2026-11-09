@@ -40,7 +40,7 @@ export function xhrPutWithProgress(
 
 /**
  * POST a FormData body (used by the local-disk fallback upload) with upload progress and an
- * `uploadComplete` hook — fires once all bytes are sent, while the server is still processing
+ * `uploadComplete` hook. Fires once all bytes are sent, while the server is still processing
  * (transcoding) and the response hasn't arrived yet, so the caller can flip its UI from
  * "uploading" to "processing" instead of looking stuck at 100%.
  */
@@ -66,7 +66,7 @@ export function xhrPostFormWithProgress<T>(
       try {
         json = JSON.parse(xhr.responseText);
       } catch {
-        /* non-JSON error body — fall through to status-based handling below */
+        /* non-JSON error body. Fall through to status-based handling below */
       }
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve(json as T);
@@ -100,7 +100,7 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-/** Small bounded-concurrency runner — used to upload multiple S3 parts in parallel without overwhelming the browser/network. */
+/** Small bounded-concurrency runner. Used to upload multiple S3 parts in parallel without overwhelming the browser/network. */
 export async function runWithConcurrency<T>(
   items: T[],
   concurrency: number,

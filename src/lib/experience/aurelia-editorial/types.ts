@@ -3,13 +3,15 @@ export const AURELIA_LAYOUT_SLUG = "aurelia-editorial-wedding";
 export const AURELIA_OPENING_ID = "aurelia-editorial-wedding";
 export const AURELIA_INTRO_ID = "aurelia-ivory-veil";
 
-/** Independent Aurelia-family SKU — own catalogue card, own defaults, shared renderer. */
+/** Independent Aurelia-family SKU. Own catalogue card, own defaults, shared renderer. */
 export const SERAPHINE_CATALOG_SLUG = "seraphine-champagne-wedding";
 export const SERAPHINE_LAYOUT_SLUG = "seraphine-champagne-wedding";
 export const SERAPHINE_OPENING_ID = "seraphine-champagne-wedding";
 export const SERAPHINE_INTRO_ID = "seraphine-ivory-veil";
 
-export function isAureliaEditorialLayout(layout?: string | null): boolean {
+export function isAureliaEditorialLayout(
+  layout?: string | null
+): layout is typeof AURELIA_LAYOUT_SLUG | typeof SERAPHINE_LAYOUT_SLUG {
   return layout === AURELIA_LAYOUT_SLUG || layout === SERAPHINE_LAYOUT_SLUG;
 }
 

@@ -33,9 +33,30 @@ const FEATURE_TO_PERMISSION: Partial<Record<string, string>> = {
 function inferPlanTier(packageName?: string | null): "starter" | "premium" | "elite" | "free" {
   if (!packageName) return "free";
   const n = packageName.toLowerCase();
-  if (n.includes("elite") || n.includes("pro") || n.includes("ultimate")) return "elite";
-  if (n.includes("premium") || n.includes("plus") || n.includes("standard")) return "premium";
-  if (n.includes("essential") || n.includes("starter") || n.includes("basic")) return "starter";
+  if (n.includes("free") || n.includes("taste")) return "free";
+  if (
+    n.includes("customisation") ||
+    n.includes("customization") ||
+    n.includes("elite") ||
+    n.includes("pro") ||
+    n.includes("ultimate") ||
+    n.includes("bespoke") ||
+    n.includes("signature")
+  ) {
+    return "elite";
+  }
+  if (
+    n.includes("premium") ||
+    n.includes("classic") ||
+    n.includes("celebration") ||
+    n.includes("plus") ||
+    n.includes("standard")
+  ) {
+    return "premium";
+  }
+  if (n.includes("essential") || n.includes("starter") || n.includes("basic") || n.includes("growth")) {
+    return "starter";
+  }
   return "starter";
 }
 

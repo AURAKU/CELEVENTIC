@@ -4,7 +4,7 @@
  * Every mark on the guest's page comes from here: the place setting above the
  * menu, the glyph beside a course, the laid table above the seat finder, the
  * sprig that divides a programme. They are line drawings rather than pictures
- * — one weight of stroke, no fills, no colour of their own — so they inherit
+ *. One weight of stroke, no fills, no colour of their own, so they inherit
  * whatever the invitation's palette is through `currentColor` and sit on a
  * printed page as comfortably as on a phone in a dim hall.
  *
@@ -68,8 +68,8 @@ export function PlaceSetting({ className = "", ...props }: MotifProps) {
 /**
  * The glyph beside a course.
  *
- * Chosen from the course's own name — a soup gets a bowl, a dessert a
- * cupcake — and falling back to the lozenge the rest of the guide already
+ * Chosen from the course's own name. A soup gets a bowl, a dessert a
+ * cupcake, and falling back to the lozenge the rest of the guide already
  * uses when the heading is one we cannot read.
  */
 export function CourseGlyph({
@@ -254,7 +254,7 @@ export function SprigDivider({ className = "", ...props }: MotifProps) {
 }
 
 /**
- * Two notes joined by a beam — the mark on a hymnal card.
+ * Two notes joined by a beam. The mark on a hymnal card.
  *
  * It is there to say "this is sung, not announced" at a glance, which is the
  * whole reason a hymn is lifted out of the running order in the first place.
@@ -281,7 +281,7 @@ export function MusicMark({ className = "", ...props }: MotifProps) {
  * A ceremony arch, drawn once behind the title page.
  *
  * Set at a low opacity in the theme's own accent, it gives the cover the
- * depth a printed programme gets from its paper — and being a background, it
+ * depth a printed programme gets from its paper, and being a background, it
  * never competes with the couple's names for contrast.
  */
 export function CeremonyArch({ className = "", ...props }: MotifProps) {

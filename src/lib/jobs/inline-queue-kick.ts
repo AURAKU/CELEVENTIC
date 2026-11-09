@@ -6,7 +6,7 @@ import { isWorkerAlive } from "@/lib/video/worker-heartbeat";
  * Shared inline queue drain for when the standalone `jobs:worker` process is
  * offline. Used by guest-import generation, delivery, and general-pass minting.
  *
- * Deliberately does NOT call `processJobs` — that writes the video-worker
+ * Deliberately does NOT call `processJobs`, that writes the video-worker
  * heartbeat and would falsely report the worker as alive.
  */
 

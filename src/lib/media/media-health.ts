@@ -1,6 +1,6 @@
 /**
  * Media capability + disk health for admin system health / deploy probes.
- * Never throws — optional zscale missing is a capability flag, not a hard failure.
+ * Never throws. Optional zscale missing is a capability flag, not a hard failure.
  */
 import { access, constants, statfs } from "fs/promises";
 import path from "path";
@@ -74,7 +74,7 @@ export async function getMediaPipelineHealth(): Promise<MediaPipelineHealth> {
       tonemap: full.hasTonemap,
       colorspace: !!full.hasColorspace,
     };
-    // Confirm binaries respond — getFfmpegFullCapabilities already probes; empty set ⇒ missing.
+    // Confirm binaries respond. GetFfmpegFullCapabilities already probes; empty set ⇒ missing.
     caps.ffmpeg = full.hasLibx264;
     details.push(
       `FFmpeg: libx264=${caps.libx264} aac=${caps.aac} hevc=${caps.hevcDecoder} zscale=${caps.zscale} tonemap=${caps.tonemap} colorspace=${caps.colorspace}`
@@ -119,8 +119,8 @@ export async function getMediaPipelineHealth(): Promise<MediaPipelineHealth> {
   } else if (!caps.hevcDecoder || !caps.zscale) {
     status = "warning";
     message = !caps.hevcDecoder
-      ? "HEVC decoder missing — iPhone HEVC uploads may fail"
-      : "zscale unavailable — HDR uses colorspace/scale fallback (OK)";
+      ? "HEVC decoder missing. IPhone HEVC uploads may fail"
+      : "zscale unavailable. HDR uses colorspace/scale fallback (OK)";
   } else if (failedProcessing > 25) {
     status = "warning";
     message = `${failedProcessing} failed video assets need attention`;

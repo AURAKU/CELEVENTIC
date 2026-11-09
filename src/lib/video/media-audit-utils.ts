@@ -1,6 +1,6 @@
 /**
  * Pure helpers for media audit classification and durable source→playback mapping.
- * No filesystem/ffmpeg/Prisma — unit-testable in CI.
+ * No filesystem/ffmpeg/Prisma. Unit-testable in CI.
  */
 
 import path from "node:path";
@@ -236,7 +236,7 @@ export function normalizeStoredMediaUrl(
   const trimmed = url.trim();
   if (!trimmed) return "";
 
-  // External absolute URLs that are not localhost — preserve as-is (CDN/S3).
+  // External absolute URLs that are not localhost. Preserve as-is (CDN/S3).
   if (/^https?:\/\//i.test(trimmed)) {
     try {
       const parsed = new URL(trimmed);

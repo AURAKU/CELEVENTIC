@@ -7,7 +7,7 @@ export interface PlayTrimmedAudioOptions {
   baseUrl?: string;
   fadeInSec?: number;
   fadeOutSec?: number;
-  /** Fires as the clip plays with (secondsIntoClip, clipLengthSec) — never raw track time. */
+  /** Fires as the clip plays with (secondsIntoClip, clipLengthSec), never raw track time. */
   onProgress?: (positionSec: number, clipLenSec: number) => void;
   /** Fires whenever the underlying element starts/stops playing. */
   onPlayStateChange?: (playing: boolean) => void;
@@ -57,7 +57,7 @@ export function playTrimmedAudio(
   }
 
   function onTimeUpdate() {
-    // Clamp any drift/seek outside the trimmed window back into the clip —
+    // Clamp any drift/seek outside the trimmed window back into the clip.
     // this preview must never be heard playing from the raw track start.
     if (audio.currentTime < start - 0.25 || audio.currentTime > end + 0.25) {
       audio.currentTime = start;
@@ -96,7 +96,7 @@ export function playTrimmedAudio(
   });
   audio.addEventListener("error", () => options.onError?.());
 
-  // Never start playback before the trim point has been honored — seeking
+  // Never start playback before the trim point has been honored. Seeking
   // before metadata is loaded is unreliable across browsers and is the
   // classic cause of a trimmed clip audibly starting from the track's 0:00.
   if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) {
@@ -108,7 +108,7 @@ export function playTrimmedAudio(
   return audio;
 }
 
-/** Seeks within the trimmed clip only — offsetSec is clamped to [0, clipLen]. */
+/** Seeks within the trimmed clip only. OffsetSec is clamped to [0, clipLen]. */
 export function seekTrimmedAudio(
   audio: HTMLAudioElement,
   selection: Pick<MusicSelection, "startSec" | "endSec">,

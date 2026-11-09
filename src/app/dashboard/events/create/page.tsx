@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { FormDraftStatusBar } from "@/components/forms/form-draft-status-bar";
 import { isBlankFormDraft, useFormDraft } from "@/hooks/use-form-draft";
 import { EVENT_TYPES } from "@/lib/constants";
 import { coupleNamesLegacyAlias, resolveCoupleName } from "@/lib/blueprints";
-import { ArrowLeft, ArrowRight, Check, Heart, Flower2, Cake, Presentation, Music, Tent, Building2, Church, GraduationCap, PartyPopper, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Heart, Flower2, Cake, Presentation, Music, Tent, Building2, Church, GraduationCap, PartyPopper, Sparkles, Rocket } from "lucide-react";
 import Link from "next/link";
 
 const INITIAL_FORM = {
@@ -53,9 +53,12 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   CORPORATE_EVENT: Building2,
   CHURCH_PROGRAM: Church,
   SCHOOL_EVENT: GraduationCap,
+  PRODUCT_LAUNCH: Rocket,
   PRIVATE_EVENT: PartyPopper,
   CUSTOM: Sparkles,
 };
+
+const EVENT_TYPE_VALUES = new Set(EVENT_TYPES.map((item) => item.value));
 
 const STEPS = ["Event Type", "Details", "Date & Venue", "Package & Theme", "Review"];
 
@@ -70,6 +73,7 @@ interface BlueprintPreview {
 
 export default function CreateEventPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -99,7 +103,17 @@ export default function CreateEventPage() {
         hostName: rest.hostName,
         coupleNames: legacyCoupleNames,
       });
-      setForm({ ...INITIAL_FORM, ...rest, hostName });
+      const fromQuery = searchParams.get("eventType") || searchParams.get("type");
+      const queryType =
+        fromQuery && EVENT_TYPE_VALUES.has(fromQuery as (typeof EVENT_TYPES)[number]["value"])
+          ? fromQuery
+          : "";
+      setForm({
+        ...INITIAL_FORM,
+        ...rest,
+        hostName,
+        ...(queryType ? { eventType: queryType } : {}),
+      });
       if (typeof savedStep === "number" && savedStep >= 0 && savedStep < STEPS.length) {
         setStep(savedStep);
       }
@@ -119,6 +133,14 @@ export default function CreateEventPage() {
   useEffect(() => {
     if (form.eventType) loadOptions(form.eventType);
   }, [form.eventType, loadOptions]);
+
+  useEffect(() => {
+    const fromQuery = searchParams.get("eventType") || searchParams.get("type");
+    if (!fromQuery || !EVENT_TYPE_VALUES.has(fromQuery as (typeof EVENT_TYPES)[number]["value"])) {
+      return;
+    }
+    setForm((prev) => (prev.eventType ? prev : { ...prev, eventType: fromQuery }));
+  }, [searchParams]);
 
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -212,8 +234,8 @@ export default function CreateEventPage() {
           <Link href="/dashboard/events"><ArrowLeft className="h-4 w-4" /></Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Create Event</h1>
-          <p className="text-slate-500 text-sm">Step {step + 1} of {STEPS.length}: {STEPS[step]}</p>
+          <h1 className="text-2xl font-bold text-slate-900">Create Event</h1>
+          <p className="text-slate-600 text-sm">Step {step + 1} of {STEPS.length}: {STEPS[step]}</p>
         </div>
       </div>
 
@@ -237,7 +259,7 @@ export default function CreateEventPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {step === 0 && (
-            <div className="grid sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {EVENT_TYPES.map((t) => {
                 const Icon = TYPE_ICONS[t.value] ?? Sparkles;
                 const selected = form.eventType === t.value;
@@ -246,12 +268,12 @@ export default function CreateEventPage() {
                     key={t.value}
                     type="button"
                     onClick={() => update("eventType", t.value)}
-                    className={`text-left p-4 rounded-xl border-2 transition-all ${
-                      selected ? "border-brand-500 bg-brand-50" : "border-slate-200 hover:border-brand-300"
+                    className={`text-left p-4 rounded-xl border-2 transition-all min-h-[72px] touch-manipulation ${
+                      selected ? "border-brand-500 bg-brand-50" : "border-slate-200 hover:border-brand-300 bg-white"
                     }`}
                   >
-                    <Icon className={`h-5 w-5 mb-2 ${selected ? "text-brand-600" : "text-slate-400"}`} />
-                    <p className="font-semibold text-sm">{t.label}</p>
+                    <Icon className={`h-5 w-5 mb-2 ${selected ? "text-brand-700" : "text-slate-600"}`} />
+                    <p className="font-semibold text-sm text-slate-900">{t.label}</p>
                   </button>
                 );
               })}
@@ -379,7 +401,7 @@ export default function CreateEventPage() {
                 Package: packages.find((p) => p.id === form.packageId)?.name ?? "Starter (free)",
               }).map(([key, val]) => (
                 <div key={key} className="flex justify-between py-2 border-b">
-                  <span className="text-slate-500">{key}</span>
+                  <span className="text-slate-600">{key}</span>
                   <span className="font-medium">{val}</span>
                 </div>
               ))}
@@ -388,16 +410,16 @@ export default function CreateEventPage() {
         </CardContent>
       </Card>
 
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={() => setStep(step - 1)} disabled={step === 0}>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
+        <Button variant="outline" className="w-full sm:w-auto" onClick={() => setStep(step - 1)} disabled={step === 0}>
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         {step < STEPS.length - 1 ? (
-          <Button onClick={goNext}>
+          <Button className="w-full sm:w-auto" onClick={goNext}>
             Next <ArrowRight className="h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button className="w-full sm:w-auto" onClick={handleSubmit} disabled={loading}>
             <Check className="h-4 w-4" /> {loading ? "Creating..." : "Create Event Workspace"}
           </Button>
         )}

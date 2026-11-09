@@ -53,7 +53,13 @@ export default function MemoryUploadPage() {
   return (
     <div
       className="public-viewport-shell py-8 px-4 sm:px-6 pb-[max(2rem,env(safe-area-inset-bottom))]"
-      style={data.theme?.cssVars}
+      style={{
+        ...data.theme?.cssVars,
+        background:
+          "linear-gradient(180deg, var(--memory-color-surface, #FBF6EF) 0%, color-mix(in srgb, var(--memory-color-surface, #FBF6EF) 86%, var(--memory-color-accent, #C7A35A)) 100%)",
+        color: "var(--memory-color-ink, #1B365D)",
+        fontFamily: "var(--memory-font-body, var(--font-cormorant), Georgia, serif)",
+      }}
     >
       <GuestMemoryUpload
         token={token}

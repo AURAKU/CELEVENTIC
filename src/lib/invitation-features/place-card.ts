@@ -268,7 +268,8 @@ export interface PlaceCardRecipientInput {
 }
 
 /** Ceremony / event titles must never appear as the place-card recipient. */
-export function looksLikeEventTitle(value: string): boolean {
+export function looksLikeEventTitle(value?: string | null): boolean {
+  if (!value) return false;
   return /\b(ceremony|wedding|invitation|marriage|celebration|funeral|memorial|birthday|engagement|anniversary|opening|flagship|launch|unveiling|boutique)\b/i.test(
     value.trim()
   );
@@ -354,7 +355,7 @@ export function deriveGuestPlaceCardMonogram(name?: string | null): string {
   return formatPlaceCardMonogram(`${first}${last}`);
 }
 
-/** @deprecated Prefer formatPlaceCardMonogram — kept for callers that expect letters only. */
+/** @deprecated Prefer formatPlaceCardMonogram. Kept for callers that expect letters only. */
 export function compactPlaceCardMonogram(raw?: string | null): string {
   return (raw ?? "")
     .replace(/[^a-zA-ZÀ-ÿ]/g, "")
@@ -408,7 +409,7 @@ export function resolveRecipientLine(
   const rawGuest = (input.guestName || "").trim();
   const guestName = isAnonymousRecipientName(rawGuest) ? "" : rawGuest;
   // Invitation labels are often the ceremony title ("Traditional Marriage
-  // Ceremony") — never promote them to the guest-facing name line.
+  // Ceremony"), never promote them to the guest-facing name line.
   const invitationLabel = looksLikeEventTitle(input.invitationName)
     ? ""
     : (input.invitationName || "").trim();

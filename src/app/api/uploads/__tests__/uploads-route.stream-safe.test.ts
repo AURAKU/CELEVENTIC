@@ -8,7 +8,7 @@ import path from "node:path";
  * Regression: /api/uploads must never return TransformStream / ReadableStream bodies.
  * Large media delivery belongs to Nginx `/uploads/`; this route is Buffer/Uint8Array only.
  */
-describe("api/uploads/[...path] — stream-safe media responses", () => {
+describe("api/uploads/[...path]. Stream-safe media responses", () => {
   let tmpRoot: string;
   let prevUploadDir: string | undefined;
   let prevForceProxy: string | undefined;
@@ -45,7 +45,7 @@ describe("api/uploads/[...path] — stream-safe media responses", () => {
     assert.equal(mod.runtime, "nodejs");
   });
 
-  it("serves invitation video with Uint8Array body (200) — no TransformStream", async () => {
+  it("serves invitation video with Uint8Array body (200). No TransformStream", async () => {
     const { GET } = await loadRoute();
     const req = new Request("http://localhost/api/uploads/invitations/u1/clip.mp4");
     const res = await GET(req, { params: Promise.resolve({ path: ["invitations", "u1", "clip.mp4"] }) });
@@ -55,7 +55,7 @@ describe("api/uploads/[...path] — stream-safe media responses", () => {
     assert.equal(res.headers.get("Content-Encoding"), "identity");
     const body = res.body;
     // NextResponse may expose a ReadableStream reader API for consumption, but the
-    // handler constructed the body from Uint8Array — verify bytes round-trip.
+    // handler constructed the body from Uint8Array. Verify bytes round-trip.
     const buf = new Uint8Array(await res.arrayBuffer());
     assert.ok(buf.byteLength > 0);
     assert.ok(!(body instanceof TransformStream));

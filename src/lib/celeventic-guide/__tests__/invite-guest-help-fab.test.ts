@@ -17,5 +17,5 @@ test("every live invitation portal path mounts the glass Guide chip", () => {
   assert.match(fab, /object-\[50%_18%\]/);
   assert.match(fab, /scale-\[1\.9\]/);
   assert.match(fab, /pointer-events-none fixed z-\[80\]/);
-  assert.match(fab, /APP_NAME\} Guide — learn how to navigate the invitation/);
+  assert.match(fab, /APP_NAME\} Guide. Learn how to navigate the invitation/);
 });

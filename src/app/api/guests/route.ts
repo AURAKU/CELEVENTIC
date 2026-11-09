@@ -3,7 +3,10 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { invitationService } from "@/services/invitations/invitation.service";
-import { verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission } from "@/lib/event-access";
+import { EventPermissionKey } from "@/lib/workspace/permission-keys";
+import { toGuestDirectoryRecord } from "@/lib/events/event-dto";
+import type { UserRole } from "@prisma/client";
 import { parsePaginationFromUrl } from "@/lib/pagination";
 import { DuplicateGuestError } from "@/lib/guest-search/duplicate-guests";
 
@@ -42,9 +45,21 @@ export async function GET(req: Request) {
   const status = url.searchParams.get("status") ?? undefined;
 
   try {
-    await verifyEventAccess(eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.MANAGE_GUESTS
+    );
     const result = await invitationService.getEventGuests(eventId, { page, limit, status });
-    return NextResponse.json({ success: true, data: result });
+    const { defaultInviteUniqueLink: _inviteLink, items, ...rest } = result;
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...rest,
+        items: items.map((guest) => toGuestDirectoryRecord(guest as unknown as Record<string, unknown>)),
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Access denied" },
@@ -64,7 +79,12 @@ export async function POST(req: Request) {
 
     if (body.guests) {
       const data = bulkSchema.parse(body);
-      await verifyEventAccess(data.eventId, session.user.id, session.user.role);
+      await requireEventPermission(
+        data.eventId,
+        session.user.id,
+        session.user.role as UserRole,
+        EventPermissionKey.MANAGE_GUESTS
+      );
       const results = await invitationService.addGuestsBulk(
         data.eventId,
         data.invitationId,
@@ -77,7 +97,12 @@ export async function POST(req: Request) {
     }
 
     const data = addGuestSchema.parse(body);
-    await verifyEventAccess(data.eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      data.eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.MANAGE_GUESTS
+    );
     const result = await invitationService.addGuest(data);
     return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error) {

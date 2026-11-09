@@ -148,7 +148,7 @@ export function looksLikeForeignPartyLabel(
   return otherInvitationNames.some((name) => namesMatch(value, name));
 }
 
-/** Canonical public party display name — never GuestGroup, never another invite. */
+/** Canonical public party display name, never GuestGroup, never another invite. */
 export function resolvePublicPartyDisplayName(input: {
   invitationName: string;
   passDisplayName?: string | null;

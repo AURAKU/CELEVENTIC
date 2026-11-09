@@ -218,7 +218,7 @@ export interface InvitationAudioManager {
   prime: () => void;
   /**
    * Must run inside a click/tap handler. Starts play immediately so Safari
-   * keeps the user-activation chain — never await network first.
+   * keeps the user-activation chain, never await network first.
    */
   unlock: () => Promise<boolean>;
   /**
@@ -229,7 +229,7 @@ export interface InvitationAudioManager {
    */
   armSilently: () => Promise<boolean>;
   play: () => Promise<boolean>;
-  /** Continue from the current playhead after a film duck — do not rewind. */
+  /** Continue from the current playhead after a film duck. Do not rewind. */
   resume: () => Promise<boolean>;
   pause: () => void;
   toggle: () => Promise<boolean>;
@@ -317,7 +317,7 @@ export function createInvitationAudioManager(
     trimHandler = () => {
       const targetVol = musicSelection?.volume ?? savedVolume;
       // Seeks/drift outside the trimmed window (OS media keys, background tab
-      // throttling, scrub bars, etc.) must snap back into the clip — never
+      // throttling, scrub bars, etc.) must snap back into the clip, never
       // let the guest hear audio before start or past end.
       if (a.currentTime < start - 0.25) {
         a.currentTime = start;
@@ -351,7 +351,7 @@ export function createInvitationAudioManager(
 
     audio = new Audio(resolveMusicUrl(resolvedUrl));
     audio.preload = "auto";
-    // Do not set crossOrigin — external CDNs often omit CORS headers and break playback.
+    // Do not set crossOrigin. External CDNs often omit CORS headers and break playback.
 
     if (musicSelection) {
       audio.loop = false;
@@ -420,7 +420,7 @@ export function createInvitationAudioManager(
       }
       setActiveInvitationAudioManager(manager);
 
-      // Seek best-effort without awaiting network — awaiting before play()
+      // Seek best-effort without awaiting network. Awaiting before play()
       // drops the Safari/Chrome user-activation token and blocks autoplay.
       if (musicSelection && a.readyState >= HTMLMediaElement.HAVE_METADATA) {
         try {
@@ -430,7 +430,7 @@ export function createInvitationAudioManager(
         }
       }
 
-      // Start muted when the guest already muted — still unlocks the element
+      // Start muted when the guest already muted. Still unlocks the element
       // so a later unmute is instant on iOS/Safari.
       if (muted) applyMuteToElement(a);
 
@@ -501,7 +501,7 @@ export function createInvitationAudioManager(
       try {
         a.currentTime = musicSelection?.startSec ?? 0;
       } catch {
-        /* metadata not ready — play() will seek later */
+        /* metadata not ready. Play() will seek later */
       }
       return true;
     } catch {

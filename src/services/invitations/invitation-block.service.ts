@@ -240,7 +240,7 @@ export class InvitationBlockService {
    *
    * Blocks are seeded from the order once, then become hand-editable. A block
    * is only refreshed while its stored content still matches exactly what the
-   * *previous* order state would have generated — the moment a host writes
+   * *previous* order state would have generated. The moment a host writes
    * their own copy, that block stops following the order.
    */
   async refreshDerivedContent(

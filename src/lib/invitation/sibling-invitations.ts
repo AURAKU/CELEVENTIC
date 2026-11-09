@@ -1,5 +1,5 @@
 /**
- * Load sibling invitation labels for the same event — used to scrub foreign
+ * Load sibling invitation labels for the same event. Used to scrub foreign
  * party names from public payloads without exposing the full guest list.
  */
 

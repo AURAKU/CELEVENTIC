@@ -1,5 +1,5 @@
 /**
- * Level 2 — Venue Offline Pack format, tokens and integrity.
+ * Level 2. Venue Offline Pack format, tokens and integrity.
  *
  * A pack is a signed, expiring ZIP an authorised organizer downloads and runs
  * on a machine on the venue Wi-Fi. It is never a public download: the token is
@@ -36,13 +36,13 @@ export const OFFLINE_SEATING_MODE_LABELS: Record<
   CODE_ONLY: {
     label: "Admission code only (recommended)",
     detail:
-      "Guests type their admission code. The pack stores only one-way hashes of codes — no guest names are inside it.",
+      "Guests type their admission code. The pack stores only one-way hashes of codes. No guest names are inside it.",
     privacy: "highest",
   },
   HASHED_NAME: {
     label: "Name, stored as one-way hashes",
     detail:
-      "Guests type their name and it must match exactly. The pack stores only hashes — no readable names are inside it.",
+      "Guests type their name and it must match exactly. The pack stores only hashes. No readable names are inside it.",
     privacy: "high",
   },
   NAME_INDEX: {
@@ -117,7 +117,7 @@ export function seatingIndexKey(salt: string, value: string): string {
 export interface OfflineSeatingEntry {
   /** Hashed lookup key, or the normalised readable name in NAME_INDEX mode. */
   k: string;
-  /** Party display name — omitted entirely unless the mode allows readable names. */
+  /** Party display name. Omitted entirely unless the mode allows readable names. */
   n?: string;
   table: string | null;
   seat: string | null;
@@ -128,7 +128,7 @@ export interface OfflineSeatingEntry {
   members?: string[];
   /** Unnamed plus-ones travelling with the party. */
   plusOnes: number;
-  /** Party size, always safe to include — it reveals nothing identifying. */
+  /** Party size, always safe to include. It reveals nothing identifying. */
   size: number;
 }
 
@@ -147,7 +147,7 @@ export interface OfflineSeatingSource {
 /**
  * Build the seating index for a pack.
  *
- * CODE_ONLY and HASHED_NAME emit hashed keys and no names — a stolen pack
+ * CODE_ONLY and HASHED_NAME emit hashed keys and no names. A stolen pack
  * yields nothing to someone who does not already know the code or exact name.
  * NAME_INDEX is the only mode that writes readable names, and only because
  * tolerant matching is impossible without them.
@@ -260,7 +260,7 @@ export interface OfflinePackManifest {
   guideVersion: number;
   eventTitle: string;
   tokenPrefix: string;
-  /** The raw local token — the pack IS the credential; it holds nothing else. */
+  /** The raw local token. The pack IS the credential; it holds nothing else. */
   offlineToken: string;
   seatingMode: OfflineSeatingMode;
   seatingSalt: string;

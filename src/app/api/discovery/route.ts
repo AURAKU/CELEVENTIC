@@ -21,13 +21,7 @@ export async function GET(req: Request) {
     success: true,
     data: {
       ...result,
-      events: result.items.map((e) => ({
-        ...e,
-        startDate: e.startDate.toISOString(),
-        endDate: e.endDate?.toISOString() ?? null,
-        createdAt: e.createdAt.toISOString(),
-        updatedAt: e.updatedAt.toISOString(),
-      })),
+      events: result.items,
     },
   });
 }

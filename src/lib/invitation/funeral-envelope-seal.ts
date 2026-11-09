@@ -1,7 +1,7 @@
 import type { SealDesignId } from "@/lib/invitation/seal-design";
 
 /**
- * Funeral envelopes use a poured wax seal + memorial emblem — never wedding-style
+ * Funeral envelopes use a poured wax seal + memorial emblem, never wedding-style
  * couple initials ("C | J" / "A | B"). Each catalogue SKU gets a unique wax material
  * and a unique emblem so browse cards never look duplicated.
  */

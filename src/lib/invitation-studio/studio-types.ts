@@ -44,7 +44,7 @@ export interface InvitationStudioConfig {
   secondaryLabel?: string;
   /** Traditional Marriage / vision-board editable copy + feature toggles */
   visionBoard?: VisionBoardContent;
-  /** Forever Afaris luxury wedding — editable copy, programme, RSVP + toggles */
+  /** Forever Afaris luxury wedding. Editable copy, programme, RSVP + toggles */
   weddingBoard?: WeddingBoardContent;
 }
 
@@ -54,8 +54,8 @@ export const REVEAL_MODE_OPTIONS: { id: RevealMode; label: string; description: 
   { id: "passport", label: "Passport flip", description: "Open a luxury passport booklet" },
   { id: "glass", label: "Glass acrylic", description: "Frosted glass swipe to reveal" },
   { id: "curtain", label: "Curtain rise", description: "Theatre curtain lifts to unveil" },
-  { id: "scroll-unroll", label: "Scroll unroll", description: "Royal parchment scroll unfolds — reel classic" },
-  { id: "none", label: "Instant", description: "No opening ceremony — direct view" },
+  { id: "scroll-unroll", label: "Scroll unroll", description: "Royal parchment scroll unfolds. Reel classic" },
+  { id: "none", label: "Instant", description: "No opening ceremony. Direct view" },
 ];
 
 export const BUTTON_STYLE_OPTIONS: { id: ButtonStyle; label: string }[] = [

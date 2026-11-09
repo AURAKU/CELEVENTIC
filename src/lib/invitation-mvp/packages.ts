@@ -26,6 +26,8 @@ export interface InvitationPackageDef {
   ctaLabel?: string;
   paymentRequiredToPublish?: boolean;
   includesLabel?: string | null;
+  /** After Paystack success, open an in-platform Celeventic team chat. */
+  teamChatAfterPay?: boolean;
 }
 
 export const INVITATION_PACKAGE_ADDITIONAL_CHARGES =
@@ -72,6 +74,17 @@ const ULTIMATE_FEATURES = [
   "2 staff members",
   "Up to 4 hours of event-day support",
   "On-ground admission support for up to 200 guests",
+];
+
+const CUSTOMISATION_FEATURES = [
+  "Everything in Ultimate Experience",
+  "Celeventic team designs and customises your template",
+  "Access to every feature and experience on the platform",
+  "In-platform chat with the Celeventic team after payment",
+  "Priority production brief and dedicated revisions",
+  "White-glove event operating system",
+  "Up to 500 guests",
+  "5 revisions",
 ];
 
 /**
@@ -156,6 +169,27 @@ export const INVITATION_PACKAGES: InvitationPackageDef[] = [
     includesLabel: "Everything in Signature",
   },
   {
+    slug: "customisation",
+    name: "Customisation",
+    description: "Your template, built with the Celeventic team",
+    priceGhs: 4500,
+    revisions: 5,
+    deliveryDays: 10,
+    features: CUSTOMISATION_FEATURES,
+    designerAssist: true,
+    guestCapacity: 500,
+    admissionSupportGuests: 200,
+    includedStaff: 2,
+    includedSupportHours: 4,
+    popular: false,
+    quoteOnly: false,
+    catalogVisible: true,
+    ctaLabel: "Work with our team",
+    paymentRequiredToPublish: true,
+    includesLabel: "Everything in Ultimate Experience",
+    teamChatAfterPay: true,
+  },
+  {
     slug: "prestige",
     name: "Prestige",
     description: "Legacy luxury invitation package",
@@ -180,6 +214,10 @@ const PACKAGE_SLUG_ALIASES: Record<string, string> = {
   ultimate: "bespoke",
   "ultimate-experience": "bespoke",
   essential: "starter",
+  customization: "customisation",
+  customise: "customisation",
+  customize: "customisation",
+  custom: "customisation",
 };
 
 export function resolveInvitationPackageSlug(slug?: string | null): string | null {
@@ -206,6 +244,14 @@ export function isPopularInvitationPackage(slug: string): boolean {
   return getInvitationPackage(slug)?.popular === true;
 }
 
+export function isCustomisationInvitationPackage(slug: string): boolean {
+  return getInvitationPackage(slug)?.teamChatAfterPay === true || resolveInvitationPackageSlug(slug) === "customisation";
+}
+
+export function customisationThreadId(orderId: string): string {
+  return `customisation:${orderId}`;
+}
+
 /** GHS major units → pesewas (Paystack smallest unit). */
 export function ghsToPesewas(amountGhs: number): number {
   return Math.round(amountGhs * 100);
@@ -217,7 +263,7 @@ export function formatInvitationPriceGhs(pkg: Pick<InvitationPackageDef, "priceG
 }
 
 export function invitationPackageContactMessage(pkg: InvitationPackageDef): string {
-  return `Hello Celeventic — I would like a quotation for the ${pkg.name} invitation package (${formatInvitationPriceGhs(pkg)}).`;
+  return `Hello Celeventic. I would like a quotation for the ${pkg.name} invitation package (${formatInvitationPriceGhs(pkg)}).`;
 }
 
 export function calculateOrderTotal(packageSlug: string, addonSlugs: string[]) {

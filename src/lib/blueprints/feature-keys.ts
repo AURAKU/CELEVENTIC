@@ -1,4 +1,4 @@
-/** Platform feature keys — entitlement checks use these, never raw module names. */
+/** Platform feature keys. Entitlement checks use these, never raw module names. */
 export const FeatureKey = {
   OVERVIEW: "OVERVIEW",
   INVITATIONS: "INVITATIONS",

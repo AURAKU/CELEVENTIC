@@ -4,7 +4,7 @@ import { PASS_TOKEN_PREFIX, looksLikePassToken } from "@/lib/admission/pass-toke
 /**
  * Signed Guest Entry Pass tokens (server side).
  *
- * The QR encodes an opaque, unguessable token — never a database id, guest
+ * The QR encodes an opaque, unguessable token, never a database id, guest
  * name, or event id. Structure:
  *
  *   cvp1.<22-char base64url nonce>.<22-char base64url HMAC tag>

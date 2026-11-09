@@ -7,7 +7,7 @@ type Fonts = { eyebrow: string };
 /**
  * Optional downloads shown beneath the native content.
  *
- * They never replace the on-page programme or menu — a link that needs a data
+ * They never replace the on-page programme or menu. A link that needs a data
  * connection and a PDF reader is a fallback, not the experience.
  */
 export function GuideAttachments({

@@ -10,7 +10,7 @@ export function parseRange(rangeHeader: string | null, size: number): { start: n
   let end = endStr ? parseInt(endStr, 10) : NaN;
 
   if (Number.isNaN(start) && !Number.isNaN(end)) {
-    // Suffix range, e.g. "bytes=-500" — last 500 bytes.
+    // Suffix range, e.g. "bytes=-500". Last 500 bytes.
     start = Math.max(0, size - end);
     end = size - 1;
   } else if (!Number.isNaN(start) && Number.isNaN(end)) {

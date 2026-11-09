@@ -33,14 +33,14 @@ export interface InvitationMediaAsset {
   type: MediaType;
   /**
    * `intro` is the pre-invite welcome photo shown full-bleed behind the
-   * soft-intro / "BEGIN" gate — never the hero, gallery, or page background.
+   * soft-intro / "BEGIN" gate, never the hero, gallery, or page background.
    */
   role: "hero" | "background" | "reference" | "attachment" | "intro";
   name?: string;
   /** Video-only, additive metadata from the processing pipeline (src/lib/video/video-processor.ts). */
   posterUrl?: string | null;
   thumbnailUrl?: string | null;
-  /** Private original upload — never rendered directly, kept for reprocessing/audit. */
+  /** Private original upload, never rendered directly, kept for reprocessing/audit. */
   originalUrl?: string | null;
   status?: "READY" | "PROCESSING" | "FAILED";
   durationSeconds?: number | null;
@@ -107,7 +107,7 @@ export interface InvitationEventData {
   coverImageUrl?: string | null;
   /** Uploaded QR-center photograph. Template stock is never stored here for guest QRs. */
   qrCenterImageUrl?: string | null;
-  /** Funeral order field — preferred memorial headline when set. */
+  /** Funeral order field. Preferred memorial headline when set. */
   deceasedName?: string | null;
 }
 
@@ -117,7 +117,7 @@ export interface InvitationEventData {
  * personalised for a guest/party.
  */
 export interface GuestEntryPassData {
-  /** Signed, opaque pass token — the QR payload. Never a database id. */
+  /** Signed, opaque pass token. The QR payload. Never a database id. */
   token: string;
   code: string;
   displayName: string;
@@ -163,10 +163,10 @@ export interface InvitationRenderProps {
   memoryAlbumUrl?: string | null;
   /** QR image for Album upload */
   memoryUploadQrImageUrl?: string | null;
-  /** Guest Entry Pass — rendered as the closing section of the invitation. */
+  /** Guest Entry Pass. Rendered as the closing section of the invitation. */
   entryPass?: GuestEntryPassData | null;
   /**
-   * Personalised Place Card — rendered above the entry pass on every template.
+   * Personalised Place Card. Rendered above the entry pass on every template.
    * Resolved server-side by `resolvePlaceCard`; null when the organiser turned
    * it off or the invitation has nobody assigned to it.
    */
@@ -177,7 +177,7 @@ export interface InvitationRenderProps {
    */
   partyAllowance?: number;
   /**
-   * Existing RSVP for this personalized guest — keeps Kindly Respond on thank-you
+   * Existing RSVP for this personalized guest. Keeps Kindly Respond on thank-you
    * across refresh / reopen instead of re-opening Accept.
    */
   initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;

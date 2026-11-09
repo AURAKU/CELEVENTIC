@@ -4,7 +4,6 @@ import {
   normalizeSocials,
   type DigitalCardPublicPayload,
   type DigitalCardSocials,
-  type DigitalCardSubscriptionStatus,
 } from "@/lib/digital-business-card/types";
 import { resolveDigitalCardTheme, type DigitalCardThemeId } from "@/lib/digital-business-card/themes";
 
@@ -39,9 +38,9 @@ export function isDigitalCardLive(card: {
   subscriptionExpiresAt: Date | null;
 }): boolean {
   if (!card.isPublished) return false;
-  if (card.subscriptionStatus === "INACTIVE" || card.subscriptionStatus === "EXPIRED") return false;
+  if (card.subscriptionStatus !== "ACTIVE") return false;
   if (card.subscriptionExpiresAt && card.subscriptionExpiresAt.getTime() < Date.now()) return false;
-  return card.subscriptionStatus === "TRIAL" || card.subscriptionStatus === "ACTIVE";
+  return true;
 }
 
 export function toPublicPayload(card: {
@@ -259,20 +258,59 @@ export async function updateDigitalCard(userId: string, id: string, input: Upser
   });
 }
 
-/** Soft renew for billing hooks — marks ACTIVE for +30 days. */
-export async function renewDigitalCardSubscription(
-  userId: string,
-  id: string,
-  status: DigitalCardSubscriptionStatus = "ACTIVE",
-  days = 30
-) {
+/** Paid activation only, never called from a free studio PATCH. */
+export async function activateDigitalCardFromPayment(input: {
+  userId: string;
+  cardId: string;
+  planId: string;
+  amountGhs: number;
+}) {
+  const { getSmartCardPlan, smartCardExpiryFromNow } = await import("@/lib/digital-business-card/plans");
+  const plan = getSmartCardPlan(input.planId);
+  if (!plan) return null;
+  if (Math.abs(plan.priceGhs - Number(input.amountGhs)) > 0.51) {
+    console.error("[smartcard.activate] amount mismatch", plan.id, input.amountGhs);
+    return null;
+  }
+  const existing = await getDigitalCardForUser(input.userId, input.cardId);
+  if (!existing) return null;
+  const base =
+    existing.subscriptionStatus === "ACTIVE" &&
+    existing.subscriptionExpiresAt &&
+    existing.subscriptionExpiresAt.getTime() > Date.now()
+      ? existing.subscriptionExpiresAt
+      : new Date();
+  const expires = smartCardExpiryFromNow(plan.months, base);
+  return prisma.digitalBusinessCard.update({
+    where: { id: existing.id },
+    data: {
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: expires,
+      isPublished: true,
+    },
+  });
+}
+
+/** Admin / test bypass. Still requires an authenticated platform admin at the route. */
+export async function activateDigitalCardPlan(userId: string, id: string, planId: string) {
+  const { getSmartCardPlan, smartCardExpiryFromNow } = await import("@/lib/digital-business-card/plans");
+  const plan = getSmartCardPlan(planId);
+  if (!plan) return null;
   const existing = await getDigitalCardForUser(userId, id);
   if (!existing) return null;
-  const expires = new Date();
-  expires.setDate(expires.getDate() + days);
+  const base =
+    existing.subscriptionStatus === "ACTIVE" &&
+    existing.subscriptionExpiresAt &&
+    existing.subscriptionExpiresAt.getTime() > Date.now()
+      ? existing.subscriptionExpiresAt
+      : new Date();
   return prisma.digitalBusinessCard.update({
-    where: { id },
-    data: { subscriptionStatus: status, subscriptionExpiresAt: expires },
+    where: { id: existing.id },
+    data: {
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: smartCardExpiryFromNow(plan.months, base),
+      isPublished: true,
+    },
   });
 }
 

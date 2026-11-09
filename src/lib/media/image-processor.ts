@@ -24,20 +24,39 @@ export interface ProcessedImageDerivatives {
 const MAX_INPUT_BYTES = 50 * 1024 * 1024;
 const MAX_DIMENSION = 8000;
 
-/** Magic-byte sniff — never trust filename/MIME alone. */
-export function sniffImageFormat(buffer: Buffer): "jpeg" | "png" | "webp" | "gif" | "avif" | "heic" | null {
+export type SniffedImageFormat = "jpeg" | "png" | "webp" | "gif" | "avif" | "heic" | "bmp" | "tiff";
+
+const HEIC_BRANDS = new Set(["heic", "heix", "heif", "heim", "heis", "hevc", "hevx", "mif1", "msf1"]);
+
+/** Magic-byte sniff, never trust filename/MIME alone. */
+export function sniffImageFormat(buffer: Buffer): SniffedImageFormat | null {
   if (buffer.length < 12) return null;
   if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "jpeg";
   if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return "png";
   if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) return "gif";
   if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP") return "webp";
-  // ftyp....heic / heif / avif
+  if (buffer[0] === 0x42 && buffer[1] === 0x4d) return "bmp";
+  if (
+    (buffer[0] === 0x49 && buffer[1] === 0x49 && buffer[2] === 0x2a && buffer[3] === 0x00) ||
+    (buffer[0] === 0x4d && buffer[1] === 0x4d && buffer[2] === 0x00 && buffer[3] === 0x2a)
+  ) {
+    return "tiff";
+  }
   if (buffer.toString("ascii", 4, 8) === "ftyp") {
     const brand = buffer.toString("ascii", 8, 12).toLowerCase();
     if (brand.startsWith("avif") || brand === "avis") return "avif";
-    if (brand.startsWith("heic") || brand.startsWith("heif") || brand === "mif1") return "heic";
+    if (HEIC_BRANDS.has(brand) || brand.startsWith("hei")) return "heic";
   }
   return null;
+}
+
+export function looksLikeSvg(buffer: Buffer): boolean {
+  const head = buffer.subarray(0, 256).toString("utf8").replace(/^\uFEFF/, "").trim().toLowerCase();
+  return (
+    head.startsWith("<svg") ||
+    head.startsWith("<!doctype svg") ||
+    (head.startsWith("<?xml") && head.includes("<svg"))
+  );
 }
 
 export async function processImageBuffer(
@@ -57,12 +76,20 @@ export async function processImageBuffer(
     return failed(`Image exceeds ${MAX_INPUT_BYTES / (1024 * 1024)}MB limit.`);
   }
 
+  if (looksLikeSvg(buffer)) {
+    return failed("SVG files are not accepted. Please send a JPEG, HEIC, PNG, or WebP photo.");
+  }
+
   const sniffed = sniffImageFormat(buffer);
   if (!sniffed) {
-    return failed("Unrecognized image format.");
-  }
-  if (sniffed === "heic") {
-    // Sharp may decode HEIC when libvips is built with support; if not, fail clearly.
+    try {
+      const probe = await sharp(buffer, { failOn: "error", animated: false }).metadata();
+      if (!probe.format || probe.format === "svg") {
+        return failed("Unrecognized image format.");
+      }
+    } catch {
+      return failed("We couldn't read that photo. Try JPEG, HEIC, PNG, or WebP.");
+    }
   }
 
   const base = options.baseName ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -138,7 +165,11 @@ export async function processImageBuffer(
       byteSize: optimisedBuf.length,
     };
   } catch (error) {
-    return failed(error instanceof Error ? error.message : "Image processing failed.");
+    const message = error instanceof Error ? error.message : "Image processing failed.";
+    if (sniffed === "heic" || /heif|heic/i.test(message)) {
+      return failed("We couldn't process this iPhone photo. Export it as JPEG and try again.");
+    }
+    return failed("We couldn't read that photo. Try JPEG, HEIC, PNG, or WebP.");
   }
 }
 

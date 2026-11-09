@@ -75,7 +75,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: throttled.error }, { status: throttled.status });
   }
 
-  // Capacity-tracked vendor/team passes (cvt1) — never guest invitations.
+  // Capacity-tracked vendor/team passes (cvt1), never guest invitations.
   const vendorToken =
     (data.token && looksLikeVendorTeamToken(data.token) ? data.token : null) ??
     (data.token ? extractVendorTeamToken(data.token) : null) ??
@@ -191,7 +191,7 @@ export async function POST(req: Request) {
         },
       });
     }
-    // Code/token was not a vendor team pass — fall through to guest admission.
+    // Code/token was not a vendor team pass. Fall through to guest admission.
     if (vendorToken) {
       return NextResponse.json({
         success: false,

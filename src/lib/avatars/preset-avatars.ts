@@ -1,4 +1,4 @@
-/** Curated profile avatars — unique palette + motif per preset (no duplicates). */
+/** Curated profile avatars. Unique palette + motif per preset (no duplicates). */
 export type PresetAvatar = {
   id: string;
   label: string;

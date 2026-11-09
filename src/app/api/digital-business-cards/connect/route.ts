@@ -16,7 +16,7 @@ const bodySchema = z.object({
   visitorCompany: z.string().max(160).optional().nullable(),
   visitorTitle: z.string().max(120).optional().nullable(),
   note: z.string().max(500).optional().nullable(),
-  /** Honeypot — bots fill this; humans leave blank */
+  /** Honeypot. Bots fill this; humans leave blank */
   website: z.string().max(0).optional().nullable(),
 });
 

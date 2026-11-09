@@ -13,7 +13,7 @@ export const FASHION_TOKEN_VALUES = {
 } as const;
 
 /**
- * Motion vocabulary — slow, editorial, fashion-film.
+ * Motion vocabulary. Slow, editorial, fashion-film.
  * Components must use these tokens instead of scattered magic durations.
  */
 export const FASHION_MOTION = {
@@ -27,7 +27,7 @@ export const FASHION_MOTION = {
 } as const;
 
 export const FASHION_GESTURE_ARM_MS = FASHION_MOTION.editorial;
-/** Envelope flap + card rise — cinematic, 2–4s. */
+/** Envelope flap + card rise. Cinematic, 2 to 4s. */
 export const FASHION_ENVELOPE_OPEN_MS = 3200;
 export const FASHION_FOLIO_OPEN_MS = FASHION_ENVELOPE_OPEN_MS;
 export const FASHION_CARD_MORPH_MS = FASHION_MOTION.cinematic;
@@ -38,10 +38,12 @@ export const FASHION_EXIT_POINTER_MS = FASHION_MOTION.micro;
 export const FASHION_WHISPER_MS = FASHION_MOTION.whisper;
 export const FASHION_SILK_DRAG_PX = FASHION_MOTION.silkDragPx;
 
+type FashionTokenPalette = Record<keyof typeof FASHION_TOKEN_VALUES, string>;
+
 export function fashionTokenStyle(
-  overrides?: Partial<typeof FASHION_TOKEN_VALUES>
+  overrides?: Partial<FashionTokenPalette>
 ): Record<`--${string}`, string> {
-  const t = { ...FASHION_TOKEN_VALUES, ...overrides };
+  const t: FashionTokenPalette = { ...FASHION_TOKEN_VALUES, ...overrides };
   return {
     "--ff-ivory": t.ivory,
     "--ff-cream": t.cream,

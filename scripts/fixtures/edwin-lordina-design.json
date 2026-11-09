@@ -40,7 +40,7 @@
       "eyebrow": "TOGETHER WITH THEIR FAMILIES",
       "scriptTitle": "The Wedding",
       "familyHeading": "",
-      "familyIntro": "Together with The Blankson and Anderson Families, warmly welcome you to share in a love written by God.",
+      "familyIntro": "The Blankson and Anderson Families, warmly welcome you to share in a love written by God.",
       "coupleName1": "Edwin Ebow Blankson",
       "coupleName2": "Lordina Ewurafua Anderson",
       "invitationCopy": "Joyfully request the honour of your presence as they begin forever, side by side.",
@@ -50,7 +50,7 @@
       "weekday": "THU · SAT",
       "timeLabel": "9:00 AM",
       "receptionText": "Reception at 3:00 PM, Combos & Casa, East Legon Hills",
-      "accessNote": "STRICTLY BY INVITATION",
+      "accessNote": "Strictly by invitation. Only guests with the admission QR and code will be admitted at the reception.",
       "venueName": "ASSEMBLIES OF GOD TEMA COMMUNITY 12 TCC",
       "venueAddress": "Hospital Road Link Extension, Tema Community 12",
       "mapUrl": "https://www.google.com/maps/place/Assemblies+of+God+Ghana+Tema+Christian+Centre/@5.670683,-0.03132,17z",
@@ -67,7 +67,7 @@
           "id": "traditional",
           "time": "THU 24 DEC · 9:00 AM",
           "title": "Traditional Ceremony",
-          "description": "Bride’s house, Tema Community 12",
+          "description": "Bride's Family Residence",
           "mapUrl": "https://www.google.com/maps/place/Bride's+house,+Tema+Community+12/@5.669508,-0.033181,17z",
           "mapLink": "https://maps.app.goo.gl/2w4GNp4hMXkh7X3N7?g_st=ic"
         },
@@ -112,7 +112,7 @@
       "guestPolicyHeading": "WHO IS THIS INVITATION FOR?",
       "guestPolicyBody": "This celebration honours the names written on the invitation. Kindly come as invited, and we will look after you. The white wedding reception is reserved for adults only.",
       "guestPolicyFollowHeading": "ARE KIDS ALLOWED OR CAN I BRING A GUEST?",
-      "guestPolicyFollowBody": "While we adore children, this celebration will be an adults-only event due to venue capacity restrictions. Due to limited capacity, we can only accommodate guests whose names appear on the invitation. We appreciate your cooperation.",
+      "guestPolicyFollowBody": "This note is for the reception only, not the traditional ceremony or the wedding. While we adore children, the reception is adults only because of venue capacity. At the reception we can only accommodate guests whose names appear on the invitation. We appreciate your cooperation.",
       "storyHeading": "Our Love Story",
       "storyBody": "Two people, miles apart, somehow found each other through a screen, and from the very beginning, there was a feeling that this was different. We recognized something special almost immediately. Edwin knew he had found his wife, and Lordina knew there was something incredibly special about the man who had entered her life. What began with messages soon became hours of conversations, endless laughter, late-night calls, prayers, plans, and a connection that made thousands of miles feel insignificant. Somewhere between the calls, the visits, the inside jokes, and simply doing life together from opposite sides of the world, we became home to one another.\n\nOur love has crossed countries, time zones, and an ocean, yet loving each other has always felt like the easiest part. Through it all, our love has been rooted in something greater than the two of us. We believe our love is biblical, written by God long before we knew each other. A love grounded in faith, strengthened through prayer, covered by grace, and built on the promise of choosing each other, again and again.\n\nWe found friendship, partnership, and a love that felt familiar from the very beginning, almost as though God was simply introducing us to someone He already knew belonged in our story. And now, the two people who once stared at each other through phone screens are preparing to stand before God, our families, and the people we love most and say, “I do.” From miles apart to forever side by side, a love story written by God, lived by us, and only just beginning.",
       "galleryHeading": "Moments",
@@ -120,6 +120,7 @@
       "scratchPrompt": "Scratch to reveal",
       "scratchMessage": "Welcome to the littest rest of our lives. 🥂💍❤️",
       "rsvpHeading": "R.S.V.P",
+      "entryPassNote": "Your QR and admission code are for the reception only. Please have them ready at the reception entrance.",
       "rsvpContacts": [
         {
           "name": "ADEL",

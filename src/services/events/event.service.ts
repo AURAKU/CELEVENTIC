@@ -12,6 +12,7 @@ export interface CreateEventInput {
   description?: string;
   startDate: Date;
   endDate?: Date;
+  rsvpDeadline?: Date | null;
   venueName?: string;
   landmark?: string;
   mapsLink?: string;
@@ -107,7 +108,7 @@ export class EventService {
   async publishEvent(id: string, organizerId: string) {
     return prisma.event.update({
       where: { id, organizerId },
-      data: { status: "PUBLISHED", isPublic: true },
+      data: { status: "PUBLISHED" },
     });
   }
 
@@ -119,7 +120,7 @@ export class EventService {
    *
    * Several Event relations lack onDelete:Cascade in DB (qr_scans, ticket_orders,
    * offline_devices, contributions). A bare prisma.event.delete() returns P2003 and
-   * leaves CANCELLED rows stuck on the dashboard — purge those first.
+   * leaves CANCELLED rows stuck on the dashboard. Purge those first.
    */
   async deleteEvent(id: string, options?: { hard?: boolean }) {
     const event = await prisma.event.findUnique({ where: { id } });
@@ -151,15 +152,15 @@ export class EventService {
    * Remove RESTRICT / non-cascading dependents, then delete the event row.
    *
    * Perf note (root cause of the P2028 "transaction already closed" error in prod):
-   * this used to run ~15 sequential queries — including two findMany-then-delete
-   * round trips for offlineDevice/ticketOrder — inside one 5s (Prisma default)
+   * this used to run ~15 sequential queries, including two findMany-then-delete
+   * round trips for offlineDevice/ticketOrder. Inside one 5s (Prisma default)
    * interactive transaction. On SQLite (single-writer, see src/lib/prisma.ts)
    * that easily tips over 5s under load. Fix:
    *   1. Detach the purely optional FKs (SetNull-on-delete columns; nulling them
    *      is idempotent and non-destructive) BEFORE opening the transaction, so
    *      they can't burn the transaction's time budget.
    *   2. Replace findMany-then-deleteMany with single deleteMany calls using
-   *      relation filters (device: { eventId: id }) — halves the round trips
+   *      relation filters (device: { eventId: id }). Halves the round trips
    *      for the offline-device and ticket-order cleanup.
    *   3. Give the remaining RESTRICT-critical work (which must stay atomic with
    *      the event delete) a generous explicit timeout/maxWait instead of the
@@ -167,7 +168,7 @@ export class EventService {
    *      hot path.
    */
   private async purgeAndDeleteEvent(id: string) {
-    // Optional FKs (default onDelete: SetNull) — detaching them doesn't need to
+    // Optional FKs (default onDelete: SetNull). Detaching them doesn't need to
     // be atomic with the event delete, so keep this off the transaction clock.
     await Promise.all([
       prisma.campaign.updateMany({ where: { eventId: id }, data: { eventId: null } }),
@@ -184,13 +185,13 @@ export class EventService {
         // QR scans (RESTRICT on eventId)
         await tx.qrScan.deleteMany({ where: { eventId: id } });
 
-        // Offline devices + child rows (RESTRICT on eventId / deviceId) — one
+        // Offline devices + child rows (RESTRICT on eventId / deviceId). One
         // pass via relation filters, no findMany round trip needed.
         await tx.offlineCheckin.deleteMany({ where: { device: { eventId: id } } });
         await tx.offlineSyncLog.deleteMany({ where: { device: { eventId: id } } });
         await tx.offlineDevice.deleteMany({ where: { eventId: id } });
 
-        // Ticket orders (RESTRICT) — detach payments first, same relation-filter approach
+        // Ticket orders (RESTRICT). Detach payments first, same relation-filter approach
         await tx.payment.updateMany({
           where: { ticketOrder: { eventId: id } },
           data: { ticketOrderId: null },
@@ -249,13 +250,23 @@ export class EventService {
           }
         : { id },
       include: {
-        package: true,
+        package: { select: { id: true, slug: true, name: true } },
         theme: true,
         media: true,
-        invitations: true,
-        guests: { include: { rsvps: { orderBy: { createdAt: "desc" }, take: 1 } } },
-        tickets: true,
-        _count: { select: { guests: true, qrScans: true } },
+        tickets: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            description: true,
+            price: true,
+            currency: true,
+            soldCount: true,
+            maxQuantity: true,
+            status: true,
+          },
+        },
+        _count: { select: { guests: true, qrScans: true, invitations: true, tickets: true } },
       },
     });
   }

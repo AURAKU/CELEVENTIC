@@ -19,7 +19,7 @@ import { ADMISSION_QR_TYPES } from "@/lib/qr/qr-types";
 export { applyPortalUnlockPolicy } from "@/lib/admission/admission-logic";
 
 /**
- * Post-Admission Guest Experience — admission projection + reset.
+ * Post-Admission Guest Experience. Admission projection + reset.
  *
  * Source of truth is `Guest.status = CHECKED_IN` (set by the existing scanner
  * via qrService.checkInQr). `Invitation.admittedCount` / `admissionState` are a
@@ -183,8 +183,8 @@ export async function syncAdmissionAfterCheckIn(params: {
 /**
  * Force the invitation's admitted head count to an exact number.
  *
- * Both views of the truth are written together — the pass (authoritative) and
- * the guest rows (what the legacy dashboards read) — so the projection lands on
+ * Both views of the truth are written together. The pass (authoritative) and
+ * the guest rows (what the legacy dashboards read), so the projection lands on
  * the requested figure instead of re-deriving the old one. Guests are flipped
  * in list order, which keeps a correction stable and repeatable.
  */
@@ -266,9 +266,9 @@ export interface ResetAdmissionInput {
   reason: string;
   notes?: string | null;
   options?: {
-    /** Default false — seating is preserved. */
+    /** Default false. Seating is preserved. */
     releaseSeating?: boolean;
-    /** Default false — QR is preserved. */
+    /** Default false. QR is preserved. */
     regenerateQr?: boolean;
   };
 }
@@ -447,11 +447,11 @@ export interface CorrectAdmissionInput {
   actorUserId: string;
   reason: string;
   notes?: string | null;
-  /** `correct_quantity` — the exact number of heads that should be inside. */
+  /** `correct_quantity`. The exact number of heads that should be inside. */
   quantity?: number;
-  /** `move_seat` / `restore_seat` — the member being seated. Omit to move all. */
+  /** `move_seat` / `restore_seat`. The member being seated. Omit to move all. */
   guestId?: string | null;
-  /** `move_seat` / `restore_seat` — destination. */
+  /** `move_seat` / `restore_seat`. Destination. */
   tableNumber?: string | null;
   seatLabel?: string | null;
 }

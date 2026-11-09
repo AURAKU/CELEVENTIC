@@ -26,7 +26,7 @@ interface EnvelopeCollectionRevealProps {
   enableSounds?: boolean;
   /** Couple initials on the wax seal (e.g. "C | J"). Falls back to theme.sealIcon / ✦. */
   sealInitials?: string;
-  /** Memorial emblem for funeral wax seals (e.g. ✝) — preferred over couple initials. */
+  /** Memorial emblem for funeral wax seals (e.g. ✝). Preferred over couple initials. */
   sealEmblem?: string;
   /** Designed seal (color/material) + font/size/color overrides for the wax seal text. */
   sealStyle?: ResolvedSealStyle;
@@ -47,7 +47,7 @@ interface EnvelopeCollectionRevealProps {
   embedded?: boolean;
   /**
    * Start opening on mount (catalogue / studio preview only).
-   * LIVE guest invitations must never set this — PremiumInviteWrapper forces
+   * LIVE guest invitations must never set this. PremiumInviteWrapper forces
    * false for live mounts so the sealed envelope waits for an explicit tap.
    */
   autoOpen?: boolean;
@@ -59,7 +59,7 @@ interface EnvelopeCollectionRevealProps {
 }
 
 /**
- * Photoreal TM (Forever Afaris–inspired):
+ * Photoreal TM (Forever Afaris to inspired):
  * idle → unsealing (seal lifts clear) → opening (flap unfolds) → done.
  * CSS envelopes: idle → unsealing (seal lifts) → opening (flap unfolds) → done.
  */
@@ -70,7 +70,7 @@ export const ENVELOPE_OPEN_MS = 4800;
 export const ENVELOPE_OPEN_REDUCED_MS = 750;
 /** Seal-clear beat before the flap commits on CSS envelopes. */
 export const ENVELOPE_CSS_UNSEAL_MS = 1700;
-/** Memorial dove unseal — slow-motion gather → grip → lift → soar. */
+/** Memorial dove unseal. Slow-motion gather → grip → lift → soar. */
 export const ENVELOPE_MEMORIAL_UNSEAL_MS = 5800;
 /** Full memorial open: seal + doves + envelope peel into the invitation. */
 export const ENVELOPE_MEMORIAL_OPEN_MS = 11200;
@@ -132,7 +132,7 @@ export function EnvelopeCollectionReveal({
 }: EnvelopeCollectionRevealProps) {
   const reduceMotion = useReducedMotion();
   /**
-   * Preview/demo only. Idle has no timers — auto-open is an explicit opt-in
+   * Preview/demo only. Idle has no timers. Auto-open is an explicit opt-in
    * that still enters through runOpenSequence after mount, never a silent skip.
    */
   const shouldAutoOpen = shouldEnvelopeAutoOpen({ autoOpen, staticPreview });
@@ -206,7 +206,7 @@ export function EnvelopeCollectionReveal({
     : photoreal
       ? "#ebe2d6"
       : theme.stageBg ?? "#050a12";
-  /** Memorial: charcoal paper + gold — no teal CTA, no white envelope stage. */
+  /** Memorial: charcoal paper + gold. No teal CTA, no white envelope stage. */
   const visualTheme = memorial
     ? {
         ...theme,
@@ -245,7 +245,7 @@ export function EnvelopeCollectionReveal({
   }, [clearOpenTimers, onComplete]);
 
   /**
-   * Opening window after the seal clears — peek transitions must finish inside
+   * Opening window after the seal clears. Peek transitions must finish inside
    * this budget so the portal handoff never remounts mid-clip.
    */
   const openPhaseMs = Math.max(900, durationMs - (reduceMotion ? 0 : unsealMs));
@@ -348,10 +348,10 @@ export function EnvelopeCollectionReveal({
     };
   }, [shouldAutoOpen, onBegin, enableSounds, photoreal, runOpenSequence]);
 
-  // Keyboard open only via the focused seal button (onSealKeyDown) — never a
+  // Keyboard open only via the focused seal button (onSealKeyDown), never a
   // window-level listener that can swallow a held Space/Enter from Tap to Begin.
 
-  /** Must beat portal `.invite-viewport-live { z-index: 50 }` — never reuse that class here. */
+  /** Must beat portal `.invite-viewport-live { z-index: 50 }`, never reuse that class here. */
   const shellZIndex = staticPreview ? undefined : embedded ? 100 : 200;
 
   if (phase === "done") {

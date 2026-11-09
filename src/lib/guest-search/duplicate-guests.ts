@@ -7,7 +7,7 @@ import type { DuplicateWarning } from "@/lib/guest-search/types";
  *
  * ACTIVE (non-archived) rows only. Name matches use `nameKey` (trim + case +
  * accent + title insensitive). Contact matches are stronger signals. Nothing
- * is merged here — callers return 409 and the organiser decides.
+ * is merged here. Callers return 409 and the organiser decides.
  */
 
 export class DuplicateGuestError extends Error {
@@ -39,7 +39,7 @@ export interface NameDuplicateCandidate {
 }
 
 /**
- * Pure matcher — unit-tested without Prisma.
+ * Pure matcher. Unit-tested without Prisma.
  * Exact name-key collisions and contact collisions become warnings.
  */
 export function collectDuplicateWarnings(
@@ -97,7 +97,7 @@ export function collectDuplicateWarnings(
         name: candidate.name,
         message:
           candidate.kind === "guest"
-            ? `"${candidate.name}" is already on this event's guest list. If this is someone else, add a distinguishing detail to the name — or edit the existing guest.`
+            ? `"${candidate.name}" is already on this event's guest list. If this is someone else, add a distinguishing detail to the name, or edit the existing guest.`
             : `An invitation named "${candidate.name}" already exists for this event. Adjust the name if this is a different person, or edit the existing invitation.`,
       });
       seenKeys.add(dedupeKey);

@@ -249,11 +249,56 @@ export class ComplianceService {
     };
   }
 
+  async discoverPersonalData(userId: string) {
+    const [events, payments, guests, orders, tickets] = await Promise.all([
+      prisma.event.count({ where: { organizerId: userId } }),
+      prisma.payment.count({ where: { userId } }),
+      prisma.guest.count({ where: { userId } }),
+      prisma.invitationOrder.count({ where: { userId } }),
+      prisma.ticketOrder.count({ where: { userId } }),
+    ]);
+    return {
+      eventsOrganized: events,
+      payments,
+      guestRowsLinkedToAccount: guests,
+      invitationOrders: orders,
+      ticketOrders: tickets,
+      financialRecordsRetained: true,
+      admissionRecordsRetained: true,
+      policy: "Retention periods are not applied automatically. Financial and admission rows stay until a reviewer authorizes a lawful erase.",
+    };
+  }
+
   async requestDataDeletion(userId: string) {
-    await this.recordConsent(userId, "DATA_DELETION", {
-      metadata: { requestedAt: new Date().toISOString(), status: "PENDING_REVIEW" },
+    const discovery = await this.discoverPersonalData(userId);
+    const existing = await prisma.dataDeletionRequest.findFirst({
+      where: { userId, status: { in: ["PENDING_REVIEW", "IN_PROGRESS"] } },
+      orderBy: { requestedAt: "desc" },
     });
-    return { status: "PENDING_REVIEW", message: "Your deletion request has been recorded. Our team will contact you within 30 days." };
+    const request =
+      existing ??
+      (await prisma.dataDeletionRequest.create({
+        data: {
+          userId,
+          status: "PENDING_REVIEW",
+          discovery,
+          retentionNotes:
+            "Do not erase payments, ledger entries, or admission history without a written retention decision.",
+        },
+      }));
+    await this.recordConsent(userId, "DATA_DELETION", {
+      metadata: {
+        requestedAt: new Date().toISOString(),
+        status: request.status,
+        requestId: request.id,
+      },
+    });
+    return {
+      status: request.status,
+      requestId: request.id,
+      discovery,
+      message: "Your deletion request has been recorded for review. Financial and admission records are not erased automatically.",
+    };
   }
 
   async listDocumentVersions(slug?: string) {

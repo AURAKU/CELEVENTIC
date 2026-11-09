@@ -335,7 +335,7 @@ export function AdmissionIdentityAuditPanel({
           <div className="min-w-0">
             <h2 className="text-lg font-bold text-slate-900">Missing QR &amp; Codes</h2>
             <p className="mt-0.5 text-sm text-slate-600">
-              Audit each invitation party — never unnamed plus-ones or capacity slots.
+              Audit each invitation party, never unnamed plus-ones or capacity slots.
             </p>
           </div>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close audit">
@@ -360,7 +360,7 @@ export function AdmissionIdentityAuditPanel({
         )}
 
         <p className="border-b border-slate-100 px-4 py-2 text-xs text-slate-600 sm:px-5">
-          Scans every invitation party on this event — not only one family or couple. Unnamed
+          Scans every invitation party on this event, not only one family or couple. Unnamed
           plus-ones are never listed as separate missing-code rows.
         </p>
 
@@ -630,7 +630,7 @@ export function AdmissionIdentityAuditPanel({
                           Party {side.partySize} · Code{" "}
                           {side.admissionCode
                             ? formatAdmissionCode(side.admissionCode)
-                            : "—"}
+                            : "None"}
                         </p>
                         <Link
                           href={side.invitePath}

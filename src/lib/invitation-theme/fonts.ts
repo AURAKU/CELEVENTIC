@@ -3,7 +3,7 @@ import type { FontId } from "./theme-types";
 /**
  * Font stacks reference next/font CSS variables registered in the root layout
  * (src/lib/invitation-fonts.ts + globals.css --font-sans). No new network
- * fetches at invitation render time — WhatsApp/3G budget.
+ * fetches at invitation render time. WhatsApp/3G budget.
  */
 export const FONT_STACKS: Record<FontId, string> = {
   playfair: "var(--font-playfair), 'Playfair Display', serif",

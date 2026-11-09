@@ -148,7 +148,7 @@ export function OrganizerBookingsClient() {
                 </div>
                 {reviewBooking === b.id && (
                   <div className="border-t pt-3 space-y-2">
-                    <Label>Rating (1–5)</Label>
+                    <Label>Rating (1 to 5)</Label>
                     <Input type="number" min={1} max={5} value={rating} onChange={(e) => setRating(Number(e.target.value))} className="max-w-[120px]" />
                     <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Share your verified experience…" rows={3} />
                     <Button size="sm" onClick={() => void submitReview(b.id)}>Submit verified review</Button>

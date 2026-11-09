@@ -1,12 +1,12 @@
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 
 /**
- * Shared Invitation Feature Layer — template presentation adapter.
+ * Shared Invitation Feature Layer. Template presentation adapter.
  *
  * The feature layer owns business logic + visibility/order; templates supply
  * only presentation tokens. Every template resolves through here, and templates
  * that define nothing fall back to a polished default derived from their design
- * colours — so no invitation (including legacy/static ones) can break because it
+ * colours, so no invitation (including legacy/static ones) can break because it
  * predates a feature.
  */
 export interface FeatureThemeTokens {
@@ -22,7 +22,7 @@ export interface FeatureThemeTokens {
   radius: string;
   /** Motion intensity hint for feature sections. */
   motion: "full" | "restrained" | "none";
-  /** Fashion flagship is general admission — never print party-capacity copy. */
+  /** Fashion flagship is general admission, never print party-capacity copy. */
   hidePartyCapacity?: boolean;
 }
 
@@ -50,7 +50,7 @@ function isPaperHex(value: string | undefined): value is string {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b >= 200;
 }
 
-/** Polished default — works for any template with a `design.colors` block. */
+/** Polished default. Works for any template with a `design.colors` block. */
 export const defaultFeatureAdapter: InvitationTemplateFeatureAdapter = {
   layout: "default",
   themeTokens(design) {
@@ -71,7 +71,7 @@ export const defaultFeatureAdapter: InvitationTemplateFeatureAdapter = {
   },
 };
 
-/** Forever Afaris — ivory paper and champagne rules, never a gold slab. */
+/** Forever Afaris. Ivory paper and champagne rules, never a gold slab. */
 const foreverAfarisAdapter: InvitationTemplateFeatureAdapter = {
   layout: "forever-afaris-wedding",
   themeTokens(design) {
@@ -88,7 +88,7 @@ const foreverAfarisAdapter: InvitationTemplateFeatureAdapter = {
   },
 };
 
-/** Traditional Marriage — peach / bronze. */
+/** Traditional Marriage. Peach / bronze. */
 const traditionalMarriageAdapter: InvitationTemplateFeatureAdapter = {
   layout: "traditional-marriage-ceremony",
   themeTokens(design) {
@@ -107,7 +107,7 @@ function isDarkCssColor(value: string | undefined): boolean {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b < 150;
 }
 
-/** Luxury fashion — ivory salon paper, champagne gold, espresso ink. */
+/** Luxury fashion. Ivory salon paper, champagne gold, espresso ink. */
 const luxuryFashionAdapter: InvitationTemplateFeatureAdapter = {
   layout: "luxury-fashion-flagship",
   themeTokens(design) {

@@ -4,7 +4,7 @@ import { isFuneralEventType } from "@/lib/invitation/catalog-event-type";
 
 export const DEFAULT_HUB_TABS = DEFAULTS;
 
-/** Labels for studio scene list — keep in sync with EventExperienceHub labels. */
+/** Labels for studio scene list. Keep in sync with EventExperienceHub labels. */
 export const HUB_TAB_LABELS_FALLBACK: Record<HubTabId, string> = {
   invitation: "Invitation",
   rsvp: "RSVP",

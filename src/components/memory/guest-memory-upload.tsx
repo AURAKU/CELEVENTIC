@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   ArrowLeft,
   Camera,
@@ -12,9 +20,6 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { uploadFormDataWithProgress } from "@/lib/media/upload-with-progress";
 import { MultiVideoUploader } from "@/components/media/multi-video-uploader";
@@ -31,6 +36,7 @@ import {
   MEMORY_VAULT_IMAGE_COMPRESSION,
   smartCompressImage,
 } from "@/lib/image/smart-compress";
+import { ALBUM_CAMERA_ACCEPT, ALBUM_PHOTO_ACCEPT, isAlbumPhotoFile } from "@/lib/memory/album-photo-file";
 
 type MemoryThemeVars = CSSProperties & Record<`--memory-${string}`, string>;
 
@@ -63,9 +69,8 @@ type PhotoQueueItem = {
   originalBytes?: number;
 };
 
-/** Accept anything the OS calls a photo — we normalize before upload. */
-const IMAGE_ACCEPT =
-  "image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif,.avif,.bmp,.tif,.tiff";
+/** Accept anything the OS calls a photo. We normalize before upload. */
+const IMAGE_ACCEPT = ALBUM_PHOTO_ACCEPT;
 
 /** Absolute raw intake before optimization (phone dumps, HEIC bursts). */
 const RAW_INTAKE_MAX_MB = 100;
@@ -82,13 +87,87 @@ function friendlyImageError(message: string, maxMb: number): string {
 }
 
 function isProbablyImage(file: File): boolean {
-  if (file.type.startsWith("image/")) return true;
-  return /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?)$/i.test(file.name);
+  return isAlbumPhotoFile(file);
 }
 
 function compressedFileName(originalName: string, blob: Blob): string {
   const base = originalName.replace(/\.[^.]+$/, "") || "memory";
   return `${base}.${extensionForBlob(blob)}`;
+}
+
+const DISPLAY = "var(--memory-font-display, var(--font-cinzel), Cinzel, serif)";
+const BODY = "var(--memory-font-body, var(--font-cormorant), Georgia, serif)";
+const SCRIPT = "var(--memory-font-script, var(--font-great-vibes), 'Great Vibes', cursive)";
+const INK = "var(--memory-color-ink, #1B365D)";
+const MUTED = "var(--memory-color-ink-muted, #6E5257)";
+const ACCENT = "var(--memory-color-accent, #C7A35A)";
+const SURFACE = "var(--memory-color-surface, #FBF6EF)";
+
+const GOLD_FRAME =
+  "inset 0 0 0 1px color-mix(in srgb, var(--memory-color-accent, #C7A35A) 72%, transparent), inset 0 0 0 6px color-mix(in srgb, var(--memory-color-surface, #FBF6EF) 70%, transparent), inset 0 0 0 7px color-mix(in srgb, var(--memory-color-accent, #C7A35A) 38%, transparent), 0 18px 40px -30px rgba(27, 54, 93, 0.45)";
+
+const GOLD_HAIRLINE =
+  "inset 0 0 0 1px color-mix(in srgb, var(--memory-color-accent, #C7A35A) 55%, transparent)";
+
+function DiamondRule() {
+  return (
+    <div className="mx-auto mt-3 flex items-center justify-center gap-3" aria-hidden>
+      <span
+        className="h-px w-10"
+        style={{ background: "linear-gradient(90deg, transparent, var(--memory-color-accent, #C7A35A))" }}
+      />
+      <span className="h-1.5 w-1.5 rotate-45" style={{ background: ACCENT }} />
+      <span
+        className="h-px w-10"
+        style={{ background: "linear-gradient(90deg, var(--memory-color-accent, #C7A35A), transparent)" }}
+      />
+    </div>
+  );
+}
+
+function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNode }) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className="mb-1.5 block text-[0.68rem] uppercase tracking-[0.18em]"
+      style={{ color: MUTED, fontFamily: DISPLAY }}
+    >
+      {children}
+    </label>
+  );
+}
+
+function ThemeInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+  maxLength,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  autoComplete?: string;
+  maxLength?: number;
+}) {
+  return (
+    <input
+      id={id}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+      maxLength={maxLength}
+      className="h-12 w-full rounded-full border bg-white/80 px-5 text-[1.08rem] outline-none transition-[box-shadow] focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--memory-color-accent,#C7A35A)_28%,transparent)]"
+      style={{
+        borderColor: "color-mix(in srgb, var(--memory-color-accent, #C7A35A) 55%, transparent)",
+        color: INK,
+        fontFamily: BODY,
+      }}
+    />
+  );
 }
 
 export function GuestMemoryUpload({
@@ -233,7 +312,7 @@ export function GuestMemoryUpload({
         lastModified: Date.now(),
       });
 
-      // Still over event budget after smart compress — try a tighter pass.
+      // Still over event budget after smart compress. Try a tighter pass.
       if (nextFile.size > maxBytes) {
         const tighter = await smartCompressImage(source, {
           ...MEMORY_VAULT_IMAGE_COMPRESSION,
@@ -272,7 +351,7 @@ export function GuestMemoryUpload({
         })
       );
     } catch {
-      // Browser couldn't decode (common for HEIC on some desktops) — upload raw if under cap.
+      // Browser couldn't decode (common for HEIC on some desktops). Upload raw if under cap.
       if (source.size <= maxBytes) {
         setPhotos((prev) =>
           prev.map((p) =>
@@ -362,157 +441,226 @@ export function GuestMemoryUpload({
   }
 
   const videoDisabled = !!checkGate();
+  const hostLine = (() => {
+    const line = subtitle?.trim() || (hostName.trim() ? `Hosted by ${hostName.trim()}` : "");
+    if (!line) return null;
+    const named = line.replace(/^hosted by\s+/i, "").trim();
+    if (named.localeCompare(eventTitle.trim(), undefined, { sensitivity: "accent" }) === 0) return null;
+    return line;
+  })();
+  const pickerReady = windowOpen && photoSlotsLeft > 0 && (consentOk || hasConsent);
+  const goldButton = {
+    color: INK,
+    background:
+      "linear-gradient(135deg, color-mix(in srgb, var(--memory-color-accent, #C7A35A) 42%, white), var(--memory-color-accent, #C7A35A))",
+    boxShadow: "0 12px 26px -14px color-mix(in srgb, var(--memory-color-accent, #C7A35A) 80%, #6B4E16)",
+    fontFamily: DISPLAY,
+  } as const;
+  const outlineButton = {
+    color: INK,
+    background: "color-mix(in srgb, var(--memory-color-surface, #FFFDFA) 88%, white)",
+    boxShadow: "inset 0 0 0 1px var(--memory-color-accent, #C7A35A)",
+    fontFamily: DISPLAY,
+  } as const;
   const shellStyle: CSSProperties = {
     ...themeVars,
-    background: `linear-gradient(180deg, var(--memory-color-surface, #FAF8F4) 0%, var(--memory-color-surface-alt, #F1E8DC) 100%)`,
-    color: "var(--memory-color-ink, #0F172A)",
-    fontFamily: "var(--memory-font-body, inherit)",
+    background: `linear-gradient(180deg, var(--memory-color-surface, #FBF6EF) 0%, color-mix(in srgb, var(--memory-color-surface, #FBF6EF) 86%, var(--memory-color-accent, #C7A35A)) 100%)`,
+    color: INK,
+    fontFamily: BODY,
   };
 
   return (
-    <div className="memory-viewport-stage space-y-6 rounded-none sm:rounded-3xl sm:border sm:shadow-sm overflow-hidden" style={shellStyle}>
-      <div className="space-y-6 px-0 sm:px-6 sm:py-6">
-      <header className="text-center space-y-2 pt-2">
-        <Camera className="h-10 w-10 mx-auto" style={{ color: "var(--memory-color-accent, #0B8A83)" }} />
-        <h1
-          className="text-2xl font-bold"
-          style={{ fontFamily: "var(--memory-font-display, Georgia, serif)" }}
+    <div className="memory-viewport-stage overflow-hidden px-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-6" style={shellStyle}>
+      <header
+        className="mx-auto max-w-xl rounded-[1.35rem] px-6 pb-6 pt-7 text-center"
+        style={{
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--memory-color-surface, #FFFDFA) 88%, white), var(--memory-color-surface, #FBF6EF))",
+          boxShadow: GOLD_FRAME,
+        }}
+      >
+        <p
+          className="font-[family-name:var(--font-cinzel)] text-[clamp(0.72rem,2vw,0.82rem)] font-semibold uppercase tracking-[0.42em]"
+          style={{ color: ACCENT, fontFamily: DISPLAY }}
         >
-          Upload Your Photos
+          The Album
+        </p>
+        <DiamondRule />
+        <p
+          className="mt-4 font-[family-name:var(--font-great-vibes)] text-[clamp(2.3rem,8vw,3.2rem)] leading-none"
+          style={{ color: ACCENT, fontFamily: SCRIPT }}
+        >
+          Share a memory
+        </p>
+        <h1
+          className="mt-3 font-[family-name:var(--font-cinzel)] text-[clamp(1.35rem,5.2vw,1.9rem)] font-semibold uppercase leading-[1.12] tracking-[0.12em]"
+          style={{ fontFamily: DISPLAY, color: INK }}
+        >
+          {eventTitle}
         </h1>
-        <p className="text-sm" style={{ color: "var(--memory-color-ink-muted, #64748b)" }}>
-          Share memories from <strong>{eventTitle}</strong>
-          {subtitle?.trim() ? ` · ${subtitle.trim()}` : hostName.trim() ? ` hosted by ${hostName}` : ""}
+        {hostLine ? (
+          <p
+            className="mt-2 font-[family-name:var(--font-cormorant)] text-[1.05rem] italic leading-snug"
+            style={{ color: MUTED, fontFamily: BODY }}
+          >
+            {hostLine}
+          </p>
+        ) : null}
+        <p
+          className="mx-auto mt-3 max-w-[22rem] font-[family-name:var(--font-cormorant)] text-[clamp(1.05rem,2.6vw,1.2rem)] leading-relaxed"
+          style={{ color: INK, fontFamily: BODY }}
+        >
+          Photographs from the celebration gather here. Add yours with the care of the invitation itself.
         </p>
       </header>
 
-      {!windowOpen && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
-          Uploads are not open at this time. Please check back later.
-        </div>
-      )}
-
-      {(successCount > 0 || videoSuccess > 0) && (
-        <div
-          className="rounded-xl border p-4 flex items-start gap-3"
-          style={{
-            borderColor: "color-mix(in srgb, var(--memory-color-accent, #0B8A83) 35%, transparent)",
-            background: "color-mix(in srgb, var(--memory-color-accent-soft, #d9f3f1) 55%, white)",
-          }}
+      {!windowOpen ? (
+        <p
+          className="mx-auto mt-5 max-w-xl rounded-[1.35rem] px-6 py-4 text-center text-[1.05rem]"
+          style={{ color: INK, fontFamily: BODY, background: SURFACE, boxShadow: GOLD_HAIRLINE }}
         >
-          <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" style={{ color: "var(--memory-color-accent, #0B8A83)" }} />
-          <div className="text-sm">
-            <p className="font-medium">
-              {successCount + videoSuccess}{" "}
-              {successCount + videoSuccess === 1 ? "memory" : "memories"} received!
+          Photo uploads are closed for this celebration.
+        </p>
+      ) : null}
+
+      {successCount > 0 || videoSuccess > 0 ? (
+        <div
+          className="mx-auto mt-5 flex max-w-xl items-start gap-3 rounded-[1.35rem] px-5 py-4"
+          style={{ background: SURFACE, boxShadow: GOLD_HAIRLINE, color: INK, fontFamily: BODY }}
+        >
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" style={{ color: ACCENT }} />
+          <div className="text-[1.05rem] leading-relaxed">
+            <p style={{ fontFamily: DISPLAY }} className="text-[0.78rem] uppercase tracking-[0.16em]">
+              {successCount + videoSuccess} {successCount + videoSuccess === 1 ? "memory" : "memories"} received
             </p>
-            <p className="mt-1 opacity-90">
+            <p className="mt-1">
               {approvalRequired
-                ? "Your memory may appear after organizer approval."
+                ? "It appears in the album once the hosts approve it."
                 : "It will show in the album shortly."}
             </p>
             {memoriesUrl ? (
-              <a href={memoriesUrl} className="inline-block mt-2 underline font-medium">
-                View Event Memories album
+              <a href={memoriesUrl} className="mt-2 inline-block underline underline-offset-4" style={{ color: ACCENT }}>
+                View the album
               </a>
             ) : null}
           </div>
         </div>
-      )}
+      ) : null}
 
       <div
-        className="space-y-4 rounded-2xl border p-5 shadow-sm"
+        className="mx-auto mt-5 max-w-xl space-y-5 rounded-[1.35rem] px-6 py-8"
         style={{
-          background: "color-mix(in srgb, var(--memory-color-surface, #fff) 92%, white)",
-          borderColor: "var(--memory-color-border, #e5e7eb)",
-          borderRadius: "var(--memory-radius, 18px)",
+          background: "color-mix(in srgb, var(--memory-color-surface, #FFFDFA) 80%, white)",
+          boxShadow: GOLD_HAIRLINE,
         }}
       >
-        <div className="sticky top-0 z-10 space-y-1 py-1" style={{ background: "inherit" }}>
-          <Label>Your name {allowAnonymousUploads ? "(optional)" : "*"}</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Guest name" className="min-h-11" />
+        <div>
+          <FieldLabel htmlFor="memory-guest-name">
+            Your name {allowAnonymousUploads ? "(optional)" : ""}
+          </FieldLabel>
+          <ThemeInput
+            id="memory-guest-name"
+            value={name}
+            onChange={setName}
+            placeholder="So the couple know who sent this"
+            autoComplete="name"
+            maxLength={80}
+          />
         </div>
 
-        <div className="space-y-1">
-          <Label>Caption (optional)</Label>
-          <Input
+        <div>
+          <FieldLabel htmlFor="memory-caption">Caption (optional)</FieldLabel>
+          <ThemeInput
+            id="memory-caption"
             value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="A moment from the celebration..."
-            className="min-h-11"
+            onChange={setCaption}
+            placeholder="A line for the couple, if you wish"
+            maxLength={180}
           />
         </div>
 
         {!hasConsent ? (
-          <div className="flex items-start gap-3 rounded-xl border p-3" style={{ borderColor: "var(--memory-color-border, #e5e7eb)" }}>
+          <label
+            htmlFor="consent"
+            className="flex cursor-pointer items-start gap-3 rounded-[1.15rem] px-4 py-3"
+            style={{ boxShadow: GOLD_HAIRLINE }}
+          >
             <input
               id="consent"
               type="checkbox"
               checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-              className="mt-1 h-5 w-5 rounded"
+              onChange={(event) => setConsent(event.target.checked)}
+              className="mt-1 h-4 w-4 shrink-0 rounded-sm"
+              style={{ accentColor: ACCENT }}
             />
-            <Label htmlFor="consent" className="text-xs leading-relaxed cursor-pointer" style={{ color: "var(--memory-color-ink-muted, #475569)" }}>
-              I consent to sharing this media for this event only. I understand uploads may be moderated before appearing publicly.
-            </Label>
-          </div>
+            <span className="text-[1.02rem] leading-relaxed" style={{ color: INK, fontFamily: BODY }}>
+              I consent to sharing this media for this event only. I understand uploads may be moderated before
+              appearing publicly.
+            </span>
+          </label>
         ) : (
-          <p className="text-xs" style={{ color: "var(--memory-color-ink-muted, #64748b)" }}>
-            Consent saved for this event — you won’t be asked again on this device.
+          <p className="text-center text-[0.98rem] leading-relaxed" style={{ color: MUTED, fontFamily: BODY }}>
+            Consent saved for this event. You will not be asked again on this device.
           </p>
         )}
 
         <div ref={errorAnchorRef} />
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? (
+          <p className="text-center text-[0.98rem]" style={{ color: "#9F1239", fontFamily: BODY }}>
+            {error}
+          </p>
+        ) : null}
 
-        {/* Photos */}
         <div
-          onDragOver={(e) => {
-            e.preventDefault();
+          onDragOver={(event) => {
+            event.preventDefault();
             setDragOver(true);
           }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
+          onDrop={(event) => {
+            event.preventDefault();
             setDragOver(false);
-            if (e.dataTransfer.files?.length) addPhotoFiles(e.dataTransfer.files);
+            if (event.dataTransfer.files?.length) addPhotoFiles(event.dataTransfer.files);
           }}
-          className={cn(
-            "rounded-xl border-2 border-dashed p-8 text-center transition-colors",
-            !windowOpen && "opacity-50 pointer-events-none"
-          )}
+          className={cn("rounded-[1.2rem] px-4 py-8 text-center transition-colors", !windowOpen && "pointer-events-none opacity-50")}
           style={{
-            borderColor: dragOver ? "var(--memory-color-accent, #0B8A83)" : "var(--memory-color-border, #e5e7eb)",
+            boxShadow: dragOver
+              ? "inset 0 0 0 1.5px var(--memory-color-accent, #C7A35A)"
+              : GOLD_HAIRLINE,
             background: dragOver
-              ? "color-mix(in srgb, var(--memory-color-accent-soft, #d9f3f1) 40%, transparent)"
-              : "transparent",
+              ? "color-mix(in srgb, var(--memory-color-accent, #C7A35A) 12%, white)"
+              : "color-mix(in srgb, var(--memory-color-surface, #FFFDFA) 70%, white)",
           }}
         >
-          <ImagePlus className="h-9 w-9 mx-auto mb-2 opacity-50" />
-          <p className="text-sm mb-1 font-medium">Add photos</p>
-          <p className="text-xs mb-4" style={{ color: "var(--memory-color-ink-muted, #94a3b8)" }}>
-            {photos.filter((p) => p.status !== "error").length}/{maxPhotosPerGuest} slots · any size or
-            format · we optimize automatically
+          <ImagePlus className="mx-auto mb-2 h-8 w-8" style={{ color: ACCENT }} strokeWidth={1.5} />
+          <p className="text-[1.7rem] leading-none" style={{ color: ACCENT, fontFamily: SCRIPT }}>
+            Add photos
           </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <Button
+          <p className="mx-auto mt-2 max-w-xs text-[1.02rem] leading-relaxed" style={{ color: INK, fontFamily: BODY }}>
+            {photos.filter((photo) => photo.status !== "error").length} of {maxPhotosPerGuest} photos. Any format
+            your phone can take. We prepare them for the album.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <button
               type="button"
-              className="gap-2 min-h-12 px-5 touch-manipulation"
-              style={{ background: "var(--memory-color-accent, #0B8A83)", color: "var(--memory-color-on-accent, #fff)" }}
-              disabled={!windowOpen || photoSlotsLeft <= 0 || (!consentOk && !hasConsent)}
+              disabled={!pickerReady}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-[0.72rem] uppercase tracking-[0.16em] disabled:opacity-60"
+              style={goldButton}
               onClick={() => photoInputRef.current?.click()}
             >
-              <Upload className="h-4 w-4" /> Add photos
-            </Button>
-            <Button
+              <Upload className="h-4 w-4" />
+              Add photos
+            </button>
+            <button
               type="button"
-              variant="outline"
-              className="gap-2 min-h-12 touch-manipulation"
-              disabled={!windowOpen || photoSlotsLeft <= 0 || (!consentOk && !hasConsent)}
+              disabled={!pickerReady}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-[0.72rem] uppercase tracking-[0.16em] disabled:opacity-60"
+              style={outlineButton}
               onClick={() => cameraInputRef.current?.click()}
             >
-              <Camera className="h-4 w-4" /> Camera
-            </Button>
+              <Camera className="h-4 w-4" />
+              Camera
+            </button>
           </div>
         </div>
 
@@ -521,21 +669,21 @@ export function GuestMemoryUpload({
           type="file"
           accept={IMAGE_ACCEPT}
           multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files?.length) addPhotoFiles(e.target.files);
-            e.target.value = "";
+          className="sr-only"
+          onChange={(event) => {
+            if (event.target.files?.length) addPhotoFiles(event.target.files);
+            event.target.value = "";
           }}
         />
         <input
           ref={cameraInputRef}
           type="file"
-          accept="image/*"
+          accept={ALBUM_CAMERA_ACCEPT}
           capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files?.length) addPhotoFiles(e.target.files);
-            e.target.value = "";
+          className="sr-only"
+          onChange={(event) => {
+            if (event.target.files?.length) addPhotoFiles(event.target.files);
+            event.target.value = "";
           }}
         />
 
@@ -543,41 +691,41 @@ export function GuestMemoryUpload({
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-2">
               {photos.map((item) => (
-                <div key={item.id} className="relative aspect-[4/5] rounded-xl overflow-hidden bg-slate-100">
+                <div
+                  key={item.id}
+                  className="relative aspect-[4/5] overflow-hidden rounded-[0.9rem]"
+                  style={{ background: "color-mix(in srgb, var(--memory-color-accent, #C7A35A) 14%, white)", boxShadow: GOLD_HAIRLINE }}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.previewUrl} alt="" className="w-full h-full object-cover" />
+                  <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
                   {item.status === "preparing" ? (
-                    <div className="absolute inset-0 bg-black/45 flex flex-col items-center justify-center text-white text-xs gap-1">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/45 text-xs text-white">
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Optimizing…
+                      Preparing
                     </div>
                   ) : null}
                   {item.status === "uploading" ? (
-                    <div className="absolute inset-0 bg-black/45 flex flex-col items-center justify-center text-white text-xs gap-1">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/45 text-xs text-white">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       {item.progress}%
                     </div>
                   ) : null}
                   {item.status === "done" ? (
-                    <div className="absolute inset-0 bg-emerald-900/35 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--memory-color-accent,#C7A35A)_35%,transparent)]">
                       <CheckCircle2 className="h-6 w-6 text-white" />
                     </div>
                   ) : null}
                   {item.status === "error" ? (
-                    <div className="absolute inset-0 bg-rose-900/50 flex flex-col items-center justify-center gap-1 p-1">
-                      <button
-                        type="button"
-                        className="text-white text-[10px] underline"
-                        onClick={() => void uploadOne(item)}
-                      >
-                        <RotateCcw className="h-4 w-4 mx-auto mb-0.5" /> Retry
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-rose-900/50 p-1">
+                      <button type="button" className="text-[10px] text-white underline" onClick={() => void uploadOne(item)}>
+                        <RotateCcw className="mx-auto mb-0.5 h-4 w-4" /> Retry
                       </button>
                     </div>
                   ) : null}
                   {item.status !== "uploading" ? (
                     <button
                       type="button"
-                      className="absolute top-1 right-1 rounded-full bg-black/55 p-1 text-white"
+                      className="absolute right-1 top-1 rounded-full bg-black/55 p-1 text-white"
                       onClick={() => removePhoto(item.id)}
                       aria-label="Remove"
                     >
@@ -587,113 +735,84 @@ export function GuestMemoryUpload({
                 </div>
               ))}
             </div>
-            {photos.some((p) => p.status === "error") ? (
-              <p className="text-xs text-rose-600">
-                {photos.find((p) => p.status === "error")?.error}
+            {photos.some((photo) => photo.status === "error") ? (
+              <p className="text-center text-[0.95rem]" style={{ color: "#9F1239", fontFamily: BODY }}>
+                {photos.find((photo) => photo.status === "error")?.error}
               </p>
             ) : null}
-            <Button
+            <button
               type="button"
-              className="w-full min-h-12 gap-2"
-              style={{ background: "var(--memory-color-accent, #0B8A83)", color: "var(--memory-color-on-accent, #fff)" }}
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[0.72rem] uppercase tracking-[0.16em] disabled:opacity-60"
+              style={goldButton}
               disabled={uploading || preparing || !readyToShare}
               onClick={() => void uploadAllReady()}
             >
               {uploading || preparing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {preparing ? "Optimizing photos…" : uploading ? "Uploading…" : "Share selected photos"}
-            </Button>
+              {preparing ? "Preparing photos" : uploading ? "Adding to the album" : "Share selected photos"}
+            </button>
           </div>
         ) : null}
 
         {MEMORY_VAULT_VIDEO_UPLOADS_ENABLED ? (
-        <div className="pt-2 border-t" style={{ borderColor: "var(--memory-color-border, #e5e7eb)" }}>
-          <p className="text-xs mb-2" style={{ color: "var(--memory-color-ink-muted, #94a3b8)" }}>
-            Up to {maxVideosPerGuest} · {maxVideoSizeMb}MB each
-          </p>
-          <MultiVideoUploader
-            category="GUESTBOOK"
-            guestToken={token}
-            guestName={name || undefined}
-            guestKey={guestKey}
-            disabled={videoDisabled}
-            allowCameraCapture
-            maxFiles={maxVideosPerGuest}
-            concurrency={1}
-            buttonLabel="Add videos"
-            hint={
-              videoDisabled
-                ? checkGate() ?? "Complete consent to add videos."
-                : "Select or drag & drop videos — progress shows per file."
-            }
-            onUploaded={onVideoUploaded}
-            onError={(msg) =>
-              showError(
-                /type|format|unsupported/i.test(msg)
-                  ? "That video format couldn’t be processed. Try exporting as MP4 and upload again."
-                  : msg
-              )
-            }
-          />
-        </div>
+          <div className="pt-2" style={{ boxShadow: "inset 0 1px 0 color-mix(in srgb, var(--memory-color-accent, #C7A35A) 35%, transparent)" }}>
+            <p className="mb-2 pt-4 text-center text-[0.68rem] uppercase tracking-[0.18em]" style={{ color: MUTED, fontFamily: DISPLAY }}>
+              Films · up to {maxVideosPerGuest} · {maxVideoSizeMb}MB each
+            </p>
+            <MultiVideoUploader
+              category="GUESTBOOK"
+              guestToken={token}
+              guestName={name || undefined}
+              guestKey={guestKey}
+              disabled={videoDisabled}
+              allowCameraCapture
+              maxFiles={maxVideosPerGuest}
+              concurrency={1}
+              buttonLabel="Add videos"
+              hint={
+                videoDisabled
+                  ? checkGate() ?? "Complete consent to add videos."
+                  : "Select or drop films. Progress shows for each one."
+              }
+              onUploaded={onVideoUploaded}
+              onError={(msg) =>
+                showError(
+                  /type|format|unsupported/i.test(msg)
+                    ? "That video format could not be processed. Try exporting as MP4 and upload again."
+                    : msg
+                )
+              }
+            />
+          </div>
         ) : null}
       </div>
 
-      {(memoriesUrl || invitationUrl) && (
+      {memoriesUrl || invitationUrl ? (
         <nav
           aria-label="Memory upload navigation"
-          className="flex flex-col gap-3 sm:flex-row sm:items-stretch sm:justify-center pb-8 pt-1"
+          className="mx-auto mt-6 flex max-w-xl flex-col gap-3 pb-2"
         >
           {memoriesUrl ? (
             <a
               href={memoriesUrl}
-              className={cn(
-                "group inline-flex min-h-[52px] flex-1 items-center justify-center gap-2.5 rounded-2xl px-5",
-                "text-[15px] font-semibold tracking-wide transition-[transform,box-shadow,filter] duration-200",
-                "hover:brightness-[1.03] active:scale-[0.985]",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              )}
-              style={{
-                background:
-                  "linear-gradient(165deg, var(--memory-color-accent, #0B8A83) 0%, color-mix(in srgb, var(--memory-color-accent, #0B8A83) 78%, #064842) 100%)",
-                color: "var(--memory-color-on-accent, #fff)",
-                boxShadow:
-                  "0 14px 32px -16px color-mix(in srgb, var(--memory-color-accent, #0B8A83) 70%, transparent), inset 0 1px 0 rgba(255,255,255,0.22)",
-                outlineColor: "var(--memory-color-accent, #0B8A83)",
-              }}
+              className="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2.5 rounded-full px-5 font-[family-name:var(--font-cinzel)] text-[clamp(0.72rem,1.5vw,0.84rem)] font-medium uppercase tracking-[0.16em] transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{ ...goldButton, outlineColor: ACCENT }}
             >
-              <Images className="h-5 w-5 shrink-0 opacity-95" aria-hidden />
-              <span>View approved memories</span>
+              <Images className="h-4 w-4 shrink-0" aria-hidden />
+              View the album
             </a>
           ) : null}
           {invitationUrl ? (
             <a
               href={invitationUrl}
-              className={cn(
-                "group inline-flex min-h-[52px] flex-1 items-center justify-center gap-2.5 rounded-2xl border px-5",
-                "text-[15px] font-semibold tracking-wide transition-[transform,background-color,border-color] duration-200",
-                "hover:brightness-[1.02] active:scale-[0.985]",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              )}
-              style={{
-                borderColor:
-                  "color-mix(in srgb, var(--memory-color-accent, #0B8A83) 45%, var(--memory-color-border, #d6d3d1))",
-                background:
-                  "color-mix(in srgb, var(--memory-color-surface, #fff) 88%, white)",
-                color: "var(--memory-color-accent, #0B8A83)",
-                boxShadow: "0 10px 28px -20px rgba(15, 23, 42, 0.45)",
-                outlineColor: "var(--memory-color-accent, #0B8A83)",
-              }}
+              className="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2.5 rounded-full px-5 font-[family-name:var(--font-cinzel)] text-[clamp(0.72rem,1.5vw,0.84rem)] font-medium uppercase tracking-[0.16em] transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{ ...outlineButton, outlineColor: ACCENT }}
             >
-              <ArrowLeft
-                className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5"
-                aria-hidden
-              />
-              <span>Back to invitation</span>
+              <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+              Back to invitation
             </a>
           ) : null}
         </nav>
-      )}
-      </div>
+      ) : null}
     </div>
   );
 }

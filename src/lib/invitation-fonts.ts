@@ -36,7 +36,7 @@ export const cormorant = Cormorant_Garamond({
   display: "swap",
 });
 
-/** Editorial serif — heading/eyebrow role for the "Editorial Vow" font preset. */
+/** Editorial serif. Heading/eyebrow role for the "Editorial Vow" font preset. */
 export const marcellus = Marcellus({
   subsets: ["latin"],
   weight: "400",
@@ -44,21 +44,21 @@ export const marcellus = Marcellus({
   display: "swap",
 });
 
-/** Refined serif body copy — pairs with Marcellus in the "Editorial Vow" preset. */
+/** Refined serif body copy. Pairs with Marcellus in the "Editorial Vow" preset. */
 export const ebGaramond = EB_Garamond({
   subsets: ["latin"],
   variable: "--font-eb-garamond",
   display: "swap",
 });
 
-/** Modern geometric sans — heading/body role for the "Modern Muse" font preset. */
+/** Modern geometric sans. Heading/body role for the "Modern Muse" font preset. */
 export const jost = Jost({
   subsets: ["latin"],
   variable: "--font-jost",
   display: "swap",
 });
 
-/** Flowing modern script — pairs with Jost in the "Modern Muse" preset. */
+/** Flowing modern script. Pairs with Jost in the "Modern Muse" preset. */
 export const alexBrush = Alex_Brush({
   subsets: ["latin"],
   weight: "400",
@@ -66,7 +66,7 @@ export const alexBrush = Alex_Brush({
   display: "swap",
 });
 
-/** Delicate script — pairs with Marcellus/EB Garamond in the "Editorial Vow" preset. */
+/** Delicate script. Pairs with Marcellus/EB Garamond in the "Editorial Vow" preset. */
 export const parisienne = Parisienne({
   subsets: ["latin"],
   weight: "400",

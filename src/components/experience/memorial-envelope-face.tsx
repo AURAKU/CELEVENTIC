@@ -14,12 +14,12 @@ import {
 import { invitationFontVars } from "@/lib/invitation-fonts";
 
 const EASE_SILK = [0.22, 1, 0.36, 1] as const;
-/** Unhurried seal peel — slow motion, memorial pacing. */
+/** Unhurried seal peel. Slow motion, memorial pacing. */
 const EASE_SEAL_LIFT = [0.33, 0.08, 0.18, 1] as const;
 const EASE_SEAL_SOAR = [0.22, 0.7, 0.2, 1] as const;
 
 /**
- * Photoreal memorial envelope — full art plate + interactive portrait wax seal.
+ * Photoreal memorial envelope. Full art plate + interactive portrait wax seal.
  * Tap lifts the seal (doves handled by parent), then the envelope peels open
  * into the invitation underneath.
  */
@@ -142,7 +142,7 @@ export function MemorialEnvelopeFace({
           />
         </div>
 
-        {/* Soft glow behind the seal — invites the tap */}
+        {/* Soft glow behind the seal. Invites the tap */}
         <AnimatePresence>
           {!lifting && !reduceMotion ? (
             <motion.div

@@ -29,7 +29,7 @@ const FAQ = [
     ),
   },
   {
-    q: "I received an invitation — what do I do?",
+    q: "I received an invitation. What do I do?",
     a: (
       <>
         Start with{" "}
@@ -57,7 +57,7 @@ const FAQ = [
     a: "Yes. Open your event workspace to invite collaborators, assign tasks, and chat.",
   },
   {
-    q: "Something is not working — where do I go?",
+    q: "Something is not working. Where do I go?",
     a: (
       <>
         Search guides above, use <span className="font-medium text-slate-700">Customer Service</span>, or

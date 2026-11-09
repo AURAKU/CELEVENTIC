@@ -146,7 +146,7 @@ export function InvitationRsvpPanel({
     };
     const note = guestMessage?.trim();
     const payload = guestId
-      ? { guestId, response, ...contact, ...(note ? { message: note } : {}) }
+      ? { guestId, invitationId, response, ...contact, ...(note ? { message: note } : {}) }
       : { invitationId, guestName: guestName.trim(), response, ...contact, ...(note ? { message: note } : {}) };
 
     if (!guestId && !guestName.trim()) {

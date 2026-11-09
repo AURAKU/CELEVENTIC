@@ -115,7 +115,7 @@ export class ThankYouService {
     return prisma.thankYouPage.create({
       data: {
         eventId,
-        title: event ? `Thank You — ${event.title}` : "Thank You",
+        title: event ? `Thank You: ${event.title}` : "Thank You",
         message:
           "Thank you for celebrating with us. Your presence made our day unforgettable.",
         eyebrow: "WITH HEARTFELT GRATITUDE",

@@ -41,6 +41,14 @@ yarn-error.log*
 # env files
 .env
 .env*.local
+.env.production
+credentials.json
+**/secrets/**
+*.key
+*.p12
+*.pfx
+logs/
+*.log
 
 # vercel
 .vercel
@@ -52,6 +60,8 @@ next-env.d.ts
 # prisma
 prisma/*.db
 prisma/*.db-journal
+prisma/*.db-wal
+prisma/*.db-shm
 
 # local user uploads (folder structure kept via .gitkeep)
 public/uploads/**
@@ -77,12 +87,20 @@ public/uploads/**
 /test-results/
 /playwright-report/
 /e2e/screenshots/
+/e2e/fixtures/
 
 # Alternate Next build output dirs (NEXT_DIST_DIR — see next.config.ts).
 # Used to verify a production build without clobbering the .next that a running
 # dev server or `next start` is serving from.
 .next-ship-check/
 .next-verify/
+.next-live-ready/
+
+# Root SQLite copies (Prisma file:./dev.db also resolves under prisma/)
+/dev.db
+/dev.db-journal
+/dev.db-wal
+/dev.db-shm
 
 # Build fingerprint written by scripts/write-build-meta.mjs (repo root copy)
 .celeventic-build-meta.json

@@ -67,11 +67,12 @@ test("scroll lock: forceUnlock clears nested locks and body touch-action", () =>
     },
   };
 
-  (globalThis as { document?: typeof doc }).document = doc;
+  (globalThis as unknown as { document?: typeof doc }).document = doc;
 
   lockRevealScroll();
   lockRevealScroll();
-  assert.equal(doc.body.style.touchAction, "none");
+  assert.equal(doc.body.style.overflow, "hidden");
+  assert.notEqual(doc.body.style.touchAction, "none");
   assert.ok(getInvitationScrollLockCountForTests() >= 1);
 
   forceUnlockInvitationViewport("test");
@@ -81,12 +82,17 @@ test("scroll lock: forceUnlock clears nested locks and body touch-action", () =>
   assert.equal(doc.documentElement.classList.contains("reveal-scroll-locked"), false);
 
   forceUnlockInvitationViewport("cleanup");
-  delete (globalThis as { document?: typeof doc }).document;
+  delete (globalThis as unknown as { document?: typeof doc }).document;
 });
 
 test("Tap to Begin with showReveal → reveal phase (not portal)", () => {
   assert.equal(resolvePhaseAfterTapBegin(true), "reveal");
   assert.equal(resolvePhaseAfterTapBegin(false), "portal");
+});
+
+test("Tap to Begin on blush-gate goes to the scrollable board", () => {
+  assert.equal(resolvePhaseAfterTapBegin(true, "blush-gate"), "portal");
+  assert.equal(resolvePhaseAfterTapBegin(true, "wax-seal-black"), "reveal");
 });
 
 test("production memorial config resolves showReveal + wax-seal-black", () => {

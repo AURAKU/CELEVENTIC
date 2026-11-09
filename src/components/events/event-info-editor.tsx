@@ -23,6 +23,7 @@ export type EventInfoDraftFields = {
   expectedGuests: string;
   startDate: string;
   endDate: string;
+  rsvpDeadline: string;
 };
 
 const EMPTY: EventInfoDraftFields = {
@@ -37,6 +38,7 @@ const EMPTY: EventInfoDraftFields = {
   expectedGuests: "",
   startDate: "",
   endDate: "",
+  rsvpDeadline: "",
 };
 
 function toLocalInput(iso: string | null | undefined): string {
@@ -61,6 +63,7 @@ interface EventInfoEditorProps {
     expectedGuests?: number | null;
     startDate: string;
     endDate?: string | null;
+    rsvpDeadline?: string | null;
   };
 }
 
@@ -91,6 +94,7 @@ export function EventInfoEditor({ eventId, initial }: EventInfoEditorProps) {
     expectedGuests: initial.expectedGuests != null ? String(initial.expectedGuests) : "",
     startDate: toLocalInput(initial.startDate),
     endDate: toLocalInput(initial.endDate),
+    rsvpDeadline: toLocalInput(initial.rsvpDeadline),
   }), [initial]);
 
   const draft = useFormDraft<EventInfoDraftFields>({
@@ -155,6 +159,7 @@ export function EventInfoEditor({ eventId, initial }: EventInfoEditorProps) {
         expectedGuests: form.expectedGuests ? parseInt(form.expectedGuests, 10) : undefined,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
+        rsvpDeadline: form.rsvpDeadline ? new Date(form.rsvpDeadline).toISOString() : null,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -221,6 +226,11 @@ export function EventInfoEditor({ eventId, initial }: EventInfoEditorProps) {
         <div className="space-y-1.5">
           <Label>End</Label>
           <Input type="datetime-local" value={form.endDate} onChange={(e) => update("endDate", e.target.value)} />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label>RSVP deadline</Label>
+          <Input type="datetime-local" value={form.rsvpDeadline} onChange={(e) => update("rsvpDeadline", e.target.value)} />
+          <p className="text-xs text-slate-500">Leave empty to keep RSVP open. After this time guests cannot change their response.</p>
         </div>
         <div className="space-y-1.5">
           <Label>Venue</Label>

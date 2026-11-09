@@ -56,7 +56,7 @@ export function roleCanModerateWishes(role?: string | null): boolean {
   return role === "SUPER_ADMIN" || role === "ADMIN" || role === "ORGANIZER";
 }
 
-/** Edit affordance — moderators, or authors with self-manage + token. */
+/** Edit affordance. Moderators, or authors with self-manage + token. */
 export function viewerCanEditWish(
   canModerate: boolean,
   options?: { ownedToken?: string | null; allowAuthorSelfManage?: boolean }

@@ -35,27 +35,21 @@ const KOJO_RSVP = [
 
 function withKojoRsvp(design: InvitationDesignConfig): InvitationDesignConfig {
   const experience = { ...(design.experience ?? {}) };
-  const wedding = {
-    ...((experience.aureliaWedding as Record<string, unknown> | undefined) ?? {}),
-  };
-  const faqs = Array.isArray(wedding.faqs)
-    ? (wedding.faqs as Array<Record<string, unknown>>).map((item) =>
-        item.id === "contact"
-          ? { ...item, answer: "Call or WhatsApp Esther, Vivian, or Ella." }
-          : item
-      )
-    : wedding.faqs;
-  const ceremonies = Array.isArray(wedding.ceremonies)
-    ? (wedding.ceremonies as Array<Record<string, unknown>>).map((item) =>
-        item.id === "white"
-          ? {
-              ...item,
-              timeLabel: "3:00 PM",
-              startAtIso: "2026-11-14T15:00:00+00:00",
-            }
-          : item
-      )
-    : wedding.ceremonies;
+  const wedding = { ...(experience.aureliaWedding ?? {}) };
+  const faqs = wedding.faqs?.map((item) =>
+    item.id === "contact"
+      ? { ...item, answer: "Call or WhatsApp Esther, Vivian, or Ella." }
+      : item
+  );
+  const ceremonies = wedding.ceremonies?.map((item) =>
+    item.id === "white"
+      ? {
+          ...item,
+          timeLabel: "3:00 PM",
+          startAtIso: "2026-11-14T15:00:00+00:00",
+        }
+      : item
+  );
   experience.aureliaWedding = {
     ...wedding,
     rsvpContactsEyebrow: "Call or WhatsApp",
@@ -155,7 +149,11 @@ async function main() {
         },
       });
 
-  const currentLayout = layoutOf(event.invitations?.[0]?.designConfig);
+  const existingInvitation = await prisma.invitation.findFirst({
+    where: { eventId: event.id },
+    orderBy: { createdAt: "asc" },
+  });
+  const currentLayout = layoutOf(existingInvitation?.designConfig);
   const adoptLiveDesign = currentLayout !== LAYOUT_SLUG;
   const designConfig = adoptLiveDesign ? seraphineDesign() : null;
   const gallery = (designConfig?.media ?? []).filter((item) => item.role === "reference");
@@ -199,17 +197,16 @@ async function main() {
     data: { title: "Celeventic Live Album", hostName: "Celeventic", isPublic: false },
   });
 
-  const existing = await prisma.invitation.findFirst({
-    where: { eventId: event.id },
-    orderBy: { createdAt: "asc" },
-  });
+  const existing = existingInvitation;
 
   const invitation =
     existing && !adoptLiveDesign
       ? await prisma.invitation.update({
           where: { id: existing.id },
           data: {
-            designConfig: withKojoRsvp(existing.designConfig as InvitationDesignConfig) as unknown as Prisma.InputJsonValue,
+            designConfig: withKojoRsvp(
+              existing.designConfig as unknown as InvitationDesignConfig
+            ) as unknown as Prisma.InputJsonValue,
           },
         })
       : existing

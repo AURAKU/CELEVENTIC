@@ -54,7 +54,7 @@ const CODE_ALLOCATION_ATTEMPTS = 40;
 
 export interface IssuedPass {
   pass: GuestPass;
-  /** Only ever produced in memory — never persisted. */
+  /** Only ever produced in memory, never persisted. */
   token: string;
 }
 
@@ -107,7 +107,7 @@ async function allocateCode(tx: Tx, eventId: string, length: number): Promise<st
  *
  * Counts *every* pass ever issued, including revoked and reissued ones, not
  * just the live one. Those rows are deliberately kept so an old printout is
- * recognised and refused at the gate rather than reading as an unknown QR —
+ * recognised and refused at the gate rather than reading as an unknown QR.
  * which means the version number they occupy is taken, and reusing it would
  * collide on `(invitationId, tokenVersion)`. Reached whenever a pass is
  * revoked and later reinstated: a lost phone replaced, or an archived
@@ -179,7 +179,7 @@ export async function ensureInvitationPass(
       orderBy: { tokenVersion: "desc" },
     });
 
-    // Issuing a pass always enables the post-admission companion — otherwise
+    // Issuing a pass always enables the post-admission companion. Otherwise
     // guests land on a 404 after the gate scans them in.
     await tx.invitation.updateMany({
       where: { id: invitationId, postAdmissionEnabled: false },
@@ -472,7 +472,7 @@ export interface AdmitInput {
   scannerDeviceId?: string | null;
   gate?: string | null;
   deviceInfo?: string | null;
-  /** Preview only — evaluate and log, but never write an admission. */
+  /** Preview only. Evaluate and log, but never write an admission. */
   dryRun?: boolean;
   /**
    * The operator has answered "how many are arriving now". Suppresses the
@@ -574,7 +574,7 @@ export async function admitByPass(input: AdmitInput): Promise<AdmitResult> {
   });
 
   if (!applied) {
-    // Lost the race — re-read and report the true state rather than guessing.
+    // Lost the race. Re-read and report the true state rather than guessing.
     const fresh = await prisma.guestPass.findUnique({ where: { id: pass.id } });
     const freshContext = fresh ? await loadPassContext(fresh, settings) : context;
     const replay = fresh

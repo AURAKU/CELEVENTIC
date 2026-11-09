@@ -4,7 +4,7 @@ import { parseRange } from "../../../../lib/uploads/range";
 
 const SIZE = 1000;
 
-describe("parseRange — byte-range parsing for local-disk video/media serving", () => {
+describe("parseRange. Byte-range parsing for local-disk video/media serving", () => {
   it("returns null when there is no Range header (full-file 200 response)", () => {
     assert.equal(parseRange(null, SIZE), null);
   });
@@ -17,7 +17,7 @@ describe("parseRange — byte-range parsing for local-disk video/media serving",
     assert.deepEqual(parseRange("bytes=500-", SIZE), { start: 500, end: 999 });
   });
 
-  it("handles a suffix range ('bytes=-500' — last 500 bytes)", () => {
+  it("handles a suffix range ('bytes=-500'. Last 500 bytes)", () => {
     assert.deepEqual(parseRange("bytes=-500", SIZE), { start: 500, end: 999 });
   });
 
@@ -38,7 +38,7 @@ describe("parseRange — byte-range parsing for local-disk video/media serving",
     assert.equal(parseRange("bytes=500-100", SIZE), null);
   });
 
-  it("rejects multi-range requests (falls back to a full 200 response — rarely sent by video players)", () => {
+  it("rejects multi-range requests (falls back to a full 200 response. Rarely sent by video players)", () => {
     assert.equal(parseRange("bytes=0-99,200-299", SIZE), null);
   });
 });

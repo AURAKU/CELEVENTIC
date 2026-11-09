@@ -1,4 +1,4 @@
-/** Original thin gold line-art for fashion guest notes — not Lucide, not emoji. */
+/** Original thin gold line-art for fashion guest notes, not Lucide, not emoji. */
 
 import Image from "next/image";
 

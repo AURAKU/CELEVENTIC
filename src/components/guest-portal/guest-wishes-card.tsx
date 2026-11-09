@@ -53,7 +53,7 @@ interface GuestWishesCardProps {
   tone?: "celebration" | "memorial";
   /** Hide card title/lead when the parent page already provides them. */
   hideHeader?: boolean;
-  /** Invitation layout slug — fashion flagship gets a couture salon skin. */
+  /** Invitation layout slug. Fashion flagship gets a couture salon skin. */
   layout?: string | null;
   /** House colors so Vale gold (not Femmora pink) can tint the salon hairline. */
   colors?: {
@@ -65,7 +65,7 @@ interface GuestWishesCardProps {
   } | null;
   /** Fashion house nameplate for the wishes kicker (DNA `houseName`, not a shared salon label). */
   houseName?: string | null;
-  /** Fashion house crest (DNA `logoUrl`). Missing/empty uses a neutral salon mark — never Femmora’s. */
+  /** Fashion house crest (DNA `logoUrl`). Missing/empty uses a neutral salon mark, never Femmora’s. */
   houseLogoUrl?: string | null;
   /** Optional house DNA. Used when name/logo are not passed as separate props. */
   fashionHouse?: {
@@ -199,7 +199,7 @@ export function GuestWishesCard({
           loading: "Opening the house…",
           empty:
             fashionHouse?.wishesEmpty?.trim() ||
-            "The atelier is still quiet — leave the first compliment.",
+            "The atelier is still quiet. Leave the first compliment.",
           success: "Your note is now visible to every guest.",
           nounOne: "note",
           nounMany: "notes",
@@ -938,7 +938,7 @@ export function GuestWishesCard({
         </div>
 
         {aurelia ? null : memoryVaultEnabled && !suppressMemoryHint ? (
-          <p className={aw.hint}>Find the Album — share a photograph from the day</p>
+          <p className={aw.hint}>Find the Album. Share a photograph from the day</p>
         ) : null}
       </div>
     );
@@ -1166,7 +1166,7 @@ export function GuestWishesCard({
           </div>
 
           {memoryVaultEnabled && !suppressMemoryHint && (
-            <p className={fw.hint}>Find the Album — share the house from your lens</p>
+            <p className={fw.hint}>Find the Album. Share the house from your lens</p>
           )}
         </div>
       </div>

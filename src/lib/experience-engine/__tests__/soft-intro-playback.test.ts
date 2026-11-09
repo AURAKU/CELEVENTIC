@@ -123,7 +123,7 @@ describe("live Open Invitation gesture playback", () => {
     assert.equal(video.playCalls, 1);
   });
 
-  it("keeps the gate path available when play() is rejected — no muted fallback", async () => {
+  it("keeps the gate path available when play() is rejected. No muted fallback", async () => {
     const video = mockVideo(async () => {
       throw Object.assign(new Error("NotAllowedError"), { name: "NotAllowedError" });
     });
@@ -255,7 +255,7 @@ describe("mobile Safari playsInline preparation", () => {
 });
 
 describe("intro session storage scoped to invitation link", () => {
-  it("scopes session memory per invitation — never a global introSeen key", () => {
+  it("scopes session memory per invitation, never a global introSeen key", () => {
     assert.match(softIntroSessionKey("invite-link-abc"), /^celeventic:soft-intro:session:v1:invite-link-abc$/);
     assert.notEqual(softIntroSessionKey("inv_a"), softIntroSessionKey("inv_b"));
   });

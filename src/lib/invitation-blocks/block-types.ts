@@ -123,7 +123,7 @@ export function getBlockTypesForEventType(eventType: string): InvitationBlockTyp
       ...CORPORATE_BLOCK_TYPES,
     ];
   }
-  // WEDDING / ENGAGEMENT / celebration defaults — never expose funeral or corporate blocks
+  // WEDDING / ENGAGEMENT / celebration defaults, never expose funeral or corporate blocks
   if (
     normalized === "WEDDING" ||
     normalized === "ENGAGEMENT" ||
@@ -195,9 +195,9 @@ export interface BlockRenderContext {
   invitationId?: string;
   guestId?: string;
   guestName?: string;
-  /** Heads this invitation admits — RSVP companion slots. */
+  /** Heads this invitation admits. RSVP companion slots. */
   partyAllowance?: number;
-  /** Existing RSVP — keep thank-you across refresh. */
+  /** Existing RSVP. Keep thank-you across refresh. */
   initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
   initialAttendingCount?: number | null;
   qrDataUrl?: string;
@@ -205,9 +205,9 @@ export interface BlockRenderContext {
   memoryVaultEnabled?: boolean;
   eventId?: string;
   seatLookupUrl?: string;
-  /** Invitation layout slug — enables template-native block chrome */
+  /** Invitation layout slug. Enables template-native block chrome */
   layout?: string;
-  /** Host experience thank-you body — preferred over block body when set */
+  /** Host experience thank-you body. Preferred over block body when set */
   thankYouMessage?: string | null;
   /** Host experience thank-you body font (FontId) */
   thankYouFontFamily?: string | null;

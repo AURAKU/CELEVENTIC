@@ -7,7 +7,7 @@ import { parsePaginationFromUrl } from "@/lib/pagination";
 const createSchema = z.object({
   templateSlug: z.string().min(1),
   packageSlug: z.string().min(1),
-  /** Optional — server resolves from catalogue category when omitted or mismatched. */
+  /** Optional. Server resolves from catalogue category when omitted or mismatched. */
   eventType: z.string().optional(),
   /** Studio 2.0: theme chosen in the live preview */
   themeId: z.string().optional(),

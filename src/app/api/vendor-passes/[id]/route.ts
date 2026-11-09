@@ -123,7 +123,7 @@ export async function DELETE(
         ...(needsArchive
           ? {
               code: "HAS_ADMISSION_HISTORY",
-              hint: "Archive instead — QR becomes invalid and entry history is kept.",
+              hint: "Archive instead. QR becomes invalid and entry history is kept.",
             }
           : {}),
       },

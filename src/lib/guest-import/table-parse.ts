@@ -176,7 +176,7 @@ const HEADER_HINTS = [
 /**
  * Decide whether row 0 is a header.
  *
- * A header is short, non-numeric, has no duplicate blanks, and — decisively —
+ * A header is short, non-numeric, has no duplicate blanks, and. Decisively.
  * either matches known field words or looks nothing like the rows beneath it.
  * Getting this wrong costs a real guest, so ambiguity resolves to "no header"
  * and the mapping UI asks the organiser.
@@ -233,8 +233,8 @@ const LINE_FRAGMENT_SEPARATOR = /\s*(?:[,;|\t]|:|\s[-–—]\s)\s*/;
 const LINE_EMAIL = /^[^\s@,;<>()[\]\\]+@[^\s@,;<>()[\]\\]+\.[A-Za-z]{2,}$/;
 
 /**
- * A dialable number and nothing else. The digit floor keeps "+1" and "(8)" —
- * which mean "plus one guest" and "a party of eight" — out of the phone column.
+ * A dialable number and nothing else. The digit floor keeps "+1" and "(8)".
+ * which mean "plus one guest" and "a party of eight". Out of the phone column.
  */
 function looksLikePhoneFragment(value: string): boolean {
   if (!/^[+\s()\-.\d]+$/.test(value)) return false;
@@ -246,7 +246,7 @@ function looksLikePhoneFragment(value: string): boolean {
  * Pull an email and a phone out of one pasted line, if it carries them.
  *
  * Returns `null` when the line is only a name, so the overwhelmingly common
- * paste — bare names — keeps its single-column shape. Fragments that are
+ * paste. Bare names. Keeps its single-column shape. Fragments that are
  * neither an email nor a phone are rejoined as the name, which is what keeps
  * "Mensah, Kofi" one guest called "Mensah, Kofi" rather than a surname and an
  * orphaned first name.

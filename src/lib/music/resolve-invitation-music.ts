@@ -18,13 +18,13 @@ export interface ResolveInvitationMusicInput {
   orderSelection?: unknown;
   legacyMusicUrl?: string | null;
   design?: InvitationDesignConfig | null;
-  /** Catalog SKU slug — Wave 1 templates reuse layouts and need per-SKU audio */
+  /** Catalog SKU slug. Wave 1 templates reuse layouts and need per-SKU audio */
   catalogSlug?: string | null;
   /** Event-level default from Invitation Music Library */
   eventDefaultTrack?: LibraryMusicTrackRef | null;
   /** Catalog template default from Invitation Music Library */
   templateDefaultTrack?: LibraryMusicTrackRef | null;
-  /** When false, skip DNA defaults (rare — e.g. explicit opt-out) */
+  /** When false, skip DNA defaults (rare. E.g. explicit opt-out) */
   allowDnaFallback?: boolean;
 }
 
@@ -59,7 +59,7 @@ export function libraryTrackToSelection(track: LibraryMusicTrackRef): MusicSelec
     source: "library",
     libraryTrackId: track.id,
     url: track.url,
-    title: track.artist ? `${track.title} — ${track.artist}` : track.title,
+    title: track.artist ? `${track.title}: ${track.artist}` : track.title,
     startSec: 0,
     endSec: duration,
     originalDurationSec: duration,

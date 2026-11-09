@@ -82,8 +82,8 @@ describe("parseProgrammeOutline", () => {
   });
 
   it("keeps a time range together instead of reading it as the title", () => {
-    const items = parseProgrammeOutline("1:00 PM – 2:00 PM Guest arrival");
-    assert.equal(items[0]!.time, "1:00 PM – 2:00 PM");
+    const items = parseProgrammeOutline("1:00 PM to 2:00 PM Guest arrival");
+    assert.equal(items[0]!.time, "1:00 PM to 2:00 PM");
     assert.equal(items[0]!.title, "Guest arrival");
   });
 
@@ -95,9 +95,9 @@ describe("parseProgrammeOutline", () => {
   });
 
   it("round-trips through programmeItemsToOutline", () => {
-    const outline = "1:30 PM — Arrival\n2:00 PM — Ceremony — Vows";
+    const outline = "1:30 PM | Arrival\n2:00 PM | Ceremony | Vows";
     const again = programmeItemsToOutline(parseProgrammeOutline(outline));
-    assert.match(again, /1:30 PM — Arrival/);
-    assert.match(again, /2:00 PM — Ceremony — Vows/);
+    assert.match(again, /1:30 PM \| Arrival/);
+    assert.match(again, /2:00 PM \| Ceremony \| Vows/);
   });
 });

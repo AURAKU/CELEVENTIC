@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import Link from "next/link";
 import {
   ArrowLeft,
   Grid3X3,
@@ -354,7 +353,7 @@ export function PublicMemoriesGallery({
     try {
       await video.play();
       if (!preferMuted && video.muted) {
-        // Browser forced mute — keep unmute control obvious.
+        // Browser forced mute. Keep unmute control obvious.
         setMuted(true);
       }
     } catch {
@@ -397,7 +396,7 @@ export function PublicMemoriesGallery({
       >
         <div className="mx-auto flex max-w-3xl items-start gap-2.5">
           {invitationHref ? (
-            <Link
+            <a
               href={invitationHref}
               onClick={() => markInvitationAudioReturn()}
               aria-label="Back to invitation"
@@ -411,7 +410,7 @@ export function PublicMemoriesGallery({
               }}
             >
               <ArrowLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-            </Link>
+            </a>
           ) : null}
         <div
           className="min-w-0 flex-1 rounded-[1.35rem] px-5 pb-4 pt-5 text-center"
@@ -590,7 +589,7 @@ export function PublicMemoriesGallery({
                   onClick={() => onMediaDoubleTap(item)}
                   aria-label={video ? "Open video" : "Open photo"}
                 >
-                  {/* Grid: lightweight poster/thumb only — never mount <video> here. */}
+                  {/* Grid: lightweight poster/thumb only, never mount <video> here. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={gridSrc}

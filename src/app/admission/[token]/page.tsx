@@ -27,6 +27,7 @@ import {
   resolveGuestFacingEventInstant,
   resolveGuestFacingVenue,
 } from "@/lib/invitation/guest-event-details";
+import { entryPassNoteFromDesign } from "@/lib/invitation/wedding-board";
 
 /**
  * Share-card preview defaults to the QR center logo (falls back to the
@@ -167,7 +168,9 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
           eventDate={formatDate(guestFacingStartDate)}
           venueName={guestFacingVenue}
           status={pass.status}
-          instructions={settings.passInstructions}
+          instructions={
+            entryPassNoteFromDesign(admissionDesign) || settings.passInstructions
+          }
           allowDownload={settings.allowPassDownload}
           allowPrint={settings.allowPassPrint}
           preset="minimal"

@@ -354,7 +354,7 @@ function InvitationStudioContent() {
                   <Input
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Wedding Invitation - Main"
+                    placeholder="Wedding Invitation, Main"
                     required
                     disabled={!eventId}
                   />

@@ -35,8 +35,11 @@ module.exports = {
       cwd: __dirname,
       script: "npm",
       args: "run start",
+      instances: 1,
+      exec_mode: "fork",
       env: {
         NODE_ENV: "production",
+        CELEVENTIC_WEB_INSTANCES: "1",
       },
       autorestart: true,
       max_restarts: 10,

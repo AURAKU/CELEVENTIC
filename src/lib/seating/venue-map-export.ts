@@ -17,7 +17,7 @@ export type VenueMapExportInput = {
   subtitle?: string | null;
   /** Optional guest tip lines (navigation directions). */
   directions?: string[];
-  /** Scale multiplier for PNG sharpness (1–3). */
+  /** Scale multiplier for PNG sharpness (1 to 3). */
   scale?: number;
 };
 

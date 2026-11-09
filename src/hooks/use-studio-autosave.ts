@@ -14,7 +14,7 @@ interface UseStudioAutosaveOptions<T> {
 }
 
 /**
- * Debounced auto-save for studio drafts. Does not navigate — save-only.
+ * Debounced auto-save for studio drafts. Does not navigate. Save-only.
  */
 export function useStudioAutosave<T>({
   value,

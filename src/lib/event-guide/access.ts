@@ -3,7 +3,7 @@
  *
  * Pure decision function so token isolation and the draft-is-never-public rule
  * are unit-testable without a database. Every rejection carries a reason that
- * maps to polished guest copy — a guest never sees a bare 404 or a 500.
+ * maps to polished guest copy. A guest never sees a bare 404 or a 500.
  */
 
 import type { GuideUnavailableReason } from "./types";
@@ -80,7 +80,7 @@ export function evaluateGuideAvailability(input: {
 
 /**
  * Revoked/unpublished must be distinguishable from "never existed" by the
- * service worker so it knows to purge its cache — but only for tokens that were
+ * service worker so it knows to purge its cache, but only for tokens that were
  * genuinely retired, never for a random guessed string.
  */
 export function shouldPurgeOfflineCache(reason: GuideUnavailableReason): boolean {

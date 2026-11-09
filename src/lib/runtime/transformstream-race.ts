@@ -8,12 +8,12 @@
  *   Triggered in production by Next.js App Router RSC HTML streaming
  *   (next/dist/server/stream-utils/node-web-streams-helper.js) when a client/proxy
  *   aborts mid-response. Digest (e.g. 3225108298) is Next's string-hash of
- *   message+stack — not an app route id.
+ *   message+stack, not an app route id.
  *
  * Fixed upstream in Node.js >= 24.15.0 / >= 25.8.1 (nodejs/node#62040).
  * Reproduced locally: Node 20.20.2 and 22.22.1 hit 200/200; Node 24.15.0 hits 0/200.
  *
- * This module never swallows the error — it only classifies, probes, and logs context.
+ * This module never swallows the error. It only classifies, probes, and logs context.
  */
 
 export const TRANSFORMSTREAM_RACE_MESSAGE =
@@ -157,7 +157,7 @@ export function buildTransformStreamRaceDiagnostics(input: {
 
 /**
  * Probe whether the current Node runtime still has the cancel/write race.
- * Safe to run in CI — never patches globals.
+ * Safe to run in CI, never patches globals.
  */
 export async function probeTransformStreamCancelWriteRace(iterations = 40): Promise<{
   hits: number;

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { currencyService } from "@/services/commerce/currency.service";
 import { INVITATION_PACKAGES } from "@/lib/invitation-mvp/packages";
+import { ensureFlyerEventPackages } from "@/services/packages/unlock-paid-package.service";
 
 const ALL_EVENTS = [
   "WEDDING",
@@ -43,6 +44,7 @@ const EVENT_TYPES_BY_SLUG: Record<string, string[]> = {
   signature: PREMIUM_EVENTS,
   prestige: PREMIUM_EVENTS,
   bespoke: ALL_EVENTS,
+  customisation: ALL_EVENTS,
 };
 
 const PACKAGES = INVITATION_PACKAGES.map((pkg) => ({
@@ -62,27 +64,32 @@ const PACKAGES = INVITATION_PACKAGES.map((pkg) => ({
 }));
 
 const ADDONS = [
-  { slug: "express-delivery", name: "Express Delivery", description: "Priority 24-hour production", category: "delivery", priceGhs: 149, deliveryImpactDays: -1, eligibility: ["celebration", "signature", "prestige", "bespoke"] },
-  { slug: "custom-music", name: "Custom Music", description: "Background music on invitation", category: "media", priceGhs: 99, deliveryImpactDays: 0, eligibility: ["celebration", "signature", "prestige", "bespoke"] },
-  { slug: "voice-intro", name: "Voice Intro", description: "Recorded voice welcome message", category: "media", priceGhs: 179, deliveryImpactDays: 1, eligibility: ["signature", "prestige", "bespoke"] },
-  { slug: "custom-monogram", name: "Custom Monogram", description: "Personalized couple/event monogram", category: "design", priceGhs: 129, deliveryImpactDays: 1, eligibility: ["signature", "prestige", "bespoke"] },
-  { slug: "custom-illustration", name: "Custom Illustration", description: "Bespoke illustrated elements", category: "design", priceGhs: 299, deliveryImpactDays: 2, eligibility: ["prestige", "bespoke"] },
+  { slug: "express-delivery", name: "Express Delivery", description: "Priority 24-hour production", category: "delivery", priceGhs: 149, deliveryImpactDays: -1, eligibility: ["celebration", "signature", "prestige", "bespoke", "customisation"] },
+  { slug: "custom-music", name: "Custom Music", description: "Background music on invitation", category: "media", priceGhs: 99, deliveryImpactDays: 0, eligibility: ["celebration", "signature", "prestige", "bespoke", "customisation"] },
+  { slug: "voice-intro", name: "Voice Intro", description: "Recorded voice welcome message", category: "media", priceGhs: 179, deliveryImpactDays: 1, eligibility: ["signature", "prestige", "bespoke", "customisation"] },
+  { slug: "custom-monogram", name: "Custom Monogram", description: "Personalized couple/event monogram", category: "design", priceGhs: 129, deliveryImpactDays: 1, eligibility: ["signature", "prestige", "bespoke", "customisation"] },
+  { slug: "custom-illustration", name: "Custom Illustration", description: "Bespoke illustrated elements", category: "design", priceGhs: 299, deliveryImpactDays: 2, eligibility: ["prestige", "bespoke", "customisation"] },
   { slug: "extra-revision", name: "Extra Revision", description: "One additional revision round", category: "production", priceGhs: 79, deliveryImpactDays: 1, eligibility: ["starter", "celebration", "signature", "prestige"] },
-  { slug: "duplicate-invitation", name: "Duplicate Invitation", description: "Second event variant (e.g. reception)", category: "production", priceGhs: 199, deliveryImpactDays: 2, eligibility: ["celebration", "signature", "prestige", "bespoke"] },
-  { slug: "multi-language", name: "Multi-language Version", description: "Additional language copy", category: "content", priceGhs: 149, deliveryImpactDays: 1, eligibility: ["signature", "prestige", "bespoke"] },
-  { slug: "custom-domain", name: "Custom Domain", description: "yourname.celeventic.com or custom URL", category: "hosting", priceGhs: 399, deliveryImpactDays: 2, eligibility: ["prestige", "bespoke"] },
-  { slug: "qr-checkin", name: "QR Guest Check-in", description: "QR admission scanning for guests", category: "access", priceGhs: 89, deliveryImpactDays: 0, eligibility: ["celebration", "signature", "prestige", "bespoke"] },
-  { slug: "whatsapp-bulk", name: "Bulk WhatsApp Invitation", description: "Mass WhatsApp distribution", category: "messaging", priceGhs: 129, deliveryImpactDays: 0, eligibility: ["celebration", "signature", "prestige", "bespoke"] },
-  { slug: "seating-plan", name: "Seating Plan", description: "Digital seating arrangement module", category: "planning", priceGhs: 199, deliveryImpactDays: 2, eligibility: ["signature", "prestige", "bespoke"] },
-  { slug: "gift-registry", name: "Gift Registry", description: "Linked gift registry section", category: "content", priceGhs: 99, deliveryImpactDays: 1, eligibility: ["celebration", "signature", "prestige", "bespoke"] },
-  { slug: "memory-vault", name: "Memory Vault", description: "Lifetime photo archive for event", category: "archive", priceGhs: 249, deliveryImpactDays: 0, eligibility: ["signature", "prestige", "bespoke"] },
-  { slug: "video-intro", name: "Video Intro", description: "Hosted video welcome section", category: "media", priceGhs: 199, deliveryImpactDays: 1, eligibility: ["celebration", "signature", "prestige", "bespoke"] },
-  { slug: "extra-gallery", name: "Extra Gallery Storage", description: "50 additional gallery images", category: "media", priceGhs: 59, deliveryImpactDays: 0, eligibility: ["celebration", "signature", "prestige", "bespoke"] },
-  { slug: "ai-content-assist", name: "Celeventic Content Intelligence", description: "AGI Engine-crafted invitation structure and copy", category: "experience", priceGhs: 79, deliveryImpactDays: 0, eligibility: ["starter", "celebration", "signature", "prestige", "bespoke"] },
+  { slug: "duplicate-invitation", name: "Duplicate Invitation", description: "Second event variant (e.g. reception)", category: "production", priceGhs: 199, deliveryImpactDays: 2, eligibility: ["celebration", "signature", "prestige", "bespoke", "customisation"] },
+  { slug: "multi-language", name: "Multi-language Version", description: "Additional language copy", category: "content", priceGhs: 149, deliveryImpactDays: 1, eligibility: ["signature", "prestige", "bespoke", "customisation"] },
+  { slug: "custom-domain", name: "Custom Domain", description: "yourname.celeventic.com or custom URL", category: "hosting", priceGhs: 399, deliveryImpactDays: 2, eligibility: ["prestige", "bespoke", "customisation"] },
+  { slug: "qr-checkin", name: "QR Guest Check-in", description: "QR admission scanning for guests", category: "access", priceGhs: 89, deliveryImpactDays: 0, eligibility: ["celebration", "signature", "prestige", "bespoke", "customisation"] },
+  { slug: "whatsapp-bulk", name: "Bulk WhatsApp Invitation", description: "Mass WhatsApp distribution", category: "messaging", priceGhs: 129, deliveryImpactDays: 0, eligibility: ["celebration", "signature", "prestige", "bespoke", "customisation"] },
+  { slug: "seating-plan", name: "Seating Plan", description: "Digital seating arrangement module", category: "planning", priceGhs: 199, deliveryImpactDays: 2, eligibility: ["signature", "prestige", "bespoke", "customisation"] },
+  { slug: "gift-registry", name: "Gift Registry", description: "Linked gift registry section", category: "content", priceGhs: 99, deliveryImpactDays: 1, eligibility: ["celebration", "signature", "prestige", "bespoke", "customisation"] },
+  { slug: "memory-vault", name: "Memory Vault", description: "Lifetime photo archive for event", category: "archive", priceGhs: 249, deliveryImpactDays: 0, eligibility: ["signature", "prestige", "bespoke", "customisation"] },
+  { slug: "video-intro", name: "Video Intro", description: "Hosted video welcome section", category: "media", priceGhs: 199, deliveryImpactDays: 1, eligibility: ["celebration", "signature", "prestige", "bespoke", "customisation"] },
+  { slug: "extra-gallery", name: "Extra Gallery Storage", description: "50 additional gallery images", category: "media", priceGhs: 59, deliveryImpactDays: 0, eligibility: ["celebration", "signature", "prestige", "bespoke", "customisation"] },
+  { slug: "ai-content-assist", name: "Celeventic Content Intelligence", description: "AGI Engine-crafted invitation structure and copy", category: "experience", priceGhs: 79, deliveryImpactDays: 0, eligibility: ["starter", "celebration", "signature", "prestige", "bespoke", "customisation"] },
 ];
 
 export async function seedCommerceEngine() {
   await currencyService.ensureCurrenciesSeeded();
+  try {
+    await ensureFlyerEventPackages();
+  } catch (error) {
+    console.warn("[commerce-seed] flyer event packages", error);
+  }
 
   for (let i = 0; i < PACKAGES.length; i++) {
     const p = PACKAGES[i];

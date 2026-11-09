@@ -3,7 +3,7 @@ import { mockPlannerProvider } from "@/services/ai/providers/mock-planner.provid
 import type { AIPlannerRequest, AIPlannerResponse } from "@/types";
 
 /**
- * OpenAI provider — falls back to mock when API key is not configured.
+ * OpenAI provider. Falls back to mock when API key is not configured.
  * Replace with real OpenAI chat completion in production.
  */
 export class OpenAiPlannerProvider implements AiPlannerProvider {

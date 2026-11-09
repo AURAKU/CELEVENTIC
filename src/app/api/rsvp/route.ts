@@ -9,9 +9,16 @@ import {
   registerOpenHostRsvp,
 } from "@/services/guest-search/rsvp-self-registration.service";
 import { DuplicateGuestError } from "@/lib/guest-search/duplicate-guests";
+import { RsvpClosedError } from "@/lib/rsvp/deadline";
+import { guestMatchesInvitationProof, rsvpGuestProofValid } from "@/lib/rsvp/guest-proof";
+import { rateLimit } from "@/lib/rate-limit";
+import { requestClientIp } from "@/lib/http/client-ip";
 
 const rsvpByGuestSchema = z.object({
   guestId: z.string(),
+  invitationId: z.string().optional(),
+  uniqueLink: z.string().optional(),
+  qrToken: z.string().optional(),
   response: z.enum(["ACCEPTED", "DECLINED", "MAYBE"]),
   email: z.string().email().optional(),
   phone: z.string().optional(),
@@ -101,6 +108,14 @@ async function applyAttendingCount(input: {
 }
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(`rsvp:${requestClientIp(req)}`, 20, 60);
+  if (!limited.success) {
+    return NextResponse.json(
+      { error: "Too many RSVP attempts. Please wait a moment and try again." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
 
@@ -287,12 +302,35 @@ export async function POST(req: Request) {
     }
 
     const data = rsvpByGuestSchema.parse(body);
+    if (!rsvpGuestProofValid(data)) {
+      return NextResponse.json(
+        { error: "Invitation link required", code: "RSVP_PROOF_REQUIRED" },
+        { status: 400 }
+      );
+    }
     const guestRow = await prisma.guest.findUnique({
       where: { id: data.guestId },
-      select: { id: true, invitationId: true },
+      select: {
+        id: true,
+        invitationId: true,
+        qrToken: true,
+        invitation: { select: { uniqueLink: true } },
+      },
     });
     if (!guestRow) {
       return NextResponse.json({ error: "Guest not found" }, { status: 404 });
+    }
+    if (
+      !guestMatchesInvitationProof(
+        {
+          invitationId: guestRow.invitationId,
+          qrToken: guestRow.qrToken,
+          invitationUniqueLink: guestRow.invitation?.uniqueLink ?? null,
+        },
+        data
+      )
+    ) {
+      return NextResponse.json({ error: "Invitation not found", code: "RSVP_PROOF_MISMATCH" }, { status: 403 });
     }
 
     if (data.email || data.phone) {
@@ -351,6 +389,9 @@ export async function POST(req: Request) {
     }
     if (error instanceof Error && error.message === "NOT_OPEN_HOST") {
       return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
+    }
+    if (error instanceof RsvpClosedError) {
+      return NextResponse.json({ error: error.message, code: "RSVP_CLOSED" }, { status: 403 });
     }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "RSVP failed" },

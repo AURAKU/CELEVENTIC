@@ -1,4 +1,4 @@
-/** Calendar helpers for funeral programme items — ICS + Google Calendar */
+/** Calendar helpers for funeral programme items. ICS + Google Calendar */
 
 export type CalendarEventInput = {
   title: string;

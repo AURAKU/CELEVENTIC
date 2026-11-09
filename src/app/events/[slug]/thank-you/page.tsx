@@ -102,7 +102,7 @@ export default function EventThankYouBySlugPage() {
     : undefined;
 
   if (phase === "intro") {
-    // Brand intro only — event logos often arrive empty or off-allowlist and
+    // Brand intro only. Event logos often arrive empty or off-allowlist and
     // previously crashed next/image into the route error card.
     return (
       <CeleventicIntroExperience

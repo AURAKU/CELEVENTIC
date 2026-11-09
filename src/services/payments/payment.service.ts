@@ -8,6 +8,10 @@ import {
   isProviderEnabled,
 } from "@/lib/integrations/integration-runtime";
 import { resolvePaymentProvider } from "@/lib/integrations/platform-provider-settings";
+import { sharedSecretWebhookAllowed } from "@/lib/payments/webhook-guard";
+import { parsePaystackWebhook, paystackHmacValid } from "@/lib/payments/paystack";
+import { nextPaymentStatus } from "@/lib/payments/payment-status";
+import { paymentMatchesTicketOrder } from "@/services/tickets/ticket-ledger.service";
 import type { PaymentInitRequest, PaymentInitResponse } from "@/types";
 import type { PaymentProvider, PaymentPurpose, PaymentStatus, Prisma } from "@prisma/client";
 
@@ -20,7 +24,7 @@ export class PaymentProviderError extends Error {
 
 /**
  * Full provider-side truth about a transaction. Used where a status flag is not
- * enough — a gift may only be credited once the amount, currency and reference
+ * enough. A gift may only be credited once the amount, currency and reference
  * the provider reports match what we asked for.
  */
 export interface ProviderVerification {
@@ -114,8 +118,7 @@ class PaystackAdapter implements PaymentProviderAdapter {
     const secret = await this.secretKey();
     if (!secret || !signature) return false;
     const raw = typeof payload === "string" ? payload : JSON.stringify(payload);
-    const hash = crypto.createHmac("sha512", secret).update(raw).digest("hex");
-    return hash === signature;
+    return paystackHmacValid(raw, signature, secret);
   }
 
   async verifyTransaction(reference: string): Promise<{ status: PaymentStatus; amount: number }> {
@@ -131,26 +134,18 @@ class PaystackAdapter implements PaymentProviderAdapter {
   }
 
   async parseWebhook(payload: unknown): Promise<{ reference: string | null; successful: boolean } | null> {
-    const body = payload as { event?: string; data?: { reference?: string } };
-    if (!body?.data) return null;
-
-    // Only charge outcomes decide a payment's status. Dispute, refund and
-    // transfer events carry their reference in a different shape, and treating
-    // them as a charge here used to risk flipping a settled payment to FAILED.
-    if (body.event !== "charge.success" && body.event !== "charge.failed") {
-      return null;
-    }
-
+    const parsed = parsePaystackWebhook(payload);
+    if (parsed.kind !== "charge") return null;
     return {
-      reference: body.data.reference ?? null,
-      successful: body.event === "charge.success",
+      reference: parsed.reference,
+      successful: parsed.successful,
     };
   }
 
   /**
    * Authoritative verification straight from Paystack. Minor units are returned
    * untouched so callers can compare them byte-for-byte against what they
-   * charged — never round-trip money through a float here.
+   * charged, never round-trip money through a float here.
    */
   async verifyTransactionDetailed(reference: string): Promise<ProviderVerification> {
     const secretKey = requireSecret("Paystack", await this.secretKey());
@@ -396,12 +391,7 @@ class HubtelAdapter implements PaymentProviderAdapter {
     if (!creds.enabled) return false;
     const webhookSecret =
       typeof creds.config.webhookSecret === "string" ? creds.config.webhookSecret : null;
-    if (!webhookSecret) {
-      // No shared secret configured — accept only when provider enabled (Hubtel POS callbacks often unsigned)
-      return true;
-    }
-    if (!signature) return false;
-    return signature === webhookSecret;
+    return sharedSecretWebhookAllowed(creds.enabled, webhookSecret, signature);
   }
 
   async verifyTransaction(reference: string): Promise<{ status: PaymentStatus; amount: number }> {
@@ -584,13 +574,21 @@ export class PaymentService {
   async updatePaymentStatus(reference: string, status: PaymentStatus) {
     const existing = await prisma.payment.findUnique({ where: { reference } });
     if (!existing) throw new Error("Payment not found");
-    if (existing.status === "SUCCESSFUL" && status === "SUCCESSFUL") {
+    const next = nextPaymentStatus(existing.status, status);
+    if (next === existing.status) {
       return existing;
     }
 
-    const payment = await prisma.payment.update({
+    const claimed = await prisma.payment.updateMany({
+      where: { reference, status: existing.status },
+      data: { status: next },
+    });
+    if (claimed.count === 0) {
+      return prisma.payment.findUniqueOrThrow({ where: { reference } });
+    }
+
+    const payment = await prisma.payment.findUniqueOrThrow({
       where: { reference },
-      data: { status },
       include: { ticketOrder: true, campaign: true, invitationOrder: true },
     });
 
@@ -598,11 +596,11 @@ export class PaymentService {
       data: {
         paymentId: payment.id,
         action: "STATUS_UPDATE",
-        payload: { status },
+        payload: { status: next, requested: status },
       },
     });
 
-    if (status === "SUCCESSFUL") {
+    if (next === "SUCCESSFUL") {
       await this.onPaymentSuccess({
         id: payment.id,
         purpose: payment.purpose,
@@ -616,9 +614,21 @@ export class PaymentService {
       // Gifts need an explicit terminal state so the guest's pending screen can
       // stop waiting instead of spinning until it times out.
       const { giftPaymentService } = await import("@/services/gifts/gift-payment.service");
-      await giftPaymentService.markFailedFromProvider(payment.reference, status);
+      await giftPaymentService.markFailedFromProvider(payment.reference, next);
     }
 
+    return payment;
+  }
+
+  async confirmReference(reference: string) {
+    const payment = await prisma.payment.findUnique({ where: { reference } });
+    if (!payment) throw new Error("Payment not found");
+    if (payment.status === "SUCCESSFUL") return payment;
+    const adapter = this.adapters[payment.provider];
+    const result = await adapter.verifyTransaction(reference);
+    if (result.status === "SUCCESSFUL") {
+      return this.updatePaymentStatus(reference, "SUCCESSFUL");
+    }
     return payment;
   }
 
@@ -632,8 +642,43 @@ export class PaymentService {
     campaignId: string | null;
   }) {
     if (payment.ticketOrderId) {
+      const order = await prisma.ticketOrder.findUnique({
+        where: { id: payment.ticketOrderId },
+        select: { id: true, totalAmount: true, currency: true },
+      });
+      if (order) {
+        const match = paymentMatchesTicketOrder({
+          orderAmount: order.totalAmount,
+          orderCurrency: order.currency,
+          paymentAmount: payment.amount,
+          paymentCurrency: payment.currency,
+        });
+        if (!match.ok) {
+          console.error("[tickets.payment-mismatch]", payment.ticketOrderId, match.error);
+          return;
+        }
+      }
       const { ticketService } = await import("@/services/tickets/ticket.service");
       await ticketService.confirmPurchase(payment.ticketOrderId);
+    }
+
+    const metaEarly = payment.metadata as Record<string, unknown> | null;
+    if (metaEarly?.kind === "smartcard-subscription") {
+      const cardId = typeof metaEarly.cardId === "string" ? metaEarly.cardId : "";
+      const planId = typeof metaEarly.planId === "string" ? metaEarly.planId : "";
+      const userId = typeof metaEarly.userId === "string" ? metaEarly.userId : "";
+      if (cardId && planId && userId) {
+        const { activateDigitalCardFromPayment } = await import(
+          "@/services/digital-business-card/digital-business-card.service"
+        );
+        await activateDigitalCardFromPayment({
+          userId,
+          cardId,
+          planId,
+          amountGhs: Number(payment.amount),
+        });
+      }
+      return;
     }
 
     if (payment.purpose === "EVENT_GIFT") {
@@ -715,6 +760,10 @@ export class PaymentService {
           templateSlug: order?.templateSlug,
         });
         await invitationOrderService.publishFromPayment(orderId);
+        const { unlockPaidInvitationPackage } = await import(
+          "@/services/packages/unlock-paid-package.service"
+        );
+        await unlockPaidInvitationPackage(orderId);
         if (order?.user?.email) {
           const locale = await languageService.getUserPreference(order.userId);
           await emailTemplateService.sendLocalized("payment_confirmation", order.user.email, locale, {

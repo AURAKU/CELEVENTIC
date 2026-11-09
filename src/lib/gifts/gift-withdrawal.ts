@@ -1,6 +1,6 @@
 /**
  * Pure helpers for event-gift withdrawal policy and payout masking.
- * No provider transfer is claimed here — Paystack Transfers are not wired.
+ * No provider transfer is claimed here. Paystack Transfers are not wired.
  */
 
 export type WithdrawalPayoutMethodId =

@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Compact CTA for landing + /guide — links to the full interactive walkthrough page.
+ * Compact CTA for landing + /guide. Links to the full interactive walkthrough page.
  */
 export function JourneyWalkthroughTeaser({ className }: { className?: string }) {
   return (
@@ -25,7 +25,7 @@ export function JourneyWalkthroughTeaser({ className }: { className?: string }) 
             See How Celeventic Works
           </h2>
           <p className="text-sm text-white/75 leading-relaxed">
-            Invitations, RSVP, QR admission, Event Guide, gifts, vendors, and Memory Vault — explore
+            Invitations, RSVP, QR admission, Event Guide, gifts, vendors, and Memory Vault. Explore
             the full journey in an interactive walkthrough.
           </p>
         </div>

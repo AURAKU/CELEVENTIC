@@ -1,6 +1,6 @@
 import type { InvitationLayoutSlug } from "@/types/invitation-design";
 
-/** Per-template hero / gallery media entrance — each layout feels unique. */
+/** Per-template hero / gallery media entrance. Each layout feels unique. */
 export type MediaEntranceId =
   | "fade-up"
   | "slide-left"

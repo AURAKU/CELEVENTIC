@@ -1,8 +1,10 @@
 /**
  * Per-layout / per-SKU media identity for catalogue live previews.
- * Object & scenery only — no office stock, no random people portraits.
+ * Object & scenery only. No office stock, no random people portraits.
  * Every catalogue slug should resolve to décor that matches its creative concept.
  */
+
+import { getCatalogDemoMediaPack } from "@/lib/invitation/catalog-demo-media";
 
 export interface LayoutMediaPack {
   hero: string;
@@ -23,7 +25,7 @@ const uBg = (id: string) =>
  * Prefer catalogue SKU when present so shared-layout Wave-1 templates stay distinct.
  */
 export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
-  // Ivory banquet table + soft florals — satin bow classic
+  // Ivory banquet table + soft florals. Satin bow classic
   "classic-gold": {
     hero: u("1519225421980-715cb0215aed", 900),
     background: uBg("1519225421980-715cb0215aed"),
@@ -37,7 +39,7 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
     video: "https://assets.mixkit.co/videos/preview/mixkit-golden-bokeh-particles-4552-large.mp4",
   },
 
-  // Onyx stage + gold rings / ring-box — never office or desk stock
+  // Onyx stage + gold rings / ring-box, never office or desk stock
   "luxury-rings": {
     hero: u("1605100804763-247f67b3557e", 900),
     background: uBg("1605100804763-247f67b3557e"),
@@ -398,7 +400,7 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
     video: "https://assets.mixkit.co/videos/preview/mixkit-african-pattern-fabric-texture-43844-large.mp4",
   },
 
-  // Ghanaian funeral browse SKUs — solemn scenery only
+  // Ghanaian funeral browse SKUs. Solemn scenery only
   "black-red-cloth-rite": {
     hero: u("1513836279014-a89f7a76ae86", 900),
     background: uBg("1470229722913-7c0e2dbbafd3"),
@@ -445,7 +447,7 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
     ],
   },
 
-  // Birthday browse Wave — décor only, distinct concepts (no shared hero/video)
+  // Birthday browse Wave. Décor only, distinct concepts (no shared hero/video)
   "pastel-balloon-garden": {
     hero: u("1530103862676-5938cbbfbf6d", 900),
     background: uBg("1464349095431-e9a21285b5f3"),
@@ -540,11 +542,13 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
   },
 };
 
-/** Prefer catalogue SKU pack, then layout pack. */
+/** Prefer catalogue demo stills, then SKU pack, then layout pack. */
 export function getLayoutMediaPack(
   layoutOrCatalogSlug: string,
   catalogSlug?: string | null
 ): LayoutMediaPack | undefined {
+  const demo = getCatalogDemoMediaPack(catalogSlug) ?? getCatalogDemoMediaPack(layoutOrCatalogSlug);
+  if (demo) return demo;
   if (catalogSlug && LAYOUT_MEDIA_IDENTITY[catalogSlug]) {
     return LAYOUT_MEDIA_IDENTITY[catalogSlug];
   }

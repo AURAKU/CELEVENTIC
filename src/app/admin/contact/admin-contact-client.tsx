@@ -11,7 +11,7 @@ import { Phone, Mail, Clock } from "lucide-react";
 export function AdminContactClient() {
   const [phone, setPhone] = useState("020 961 2770");
   const [email, setEmail] = useState("Celeventic@gmail.com");
-  const [hours, setHours] = useState("Mon–Sat, 9am–6pm GMT");
+  const [hours, setHours] = useState("Mon to Sat, 9am to 6pm GMT");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {

@@ -19,7 +19,7 @@ const FALLBACK_DESIGN: InvitationDesignConfig = {
 
 /**
  * Event-wide seating lookup QR destination.
- * Never reveals the guest list — requires personal pass code / invite token.
+ * Never reveals the guest list. Requires personal pass code / invite token.
  */
 export default function EventSeatLookupPage() {
   const params = useParams();

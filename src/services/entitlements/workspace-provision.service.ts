@@ -148,9 +148,22 @@ export class WorkspaceProvisionService {
   }, userRole: import("@prisma/client").UserRole) {
     const blueprint = getBlueprint(input.eventType);
 
+    const orgPlan = !input.packageId
+      ? await prisma.organization
+          .findFirst({
+            where: { users: { some: { id: input.organizerId } } },
+            select: { plan: true },
+          })
+          .then((org) => (org?.plan && org.plan !== "starter" ? org.plan : null))
+      : null;
+
     const [packageId, themeId] = await Promise.all([
-      input.packageId
-        ? prisma.eventPackage.findFirst({ where: { OR: [{ id: input.packageId }, { slug: input.packageId }] } }).then((p) => p?.id)
+      input.packageId || orgPlan
+        ? prisma.eventPackage
+            .findFirst({
+              where: { OR: [{ id: input.packageId ?? "" }, { slug: input.packageId || orgPlan || "" }] },
+            })
+            .then((p) => p?.id)
         : undefined,
       input.themeId
         ? prisma.eventTemplate.findFirst({ where: { OR: [{ id: input.themeId }, { slug: input.themeId }] } }).then((t) => t?.id)

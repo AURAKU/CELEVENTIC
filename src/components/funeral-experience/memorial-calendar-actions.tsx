@@ -22,7 +22,7 @@ export function MemorialCalendarActions({
   if (!items.length) return null;
 
   const events: CalendarEventInput[] = items.map((item) => ({
-    title: `${item.title} — ${deceasedName}`,
+    title: `${item.title}: ${deceasedName}`,
     description: item.description,
     location: item.venue,
     start: combineEventDateAndTime(eventStart, item.startTime),
@@ -47,7 +47,7 @@ export function MemorialCalendarActions({
         onClick={() =>
           downloadIcsFile(
             `funeral-${deceasedName.replace(/\s+/g, "-").toLowerCase()}`,
-            buildIcsCalendar(events, `Funeral — ${deceasedName}`)
+            buildIcsCalendar(events, `Funeral: ${deceasedName}`)
           )
         }
       >

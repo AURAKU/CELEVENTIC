@@ -11,49 +11,108 @@ export type PricingPlan = {
   guests: number;
   invitations: number;
   features: string[];
+  /** Honest Free-plan locks. Shown with lock icons to pull upgrades. */
+  restrictions?: string[];
+  /** One-line value contrast vs Free (paid plans). */
+  highlight?: string;
+  footnote?: string;
+  cta?: string;
   popular: boolean;
   slug: string;
+  isTrial?: boolean;
 };
 
-/** Always-visible marketing details when DB features are missing or non-displayable. */
+type PlanMarketing = {
+  desc: string;
+  features: string[];
+  restrictions?: string[];
+  highlight?: string;
+  footnote?: string;
+  cta?: string;
+  isTrial?: boolean;
+};
+
+/**
+ * Conversion copy for the public pricing grid.
+ * Free is a 5-person tasting with hard locks; paid plans sell the real event.
+ */
+const PLAN_MARKETING: {
+  starter: PlanMarketing;
+  growth: PlanMarketing;
+  premium: PlanMarketing;
+  enterprise: PlanMarketing;
+} = {
+  starter: {
+    isTrial: true,
+    desc: "Taste Celeventic with 5 people. Real celebrations upgrade.",
+    highlight: "Capped at 5. On purpose",
+    features: [
+      "5 guest seats only",
+      "5 invitation sends only",
+      "Basic templates",
+      "RSVP for those 5 guests",
+      "QR admission for those 5",
+    ],
+    restrictions: [
+      "Ticketing or paid entry",
+      "WhatsApp, SMS, or bulk campaigns",
+      "Seating charts or Memory Vault",
+      "Premium cinematic templates",
+      "Analytics, vendors, or collaborators",
+      "Removing the Celeventic mark from invites",
+    ],
+    footnote: "Free is a tasting menu. The wedding, funeral, or launch runs on a paid plan.",
+    cta: "Start the 5-guest trial",
+  },
+  growth: {
+    desc: "The plan hosts choose once the guest list is real.",
+    highlight: "20× more guests than Free",
+    features: [
+      "Everything Free locks. Unlocked",
+      "100 guests and 100 invitation sends",
+      "Ticketing and ticket QR",
+      "WhatsApp, SMS, and email credits",
+      "Custom themes and seating",
+      "Event communications",
+    ],
+    footnote: "From a 5-person trial to a full celebration. In one upgrade.",
+    cta: "Unlock Growth",
+  },
+  premium: {
+    desc: "The full event operating system for the day itself.",
+    highlight: "Memory Vault, marketplace, and 300 guests",
+    features: [
+      "Everything in Growth",
+      "300 guests and 300 invitation sends",
+      "Seating, Memory Vault, and offline QR",
+      "Vendor marketplace access",
+      "Digital business card (QR + NFC)",
+      "Analytics and collaboration",
+    ],
+    footnote: "Run invitations, door, vendors, and memories in one place.",
+    cta: "Get Premium",
+  },
+  enterprise: {
+    desc: "White-glove scale for organisations that never cap the room.",
+    highlight: "5,000 guests · dedicated success",
+    features: [
+      "Everything in Premium",
+      "Unlimited-scale guest capacity",
+      "Priority support and a success manager",
+      "Advanced messaging credits",
+      "White-label ready workflow",
+      "Team digital business cards",
+    ],
+    footnote: "For groups, hotels, and houses that run Celeventic as infrastructure.",
+    cta: "Talk to us",
+  },
+};
+
 const MARKETING_FEATURES_BY_SLUG: Record<string, string[]> = {
-  starter: [
-    "Digital invitations",
-    "Up to 5 invitations",
-    "RSVP tracking",
-    "QR admission",
-    "Guest list (up to 5)",
-    "Basic templates",
-    "Upgrade anytime for more capacity",
-  ],
-  growth: [
-    "Everything in Free",
-    "Ticketing & ticket QR",
-    "Bulk SMS & WhatsApp credits",
-    "Custom themes",
-    "Digital business card trial",
-    "Guest list (up to 100)",
-    "Event communications",
-  ],
-  premium: [
-    "Everything in Growth",
-    "Full event operating system",
-    "Seating & Memory Vault",
-    "Vendor marketplace access",
-    "Offline QR scanning",
-    "Digital business card (QR + NFC)",
-    "Guest list (up to 300)",
-    "Analytics & collaboration",
-  ],
-  enterprise: [
-    "Everything in Premium",
-    "Unlimited-scale guest capacity",
-    "Priority support",
-    "Advanced messaging credits",
-    "White-label ready workflow",
-    "Dedicated success manager",
-    "Team digital business cards",
-  ],
+  starter: PLAN_MARKETING.starter.features,
+  growth: PLAN_MARKETING.growth.features,
+  premium: PLAN_MARKETING.premium.features,
+  enterprise: PLAN_MARKETING.enterprise.features,
 };
 
 const FALLBACK_PLANS: PricingPlan[] = [
@@ -61,21 +120,29 @@ const FALLBACK_PLANS: PricingPlan[] = [
     name: "Free",
     price: "Free",
     priceGhs: 0,
-    desc: "Try Celeventic with a small gathering — upgrade when you need more",
+    desc: PLAN_MARKETING.starter.desc,
     guests: 5,
     invitations: 5,
-    features: MARKETING_FEATURES_BY_SLUG.starter,
+    features: PLAN_MARKETING.starter.features,
+    restrictions: PLAN_MARKETING.starter.restrictions,
+    highlight: PLAN_MARKETING.starter.highlight,
+    footnote: PLAN_MARKETING.starter.footnote,
+    cta: PLAN_MARKETING.starter.cta,
     popular: false,
     slug: "starter",
+    isTrial: true,
   },
   {
     name: "Growth",
     price: "₵299",
     priceGhs: 299,
-    desc: "For growing celebrations",
+    desc: PLAN_MARKETING.growth.desc,
     guests: 100,
     invitations: 100,
-    features: MARKETING_FEATURES_BY_SLUG.growth,
+    features: PLAN_MARKETING.growth.features,
+    highlight: PLAN_MARKETING.growth.highlight,
+    footnote: PLAN_MARKETING.growth.footnote,
+    cta: PLAN_MARKETING.growth.cta,
     popular: true,
     slug: "growth",
   },
@@ -83,10 +150,13 @@ const FALLBACK_PLANS: PricingPlan[] = [
     name: "Premium",
     price: "₵499",
     priceGhs: 499,
-    desc: "Full event operating system",
+    desc: PLAN_MARKETING.premium.desc,
     guests: 300,
     invitations: 300,
-    features: MARKETING_FEATURES_BY_SLUG.premium,
+    features: PLAN_MARKETING.premium.features,
+    highlight: PLAN_MARKETING.premium.highlight,
+    footnote: PLAN_MARKETING.premium.footnote,
+    cta: PLAN_MARKETING.premium.cta,
     popular: false,
     slug: "premium",
   },
@@ -94,10 +164,13 @@ const FALLBACK_PLANS: PricingPlan[] = [
     name: "Enterprise",
     price: "₵1,499",
     priceGhs: 1499,
-    desc: "Unlimited scale",
+    desc: PLAN_MARKETING.enterprise.desc,
     guests: 5000,
     invitations: 5000,
-    features: MARKETING_FEATURES_BY_SLUG.enterprise,
+    features: PLAN_MARKETING.enterprise.features,
+    highlight: PLAN_MARKETING.enterprise.highlight,
+    footnote: PLAN_MARKETING.enterprise.footnote,
+    cta: PLAN_MARKETING.enterprise.cta,
     popular: false,
     slug: "enterprise",
   },
@@ -111,13 +184,16 @@ function buildQuotaFeatures(p: {
   whatsappCredits: number;
   emailCredits: number;
 }): string[] {
-  // Guest capacity is shown in the card header + marketing "Guest list" line —
+  // Guest capacity is shown in the card header + marketing "Guest list" line.
   // never append a second "Up to N guests" row here (it drifts when cache is stale).
   void p.guestLimit;
-  const lines: string[] = [
-    `${p.invitationLimit.toLocaleString()} invitation sends`,
-    `${p.ticketLimit.toLocaleString()} tickets`,
-  ];
+  const lines: string[] = [];
+  if (p.invitationLimit > 0) {
+    lines.push(`${p.invitationLimit.toLocaleString()} invitation sends`);
+  }
+  if (p.ticketLimit > 0) {
+    lines.push(`${p.ticketLimit.toLocaleString()} tickets`);
+  }
   if (p.smsCredits > 0) lines.push(`${p.smsCredits.toLocaleString()} SMS credits`);
   if (p.whatsappCredits > 0) lines.push(`${p.whatsappCredits.toLocaleString()} WhatsApp credits`);
   if (p.emailCredits > 0) lines.push(`${p.emailCredits.toLocaleString()} email credits`);
@@ -172,9 +248,12 @@ function resolvePlanFeatures(
 
   const quotas = buildQuotaFeatures(p);
   const marketingMentionsGuests = marketing.some((line) => /guest/i.test(line));
-  const quotaLines = marketingMentionsGuests
-    ? quotas.filter((line) => !/^up to .+ guests$/i.test(line))
-    : quotas;
+  const marketingMentionsInvites = marketing.some((line) => /invitation/i.test(line));
+  const quotaLines = quotas.filter((line) => {
+    if (marketingMentionsGuests && /^up to .+ guests$/i.test(line)) return false;
+    if (marketingMentionsInvites && /invitation sends?/i.test(line)) return false;
+    return true;
+  });
 
   // Marketing copy first so every tier always shows clear service details.
   // Fall back to catalog labels for unknown slugs; keep quotas as capacity cues.
@@ -225,17 +304,27 @@ function toPlans(
 ): PricingPlan[] {
   if (packages.length === 0) return FALLBACK_PLANS;
 
-  return packages.map((p, i) => ({
-    name: Number(p.price) === 0 && p.slug === "starter" ? "Free" : p.name,
-    priceGhs: Number(p.price),
-    price: Number(p.price) === 0 ? "Free" : formatCurrency(Number(p.price), p.currency),
-    desc: p.description?.trim() || FALLBACK_PLANS.find((f) => f.slug === p.slug)?.desc || "Event package",
-    guests: p.guestLimit,
-    invitations: p.invitationLimit,
-    features: resolvePlanFeatures(p),
-    popular: i === 1 || p.slug === "growth",
-    slug: p.slug,
-  }));
+  return packages.map((p, i) => {
+    const marketing = PLAN_MARKETING[p.slug as keyof typeof PLAN_MARKETING];
+    const fallback = FALLBACK_PLANS.find((f) => f.slug === p.slug);
+    const isFreeStarter = Number(p.price) === 0 && p.slug === "starter";
+    return {
+      name: isFreeStarter ? "Free" : p.name,
+      priceGhs: Number(p.price),
+      price: Number(p.price) === 0 ? "Free" : formatCurrency(Number(p.price), p.currency),
+      desc: marketing?.desc || p.description?.trim() || fallback?.desc || "Event package",
+      guests: isFreeStarter ? 5 : p.guestLimit,
+      invitations: isFreeStarter ? 5 : p.invitationLimit,
+      features: resolvePlanFeatures(p),
+      restrictions: marketing?.restrictions ?? fallback?.restrictions,
+      highlight: marketing?.highlight ?? fallback?.highlight,
+      footnote: marketing?.footnote ?? fallback?.footnote,
+      cta: marketing?.cta ?? fallback?.cta,
+      popular: i === 1 || p.slug === "growth",
+      slug: p.slug,
+      isTrial: Boolean(marketing?.isTrial || isFreeStarter),
+    };
+  });
 }
 
 export const getActivePricingPlans = unstable_cache(
@@ -254,6 +343,6 @@ export const getActivePricingPlans = unstable_cache(
       return FALLBACK_PLANS;
     }
   },
-  ["active-pricing-plans-v15-db-fallback"],
+  ["active-pricing-plans-v16-trial-conversion"],
   { revalidate: 60, tags: ["pricing-plans"] }
 );

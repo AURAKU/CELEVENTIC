@@ -29,7 +29,7 @@ import {
   type VendorPassTypeSource,
 } from "@/lib/vendor-pass/pass-types";
 
-/** Reading the picker is as wide as reading the pass list — door staff included. */
+/** Reading the picker is as wide as reading the pass list. Door staff included. */
 export const VENDOR_PASS_TYPE_READ_PERMISSIONS = [
   EventPermissionKey.MANAGE_VENDOR_ACCESS,
   EventPermissionKey.MANAGE_GUESTS,
@@ -69,7 +69,7 @@ async function loadOverrides(eventId: string): Promise<VendorPassTypeOverride[]>
   }));
 }
 
-/** Live passes issued against one type — the in-use guard for deletion. */
+/** Live passes issued against one type. The in-use guard for deletion. */
 export async function countVendorPassTypeUsage(input: {
   eventId: string;
   key: string;
@@ -143,7 +143,7 @@ export async function listEventVendorPassTypes(eventId: string): Promise<VendorP
 
 /**
  * Add a type to this event's picker. Passing the name (or key) of a built-in
- * the event previously hid restores it instead of erroring — that is the undo
+ * the event previously hid restores it instead of erroring, that is the undo
  * path for a hidden built-in.
  */
 export async function createEventVendorPassType(input: {

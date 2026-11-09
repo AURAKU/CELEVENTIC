@@ -21,7 +21,7 @@ interface ReadinessCheck {
  * Offline Readiness.
  *
  * Level 1 needs nothing from the organizer beyond publishing. Level 2 is a real
- * operational commitment — a machine, a network and someone to run it — so the
+ * operational commitment. A machine, a network and someone to run it, so the
  * checklist is explicit about what still has to be true on the day.
  */
 export function GuideOfflineTab({
@@ -55,7 +55,7 @@ export function GuideOfflineTab({
         detail:
           g.status === "PUBLISHED"
             ? "Guests can open the guide and their phone can save it."
-            : "Publish the guide — nothing is cached or packed until you do.",
+            : "Publish the guide. Nothing is cached or packed until you do.",
       },
       {
         label: "Phone offline mode is on",
@@ -180,7 +180,7 @@ export function GuideOfflineTab({
           </label>
           <p className="rounded-lg border bg-slate-50 px-3 py-2 text-xs text-slate-600">
             Seat lookup always needs a connection. Storing a seating index on guests&rsquo; phones
-            would be publishing your guest list, so we never do it — the guide says so plainly when
+            would be publishing your guest list, so we never do it. The guide says so plainly when
             offline.
           </p>
         </CardContent>

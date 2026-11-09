@@ -61,7 +61,7 @@ export async function CeleventicGuideHome({
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
             Motion tutorials, Start Here journeys, quick actions, and answers for guests, organizers,
-            vendors, and scanners — all in one place. Open Customer Service anytime for platform help.
+            vendors, and scanners. All in one place. Open Customer Service anytime for platform help.
           </p>
           <Link
             href="/guide/how-celeventic-works"

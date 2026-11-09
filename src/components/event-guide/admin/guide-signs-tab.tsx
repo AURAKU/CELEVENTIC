@@ -72,7 +72,7 @@ export function GuideSignsTab({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
-        Codes are black-on-white with a wide quiet zone and no logo overlay — built for iPhone,
+        Codes are black-on-white with a wide quiet zone and no logo overlay. Built for iPhone,
         Android, and tablet cameras under venue lighting. Point any camera at the printed board to
         open the live Event Guide link.
       </p>
@@ -190,7 +190,7 @@ export function GuideSignsTab({
               >
                 {state.signage.sizes.map((option) => (
                   <option key={option.key} value={option.key}>
-                    {option.label} — {option.mm}
+                    {option.label}: {option.mm}
                   </option>
                 ))}
               </select>
@@ -270,7 +270,7 @@ export function GuideSignsTab({
             </Button>
           </div>
           <p className="text-xs text-slate-500">
-            Printed at actual size on matte card. Each code sits on a white plate with a wide margin —
+            Printed at actual size on matte card. Each code sits on a white plate with a wide margin.
             printing a code straight onto a coloured background is the usual reason a sign will not
             scan under warm venue lighting.
           </p>

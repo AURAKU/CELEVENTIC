@@ -159,7 +159,7 @@ export function GuidePublishTab({
         <CardContent className="space-y-3">
           <p className="text-sm text-slate-600">
             Publishing freezes what you have now and sends it to every guest who scans the code.
-            Until then, your edits stay private. Your QR code and link never change — publishing
+            Until then, your edits stay private. Your QR code and link never change. Publishing
             changes what they open, so you only ever print the code once.
           </p>
 
@@ -168,7 +168,7 @@ export function GuidePublishTab({
               Last published {new Date(g.publishedAt).toLocaleString()} (version{" "}
               {g.publishedVersion}).
               {unsaved
-                ? " You have saved changes since then — publish again to send them to guests."
+                ? " You have saved changes since then. Publish again to send them to guests."
                 : " Guests scanning your code are seeing this version."}
             </p>
           ) : (
@@ -189,7 +189,7 @@ export function GuidePublishTab({
           ) : null}
           {empty ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              There is no programme and no menu yet — guests would open an empty guide.
+              There is no programme and no menu yet. Guests would open an empty guide.
             </p>
           ) : null}
 

@@ -24,7 +24,7 @@ function reasonOf(result: ReturnType<typeof evaluateGuideAvailability>): GuideUn
   return (result as { available: false; reason: GuideUnavailableReason }).reason;
 }
 
-describe("evaluateGuideAvailability — the happy path", () => {
+describe("evaluateGuideAvailability. The happy path", () => {
   it("opens a published, enabled guide on an active online link", () => {
     const result = evaluateGuideAvailability({
       link: link(),
@@ -69,7 +69,7 @@ describe("token isolation", () => {
       guide: guide(),
       eventStatus: "PUBLISHED",
     });
-    // NOT_FOUND, not WRONG_TYPE — the public internet should not learn that a
+    // NOT_FOUND, not WRONG_TYPE. The public internet should not learn that a
     // venue pack token even exists.
     assert.equal(reasonOf(result), "NOT_FOUND");
   });

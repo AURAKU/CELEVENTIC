@@ -24,7 +24,7 @@ export async function checkDatabaseHealth(): Promise<DbHealthResult> {
 
     if (adminCount === 0) {
       status = "warning";
-      message = "Database OK but no active platform admin — run npm run seed:admin";
+      message = "Database OK but no active platform admin. Run npm run seed:admin";
     }
 
     return {
@@ -49,7 +49,7 @@ export async function checkDatabaseHealth(): Promise<DbHealthResult> {
       adminExists: false,
       adminCount: 0,
       message: schemaMismatch
-        ? "Database schema mismatch — run prisma db push or migrate deploy"
+        ? "Database schema mismatch. Run prisma db push or migrate deploy"
         : "Database connection failed",
       error: errMsg,
     };

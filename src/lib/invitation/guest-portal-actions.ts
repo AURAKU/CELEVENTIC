@@ -2,7 +2,7 @@ import type { HubTabId } from "@/lib/experience/experience-types";
 import type { CalendarEventInput } from "@/lib/invitation/calendar-utils";
 import { buildDirectionsUrl, hasLocationData } from "@/lib/invitation/maps-utils";
 
-/** Central action keys — every invitation button must map to one of these. */
+/** Central action keys. Every invitation button must map to one of these. */
 export const INVITATION_ACTION_KEYS = [
   "RSVP",
   "LOCATION",
@@ -140,7 +140,7 @@ export function buildEmailUrl(email: string, subject: string, body?: string): st
   return url.toString();
 }
 
-export function isPreviewInvitationId(id?: string): boolean {
+export function isPreviewInvitationId(id?: string | null): boolean {
   if (!id) return false;
   return (
     id.startsWith("preview") ||
@@ -149,7 +149,8 @@ export function isPreviewInvitationId(id?: string): boolean {
     id.startsWith("demo-") ||
     id.startsWith("sample-") ||
     id.startsWith("catalog-") ||
-    id.startsWith("thumb-")
+    id.startsWith("thumb-") ||
+    id.startsWith("glimpse-")
   );
 }
 

@@ -17,7 +17,8 @@ export default function PricingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center mb-4">
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-900">Pricing</h1>
           <p className="text-slate-600 mt-2 max-w-2xl mx-auto">
-            Choose the package that fits your celebration, from digital invites to full EventOS.
+            Starter ₵450, Classic ₵800, Signature ₵1,500, Ultimate from ₵2,950, and Customisation
+            ₵4,500. Pay to unlock the package, then build the event. Taste with 5 guests free.
           </p>
         </div>
         <Suspense fallback={<PageLoaderClient labelKey="landing.loading_pricing" className="py-28" />}>

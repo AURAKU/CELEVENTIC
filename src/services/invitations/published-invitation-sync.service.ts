@@ -11,7 +11,7 @@ import { invitationBlockService } from "@/services/invitations/invitation-block.
  * media reconciliation along with it.
  */
 export interface PublishedSyncScope {
-  /** Design tokens, fonts, experience, buttons — anything in `designConfig`. */
+  /** Design tokens, fonts, experience, buttons. Anything in `designConfig`. */
   design?: boolean;
   /** Gallery images + videos, cover art. */
   media?: boolean;
@@ -173,7 +173,7 @@ export class PublishedInvitationSyncService {
     }
 
     // Follow the gallery's lead image only while the cover is still whatever we
-    // last derived from it — a cover set deliberately elsewhere always wins.
+    // last derived from it. A cover set deliberately elsewhere always wins.
     const previousUrls = existing.map((m) => m.url);
     const coverIsAutoDerived =
       !currentCoverImageUrl || previousUrls.includes(currentCoverImageUrl);

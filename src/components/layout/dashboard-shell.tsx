@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
@@ -15,14 +16,20 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   return (
-    <div className="flex min-h-app-viewport bg-mesh">
+    <div className="flex min-h-app-viewport bg-mesh overflow-x-hidden">
       <TermsAcceptanceGate />
       {mobileOpen && (
         <div
           className="fixed inset-0 z-[55] bg-slate-900/60 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
+          aria-hidden
         />
       )}
 
@@ -33,7 +40,7 @@ export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
       <div className="flex-1 flex flex-col min-w-0 min-h-app-viewport">
         {adminBanner}
         <DashboardTopbar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-[max(6rem,calc(env(safe-area-inset-bottom)+4.5rem))] lg:pb-8 bg-dashboard grid-pattern min-w-0 overflow-x-hidden page-scaffold-host">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-[max(6.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] lg:pb-8 bg-dashboard grid-pattern min-w-0 overflow-x-hidden page-scaffold-host">
           <div className="page-scaffold mx-auto w-full max-w-7xl">{children}</div>
         </main>
         <MobileBottomNav />

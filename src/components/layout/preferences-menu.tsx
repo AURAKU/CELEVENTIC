@@ -18,7 +18,7 @@ interface PreferencesMenuProps {
 
 const CURRENCIES: DisplayCurrency[] = ["GHS", "USD", "GBP"];
 
-/** Orbital globe mark, modern, brand-aligned, readable at 16–18px */
+/** Orbital globe mark, modern, brand-aligned, readable at 16 to 18px */
 function GlobeMark({ className }: { className?: string }) {
   const uid = useId().replace(/:/g, "");
   const orbitId = `pref-globe-orbit-${uid}`;

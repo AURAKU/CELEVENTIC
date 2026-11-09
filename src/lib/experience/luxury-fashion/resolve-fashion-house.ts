@@ -27,7 +27,7 @@ export function resolveFashionLede(house: LuxuryFashionHouseConfig): string {
   return lede;
 }
 
-/** One venue line — never "FEMMORA GH, FEMMORA GH". */
+/** One venue line, never "FEMMORA GH, FEMMORA GH". */
 export function formatFashionVenueLine(locationName?: string | null, address?: string | null): string {
   const name = trim(locationName);
   const addr = trim(address);
@@ -68,7 +68,7 @@ function collapseFashionVenue(
 
 export function resolveFashionHouse(
   design?: InvitationDesignConfig | null,
-  event?: InvitationEventData | null
+  event?: Partial<InvitationEventData> | null
 ): LuxuryFashionHouseConfig {
   const stored = design?.experience?.fashionHouse;
   const femmora =

@@ -137,7 +137,7 @@ describe("removing a pass type", () => {
     assert.equal(decision.ok && decision.action, "deactivate");
   });
 
-  it("never deletes a built-in — it hides it, and only after confirmation when in use", () => {
+  it("never deletes a built-in. It hides it, and only after confirmation when in use", () => {
     const unused = resolveVendorPassTypeDeletion({
       key: "SECURITY",
       source: "SYSTEM",

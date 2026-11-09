@@ -9,14 +9,14 @@ import {
 
 /**
  * The catalogue affordance promises an experience, so its copy must name the
- * gesture and the beats that answer it — never just re-describe the artwork.
+ * gesture and the beats that answer it, never just re-describe the artwork.
  */
 
 test("satin bow affordance names the untie gesture, not the card description", () => {
   const copy = previewTapLabelForOpening("satin-bow");
   assert.equal(copy.label, "Tap to untie the bow");
   assert.deepEqual(copy.steps, ["Bow unties", "Invite opens"]);
-  assert.notEqual(copy.subtitle, "Ivory card tied with a satin bow — tap to untie");
+  assert.notEqual(copy.subtitle, "Ivory card tied with a satin bow. Tap to untie");
 });
 
 test("music cue is spliced onto the opening gesture, not the arrival", () => {

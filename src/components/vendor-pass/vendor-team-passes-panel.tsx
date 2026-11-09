@@ -154,7 +154,7 @@ function vendorPassErrorMessage(raw: unknown, fallback: string): string {
   }
   const trimmed = text.trim();
   if (!trimmed) return fallback;
-  // Keep UI readable — drop multi-line Prisma invocation dumps.
+  // Keep UI readable. Drop multi-line Prisma invocation dumps.
   const firstLine = trimmed.split("\n").map((l) => l.trim()).find(Boolean) ?? trimmed;
   return firstLine.length > 220 ? `${firstLine.slice(0, 217)}…` : firstLine;
 }
@@ -411,7 +411,7 @@ export function VendorTeamPassesPanel({
         contactName: "",
         phone: "",
         email: "",
-        // Keep the type selected — hosts usually issue several of the same kind.
+        // Keep the type selected. Hosts usually issue several of the same kind.
         passType: f.passType,
         passMode: "TEAM",
         entryMode: "INDIVIDUAL_ENTRY",
@@ -495,7 +495,7 @@ export function VendorTeamPassesPanel({
         setEditForm(editFormFromRow(json.data as VendorPassRow));
       }
     } catch {
-      // List row values are already in the form — editing can still proceed.
+      // List row values are already in the form. Editing can still proceed.
     }
   }
 
@@ -574,7 +574,7 @@ export function VendorTeamPassesPanel({
 
   /**
    * Hard-delete when there is no admission history. Passes with scan history
-   * must be archived instead so the entry log stays intact — QR still becomes
+   * must be archived instead so the entry log stays intact. QR still becomes
    * invalid and the pass leaves this list.
    */
   async function deletePass(row: VendorPassRow) {
@@ -726,7 +726,7 @@ export function VendorTeamPassesPanel({
                 <p className="text-sm font-medium text-slate-900">Pass types for this event</p>
                 <p className="mt-0.5 text-xs text-slate-600">
                   Add your own types (Catering, Security, DJ crew…). Removing a type never
-                  affects passes already issued — they keep their printed label.
+                  affects passes already issued. They keep their printed label.
                 </p>
 
                 {typeError && (
@@ -771,7 +771,7 @@ export function VendorTeamPassesPanel({
                         title={
                           opt.deletable
                             ? "Delete this custom pass type"
-                            : "Built-in type — hide it for this event"
+                            : "Built-in type. Hide it for this event"
                         }
                         className="rounded-full p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
                         onClick={() => void removePassType(opt)}
@@ -908,7 +908,7 @@ export function VendorTeamPassesPanel({
                 className="min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                 value={form.memberNames}
                 onChange={(e) => setForm((f) => ({ ...f, memberNames: e.target.value }))}
-                placeholder="Optional — leave blank for shared team identity"
+                placeholder="Optional. Leave blank for shared team identity"
               />
             </label>
             <label className="text-sm sm:col-span-2">
@@ -1092,7 +1092,7 @@ export function VendorTeamPassesPanel({
                       const href = resolvePassHref(row);
                       openWhatsAppShare(
                         ensureSingleShareUrl(
-                          `${row.title} — ${row.vendorName}\nAccess code ${row.admissionCode}`,
+                          `${row.title}: ${row.vendorName}\nAccess code ${row.admissionCode}`,
                           href
                         )
                       );

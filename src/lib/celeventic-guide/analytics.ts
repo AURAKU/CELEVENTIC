@@ -1,4 +1,4 @@
-/** Client-side Celeventic Guide analytics — extends usability patterns. */
+/** Client-side Celeventic Guide analytics. Extends usability patterns. */
 
 export type GuideAnalyticsEvent =
   | "guide_viewed"

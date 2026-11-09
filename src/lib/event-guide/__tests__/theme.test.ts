@@ -159,7 +159,7 @@ describe("the publish contrast gate", () => {
   });
 
   it("blocks body text that is unreadable against the background", () => {
-    // Pale gold text on cream — the classic wedding-stationery mistake.
+    // Pale gold text on cream. The classic wedding-stationery mistake.
     const result = assessGuideContrast(themeWith({ text: "#e8d9a8", background: "#fbf8f3" }));
     assert.equal(result.passes, false);
     const body = result.findings.find((f) => f.pair === "Body text on background");
@@ -183,7 +183,7 @@ describe("the publish contrast gate", () => {
     assert.equal(required.get("Primary action label"), 3);
   });
 
-  it("does not block a decorative gold on cream — it darkens the label instead", () => {
+  it("does not block a decorative gold on cream. It darkens the label instead", () => {
     const theme = themeWith({ secondary: "#c7a35a", background: "#fbf8f3" });
     const result = assessGuideContrast(theme);
 
@@ -215,7 +215,7 @@ describe("the publish contrast gate", () => {
   });
 
   /**
-   * The gate used to measure `background` on `accent` — a pair the guest's
+   * The gate used to measure `background` on `accent`. A pair the guest's
    * page has never painted. A soft tan invitation scored 2.11:1 against a
    * cream background and the organizer was told their colours were
    * unreadable, with no colour they could change to fix it.

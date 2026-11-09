@@ -67,7 +67,7 @@ function sign(payload: string): string {
 /**
  * Signed receipt token: `<receiptId>.<hmac>`.
  *
- * Deterministic on purpose — the guest who paid can be handed their receipt
+ * Deterministic on purpose. The guest who paid can be handed their receipt
  * link again from the status endpoint without us storing a bearer token in the
  * database. It is unguessable without the server secret, grants access to that
  * one receipt and nothing else, and can be killed by setting `revokedAt` on the

@@ -21,7 +21,7 @@ export interface EnvelopeVisualTheme {
   kente?: boolean;
   islamic?: boolean;
   /**
-   * Photoreal face art — masked into the V-flap envelope geometry with an
+   * Photoreal face art. Masked into the V-flap envelope geometry with an
    * interactive wax seal overlay (dynamic initials). CSS/SVG remains fallback.
    */
   faceArtUrl?: string;
@@ -41,7 +41,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   {
     id: "envelope-classic",
     label: "Classic white envelope",
-    description: "Clean white envelope — tap to open",
+    description: "Clean white envelope. Tap to open",
     category: "envelope",
     envelopeTheme: {
       bodyBg: "linear-gradient(145deg, #f2eee6 0%, #e6dfd4 48%, #d9d0c4 100%)",
@@ -55,7 +55,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   {
     id: "wax-seal-pink",
     label: "Pink wax seal",
-    description: "Premium pink wax — glow, crack, unfold",
+    description: "Premium pink wax. Glow, crack, unfold",
     category: "envelope",
     envelopeTheme: {
       bodyBg: "linear-gradient(145deg, #fce4ec 0%, #f8bbd0 100%)",
@@ -125,7 +125,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   {
     id: "wax-seal-emerald",
     label: "Emerald wax seal",
-    description: "Palace emerald envelope — press the gold wax seal",
+    description: "Palace emerald envelope. Press the gold wax seal",
     category: "envelope",
     envelopeTheme: {
       bodyBg: "linear-gradient(145deg, #064e3b 0%, #022c22 55%, #0a1f1a 100%)",
@@ -175,7 +175,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
     id: "envelope-embroidered",
     label: "Embroidered cream envelope",
     description:
-      "Photoreal cream embroidered envelope — peach seal rides the flap tip (fills cream disc), flap lifts as one — tap to begin",
+      "Photoreal cream embroidered envelope. Peach seal rides the flap tip (fills cream disc), flap lifts as one. Tap to begin",
     category: "envelope",
     envelopeTheme: {
       photoreal: true,
@@ -211,7 +211,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   {
     id: "envelope-islamic",
     label: "Islamic golden envelope",
-    description: "Arabic-inspired gold geometry — Nikkah, Eid, naming",
+    description: "Arabic-inspired gold geometry. Nikkah, Eid, naming",
     category: "envelope",
     envelopeTheme: {
       bodyBg: "linear-gradient(160deg, #0d3b2e 0%, #1a5c4a 50%, #0d2818 100%)",
@@ -224,7 +224,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
       islamic: true,
     },
   },
-  { id: "curtain-wedding", label: "Wedding stage curtain", description: "Deep velvet curtains part slowly after tap — theatrical reveal", category: "curtain" },
+  { id: "curtain-wedding", label: "Wedding stage curtain", description: "Deep velvet curtains part slowly after tap. Theatrical reveal", category: "curtain" },
   { id: "curtain-concert", label: "Concert stage", description: "Spotlight curtain reveal", category: "curtain" },
   { id: "curtain-award", label: "Award night", description: "Gold curtain gala reveal", category: "curtain" },
   { id: "curtain-birthday", label: "Birthday party", description: "Festive curtain pop", category: "curtain" },
@@ -277,13 +277,13 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   {
     id: "magazine-page-turn",
     label: "Magazine page turn",
-    description: "Editorial cover — swipe or tap to turn the page",
+    description: "Editorial cover. Swipe or tap to turn the page",
     category: "interactive",
   },
   {
     id: "candle-light",
     label: "Candle light",
-    description: "Unlit memorial candle — tap to light",
+    description: "Unlit memorial candle. Tap to light",
     category: "interactive",
   },
   {
@@ -295,13 +295,13 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   {
     id: "satin-bow",
     label: "Satin bow",
-    description: "Ivory card tied with a satin bow — tap to untie",
+    description: "Ivory card tied with a satin bow. Tap to untie",
     category: "interactive",
   },
   {
     id: "ring-box",
     label: "Ring box",
-    description: "Black-tie ring box — tap to open the lid",
+    description: "Black-tie ring box. Tap to open the lid",
     category: "interactive",
   },
   {
@@ -314,31 +314,31 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   {
     id: "archway",
     label: "Palace archway",
-    description: "Emerald cathedral gates — tap to enter",
+    description: "Emerald cathedral gates. Tap to enter",
     category: "palace",
   },
   {
     id: "petal-fall",
     label: "Petal fall",
-    description: "Watercolor garden — tap and petals cascade away",
+    description: "Watercolor garden. Tap and petals cascade away",
     category: "interactive",
   },
   {
     id: "luxury-fashion-flagship",
     label: "Fashion envelope unveil",
-    description: "Tap to open a couture envelope — the invitation card rises, then becomes the live house",
+    description: "Tap to open a couture envelope. The invitation card rises, then becomes the live house",
     category: "interactive",
   },
   {
     id: "aurelia-editorial-wedding",
     label: "Ivory veil opening",
-    description: "Ivory editorial veil — tap to open into the live wedding invitation",
+    description: "Ivory editorial veil. Tap to open into the live wedding invitation",
     category: "interactive",
   },
   {
     id: "seraphine-champagne-wedding",
     label: "Champagne veil opening",
-    description: "Champagne editorial veil — tap to open into the live wedding invitation",
+    description: "Champagne editorial veil. Tap to open into the live wedding invitation",
     category: "interactive",
   },
   { id: "none", label: "Instant", description: "Skip opening ceremony", category: "instant" },
@@ -397,7 +397,7 @@ export function isCurtainExperience(id: OpeningExperienceId | string | undefined
 /**
  * Catalogue / studio “Tap to open” already consumed the user gesture.
  * Prefer landing on the sealed / closed ceremony so the guest (or previewer)
- * still performs the seal / curtain open — that keeps the slow cinematic
+ * still performs the seal / curtain open, that keeps the slow cinematic
  * lift. Callers that truly need a one-shot open can still pass autoOpen.
  */
 export function previewAutoOpensReveal(id: OpeningExperienceId | string | undefined): boolean {
@@ -612,7 +612,7 @@ export function previewTapLabelForOpening(
 
 /**
  * Full beat list for the affordance: the mechanic's own beats with the music
- * cue spliced in where a guest would actually hear it — on the opening gesture.
+ * cue spliced in where a guest would actually hear it. On the opening gesture.
  * Pass `musicTitle` so catalogue tiles name the template's actual track.
  */
 export function previewTapStepsForOpening(

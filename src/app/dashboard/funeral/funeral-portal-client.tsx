@@ -454,9 +454,9 @@ export function FuneralPortalClient() {
                     </div>
                   </div>
                   <div className="grid sm:grid-cols-3 gap-3">
-                    <div><Label>Dress — Friday</Label><Input value={form.dressFriday} onChange={(e) => setForm({ ...form, dressFriday: e.target.value })} /></div>
-                    <div><Label>Dress — Saturday</Label><Input value={form.dressSaturday} onChange={(e) => setForm({ ...form, dressSaturday: e.target.value })} /></div>
-                    <div><Label>Dress — Sunday</Label><Input value={form.dressSunday} onChange={(e) => setForm({ ...form, dressSunday: e.target.value })} /></div>
+                    <div><Label>Dress. Friday</Label><Input value={form.dressFriday} onChange={(e) => setForm({ ...form, dressFriday: e.target.value })} /></div>
+                    <div><Label>Dress. Saturday</Label><Input value={form.dressSaturday} onChange={(e) => setForm({ ...form, dressSaturday: e.target.value })} /></div>
+                    <div><Label>Dress. Sunday</Label><Input value={form.dressSunday} onChange={(e) => setForm({ ...form, dressSunday: e.target.value })} /></div>
                   </div>
                   <div className="flex flex-wrap gap-4 text-sm">
                     <label className="inline-flex items-center gap-2">

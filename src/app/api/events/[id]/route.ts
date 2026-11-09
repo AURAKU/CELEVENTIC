@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { eventService } from "@/services/events/event.service";
 import { verifyEventAccess } from "@/lib/event-access";
+import { toEventApiResponse } from "@/lib/events/event-dto";
 import { isAdminRole } from "@/lib/roles";
 import { createAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
@@ -17,6 +18,7 @@ const updateEventSchema = z.object({
   description: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  rsvpDeadline: z.string().nullable().optional(),
   venueName: z.string().optional(),
   landmark: z.string().optional(),
   mapsLink: z.string().optional(),
@@ -47,7 +49,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
-    return NextResponse.json({ success: true, data: event });
+    return NextResponse.json({ success: true, data: toEventApiResponse(event) });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Access denied" },
@@ -85,12 +87,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ success: true, data: published });
     }
 
-    const { action: _action, startDate, endDate, eventType, ...rest } = data;
+    const { action: _action, startDate, endDate, eventType, rsvpDeadline, ...rest } = data;
     const updated = await eventService.updateEvent(id, event.organizerId, {
       ...rest,
       ...(eventType ? { eventType: eventType as never } : {}),
       ...(startDate ? { startDate: new Date(startDate) } : {}),
       ...(endDate ? { endDate: new Date(endDate) } : {}),
+      ...(rsvpDeadline === undefined
+        ? {}
+        : { rsvpDeadline: rsvpDeadline ? new Date(rsvpDeadline) : null }),
     });
 
     await createAuditLog({

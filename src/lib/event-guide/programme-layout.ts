@@ -1,7 +1,7 @@
 /**
  * Arranging a stored programme into the blocks a guest actually reads.
  *
- * `parseProgrammeScript` answers "what did the organizer write?" — one entry
+ * `parseProgrammeScript` answers "what did the organizer write?". One entry
  * per line, nothing left out. This module answers the different question of
  * "what kind of page is this?", because a real order of service is not a flat
  * list. It opens with a title page, names the people taking part, and only
@@ -19,7 +19,7 @@
  *     10:00 AM - Processional    ← the schedule
  *
  * Every one of those lines is an upper-case, time-less entry, so a renderer
- * that only knows `kind: "section"` sets all of them the same way — a tracked
+ * that only knows `kind: "section"` sets all of them the same way. A tracked
  * gold line with a rule after it, twelve times over. That is the fill-in-the-
  * blank look this module exists to remove.
  *
@@ -31,7 +31,7 @@
  *    next time it is opened.
  *  - **At most one signpost per run.** A heading is a heading because content
  *    follows it. Six upper-case lines in a row are a list, and only the first
- *    of them can be its heading — which is what stops the rules multiplying.
+ *    of them can be its heading, which is what stops the rules multiplying.
  *
  * Every item that goes in comes out in exactly one block: the layout may
  * regroup lines, never drop them.
@@ -69,7 +69,7 @@ export interface ProgrammeCoverLine {
   id: string;
   text: string;
   role: ProgrammeCoverRole;
-  /** Written in capitals — a script face would be unreadable set that way. */
+  /** Written in capitals. A script face would be unreadable set that way. */
   shouted: boolean;
 }
 
@@ -88,10 +88,10 @@ export interface ProgrammeScheduleEntry {
 
 export interface ProgrammeRosterPerson {
   id: string;
-  /** `OFFICIATING MINISTER` — the role, when it was written on the same line. */
+  /** `OFFICIATING MINISTER`. The role, when it was written on the same line. */
   label?: string;
   name: string;
-  /** A parish, a title, a note — set under the name, never beside it. */
+  /** A parish, a title, a note. Set under the name, never beside it. */
   notes: string[];
 }
 
@@ -115,7 +115,7 @@ export type ProgrammeBlock =
   | {
       kind: "hymn";
       id: string;
-      /** `OPENING HYMN` — what the organizer called it, when they said. */
+      /** `OPENING HYMN`. What the organizer called it, when they said. */
       cue?: string;
       title: string;
       time: string;
@@ -127,8 +127,8 @@ export type ProgrammeBlock =
 /**
  * The words that join two names on a title page, on their own line.
  *
- * `OF` and `TO` are here because that is how the card is set — `THE WEDDING /
- * OF / Jeffery / AND / Francisca` — and a line holding one of these words and
+ * `OF` and `TO` are here because that is how the card is set. `THE WEDDING /
+ * OF / Jeffery / AND / Francisca`, and a line holding one of these words and
  * nothing else is never an item of a programme.
  */
 const CONNECTOR = /^(?:&|\+|and|between|with|of|to|weds|und|et|na|ne|y)[.,]?$/i;
@@ -145,7 +145,7 @@ function isTimeless(item: GuideProgrammeItem): boolean {
  * Time-less and carrying no detail of its own.
  *
  * A cover line and a signpost are both bare by definition. A person may well
- * have a line under them — their parish, their title — so a roster is read
+ * have a line under them. Their parish, their title, so a roster is read
  * from `isTimeless` instead.
  */
 function isQuiet(item: GuideProgrammeItem): boolean {
@@ -171,7 +171,7 @@ function carriesVerse(item: GuideProgrammeItem): boolean {
   return lines.length >= 3 || lines.some((line) => VERSE_BREAK.test(line));
 }
 
-/** A short label with nothing else on the line — `FUNCTIONARIES`, `CEREMONY`. */
+/** A short label with nothing else on the line. `FUNCTIONARIES`, `CEREMONY`. */
 function isBareSignpost(value: string): boolean {
   const text = value.trim();
   if (!text || /\d/.test(text) || CONNECTOR.test(text)) return false;
@@ -190,7 +190,7 @@ function isSignpost(item: GuideProgrammeItem): boolean {
   return words(text).length <= MAX_SIGNPOST_WORDS && text.length <= MAX_SIGNPOST_CHARS;
 }
 
-/** A date, a clock or a venue — the small print at the foot of a title page. */
+/** A date, a clock or a venue. The small print at the foot of a title page. */
 function looksLikeMeta(value: string): boolean {
   return /\d/.test(value) || MONTH_OR_DAY.test(value) || /^at\s/i.test(value.trim());
 }
@@ -198,8 +198,8 @@ function looksLikeMeta(value: string): boolean {
 /**
  * What each line of a title page is doing.
  *
- * The couple are found by their connector — the line that reads only `AND` or
- * `BETWEEN` — rather than by counting lines, so a single name, three names or
+ * The couple are found by their connector. The line that reads only `AND` or
+ * `BETWEEN`, rather than by counting lines, so a single name, three names or
  * a title page with no couple at all still reads correctly.
  */
 function coverRoles(lines: string[]): ProgrammeCoverRole[] {
@@ -238,8 +238,8 @@ function coverRoles(lines: string[]): ProgrammeCoverRole[] {
  * Take the title page off the front, if there is one.
  *
  * The run of opening time-less lines is trimmed back off anything that plainly
- * belongs to what follows — the heading of the next section, the first names
- * of a functionaries list — so the cover ends where the document does.
+ * belongs to what follows. The heading of the next section, the first names
+ * of a functionaries list, so the cover ends where the document does.
  */
 function takeCover(items: GuideProgrammeItem[]): { lines: ProgrammeCoverLine[]; next: number } | null {
   if (items.length < 3) return null;
@@ -278,7 +278,7 @@ function takeCover(items: GuideProgrammeItem[]): { lines: ProgrammeCoverLine[]; 
   // The date is asked of the lines themselves rather than of their roles:
   // every line after the first name is given the `meta` role whether it looks
   // like a date or not, so asking the roles was asking a question that always
-  // answered yes — and a roster of ministers under `FUNCTIONARIES` was being
+  // answered yes, and a roster of ministers under `FUNCTIONARIES` was being
   // set as somebody's wedding invitation.
   const dated = texts.some(looksLikeMeta);
   if (!dated && !roles.some((role) => role === "connector")) return null;
@@ -298,7 +298,7 @@ function takeCover(items: GuideProgrammeItem[]): { lines: ProgrammeCoverLine[]; 
  * A heading inside a run, rather than another line of it.
  *
  * At most one signpost per run is what stops six shouted lines becoming six
- * rules — but it also swallowed every heading in a programme that never
+ * rules, but it also swallowed every heading in a programme that never
  * mentions a clock, so `GUEST MINISTERS`, `COUNSELORS` and `ORDER OF SERVICE`
  * came out as bullets in one flat column of forty-seven.
  *
@@ -352,7 +352,7 @@ function detailLines(item: GuideProgrammeItem): string[] {
 /**
  * A role that heads a list rather than a person in it.
  *
- * `OFFICIATING MINISTERS`, `GUEST MUSIC MINISTER`, `COUNSELLORS` — set in
+ * `OFFICIATING MINISTERS`, `GUEST MUSIC MINISTER`, `COUNSELLORS`. Set in
  * capitals, naming a part rather than a human being, with the people who hold
  * it written underneath. Reading these as people is what flattens a roster
  * into one undifferentiated column of bulleted lines.
@@ -363,7 +363,7 @@ function detailLines(item: GuideProgrammeItem): string[] {
  *
  * Detail normally disqualifies a line, because a name with a parish under it
  * is a person. The exception is a heading that says in so many words that
- * people follow — `OFFICIATING MINISTERS`, shouted, with a minister's full
+ * people follow. `OFFICIATING MINISTERS`, shouted, with a minister's full
  * title too long to have stayed on its own line. Read as a person, that
  * heading is set in the display serif as somebody actually called
  * "OFFICIATING MINISTERS", with the real minister demoted to a footnote.
@@ -408,8 +408,8 @@ function isRosterRun(run: GuideProgrammeItem[], heading: string | null): boolean
 /**
  * The list of people starting at `from`, or null if what is there is not one.
  *
- * A run of names can end on the heading of whatever comes next — `…ORGANIST:
- * MR. BOATENG`, `CEREMONY` — and that heading belongs to the next block, not
+ * A run of names can end on the heading of whatever comes next. `…ORGANIST:
+ * MR. BOATENG`, `CEREMONY`, and that heading belongs to the next block, not
  * to this list. It is the only line a run ever gives back.
  */
 function rosterRunAt(
@@ -485,7 +485,7 @@ function toRoster(run: GuideProgrammeItem[]): ProgrammeRosterGroup[] {
 
     if (isGroupHeader(item, { mixedCaseRun })) {
       const group = open({ id: item.id, title: text, people: [] });
-      // A heading whose detail is the people it announces — the first of them
+      // A heading whose detail is the people it announces. The first of them
       // ran too long to stay on a line of its own.
       detailLines(item).forEach((line, at) => {
         const { label, name } = splitLabelled(line);
@@ -534,14 +534,14 @@ function toRoster(run: GuideProgrammeItem[]): ProgrammeRosterGroup[] {
 /**
  * Something to be sung, rather than something that happens.
  *
- * A hymn arrives as a title with its verses underneath — and set on the
+ * A hymn arrives as a title with its verses underneath, and set on the
  * running order it becomes one bullet on the same rail as `Order of
  * photography`, six lines of poetry squeezed into the footnote slot. It is a
  * different kind of thing and it is read differently, so it is lifted out.
  *
  * The verse itself is the signal: a stanza breaks mid-clause on a comma or a
  * semicolon, and nobody ends `Cutting of the cake` that way. A cue the
- * organizer wrote above it — `OPENING HYMN`, `CHORUS` — vouches for a shorter
+ * organizer wrote above it. `OPENING HYMN`, `CHORUS`. Vouches for a shorter
  * one that would not have qualified on its own.
  */
 function isHymnItem(item: GuideProgrammeItem, cue: string | null): boolean {
@@ -596,7 +596,7 @@ function toHymn(item: GuideProgrammeItem): Extract<ProgrammeBlock, { kind: "hymn
 /**
  * The line that opens the closing block of a programme.
  *
- * `APPRECIATION`, `ACKNOWLEDGEMENTS`, `THANK YOU` — the hosts turning from
+ * `APPRECIATION`, `ACKNOWLEDGEMENTS`, `THANK YOU`. The hosts turning from
  * the running order to speak to the room.
  */
 const APPRECIATION_CUE =
@@ -613,8 +613,8 @@ const MAX_APPRECIATION_ITEMS = 8;
  *
  * Only ever read from the tail, and only across time-less lines: a closing
  * block is by definition what is left after the last thing that happens at a
- * time. That is what stops `THANK YOU` said at 4:15pm — a real item of the
- * running order — from swallowing everything under it.
+ * time. That is what stops `THANK YOU` said at 4:15pm. A real item of the
+ * running order, from swallowing everything under it.
  */
 function takeAppreciation(items: GuideProgrammeItem[], from: number): number | null {
   let start: number | null = null;
@@ -774,7 +774,7 @@ export function layoutProgramme(items: GuideProgrammeItem[]): ProgrammeBlock[] {
       }
 
       // A cue we picked up but that turned out to announce nothing sung goes
-      // back on the running order — it is still a line the organizer wrote.
+      // back on the running order. It is still a line the organizer wrote.
       if (pendingCue !== null) {
         entries.push({ id: `${item.id}-cue`, time: "", title: pendingCue });
         pendingCue = null;

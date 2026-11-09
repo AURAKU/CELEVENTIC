@@ -160,7 +160,7 @@ type PaletteDragPayload =
   | { type: "table"; kind: StudioTableKind }
   | { type: "element"; kind: VenueElementKind; label: string };
 
-/** Canvas hit-target filter — matches Main Ceremony “select rows” vs venue features. */
+/** Canvas hit-target filter. Matches Main Ceremony “select rows” vs venue features. */
 type CanvasSelectMode = "all" | "rows" | "features";
 
 function venueElementSize(kind: VenueElementKind): { width: number; height: number } {
@@ -315,7 +315,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         notes?: string | null;
       }>;
     }>;
-    // Never fall back across plan types — Main Ceremony and Reception are independent.
+    // Never fall back across plan types. Main Ceremony and Reception are independent.
     const selected =
       plans.find((plan) => (plan.planType ?? "RECEPTION") === activeType) ?? null;
 
@@ -369,7 +369,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       setPartyPlans(pack?.partyPlans ?? (isReceptionPrimary ? json.data.partyPlans : []) ?? []);
       dirtyRef.current = false;
     } else if (silent) {
-      // No saved plan for this type yet — preserve the in-progress local draft.
+      // No saved plan for this type yet. Preserve the in-progress local draft.
     } else {
       setPlanId(null);
       setPlanType(activeType);
@@ -614,7 +614,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         setTimeout(() => canvasSurfaceRef.current?.focus({ preventScroll: true }), 0);
         return;
       }
-      // Native Escape / exit — drop immersive shell only when no element is fullscreen.
+      // Native Escape / exit. Drop immersive shell only when no element is fullscreen.
       if (!document.fullscreenElement) {
         setIsFullscreen(false);
         setFullscreenChromeOpen(false);
@@ -874,7 +874,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         directions,
         scale: 2,
       });
-      setMapExportNotice("Venue map downloaded — share the PNG with guests for easy navigation.");
+      setMapExportNotice("Venue map downloaded. Share the PNG with guests for easy navigation.");
     } catch (error) {
       setSaveError(
         error instanceof Error ? error.message : "Could not download the venue map image."
@@ -1397,7 +1397,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     const peopleForPlan = usingStarter ? 32 : expected; // 4 starter tables when guest count unknown
     const plan = requiredTablesForPeople(peopleForPlan, seatsPerTable);
     if (plan.tables <= 0) {
-      setSaveError("Could not generate tables — try Add Table instead.");
+      setSaveError("Could not generate tables. Try Add Table instead.");
       return;
     }
     if (tables.length > 0) {
@@ -1439,7 +1439,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     setSaveError(null);
     if (usingStarter) {
       setMapExportNotice(
-        `Starter reception layout ready — ${plan.tables} tables of ${seatsPerTable}. Add guests anytime; regenerate to match headcount.`
+        `Starter reception layout ready: ${plan.tables} tables of ${seatsPerTable}. Add guests anytime; regenerate to match headcount.`
       );
     }
   }
@@ -2115,7 +2115,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-    // Intentionally bound to selection identity only — handlers close over latest render.
+    // Intentionally bound to selection identity only. Handlers close over latest render.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- selection-driven shortcut
   }, [previewMode, selectedElementId, selectedTable?.id, selectedRowIds.join(","), planType, canvasSelectMode, isFullscreen]);
 
@@ -2182,7 +2182,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               {planType === "CEREMONY"
-                ? "Chairs only — rows, aisles and ceremony sections."
+                ? "Chairs only. Rows, aisles and ceremony sections."
                 : "Tables with table-only or table-and-chair assignment."}
             </p>
           </div>
@@ -2354,13 +2354,13 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
             className="border-rose-200 text-rose-700 hover:bg-rose-50"
             onClick={() => clearAllCanvas()}
             disabled={!hasCanvasContent || previewMode}
-            title="Clear canvas — Undo restores the previous draft state"
+            title="Clear canvas. Undo restores the previous draft state"
           >
             <Eraser className="h-4 w-4" /> Clear All
           </Button>
           {hasStagedCanvasEdits && (
             <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-900">
-              Staged edits — Undo or Clear All
+              Staged edits. Undo or Clear All
             </Badge>
           )}
           <Button variant="outline" onClick={() => void persist("draft")} disabled={saving || previewMode}>
@@ -2486,7 +2486,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       >
         {isFullscreen && (
           <>
-            {/* Immersive tools drawer — hidden until pulled/tapped */}
+            {/* Immersive tools drawer. Hidden until pulled/tapped */}
             <div
               className={cn(
                 "absolute inset-x-0 top-0 z-[70] transition-transform duration-300 ease-out",
@@ -3003,7 +3003,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                 <Input
                   value={customVenueLabel}
                   disabled={previewMode}
-                  placeholder="Name — e.g. Coat check"
+                  placeholder="Name. E.g. Coat check"
                   onChange={(event) => setCustomVenueLabel(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
@@ -3797,7 +3797,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                             </p>
                             <p className="mt-2 max-w-sm text-sm text-slate-500">
                               Auto-generate rows with a centre aisle, add family sections, then click
-                              chairs to assign guests — same workflow as reception tables.
+                              chairs to assign guests. Same workflow as reception tables.
                             </p>
                             <div className="mt-4 flex flex-wrap justify-center gap-2">
                               <Button
@@ -4368,7 +4368,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                       </div>
                       {assignment ? (
                         <Badge variant="outline">
-                          {tableDisplayName(assignment.tableNumber)} · Seat {assignment.seatLabel ?? "—"}
+                          {tableDisplayName(assignment.tableNumber)} · Seat {assignment.seatLabel ?? "None"}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-slate-400">

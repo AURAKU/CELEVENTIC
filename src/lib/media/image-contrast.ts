@@ -44,7 +44,7 @@ export function sampleImageContrastMode(url: string): Promise<ImageContrastMode 
             const g = data[i + 1];
             const b = data[i + 2];
             const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-            // Headline / names / BEGIN sit in the lower-middle band — weight it higher.
+            // Headline / names / BEGIN sit in the lower-middle band. Weight it higher.
             const rowWeight = y > size * 0.35 ? 1.6 : 1;
             total += luma * rowWeight * alpha;
             weight += rowWeight * alpha;
@@ -65,7 +65,7 @@ export function sampleImageContrastMode(url: string): Promise<ImageContrastMode 
   });
 }
 
-/** Perceived luminance (0–255) of a hex color; null if unparseable. */
+/** Perceived luminance (0 to 255) of a hex color; null if unparseable. */
 function hexLuminance(hex?: string | null): number | null {
   if (!hex) return null;
   const clean = hex.trim().replace("#", "");
@@ -79,7 +79,7 @@ function hexLuminance(hex?: string | null): number | null {
 
 /**
  * Pick a brand color for an overlay accent only when it stays legible for the
- * given photo mode — otherwise fall back to a known-safe color. This guards
+ * given photo mode. Otherwise fall back to a known-safe color. This guards
  * against brand palettes (e.g. a deep bronze `primaryColor`) that read fine on
  * paper/light photos but disappear (dark-on-dark) once used as accent text over
  * a dark uploaded photo, and the mirror case on light photos.

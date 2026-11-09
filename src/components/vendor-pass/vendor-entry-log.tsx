@@ -56,7 +56,7 @@ function formatStamp(iso: string): string {
   });
 }
 
-/** Every scan of a vendor access card — admitted or refused — newest first. */
+/** Every scan of a vendor access card. Admitted or refused. Newest first. */
 export function VendorEntryLog({
   passId,
   reloadToken = 0,
@@ -186,10 +186,10 @@ export function VendorEntryLog({
                   </td>
                   <td className="py-2 pr-3 tabular-nums text-slate-700">{row.quantity}</td>
                   <td className="py-2 pr-3 tabular-nums text-slate-700">{row.entryCycle}</td>
-                  <td className="py-2 pr-3 text-slate-700">{row.gate ?? "—"}</td>
-                  <td className="py-2 pr-3 text-slate-700">{row.scannedByName ?? "—"}</td>
+                  <td className="py-2 pr-3 text-slate-700">{row.gate ?? "None"}</td>
+                  <td className="py-2 pr-3 text-slate-700">{row.scannedByName ?? "None"}</td>
                   <td className="py-2 pr-3 text-slate-600">
-                    {CHANNEL_LABELS[row.channel ?? ""] ?? row.channel ?? "—"}
+                    {CHANNEL_LABELS[row.channel ?? ""] ?? row.channel ?? "None"}
                     {row.offline ? " · offline" : ""}
                   </td>
                 </tr>

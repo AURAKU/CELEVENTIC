@@ -86,7 +86,7 @@ export interface CinematicCssEnvelopeFaceProps {
 }
 
 /**
- * Cinematic CSS envelope — 3D V-flap, poured wax seal, staged unseal + unfold.
+ * Cinematic CSS envelope. 3D V-flap, poured wax seal, staged unseal + unfold.
  * Used for themed envelopes (memorial, royal, kente, classic) that are not photoreal.
  */
 export function CinematicCssEnvelopeFace({
@@ -155,7 +155,7 @@ export function CinematicCssEnvelopeFace({
           : { duration: 0.85, ease: EASE_SILK }
       }
     >
-      {/* Stage atmosphere — spotlight on the envelope */}
+      {/* Stage atmosphere. Spotlight on the envelope */}
       <div
         className="absolute inset-0"
         style={{
@@ -258,7 +258,7 @@ export function CinematicCssEnvelopeFace({
             aria-hidden
           />
 
-          {/* Left / right side pockets — deeper fold AO */}
+          {/* Left / right side pockets. Deeper fold AO */}
           <div
             className="absolute inset-y-[12%] left-0 w-[18%]"
             style={{
@@ -347,7 +347,7 @@ export function CinematicCssEnvelopeFace({
             />
           </svg>
 
-          {/* Bottom flap — richer fold depth */}
+          {/* Bottom flap. Richer fold depth */}
           <div
             className="absolute inset-x-0 bottom-0 h-[40%]"
             style={{
@@ -417,7 +417,7 @@ export function CinematicCssEnvelopeFace({
           )}
         </div>
 
-        {/* Top V-flap — 3D peel then dramatic unfold */}
+        {/* Top V-flap. 3D peel then dramatic unfold */}
         <motion.div
           className="absolute inset-x-0 top-0 z-20 origin-top"
           style={{
@@ -545,7 +545,7 @@ export function CinematicCssEnvelopeFace({
           )}
         </AnimatePresence>
 
-        {/* Poured wax seal — lifts clear, then soars away */}
+        {/* Poured wax seal. Lifts clear, then soars away */}
         <motion.div
           className="absolute left-1/2 z-30 flex items-center justify-center"
           style={{

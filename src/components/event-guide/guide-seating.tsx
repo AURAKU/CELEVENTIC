@@ -30,11 +30,11 @@ const SUGGEST_DEBOUNCE_MS = 220;
  *
  * A guest opens this standing in a doorway with a plate in one hand. What they
  * want is one number, large. So the answer is a seat card: the table drawn as
- * it is laid — a round top with chairs around it — with their number set in
+ * it is laid. A round top with chairs around it, with their number set in
  * the middle of it, and everything else small underneath.
  *
  * Always server-backed: the guest list never ships to the browser, so this tab
- * needs a connection. When offline it says so plainly and stops — no spinner,
+ * needs a connection. When offline it says so plainly and stops. No spinner,
  * no request that will hang, and the programme and menu keep working.
  *
  * The privacy promise is unchanged and stated on the card: a lookup returns
@@ -102,7 +102,7 @@ export function GuideSeating({
    * Suggestions while typing.
    *
    * Name mode only, and only once enough has been typed for the server to
-   * answer — the same floor the lookup itself enforces. Each keystroke aborts
+   * answer. The same floor the lookup itself enforces. Each keystroke aborts
    * the request before it, so a fast typist gets one answer rather than a race
    * between six of them.
    */
@@ -297,7 +297,7 @@ export function GuideSeating({
 
             {/*
               In-flow suggestions (not absolute). An overlay sat on top of
-              “Find my table”, short-query hints, and the privacy line — guests
+              “Find my table”, short-query hints, and the privacy line. Guests
               reading those phrases while typing. Expanding here pushes the
               button down instead of covering anything.
             */}
@@ -375,7 +375,7 @@ export function GuideSeating({
                 // The list holds the name on the invitation, which is often
                 // fuller than the one a guest goes by.
                 <p className="mt-1.5 text-center text-[0.78rem] leading-relaxed opacity-65">
-                  Try the name on your invitation — a first name on its own will
+                  Try the name on your invitation. A first name on its own will
                   suggest the rest.
                 </p>
               ) : null}
@@ -651,7 +651,7 @@ function AdmissionPassMark({ code, fonts }: { code: string; fonts: Fonts }) {
   );
 }
 
-/** One chair per seat in the party — the row a guest is walking towards. */
+/** One chair per seat in the party. The row a guest is walking towards. */
 function PartyChairs({ count }: { count: number }) {
   const drawn = Math.min(Math.max(count, 1), MAX_DRAWN_CHAIRS);
   return (

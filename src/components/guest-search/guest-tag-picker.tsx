@@ -143,7 +143,7 @@ export function GuestTagPicker({
       {loading ? (
         <p className="text-xs text-slate-500">Loading tags…</p>
       ) : tags.length === 0 ? (
-        <p className="text-xs text-slate-500">No tags yet — add one below.</p>
+        <p className="text-xs text-slate-500">No tags yet. Add one below.</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {tags.map((tag) => {

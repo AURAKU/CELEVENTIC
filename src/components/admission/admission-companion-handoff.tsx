@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
  * While a guest still has the invitation ceremony open, poll admission status.
  *
  * Auto-jump to Event Companion only when the party is FULLY admitted (or the
- * caller opts in). Partial admission keeps the invitation available — the
+ * caller opts in). Partial admission keeps the invitation available. The
  * PartyAdmissionSwitch banner offers “View Event Access” instead of replacing
  * the ceremony for remaining guests.
  */

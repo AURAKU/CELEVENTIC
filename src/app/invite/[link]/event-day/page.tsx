@@ -5,7 +5,12 @@ import { authOptions } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { invitationService } from "@/services/invitations/invitation.service";
-import { repairInviteLink } from "@/services/invitations/invite-link-resolver.service";
+import { applyEdwinPublishedDesign } from "@/lib/invitation/edwin-published-design";
+import {
+  EDWIN_PUBLIC_INVITE_PATH,
+  EDWIN_PUBLISHED_INVITE_LINK,
+  guestFacingInviteLink,
+} from "@/lib/invitation/public-invite-alias";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import { resolveInvitationFeatures } from "@/services/invitation-features/feature-resolver";
 import {
@@ -114,25 +119,37 @@ export default async function EventDayPortal({
     },
   } satisfies Prisma.InvitationSelect;
 
-  let invitation = await prisma.invitation.findUnique({
-    where: { uniqueLink: link },
-    select: inviteSelect,
-  });
+  // Same alias + repair path as the ceremony page so pretty live URLs never 404.
+  const loaded = await invitationService.getInvitationByLink(link);
+  let invitation = loaded
+    ? await prisma.invitation.findUnique({
+        where: { id: loaded.id },
+        select: inviteSelect,
+      })
+    : null;
 
-  if (!invitation) {
-    const repaired = await repairInviteLink(link);
-    if (repaired) {
+  if (!invitation) notFound();
+
+  const publishedEdwin =
+    invitation.uniqueLink === EDWIN_PUBLISHED_INVITE_LINK ||
+    invitation.uniqueLink === EDWIN_PUBLIC_INVITE_PATH;
+  if (publishedEdwin) {
+    try {
+      await applyEdwinPublishedDesign(invitation.uniqueLink);
       invitation = await prisma.invitation.findUnique({
-        where: { uniqueLink: repaired },
+        where: { id: invitation.id },
         select: inviteSelect,
       });
+      if (!invitation) notFound();
+    } catch (error) {
+      console.error("[edwin-design] could not enable Event Companion on the published invitation", error);
     }
   }
 
   if (!invitation) notFound();
-  // Every href below must carry the canonical token, never the mangled one
-  // the guest arrived with.
-  const canonicalLink = invitation.uniqueLink;
+
+  // Guest-facing path stays pretty on live (`/invite/edwin-and-lordina`).
+  const canonicalLink = guestFacingInviteLink(invitation.uniqueLink);
   if (invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") notFound();
 
   const isOrganizerPreview =
@@ -163,7 +180,7 @@ export default async function EventDayPortal({
   }
 
   // Event Companion must continue the same live Studio design guests saw on
-  // the invitation — never a stale catalogue layout on a secondary invite.
+  // the invitation, never a stale catalogue layout on a secondary invite.
   const productionOrder = await resolveProductionInvitationOrder(
     invitation.id,
     invitation.event.id
@@ -186,7 +203,7 @@ export default async function EventDayPortal({
     : null;
 
   // Strict party isolation: only guests owned by THIS invitation.
-  // Never OR-in a foreign guestId — that mixed seating across parties that
+  // Never OR-in a foreign guestId, that mixed seating across parties that
   // share an event (or even a table).
   const siblings = await loadSiblingInvitationLabels(
     invitation.event.id,
@@ -282,7 +299,7 @@ export default async function EventDayPortal({
     (canonical?.featureConfig as Record<string, { config?: unknown }> | null)?.EVENT_MENU
       ?.config;
   const menu = resolveCompanionMenu(localMenuRaw, canonicalMenuRaw);
-  const menuBody = menu.menuBody.trim() || null;
+  const menuBody = menu.menuBody.trim() || theme.menuBody?.trim() || null;
   const menuUrl = menu.menuUrl.trim() || null;
 
   const seatingFeatureOn =

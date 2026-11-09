@@ -4,14 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  motion,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-  useTransform,
-  type Variants,
-} from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import type { InvitationRenderProps } from "@/types/invitation-design";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
 import {
@@ -26,6 +19,7 @@ import { useInvitationStaticPreview } from "@/components/invitation/invitation-s
 import {
   distinctInvitationPhrase,
   mergeWeddingBoard,
+  splitProgrammeForGuestSurfaces,
   type ResolvedWeddingBoard,
   type WeddingBoardContent,
   type WeddingSectionId,
@@ -86,8 +80,8 @@ function resolveBoard(design: InvitationRenderProps["design"]): ResolvedWeddingB
 }
 
 /**
- * Fluid type scale — readable on ~360px phones through desktop, without
- * locking guests into fixed 10–13px labels that collapse on retina mobiles.
+ * Fluid type scale. Readable on ~360px phones through desktop, without
+ * locking guests into fixed 10 to 13px labels that collapse on retina mobiles.
  */
 const T = {
   label: "text-[clamp(0.8125rem,2.1vw,0.95rem)]",
@@ -111,47 +105,19 @@ const T = {
 
 /* -------------------------------- motion -------------------------------- */
 
-const EASE_SILK = [0.22, 1, 0.36, 1] as const;
-
-function useReveal() {
-  const reduced = useReducedMotion();
-  const variants: Variants = {
-    hidden: { opacity: 0, y: reduced ? 0 : 26 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: reduced ? 0.2 : 0.8, ease: EASE_SILK },
-    },
-  };
-  return { reduced, variants };
-}
-
 function Reveal({
   children,
   className,
-  delay = 0,
   as = "div",
 }: {
   children: React.ReactNode;
   className?: string;
-  delay?: number;
   as?: "div" | "section";
 }) {
-  const { variants, reduced } = useReveal();
-  const staticPreview = useInvitationStaticPreview();
-  // Live invites scroll inside `.invite-viewport-root` (fixed + overflow-y),
-  // not the window. Framer's whileInView defaults to the browser viewport, so
-  // sections that are on-screen in the invite scroller can stay opacity:0
-  // forever — including the full Order of the Day. Animate in on mount instead.
-  const common = {
-    className,
-    variants,
-    initial: staticPreview || reduced ? ("show" as const) : ("hidden" as const),
-    animate: "show" as const,
-    transition: { delay },
-  };
-  if (as === "section") return <motion.section {...common}>{children}</motion.section>;
-  return <motion.div {...common}>{children}</motion.div>;
+  // No mount transform. A y/opacity pulse on the cover trapped the first
+  // swipe on the live invite scroller until the guest tapped again.
+  if (as === "section") return <section className={className}>{children}</section>;
+  return <div className={className}>{children}</div>;
 }
 
 /** Thin champagne divider with a centre diamond. */
@@ -169,7 +135,7 @@ function Divider({ palette: C }: { palette: FaPalette }) {
 }
 
 /**
- * Date triad — tap to smart-save reminder (Apple .ics / Google / Outlook).
+ * Date triad. Tap to smart-save reminder (Apple .ics / Google / Outlook).
  * Keeps the Forever Afaris champagne layout; affordance is whisper-quiet.
  */
 function WeddingDateSaveRow({
@@ -233,7 +199,7 @@ function WeddingDateSaveRow({
       : state === "done"
         ? "Check your calendar to confirm"
         : state === "error"
-          ? "Couldn’t save — tap to try again"
+          ? "Couldn’t save. Tap to try again"
           : platformHint;
 
   const sharedMonth =
@@ -873,7 +839,6 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   const staticPreview = useInvitationStaticPreview();
   const board = resolveBoard(design);
   const features = board.features;
-  const reduced = useReducedMotion();
 
   const C = useMemo(
     () =>
@@ -974,18 +939,23 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   const countdownTarget =
     board.countdownTarget?.trim() || event.startDateRaw || event.startDate;
 
+  const guestProgrammeItems = useMemo(
+    () => splitProgrammeForGuestSurfaces(board.programmeItems).scheduleItems,
+    [board.programmeItems]
+  );
+
   const celebrationDays = useMemo(() => {
     const source = `${event.startDateRaw || ""} ${event.startDate || ""} ${board.displayDate || ""}`;
     const yearMatch = source.match(/\b(20\d{2})\b/);
     const year = yearMatch ? Number(yearMatch[1]) : Number.NaN;
     return celebrationDayGroups(
       celebrationMomentsFromProgramme(
-        board.programmeItems,
+        guestProgrammeItems,
         year,
         event.startDateRaw || event.startDate || ""
       )
     );
-  }, [board.displayDate, board.programmeItems, event.startDate, event.startDateRaw]);
+  }, [board.displayDate, guestProgrammeItems, event.startDate, event.startDateRaw]);
 
   const celebrationEvents = useMemo<CalendarEventInput[]>(() => {
     if (celebrationDays.length < 2) return [];
@@ -993,7 +963,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       couple1 && couple2 ? `${couple1} & ${couple2}` : event.title?.trim() || "Wedding celebration";
     return celebrationDays.flatMap((day) =>
       day.moments.map((moment) => ({
-        title: `${couple} — ${moment.title}`,
+        title: `${couple}: ${moment.title}`,
         startDateRaw: moment.startIso,
         endDateRaw: moment.endIso,
         venue: moment.place || undefined,
@@ -1120,7 +1090,6 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             url={heroPortrait}
             caption={board.heroCaption}
             palette={C}
-            reduced={Boolean(reduced)}
           />
         )}
 
@@ -1295,7 +1264,11 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         ) : null}
         {board.accessNote && (
           <p
-            className={`mx-auto mt-4 w-fit max-w-full rounded-full border px-4 py-2 ${T.labelTight} font-semibold uppercase leading-relaxed tracking-[0.2em]`}
+            className={`mx-auto mt-4 w-fit max-w-[34rem] rounded-full border px-4 py-2 text-center font-semibold leading-relaxed ${
+              board.accessNote.trim().length > 40
+                ? "text-[clamp(0.8125rem,2vw,0.95rem)] tracking-[0.04em]"
+                : `${T.labelTight} uppercase tracking-[0.2em]`
+            }`}
             style={{
               color: C.cocoa,
               borderColor: C.rose,
@@ -1371,16 +1344,16 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       ) : null,
 
     programme:
-      features.programme && board.programmeItems.length > 0 ? (
+      features.programme && guestProgrammeItems.length > 0 ? (
         <section className="mx-auto w-full min-w-0 max-w-[34rem]">
           <Reveal>
             <h2 className={`text-center ${T.scriptSm}`} style={{ color: C.goldDeep }}>
               {board.programmeHeading}
             </h2>
           </Reveal>
-          {/* Always-visible list — never gate programme copy behind scroll IO. */}
+          {/* Always-visible list, never gate programme copy behind scroll IO. */}
           <ol className="relative mx-auto mt-6 w-full space-y-6 text-center sm:space-y-7">
-            {board.programmeItems.map((item) => (
+            {guestProgrammeItems.map((item) => (
               <li key={item.id} className="relative min-w-0 text-center">
                 <span
                   aria-hidden
@@ -1498,6 +1471,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           guestName={invitedGuestName}
           eventTitle={event.title}
           rsvpHeading={board.rsvpHeading}
+          entryPassNote={board.entryPassNote}
           showRsvp={Boolean(features.rsvp)}
           partyAllowance={
             props.partyAllowance ??
@@ -1838,32 +1812,19 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
 /* ------------------------------- helpers -------------------------------- */
 
-/** Hero photograph in a champagne arch, drifting gently against the scroll. */
+/** Hero photograph in a champagne arch. Still frame, never a mount pulse. */
 function HeroPortrait({
   url,
   caption,
   palette: C,
-  reduced,
 }: {
   url: string;
   caption?: string;
   palette: FaPalette;
-  reduced: boolean;
 }) {
-  const frameRef = useRef<HTMLDivElement | null>(null);
-  const { scrollYProgress } = useScroll({
-    target: frameRef,
-    offset: ["start end", "end start"],
-  });
-  const drift = useSpring(useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]), {
-    stiffness: 80,
-    damping: 24,
-  });
-
   return (
     <div className="mb-8">
       <div
-        ref={frameRef}
         className="relative mx-auto overflow-hidden"
         style={{
           width: "min(78vw, 320px)",
@@ -1874,7 +1835,7 @@ function HeroPortrait({
           background: C.linen,
         }}
       >
-        <motion.div className="absolute inset-[-10%]" style={reduced ? undefined : { y: drift }}>
+        <div className="pointer-events-none absolute inset-0">
           <Image
             src={url}
             alt={caption || "The couple"}
@@ -1884,10 +1845,10 @@ function HeroPortrait({
             className="object-cover object-[center_22%]"
             unoptimized={shouldUnoptimizeNextImage(url)}
           />
-        </motion.div>
+        </div>
         <div
           aria-hidden
-          className="absolute inset-0"
+          className="pointer-events-none absolute inset-0"
           style={{
             background: `linear-gradient(180deg, transparent 55%, ${C.ivory}cc 100%)`,
             borderRadius: "inherit",

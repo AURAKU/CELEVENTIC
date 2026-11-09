@@ -75,7 +75,7 @@ export function authorizeGuestWrite(eventId: string): Promise<AuthResult> {
 /**
  * Resolve the event that owns an invitation, then authorise against it.
  *
- * The invitation id alone is never trusted — a caller with access to event A
+ * The invitation id alone is never trusted. A caller with access to event A
  * must not be able to edit event B's invitation by guessing its id.
  */
 export async function authorizeInvitationWrite(
@@ -117,7 +117,7 @@ export async function guardRate(
   );
   if (!result.success) {
     return NextResponse.json(
-      { error: "Too many requests — wait a moment and try again." },
+      { error: "Too many requests. Wait a moment and try again." },
       { status: 429 }
     );
   }

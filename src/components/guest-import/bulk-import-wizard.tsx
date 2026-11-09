@@ -260,8 +260,8 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
     setError("");
 
     // Save the choices generation reads (message, tags, publish, passes). The
-    // API only re-derives rows when a parsing option changed, so the review —
-    // renamed guests, corrected allowances, duplicate decisions — survives.
+    // API only re-derives rows when a parsing option changed, so the review.
+    // renamed guests, corrected allowances, duplicate decisions. Survives.
     const persisted = await requestJson(`/api/guest-import/batches/${batch.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -305,10 +305,10 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
       if (!result.ok) {
         consecutiveErrors += 1;
         // Generation continues server-side, so a flaky poll is not a failed
-        // import — but say so rather than spinning silently forever.
+        // import, but say so rather than spinning silently forever.
         if (consecutiveErrors >= MAX_POLL_ERRORS) {
           setError(
-            `${result.error} Creation is still running in the background — reopen this import from History to check on it.`
+            `${result.error} Creation is still running in the background. Reopen this import from History to check on it.`
           );
           return;
         }
@@ -413,13 +413,13 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
                 </div>
                 <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2.5 text-xs text-slate-600">
                   <p className="font-medium text-slate-800">
-                    Template columns match Guest CRM — open in Excel, Numbers, or Google Sheets.
+                    Template columns match Guest CRM. Open in Excel, Numbers, or Google Sheets.
                   </p>
                   <ul className="mt-2 space-y-1">
                     {TEMPLATE_COLUMN_GUIDE.map((col) => (
                       <li key={col.header}>
                         <span className="font-medium text-slate-700">{col.header}</span>
-                        {col.required ? " (required)" : ""} — {col.help}
+                        {col.required ? " (required)" : ""}: {col.help}
                       </li>
                     ))}
                   </ul>
@@ -449,7 +449,7 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
 
               <SettingRow
                 label="Guest Entry Pass"
-                hint="Unique QR and admission code — same stack used at the gate."
+                hint="Unique QR and admission code. Same stack used at the gate."
                 checked={settings.issueEntryPass}
                 onChange={(v) => setSettings((s) => ({ ...s, issueEntryPass: v }))}
               />
@@ -541,7 +541,7 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
                 </Label>
                 {tags.length === 0 ? (
                   <p className="text-xs text-slate-500">
-                    No tags yet — add them in Guest CRM, or continue without tags.
+                    No tags yet. Add them in Guest CRM, or continue without tags.
                   </p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
@@ -574,7 +574,7 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
                   </div>
                 )}
                 <p className="text-[11px] text-slate-500">
-                  Private seating labels — guests never see these on their invitation.
+                  Private seating labels. Guests never see these on their invitation.
                 </p>
               </div>
             </CardContent>
@@ -770,7 +770,7 @@ function GenerationPanel({
     setDeliveryNote(
       `Queued ${queued} message${queued === 1 ? "" : "s"}.` +
         (skipped > 0
-          ? ` ${skipped} guest${skipped === 1 ? " has" : "s have"} no contact details — share their links by hand.`
+          ? ` ${skipped} guest${skipped === 1 ? " has" : "s have"} no contact details. Share their links by hand.`
           : "") +
         " Delivery continues automatically."
     );

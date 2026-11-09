@@ -12,13 +12,13 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const card = await getDigitalCardBySlug(slug);
-  if (!card) return { title: "SmartCard" };
+  if (!card) return { title: "CeleCard" };
   return {
-    title: `${card.displayName} · Celeventic SmartCard`,
+    title: `${card.displayName} · Celeventic CeleCard`,
     description:
       card.bio ||
       [card.title, card.company].filter(Boolean).join(" · ") ||
-      "Celeventic SmartCard — your identity, one tap away",
+      "Celeventic CeleCard. Your living card, one tap away",
   };
 }
 

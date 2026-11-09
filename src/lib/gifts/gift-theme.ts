@@ -33,7 +33,7 @@ export interface GiftTheme {
     script: string;
   };
   radius: number;
-  /** Restrained ornamentation: gift box, ribbon, petals — never confetti spam. */
+  /** Restrained ornamentation: gift box, ribbon, petals, never confetti spam. */
   ornament: "ribbon" | "petals" | "gilded" | "none";
 }
 
@@ -41,7 +41,7 @@ const SERIF_STACK = '"Playfair Display", "Cormorant Garamond", Georgia, serif';
 const SCRIPT_STACK = '"Great Vibes", "Alex Brush", "Parisienne", cursive';
 const SANS_STACK = '"Jost", "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif';
 
-/** Forever Afaris — the default luxury wedding preset. */
+/** Forever Afaris. The default luxury wedding preset. */
 export const FOREVER_AFARIS_GIFT_THEME: GiftTheme = {
   id: "forever-afaris-wedding",
   name: "Forever Afaris",

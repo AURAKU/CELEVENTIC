@@ -86,7 +86,7 @@ export function buildPublishChecklist(ctx: StudioPublishContext): PublishCheckIt
     id: "host",
     label: hostChecklistLabelForEventType(ctx.eventType),
     severity: host ? "ok" : "warning",
-    detail: host ? host : "Guests see the host name on the invite — worth filling in.",
+    detail: host ? host : "Guests see the host name on the invite. Worth filling in.",
   });
 
   items.push({
@@ -139,7 +139,7 @@ export function buildPublishChecklist(ctx: StudioPublishContext): PublishCheckIt
       id: "music",
       label: "Background music",
       severity: "warning",
-      detail: "Optional — library or upload makes the experience feel premium.",
+      detail: "Optional. Library or upload makes the experience feel premium.",
     });
   }
 
@@ -150,7 +150,7 @@ export function buildPublishChecklist(ctx: StudioPublishContext): PublishCheckIt
     detail: ctx.design.layout ?? "Select a template layout.",
   });
 
-  // Action Registry — every configured button slot must be a known mapped id
+  // Action Registry. Every configured button slot must be a known mapped id
   const buttonActions = experience?.buttonActions;
   const slots: Array<{ key: "primary" | "secondary" | "tertiary"; value?: string }> = [
     { key: "primary", value: buttonActions?.primary ?? "rsvp" },
@@ -171,7 +171,7 @@ export function buildPublishChecklist(ctx: StudioPublishContext): PublishCheckIt
       id: "button-actions",
       label: "Button actions",
       severity: "error",
-      detail: "Primary button cannot be Hidden — map it to RSVP, Save Date, or another Action Registry key.",
+      detail: "Primary button cannot be Hidden. Map it to RSVP, Save Date, or another Action Registry key.",
     });
   } else {
     const labels = slots
@@ -196,8 +196,8 @@ export function buildPublishChecklist(ctx: StudioPublishContext): PublishCheckIt
       detail: hasVenue
         ? ctx.mapsLink
           ? "Venue section has directions"
-          : "Venue name set — add a maps link for Directions"
-        : "Venue section is on — add a venue name or maps link in Details.",
+          : "Venue name set. Add a maps link for Directions"
+        : "Venue section is on. Add a venue name or maps link in Details.",
     });
   }
 
@@ -206,7 +206,7 @@ export function buildPublishChecklist(ctx: StudioPublishContext): PublishCheckIt
       id: "gallery-section",
       label: "Gallery section",
       severity: "warning",
-      detail: "Gallery is visible but empty — upload photos or hide the section.",
+      detail: "Gallery is visible but empty. Upload photos or hide the section.",
     });
   }
 

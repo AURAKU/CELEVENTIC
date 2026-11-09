@@ -25,7 +25,7 @@ const ADMIN_DEFAULT_KEY = "qr_default_logo_url";
 const ADMIN_LOGO_SIZE_KEY = "qr_default_logo_size";
 /**
  * Backstop only. Clients compress before upload (see `QR_LOGO_COMPRESSION`), so
- * this exists to bound direct API calls rather than to gate the UI — the old 2MB
+ * this exists to bound direct API calls rather than to gate the UI. The old 2MB
  * value rejected ordinary phone photos outright instead of shrinking them.
  */
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;

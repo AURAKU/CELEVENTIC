@@ -1,5 +1,5 @@
 /**
- * Persist guest RSVP so refresh / reopen keeps the thank-you state —
+ * Persist guest RSVP so refresh / reopen keeps the thank-you state.
  * never re-open Accept/Decline after a real reply.
  */
 
@@ -73,6 +73,6 @@ export function writePersistedRsvp(
       })
     );
   } catch {
-    // Private mode / quota — server status still wins on next personalized open.
+    // Private mode / quota. Server status still wins on next personalized open.
   }
 }

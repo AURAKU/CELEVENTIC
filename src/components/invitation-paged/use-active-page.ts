@@ -13,7 +13,7 @@ interface UseActivePageOptions {
 
 /**
  * Scroll a snap page into view inside `.inv-paged-scroll`.
- * Never use window scrollIntoView alone — the live invite shell is position:fixed,
+ * Never use window scrollIntoView alone. The live invite shell is position:fixed,
  * so window scrolling breaks pagination / buttons on mobile.
  */
 export function scrollToInvitePage(pageId: string, smooth = true) {
@@ -37,7 +37,7 @@ export function scrollToInvitePage(pageId: string, smooth = true) {
 }
 
 /**
- * After envelope / opening ceremony — always land on the cover (top),
+ * After envelope / opening ceremony. Always land on the cover (top),
  * never a mid or bottom page from peek / hash / snap glitches.
  */
 export function resetInviteScrollToCover(options?: { smooth?: boolean; pageId?: string }) {
@@ -45,23 +45,32 @@ export function resetInviteScrollToCover(options?: { smooth?: boolean; pageId?: 
   const pageId = options?.pageId ?? "cover";
   const smooth = options?.smooth ?? false;
 
-  try {
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  } catch {
-    /* ignore */
-  }
-
-  const scroller =
+  const paged =
     document.querySelector<HTMLElement>(".inv-paged-scroll") ??
     document.getElementById(pageId)?.closest<HTMLElement>(".inv-paged-scroll");
+  const live = document.querySelector<HTMLElement>(".invite-viewport-live");
+  const scroller = paged ?? live;
+  const isolated = Boolean(
+    scroller?.closest('[aria-hidden="true"]') ||
+      scroller?.closest(".template-glimpse-live") ||
+      scroller?.closest(".invite-viewport-thumbnail")
+  );
 
   if (scroller) {
     scroller.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  } else if (!isolated) {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    } catch {
+      /* ignore */
+    }
   }
 
-  if (document.getElementById(pageId)) {
+  if (paged && document.getElementById(pageId)) {
     scrollToInvitePage(pageId, smooth);
   }
+
+  if (isolated || !paged) return;
 
   try {
     if (window.location.hash !== `#${pageId}`) {
@@ -86,6 +95,11 @@ export function useActivePage(
 
   // Deep-link landing + back/forward hash navigation.
   useEffect(() => {
+    if (opts.previewMode) return;
+    const host = containerRef.current;
+    if (host?.closest('[aria-hidden="true"]') || host?.closest(".template-glimpse-live")) {
+      return;
+    }
     const hash = window.location.hash.replace("#", "");
     // Fresh opens without a deep link always start on the cover.
     if (!hash || !pages.some((p) => p.id === hash)) {
@@ -102,7 +116,7 @@ export function useActivePage(
     }
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
-  }, [pages]);
+  }, [pages, opts.previewMode, containerRef]);
 
   const { invitationId, guestId, templateSlug, previewMode } = opts;
 
@@ -114,9 +128,15 @@ export function useActivePage(
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Under the envelope the portal is aria-hidden — do not rewrite hash /
+        // Under the envelope the portal is aria-hidden. Do not rewrite hash /
         // active page from peek layout (that left guests on bottom pages).
-        if (container.closest('[aria-hidden="true"]')) return;
+        if (
+          previewMode ||
+          container.closest('[aria-hidden="true"]') ||
+          container.closest(".template-glimpse-live")
+        ) {
+          return;
+        }
 
         // Prefer the most visible intersecting page (mobile snap can report several).
         const visible = entries

@@ -10,15 +10,15 @@ type Fonts = { heading: string; body: string; eyebrow: string; script: string };
 /**
  * The menu, set as a menu.
  *
- * A caterer's text arrives as one block — `*APPETIZER*` and then the dishes,
- * `*MAIN DISHES*` and then the rest — and printing it verbatim in a
+ * A caterer's text arrives as one block. `*APPETIZER*` and then the dishes,
+ * `*MAIN DISHES*` and then the rest, and printing it verbatim in a
  * pre-wrapped box gives a guest a notepad to squint at. `layoutMenu` reads it
  * into courses; this sets each course as a card the way a menu is laid on a
  * table: the course small and tracked between two rules, the dishes centred
  * and generous underneath.
  *
  * The atmosphere is drawn, not imported. A place setting at the top, a glyph
- * per course, a wash of the theme's own accent behind each card — all of it
+ * per course, a wash of the theme's own accent behind each card. All of it
  * in `--guide-*`, so a burgundy invitation gives a burgundy menu and nothing
  * here has a colour of its own.
  *
@@ -80,7 +80,7 @@ export function GuideMenuPanel({
 /**
  * The head of the menu card: a laid place setting, the word, a sprig.
  *
- * Deliberately says nothing the hosts did not — no invented welcome line, no
+ * Deliberately says nothing the hosts did not. No invented welcome line, no
  * claim about the hour. It sets the table and then gets out of the way.
  */
 function MenuCrest({ fonts }: { fonts: Fonts }) {
@@ -122,8 +122,8 @@ function MenuCrest({ fonts }: { fonts: Fonts }) {
  * separates a course from its dishes. Dishes are centred, one per line, at a
  * size that survives a dim reception hall and a phone held at arm's length.
  *
- * A course with no heading — dishes the organizer wrote with nothing above
- * them — drops the rule and simply lists them. Nothing they typed is left off
+ * A course with no heading. Dishes the organizer wrote with nothing above
+ * them. Drops the rule and simply lists them. Nothing they typed is left off
  * the card because we could not name the course it belonged to.
  */
 function CourseCard({ course, fonts }: { course: MenuCourse; fonts: Fonts }) {

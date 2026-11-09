@@ -1,8 +1,8 @@
 /**
- * Celeventic SmartCard / Identity OS — product naming & architecture map.
+ * Celeventic SmartCard / Identity OS. Product naming & architecture map.
  *
  * Routes stay on existing URLs (`/card/[slug]`, `/dashboard/business-card`).
- * Product chrome may say SmartCard / Identity without breaking links.
+ * Customer-facing name is CeleCard. Keep SmartCard only in code and routes.
  *
  * ── Architecture map (Phase A) ──────────────────────────────────────────
  * CURRENT
@@ -27,17 +27,17 @@
  *   Apple Wallet NFC entitlements are separate from physical NFC tags.
  */
 
-export const SMARTCARD_PRODUCT_NAME = "Celeventic SmartCard";
-export const SMARTCARD_PRODUCT_TAGLINE = "Your Identity. One Tap Away.";
-export const SMARTCARD_PRODUCT_SUPPORT =
-  "Meet. Share. Connect. Remember.";
-export const SMARTCARD_EYEBROW = "Smart Identity";
-export const SMARTCARD_HERO_LINE = "One tap. One scan. One unforgettable connection.";
+export const SMARTCARD_PRODUCT_SHORT_NAME = "CeleCard";
+export const SMARTCARD_PRODUCT_NAME = "Celeventic CeleCard";
+export const SMARTCARD_PRODUCT_TAGLINE = "Your living card. One tap away.";
+export const SMARTCARD_PRODUCT_SUPPORT = "Meet. Share. Connect. Remember.";
+export const SMARTCARD_EYEBROW = "CeleCard";
+export const SMARTCARD_HERO_LINE = "The card they tap stays the current you.";
 export const SMARTCARD_HERO_SUPPORT =
-  "Create a living digital identity you can share through QR, NFC, Wallet, link or contact exchange — and update it without ever reprinting a card.";
+  "Share through QR, NFC, Wallet, link or contact exchange. Update once. Every tap stays current. The public card goes live only while your subscription is paid.";
 
-export const SMARTCARD_CTA_PRIMARY = "Create my SmartCard";
-export const SMARTCARD_CTA_SECONDARY = "See it in action";
+export const SMARTCARD_CTA_PRIMARY = "Design my CeleCard";
+export const SMARTCARD_CTA_SECONDARY = "Browse world art themes";
 
 /** Short redirect path for Smart QR / share links (resolves to live /card/[slug]). */
 export const SMARTCARD_SHORT_PATH = "/c";
@@ -47,10 +47,43 @@ export const SMARTCARD_NFC_PATH = "/n";
 export const SMARTCARD_CAPABILITIES = [
   { id: "smart-qr", label: "Smart QR" },
   { id: "nfc-tap", label: "NFC Tap" },
-  { id: "offline-ready", label: "Offline Ready" },
+  { id: "offline-ready", label: "Offline snapshot" },
   { id: "wallet-ready", label: "Wallet Ready" },
-  { id: "contact-exchange", label: "Contact Exchange" },
-  { id: "payment-ready", label: "Payment Ready" },
+  { id: "contact-exchange", label: "Connect Back" },
+  { id: "payment-ready", label: "Paid activation" },
+] as const;
+
+export const SMARTCARD_AUTOMATIONS = [
+  {
+    id: "live-everywhere",
+    title: "Update once. Live everywhere.",
+    body: "Change your title, photo or WhatsApp. QR, NFC, Wallet and link all follow instantly.",
+  },
+  {
+    id: "connect-back",
+    title: "Connect Back, automatically.",
+    body: "Guests leave a name and number. You keep the intro without hunting business cards.",
+  },
+  {
+    id: "modes",
+    title: "One identity. Many faces.",
+    body: "Share as Founder, Creator, or Event without duplicating the person behind the card.",
+  },
+  {
+    id: "gate",
+    title: "Works only while subscribed.",
+    body: "When a plan lapses the public page goes offline. Renew monthly, quarterly, half-year or yearly.",
+  },
+  {
+    id: "vcard",
+    title: "Save to contacts in one tap.",
+    body: "vCard download plus QR. The handshake that actually stays in the phone.",
+  },
+  {
+    id: "signal",
+    title: "See who looked.",
+    body: "View counts and tap history so you know which rooms your identity actually worked in.",
+  },
 ] as const;
 
 export type SmartCardProfileMode =

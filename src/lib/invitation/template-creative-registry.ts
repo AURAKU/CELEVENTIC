@@ -1,5 +1,5 @@
 /**
- * Template Creative Registry — single source of truth for each catalog SKU's
+ * Template Creative Registry. Single source of truth for each catalog SKU's
  * creative universe. Layout DNA remains the fallback; catalog SKU identity wins.
  *
  * Uniqueness rule: no two SKUs may share the same full identity fingerprint.
@@ -90,7 +90,7 @@ export type CreativeSectionId =
   | "outro";
 
 export interface TemplateCreativeProfile {
-  /** Alias of catalogSlug — Experience Engine brief field `id`. */
+  /** Alias of catalogSlug. Experience Engine brief field `id`. */
   id: string;
   /** Display name from catalogue. */
   name: string;
@@ -111,7 +111,7 @@ export interface TemplateCreativeProfile {
   buttonFamily: string;
   backgroundSystem: string;
   mediaPresentationStyle: string;
-  /** Alias of defaultAudioTrack — brief field `audioProfile`. */
+  /** Alias of defaultAudioTrack. Brief field `audioProfile`. */
   audioProfile: string;
   defaultAudioTrack: string;
   compatibleAudioCategories: string[];
@@ -131,7 +131,7 @@ export interface TemplateCreativeProfile {
   countdownStyle?: string;
   packageAccess: "free" | "premium" | "luxury" | "all";
   reducedMotionFallback: string;
-  /** Optional dock CTA order — Experience Engine primary actions (Phase 2+). */
+  /** Optional dock CTA order. Experience Engine primary actions (Phase 2+). */
   primaryActions?: string[];
   /** Optional sound-effect profile key consumed by SoundEffectController. */
   audioDirectorProfile?: string;
@@ -215,11 +215,11 @@ function sectionsForCategory(category: string): {
   };
 }
 
-/** @deprecated Use SKU_CREATIVE_OVERRIDES — kept as alias for Phase 3 call sites. */
+/** @deprecated Use SKU_CREATIVE_OVERRIDES. Kept as alias for Phase 3 call sites. */
 const PILOT_PROFILES: Record<string, Partial<TemplateCreativeProfile>> =
   SKU_CREATIVE_OVERRIDES as Record<string, Partial<TemplateCreativeProfile>>;
 
-/** Publishing gate — internal only. Admin may allowlisted overrides below threshold. */
+/** Publishing gate. Internal only. Admin may allowlisted overrides below threshold. */
 export const PUBLISHING_UNIQUENESS_THRESHOLD = 85;
 
 /** Internal allowlist when a SKU must publish below threshold (admin override). Empty by default. */
@@ -282,7 +282,7 @@ function motionFromCatalog(t: CatalogTemplate): MotionLanguage {
 function parallaxFromCatalog(t: CatalogTemplate): ParallaxIntensity {
   if (t.hasParallax && t.motionProfileId === "layered-drift") return "cinematic";
   if (t.category === "Funeral") {
-    // Soft memorial depth only — never wedding-style layered drift.
+    // Soft memorial depth only, never wedding-style layered drift.
     return t.hasParallax || t.motionProfileId === "solemn" ? "subtle" : "none";
   }
   if (t.hasParallax) return "moderate";
@@ -313,7 +313,7 @@ function buildFromCatalog(t: CatalogTemplate): TemplateCreativeProfile {
     creativeConcept:
       pilot.creativeConcept ??
       brief?.creativeConcept ??
-      `${t.name} — ${t.description}`,
+      `${t.name}: ${t.description}`,
     eventTypes: pilot.eventTypes ?? CATEGORY_EVENT_TYPES[t.category] ?? ["CUSTOM"],
     emotionalTone: pilot.emotionalTone ?? brief?.emotionalTone ?? t.mood ?? t.style,
     targetAudience: pilot.targetAudience ?? `${t.category} hosts`,
@@ -397,7 +397,7 @@ export function getCreativeButtonFamily(catalogSlug: string): string | undefined
   return getTemplateCreativeProfile(catalogSlug)?.buttonFamily;
 }
 
-/** Internal uniqueness fingerprint — not for public display. */
+/** Internal uniqueness fingerprint, not for public display. */
 export function creativeIdentityFingerprint(p: TemplateCreativeProfile): string {
   return [
     p.creativeUniverse,
@@ -430,7 +430,7 @@ export function scoreTemplateUniqueness(catalogSlug: string): UniquenessReport {
   }
   const fp = creativeIdentityFingerprint(target);
   const overlapping: string[] = [];
-  /** Structural dims — name/color/image alone never count. */
+  /** Structural dims. Name/color/image alone never count. */
   const dims = [
     "creativeUniverse",
     "revealMechanic",

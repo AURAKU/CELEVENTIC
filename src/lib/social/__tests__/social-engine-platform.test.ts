@@ -45,7 +45,7 @@ function surfaceFor(
   });
 }
 
-describe("platform Social Invitation Engine — categories", () => {
+describe("platform Social Invitation Engine. Categories", () => {
   it("builds a standard wedding card", () => {
     const surface = surfaceFor({
       uniqueLink: "enock-ruth",
@@ -221,7 +221,7 @@ describe("platform personalization", () => {
   });
 });
 
-describe("public event-title resolver — catalogue identity", () => {
+describe("public event-title resolver. Catalogue identity", () => {
   it("rejects catalogue names, slugs, layout slugs, and known internals", () => {
     assert.equal(isInternalTemplateTitle("Aurelia"), true);
     assert.equal(isInternalTemplateTitle("Seraphine Champagne"), true);
@@ -381,7 +381,7 @@ describe("privacy, OG, share, unicode, wrap", () => {
   });
 });
 
-describe("catalogue coverage — every CATALOG_TEMPLATES SKU", () => {
+describe("catalogue coverage. Every CATALOG_TEMPLATES SKU", () => {
   it("gives every registered template a valid social-preview strategy without leaking identity", () => {
     assert.ok(CATALOG_TEMPLATES.length >= 40);
     for (const template of CATALOG_TEMPLATES) {

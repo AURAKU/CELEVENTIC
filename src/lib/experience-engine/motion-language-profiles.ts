@@ -1,5 +1,5 @@
 /**
- * Motion language profiles — romantic → futuristic.
+ * Motion language profiles. Romantic → futuristic.
  * Extends creative-registry MotionLanguage with timing/easing/stagger
  * plus media / button / camera / outro slots (Experience Engine Phase 2).
  * Compatibility: each language maps to an existing theme MotionProfileId.

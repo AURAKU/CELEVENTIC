@@ -1,4 +1,4 @@
-/** Celeventic QR intent types — routing handled by qr-routing.service */
+/** Celeventic QR intent types. Routing handled by qr-routing.service */
 
 export const QR_TYPES = {
   PUBLIC_EVENT: "public_event",
@@ -31,7 +31,7 @@ export const ADMISSION_QR_TYPES: QrIntentType[] = [
   QR_TYPES.TICKET,
 ];
 
-/** Memorial / funeral QR types — open memorial guest pages */
+/** Memorial / funeral QR types. Open memorial guest pages */
 export const MEMORIAL_QR_TYPES: QrIntentType[] = [
   QR_TYPES.MEMORIAL,
   QR_TYPES.MEMORIAL_TRIBUTE,

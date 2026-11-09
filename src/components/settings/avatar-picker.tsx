@@ -29,7 +29,7 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
             {PRESET_AVATARS.find((a) => a.url === value)?.label ?? "Choose an avatar"}
           </p>
           <p className="text-xs text-slate-500">
-            {PRESET_AVATARS.length} unique styles — tap one to select
+            {PRESET_AVATARS.length} unique styles. Tap one to select
           </p>
         </div>
       </div>

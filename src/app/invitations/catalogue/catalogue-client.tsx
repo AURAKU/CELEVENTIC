@@ -20,17 +20,9 @@ import {
   type CatalogTemplate,
 } from "@/lib/invitation-mvp/catalogue";
 import { weddingBrowseCategoriesForEventType } from "@/lib/invitation/wedding-families";
-
-const EVENT_TYPE_TO_CATEGORY: Record<string, string> = {
-  WEDDING: "Wedding",
-  ENGAGEMENT: "Engagement",
-  FUNERAL: "Funeral",
-  BIRTHDAY: "Birthday",
-  CORPORATE_EVENT: "Corporate",
-  PRODUCT_LAUNCH: "Lunch",
-  CHURCH_PROGRAM: "Church",
-  PRIVATE_EVENT: "Private Event",
-};
+import { EVENT_TYPE_TO_CATALOG_CATEGORY } from "@/lib/invitation/catalog-event-type";
+import { EVENT_TYPES } from "@/lib/constants";
+import { formatInvitationPriceGhs, getInvitationPackage } from "@/lib/invitation-mvp/packages";
 
 const MOBILE_BATCH = 12;
 const AUTO_BATCHES_BEFORE_BUTTON = 3;
@@ -63,9 +55,10 @@ export function CatalogueClient({
   const eventType = searchParams.get("eventType") ?? "WEDDING";
   const weddingBrowse = weddingBrowseCategoriesForEventType(eventType).length > 0;
   // Wedding/Engagement browse defaults to all wedding-family categories so Engagement SKUs appear
+  const urlCategory = searchParams.get("category");
   const category =
-    searchParams.get("category") ??
-    (weddingBrowse ? "all" : EVENT_TYPE_TO_CATEGORY[eventType] ?? "all");
+    urlCategory ??
+    (weddingBrowse ? "all" : EVENT_TYPE_TO_CATALOG_CATEGORY[eventType] ?? "all");
   const style = searchParams.get("style") ?? "all";
   const mood = searchParams.get("mood") ?? "all";
   const tier = searchParams.get("tier") ?? "all";
@@ -73,6 +66,8 @@ export function CatalogueClient({
   const urlSearch = searchParams.get("q") ?? "";
   const page = Math.max(1, Number(searchParams.get("page") ?? 1) || 1);
   const highlightSlug = searchParams.get("template");
+  const packageSlug = searchParams.get("package") ?? undefined;
+  const selectedPackage = packageSlug ? getInvitationPackage(packageSlug) : undefined;
 
   const setParams = useCallback(
     (updates: Record<string, string | null>, resetPage = true) => {
@@ -120,11 +115,11 @@ export function CatalogueClient({
 
   const filtered = useMemo(() => {
     const weddingCategories = weddingBrowseCategoriesForEventType(eventType);
-    const eventCategory = EVENT_TYPE_TO_CATEGORY[eventType];
+    const eventCategory = EVENT_TYPE_TO_CATALOG_CATEGORY[eventType];
     return (templates ?? getBrowseCatalogTemplates()).filter((t) => {
       if (weddingCategories.length > 0) {
         if (!weddingCategories.includes(t.category)) return false;
-      } else if (eventCategory && t.category !== eventCategory) {
+      } else if (!urlCategory && eventCategory && t.category !== eventCategory) {
         return false;
       }
       return matchesCatalogFilters(t, {
@@ -136,7 +131,7 @@ export function CatalogueClient({
         search: urlSearch,
       });
     });
-  }, [templates, category, style, mood, tier, parallaxOnly, urlSearch, eventType]);
+  }, [templates, category, style, mood, tier, parallaxOnly, urlSearch, eventType, urlCategory]);
 
   // Mobile infinite scroll / desktop numbered pagination
   const [isMobile, setIsMobile] = useState(false);
@@ -225,10 +220,26 @@ export function CatalogueClient({
             The design you just experienced
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <TemplateCard template={highlightTemplate} />
+            <TemplateCard template={highlightTemplate} packageSlug={packageSlug} />
           </div>
         </div>
       )}
+
+      {selectedPackage ? (
+        <div className="mb-6 rounded-2xl border border-[#0B8A83]/30 bg-[#0B8A83]/8 px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#0F172A]">
+              Building with {selectedPackage.name} · {formatInvitationPriceGhs(selectedPackage)}
+            </p>
+            <p className="text-sm text-slate-600 mt-0.5">
+              Choose a template. After Paystack confirms, this package unlocks Studio
+              {selectedPackage.teamChatAfterPay
+                ? " and a chat with the Celeventic team."
+                : "."}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mb-6 space-y-4">
         <select
@@ -241,12 +252,11 @@ export function CatalogueClient({
         >
           <option value="WEDDING">Wedding</option>
           <option value="ENGAGEMENT">Engagement</option>
-          <option value="FUNERAL">Funeral</option>
-          <option value="BIRTHDAY">Birthday</option>
-          <option value="CORPORATE_EVENT">Corporate</option>
-          <option value="PRODUCT_LAUNCH">Lunch</option>
-          <option value="CHURCH_PROGRAM">Church</option>
-          <option value="PRIVATE_EVENT">Private Celebration</option>
+          {EVENT_TYPES.filter((et) => et.value !== "WEDDING").map((et) => (
+            <option key={et.value} value={et.value}>
+              {et.label}
+            </option>
+          ))}
         </select>
         <DesignAdvisorBanner eventType={eventType} />
       </div>
@@ -324,7 +334,7 @@ export function CatalogueClient({
       </div>
 
       <p className="text-sm text-slate-500 mb-6">
-        {filtered.length} template{filtered.length !== 1 ? "s" : ""} · Preview live demos before you choose
+        {filtered.length === 1 ? "1 template" : `${filtered.length} templates`} · Preview live demos before you choose
       </p>
 
       {filtered.length === 0 ? (
@@ -340,7 +350,7 @@ export function CatalogueClient({
                   Hidden from public
                 </span>
               ) : null}
-              <TemplateCard template={t} />
+              <TemplateCard template={t} packageSlug={packageSlug} />
             </div>
           ))}
         </div>

@@ -3,7 +3,11 @@ import path from "node:path";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
-import { EDWIN_PUBLISHED_INVITE_LINK } from "@/lib/invitation/public-invite-alias";
+import {
+  EDWIN_PUBLIC_INVITE_PATH,
+  EDWIN_PUBLISHED_INVITE_LINK,
+  inviteLinkIdentityKeys,
+} from "@/lib/invitation/public-invite-alias";
 
 const HERO = "/templates/edwin-lordina/hero-navy.jpg";
 const LAYOUT = "forever-afaris-wedding";
@@ -92,7 +96,7 @@ export function edwinMusicSelection(trackId: string): Prisma.InputJsonValue {
     source: "library",
     libraryTrackId: trackId,
     url: EDWIN_EVENT_SONG_URL,
-    title: "Biblical — Calum Scott",
+    title: "Biblical. Calum Scott",
     startSec: 0,
     endSec: EDWIN_EVENT_SONG_SEC,
     originalDurationSec: EDWIN_EVENT_SONG_SEC,
@@ -147,26 +151,80 @@ async function ensureEdwinSong(client: PrismaClient) {
   });
 }
 
+const EDWIN_INVITE_SELECT = {
+  id: true,
+  uniqueLink: true,
+  name: true,
+  designConfig: true,
+  featureConfig: true,
+  postAdmissionEnabled: true,
+  eventId: true,
+  event: {
+    select: {
+      title: true,
+      defaultMusicTrack: { select: { id: true, url: true } },
+    },
+  },
+} as const;
+
+async function findEdwinInvitation(uniqueLink: string, client: PrismaClient) {
+  const keys = inviteLinkIdentityKeys(uniqueLink);
+  for (const extra of [EDWIN_PUBLISHED_INVITE_LINK, EDWIN_PUBLIC_INVITE_PATH]) {
+    if (!keys.includes(extra)) keys.push(extra);
+  }
+  for (const key of keys) {
+    const row = await client.invitation.findUnique({
+      where: { uniqueLink: key },
+      select: EDWIN_INVITE_SELECT,
+    });
+    if (!row) continue;
+    if (isEdwinLordina(row.event.title) || isEdwinLordina(row.name)) return row;
+  }
+  return null;
+}
+
+function withEdwinCompanionFeatures(raw: unknown): Prisma.InputJsonValue {
+  const next =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? { ...(raw as Record<string, unknown>) }
+      : {};
+  for (const key of [
+    "POST_ADMISSION_PORTAL",
+    "LIVE_PROGRAMME",
+    "EVENT_MENU",
+    "GIFT_WALLET",
+    "MEMORY_VAULT",
+  ]) {
+    const prev =
+      next[key] && typeof next[key] === "object" && !Array.isArray(next[key])
+        ? (next[key] as Record<string, unknown>)
+        : {};
+    next[key] = { ...prev, enabled: true };
+  }
+  return next as Prisma.InputJsonValue;
+}
+
+function edwinCompanionReady(invitation: {
+  postAdmissionEnabled: boolean;
+  featureConfig: unknown;
+}): boolean {
+  if (!invitation.postAdmissionEnabled) return false;
+  const cfg =
+    invitation.featureConfig && typeof invitation.featureConfig === "object"
+      ? (invitation.featureConfig as Record<string, { enabled?: boolean }>)
+      : {};
+  return (
+    cfg.POST_ADMISSION_PORTAL?.enabled === true &&
+    cfg.LIVE_PROGRAMME?.enabled === true &&
+    cfg.EVENT_MENU?.enabled === true
+  );
+}
+
 async function writeEdwinPublishedDesign(
   uniqueLink: string,
   client: PrismaClient
 ): Promise<{ uniqueLink: string; orders: number; changed: boolean }> {
-  const invitation = await client.invitation.findUnique({
-    where: { uniqueLink },
-    select: {
-      id: true,
-      uniqueLink: true,
-      name: true,
-      designConfig: true,
-      eventId: true,
-      event: {
-        select: {
-          title: true,
-          defaultMusicTrack: { select: { id: true, url: true } },
-        },
-      },
-    },
-  });
+  const invitation = await findEdwinInvitation(uniqueLink, client);
   if (!invitation) {
     throw new Error(`No invitation with unique link ${uniqueLink}`);
   }
@@ -184,12 +242,13 @@ async function writeEdwinPublishedDesign(
   const designShapeOk = edwinDesignIsCurrent(invitation.designConfig);
   const designCurrent = edwinPublishedContentIsCurrent(invitation.designConfig);
   const eventSongReady = invitation.event.defaultMusicTrack?.url === EDWIN_EVENT_SONG_URL;
+  const companionReady = edwinCompanionReady(invitation);
   const ordersReady = orders.every(
     (order) =>
       selectionPlaysSong(order.musicSelection) &&
       (order.musicPreference == null || order.musicPreference === EDWIN_EVENT_SONG_URL)
   );
-  if (designCurrent && eventSongReady && ordersReady) {
+  if (designCurrent && eventSongReady && ordersReady && companionReady) {
     return { uniqueLink: invitation.uniqueLink, orders: orders.length, changed: false };
   }
 
@@ -204,12 +263,15 @@ async function writeEdwinPublishedDesign(
   const designJson = design as unknown as Prisma.InputJsonValue;
   const musicJson = edwinMusicSelection(song.id);
 
-  if (!designCurrent) {
-    await client.invitation.update({
-      where: { id: invitation.id },
-      data: { designConfig: designJson, status: "ACTIVE" },
-    });
-  }
+  await client.invitation.update({
+    where: { id: invitation.id },
+    data: {
+      status: "ACTIVE",
+      postAdmissionEnabled: true,
+      featureConfig: withEdwinCompanionFeatures(invitation.featureConfig),
+      ...(!designCurrent ? { designConfig: designJson } : {}),
+    },
+  });
   if (!designShapeOk) {
     await client.eventMedia.deleteMany({ where: { eventId: invitation.eventId } });
     await client.eventMedia.createMany({

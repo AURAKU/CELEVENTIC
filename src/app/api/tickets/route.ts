@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ticketService } from "@/services/tickets/ticket.service";
 import { verifyEventAccess } from "@/lib/event-access";
+import { rateLimit } from "@/lib/rate-limit";
+import { requestClientIp } from "@/lib/http/client-ip";
 
 const createSchema = z.object({
   eventId: z.string(),
@@ -51,6 +53,13 @@ export async function POST(req: Request) {
   const body = await req.json();
 
   if (body.action === "purchase") {
+    const limited = await rateLimit(`ticket-purchase:${requestClientIp(req)}`, 12, 60);
+    if (!limited.success) {
+      return NextResponse.json(
+        { error: "Too many ticket attempts. Please wait a moment and try again." },
+        { status: 429 }
+      );
+    }
     try {
       const data = purchaseSchema.parse(body);
       const result = await ticketService.purchaseTicket({

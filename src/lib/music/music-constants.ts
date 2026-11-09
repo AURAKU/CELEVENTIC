@@ -1,4 +1,4 @@
-/** Maximum upload file size (bytes) — library masters can be larger before trim */
+/** Maximum upload file size (bytes). Library masters can be larger before trim */
 export const MUSIC_UPLOAD_MAX_BYTES = 40 * 1024 * 1024;
 
 const EXT_MAP: Record<string, { mime: string; ext: string }> = {
@@ -70,7 +70,7 @@ export function resolveMusicUpload(file: File): { ext: string; max: number } | n
     const extKey = name.slice(dot);
     const mapped = EXT_MAP[extKey];
     if (mapped) return { ext: mapped.ext, max: MUSIC_UPLOAD_MAX_BYTES };
-    // Unknown extension but claimed as audio — keep original extension
+    // Unknown extension but claimed as audio. Keep original extension
     if (file.type.startsWith("audio/") || file.type.startsWith("video/")) {
       return { ext: extKey.slice(0, 8) || ".audio", max: MUSIC_UPLOAD_MAX_BYTES };
     }
@@ -87,7 +87,7 @@ export function resolveMusicUpload(file: File): { ext: string; max: number } | n
 export const MUSIC_CLIP_MIN_SEC = 30;
 export const MUSIC_CLIP_MAX_SEC = 180;
 
-/** Admin library clip — free range after trim-to-file */
+/** Admin library clip. Free range after trim-to-file */
 export const ADMIN_CLIP_MIN_SEC = 5;
 export const ADMIN_CLIP_MAX_SEC = 600;
 

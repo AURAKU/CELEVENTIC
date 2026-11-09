@@ -45,7 +45,7 @@ export interface SignTemplate {
 export const SIGN_TEMPLATES: Record<SignTemplateKey, SignTemplate> = {
   wedding: {
     key: "wedding",
-    label: "Wedding — elegant",
+    label: "Wedding. Elegant",
     eyebrow: "Welcome",
     scanInstruction: "Scan for the order of service, your table and the menu",
     supporting: "Point your camera at the code",
@@ -54,7 +54,7 @@ export const SIGN_TEMPLATES: Record<SignTemplateKey, SignTemplate> = {
   },
   classic: {
     key: "classic",
-    label: "Classic — understated",
+    label: "Classic. Understated",
     eyebrow: "Event Guide",
     scanInstruction: "Scan for the programme, seating and menu",
     supporting: "Point your camera at the code",
@@ -63,16 +63,16 @@ export const SIGN_TEMPLATES: Record<SignTemplateKey, SignTemplate> = {
   },
   corporate: {
     key: "corporate",
-    label: "Corporate — clean",
+    label: "Corporate. Clean",
     eyebrow: "Delegate Information",
     scanInstruction: "Scan for the agenda, your table and catering",
-    supporting: "No app needed — open with your camera",
+    supporting: "No app needed. Open with your camera",
     ruleWeight: 1.25,
     uppercaseTitle: true,
   },
   celebration: {
     key: "celebration",
-    label: "Celebration — warm",
+    label: "Celebration. Warm",
     eyebrow: "You're Welcome Here",
     scanInstruction: "Scan for tonight's running order, your seat and the menu",
     supporting: "Point your camera at the code",
@@ -81,7 +81,7 @@ export const SIGN_TEMPLATES: Record<SignTemplateKey, SignTemplate> = {
   },
   memorial: {
     key: "memorial",
-    label: "Memorial — respectful",
+    label: "Memorial. Respectful",
     eyebrow: "In Loving Memory",
     scanInstruction: "Scan for the order of service and seating",
     supporting: "Point your camera at the code",
@@ -96,8 +96,8 @@ export const OFFLINE_QR_LABEL = "Backup";
 export function offlineQrWarning(wifiName: string | null | undefined): string {
   const network = wifiName?.trim();
   return network
-    ? `Backup code — works only on the “${network}” Wi-Fi at this venue`
-    : "Backup code — works only on the event Wi-Fi at this venue";
+    ? `Backup code. Works only on the “${network}” Wi-Fi at this venue`
+    : "Backup code. Works only on the event Wi-Fi at this venue";
 }
 
 export interface SignLayout {
@@ -122,7 +122,7 @@ export interface SignLayout {
  *
  * The QR is sized as a fraction of the page width rather than a fixed value so
  * an A3 board and a tabletop card both scan from their intended distance. The
- * quiet zone is a printed white margin of at least four modules' worth — QR
+ * quiet zone is a printed white margin of at least four modules' worth. QR
  * codes without one fail on matte card stock under warm venue lighting.
  */
 export function computeSignLayout(

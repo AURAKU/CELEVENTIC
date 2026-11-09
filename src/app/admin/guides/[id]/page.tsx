@@ -194,7 +194,7 @@ export default function AdminGuideEditPage() {
       <Field label="Poster URL">
         <Input value={form.posterUrl} onChange={(e) => setForm({ ...form, posterUrl: e.target.value })} />
       </Field>
-      <Field label="Video URL (optional — leave empty until recorded)">
+      <Field label="Video URL (optional. Leave empty until recorded)">
         <Input value={form.videoUrl} onChange={(e) => setForm({ ...form, videoUrl: e.target.value })} />
       </Field>
       <Field label="Captions EN URL">

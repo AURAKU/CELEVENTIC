@@ -1,5 +1,5 @@
 /**
- * Live-editability guarantees — pure-function unit tests (node:test).
+ * Live-editability guarantees. Pure-function unit tests (node:test).
  * Run: npm run test:live-editability
  *
  * These lock in the two silent ways a published invitation used to drift from

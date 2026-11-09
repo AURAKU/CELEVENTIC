@@ -1,5 +1,5 @@
 /**
- * WhatsApp share helpers — one link in the message, one open per tap.
+ * WhatsApp share helpers. One link in the message, one open per tap.
  *
  * Hosts were seeing duplicate invites because (a) share copy sometimes
  * concatenated the invite URL twice and (b) a second click / nested
@@ -133,7 +133,7 @@ export function openWhatsAppShare(text: string, phone?: string | null): boolean 
   return true;
 }
 
-/** Test helper — resets the open cooldown. */
+/** Test helper. Resets the open cooldown. */
 export function resetWhatsAppShareGuardForTests() {
   lastOpenAt = 0;
   lastOpenKey = "";

@@ -6,12 +6,12 @@ import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import {
   Compass,
-  LayoutTemplate,
   LogIn,
   LogOut,
   Mail,
   Menu,
   Sparkles,
+  Store,
   Tag,
   X,
   type LucideIcon,
@@ -37,9 +37,9 @@ const navLinkKeys: ReadonlyArray<{
   /** Match pathname for active state (route links only) */
   match?: string;
 }> = [
-  { href: "/#features", key: "header.features", icon: Sparkles },
-  { href: "/#invitations", key: "header.invitations", icon: Mail },
-  { href: "/templates", key: "header.templates", icon: LayoutTemplate, match: "/templates" },
+  { href: "/#services", key: "header.services", icon: Sparkles },
+  { href: "/invitations/catalogue", key: "header.invitations", icon: Mail, match: "/invitations" },
+  { href: "/marketplace", key: "header.marketplace", icon: Store, match: "/marketplace" },
   { href: "/#pricing", key: "header.pricing", icon: Tag },
   { href: "/discover", key: "header.discover", icon: Compass, match: "/discover" },
 ];
@@ -79,7 +79,7 @@ function NavLink({
           "inline-flex items-center gap-1.5 rounded-[0.88rem] font-semibold tracking-wide transition-colors",
           mobile
             ? "w-full justify-start px-3.5 py-3 text-sm"
-            : "px-3 py-1.5 text-[13px] whitespace-nowrap",
+            : "px-3 py-2 text-sm whitespace-nowrap",
           active
             ? "bg-white/70 text-[#0B8A83] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] supports-[backdrop-filter]:bg-white/55 backdrop-blur-md"
             : "bg-transparent text-slate-600 group-hover/nav:bg-white/50 group-hover/nav:text-slate-900 group-hover/nav:backdrop-blur-md supports-[backdrop-filter]:group-hover/nav:bg-white/35"
@@ -162,7 +162,7 @@ function GetStartedLink({
 }) {
   return (
     <Link
-      href="/auth/register"
+      href="/auth/register?intent=host"
       onClick={onNavigate}
       className={cn(
         "group/cta relative inline-flex touch-manipulation",
@@ -177,7 +177,7 @@ function GetStartedLink({
     >
       <span
         className={cn(
-          "inline-flex h-10 items-center justify-center gap-1.5 rounded-[1.02rem] px-5",
+          "inline-flex min-h-11 h-11 items-center justify-center gap-1.5 rounded-[1.02rem] px-5",
           "bg-gradient-to-r from-[#0B8A83] to-[#0d9a92] text-sm font-semibold tracking-wide text-white",
           "shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]",
           "transition-colors group-hover/cta:from-[#097068] group-hover/cta:to-[#0B8A83]"
@@ -207,13 +207,12 @@ export function Header({ initialSession }: HeaderProps) {
     <header className="sticky top-0 z-50 border-b border-slate-200/50 bg-white/85 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 safe-area-pt">
       <div className="mx-auto flex min-h-[4rem] sm:min-h-[4.25rem] max-w-7xl items-center gap-2 sm:gap-4 px-4 sm:px-6 lg:px-8 py-1.5">
         <div className="shrink-0 min-w-0">
-          <Logo size="sm" className="hidden sm:flex" />
-          <Logo size="xs" className="flex sm:hidden" />
+          <Logo size="sm" />
         </div>
 
         <nav
           className={cn(
-            "hidden md:flex flex-1 items-center justify-center min-w-0",
+            "hidden lg:flex flex-1 items-center justify-center min-w-0",
             "mx-1"
           )}
           aria-label="Primary"
@@ -243,7 +242,7 @@ export function Header({ initialSession }: HeaderProps) {
         <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
           <PreferencesMenu compact />
 
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2">
             {session ? (
               <>
                 <Button asChild>
@@ -274,7 +273,7 @@ export function Header({ initialSession }: HeaderProps) {
           <button
             type="button"
             className={cn(
-              "md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] touch-manipulation",
+              "lg:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] touch-manipulation",
               "rounded-[1rem] p-[1px]",
               "bg-gradient-to-br from-teal-400/30 via-white/40 to-orange-400/25",
               "transition-transform hover:scale-[1.02]",
@@ -292,7 +291,7 @@ export function Header({ initialSession }: HeaderProps) {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-slate-200/60 bg-white/95 backdrop-blur-xl px-4 py-4 space-y-2">
+        <div className="lg:hidden border-t border-slate-200/60 bg-white/95 backdrop-blur-xl px-4 py-4 space-y-2">
           <div
             className={cn(
               "rounded-[1.2rem] p-1.5 space-y-1",

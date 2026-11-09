@@ -20,7 +20,7 @@ export const AURELIA_THEME_DEFAULTS: AureliaThemeTokens = {
   text: "#3B2A25",
 };
 
-/** Traditional ceremony dress palette — Chamoisee through Smoky Black. */
+/** Traditional ceremony dress palette. Chamoisee through Smoky Black. */
 export const AURELIA_TRADITIONAL_PALETTE = [
   { name: "Chamoisee", hex: "#A7795E" },
   { name: "Kobicha", hex: "#6E3C19" },
@@ -31,7 +31,7 @@ export const AURELIA_TRADITIONAL_PALETTE = [
 
 export const AURELIA_HERO_FALLBACK = "/templates/aurelia/hero.jpg";
 export const AURELIA_STORY_FALLBACK = "/templates/aurelia/story.jpg";
-/** Album QR inset — Enock & Ruth looking back, rust dress and ivory jacket. */
+/** Album QR inset. Enock & Ruth looking back, rust dress and ivory jacket. */
 export const AURELIA_QR_CENTER = "/templates/aurelia/qr-center.jpg";
 /** Enock & Ruth portraits for Our Beginning. Starts with the seated story photograph. */
 export const AURELIA_COUPLE_GALLERY = [
@@ -46,7 +46,7 @@ export const AURELIA_INVITE_MUSIC = "/templates/aurelia/ordinary.mp3";
 export const AURELIA_INVITE_MUSIC_TITLE = "Ordinary";
 export const AURELIA_INVITE_MUSIC_DURATION_SEC = 188.21;
 /**
- * Seraphine score: Pachelbel’s Canon in D — the wedding love theme everyone
+ * Seraphine score: Pachelbel’s Canon in D. The wedding love theme everyone
  * already knows. Recording by Kevin MacLeod (incompetech.com), CC BY 3.0.
  */
 export const SERAPHINE_INVITE_MUSIC = "/templates/seraphine/canon-in-d.mp3";
@@ -238,7 +238,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
 };
 
 export const SERAPHINE_HERO_FALLBACK = "/templates/seraphine/hero.jpg";
-/** Kojo & Fafa framed lookbook — studio and pool portraits only. */
+/** Kojo & Fafa framed lookbook. Studio and pool portraits only. */
 export const SERAPHINE_LOOKBOOK_GALLERY = [
   "/templates/seraphine/couple/11-studio-black.jpg",
   "/templates/seraphine/couple/12-ivory-embrace.jpg",
@@ -295,7 +295,7 @@ export const SERAPHINE_TRADITIONAL_MAP_IMAGE = "/templates/seraphine/westville-h
 export const SERAPHINE_WHITE_MAPS = googleMapsPlaceHref(SERAPHINE_WHITE_PIN);
 export const SERAPHINE_WHITE_MAP_IMAGE = "/templates/seraphine/forest-grove-map.jpg";
 
-/** Traditional ceremony colour mood — tropical celebration, not Aurelia brown. */
+/** Traditional ceremony colour mood. Tropical celebration, not Aurelia brown. */
 export const SERAPHINE_TROPICAL_PALETTE = [
   { name: "Deep Leafy Green", hex: "#1F4D32" },
   { name: "Berry Wine", hex: "#8B1E4A" },
@@ -304,7 +304,7 @@ export const SERAPHINE_TROPICAL_PALETTE = [
   { name: "Soft Peach", hex: "#F4C4A0" },
 ] as const;
 
-/** White wedding colour direction — Sage and White mood board. */
+/** White wedding colour direction. Sage and White mood board. */
 export const SERAPHINE_SAGE_PALETTE = [
   { name: "Sage", hex: "#8BA888" },
   { name: "Muted Sage", hex: "#A8C0A0" },
@@ -329,7 +329,7 @@ export const SERAPHINE_THEME_DEFAULTS: AureliaThemeTokens = {
   text: "#2F3D32",
 };
 
-/** Independent defaults for Seraphine — customising this never rewrites Aurelia. */
+/** Independent defaults for Seraphine. Customising this never rewrites Aurelia. */
 export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   ...AURELIA_WEDDING_DEFAULTS,
   partnerOneName: "Kojo",
@@ -357,7 +357,7 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   storyParagraphs: [
     "We met at a friend’s wedding, paired together as groomsman and bridesmaid. What started with a simple “Give me your number” became the beginning of something beautiful.",
     "Since then, our story has been filled with laughter, friendship, faith, countless memories, and plenty of love. Through every season, the Good Lord has been good to us, guiding our steps and bringing us to this special moment.",
-    "And now, here we are—ready to say “I do.” We would love for you to be there as we begin this new chapter together.",
+    "And now, here we are: ready to say “I do.” We would love for you to be there as we begin this new chapter together.",
   ],
   storySignature: "Kojo & Fafa",
   celebrationsEyebrow: "Two days of joy",
@@ -436,7 +436,7 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       title: "Wedding Guest Outfits",
       scriptLine: "Dress Code: Garden Soirée",
       note:
-        "Ladies — Florals & Fascinators\nElegant floral dresses paired with a beautiful fascinator or hat. Think romantic, graceful and garden-chic.\n\nGentlemen — Suited & Sophisticated\nA well-tailored suit, crisp shirt and polished shoes. Ties, bow ties and pocket squares are welcome for that extra touch of elegance.\n\nA little note from us:\nDress beautifully, celebrate colour and bring your own touch of elegance. We can’t wait to see our garden filled with florals, fascinators and dapper suits.",
+        "Ladies. Florals & Fascinators\nElegant floral dresses paired with a beautiful fascinator or hat. Think romantic, graceful and garden-chic.\n\nGentlemen. Suited & Sophisticated\nA well-tailored suit, crisp shirt and polished shoes. Ties, bow ties and pocket squares are welcome for that extra touch of elegance.\n\nA little note from us:\nDress beautifully, celebrate colour and bring your own touch of elegance. We can’t wait to see our garden filled with florals, fascinators and dapper suits.",
       imageUrl: SERAPHINE_GUEST_OUTFITS,
       gentlemenImageUrl: SERAPHINE_GUEST_OUTFITS_GENTLEMEN,
       palette: [],

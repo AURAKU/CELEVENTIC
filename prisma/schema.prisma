@@ -185,6 +185,10 @@ model User {
   eventGuidePacksCreated     EventGuideOfflinePack[]        @relation("EventGuideOfflinePackCreator")
   guestImportBatches         GuestImportBatch[]       @relation("GuestImportBatchCreator")
   generalPassBatches         GeneralPassBatch[]       @relation("GeneralPassBatchCreator")
+  dataDeletionRequests       DataDeletionRequest[]
+  supportTicketsOpened       CustomerSupportTicket[]  @relation("SupportTicketRequester")
+  supportTicketsAssigned     CustomerSupportTicket[]  @relation("SupportTicketAssignee")
+  supportTicketMessages      CustomerSupportMessage[]
 
   @@index([role])
   @@index([status])
@@ -274,6 +278,8 @@ model Event {
   description          String?
   startDate            DateTime
   endDate              DateTime?
+  /// When set, guest RSVP submissions are rejected after this instant. Null keeps RSVP open.
+  rsvpDeadline         DateTime?
   venueName            String?
   landmark             String?
   mapsLink             String?
@@ -361,9 +367,10 @@ model Event {
   addons               EventAddon[]
   giftCampaigns        EventGiftCampaign[]
   giftPayments         EventGiftPayment[]
-  giftWallet           EventWalletAccount?
+  walletAccounts       EventWalletAccount[]
   giftLedgerEntries    EventWalletLedgerEntry[]
   giftWithdrawals      EventWalletWithdrawalRequest[]
+  ticketPromos         TicketPromo[]
   sharedAccessPasses   SharedEventAccessPass[]
   eventQrLinks         EventQrLink[]
   eventGuide           EventGuide?
@@ -653,6 +660,7 @@ model Rsvp {
 
   guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
 
+  @@index([guestId, createdAt])
   @@map("rsvps")
 }
 
@@ -787,6 +795,47 @@ model TicketOrder {
 
   @@index([eventId])
   @@map("ticket_orders")
+}
+
+/// Persistent ticket promotions. Usage counters increment inside the same
+/// transaction as inventory claims so two checkouts cannot over-redeem a cap.
+model TicketPromo {
+  id                 String    @id @default(cuid())
+  eventId            String
+  code               String
+  discountPercent    Int       @default(0)
+  /// Integer minor units. Null when the promo is percent-only.
+  discountFixedMinor Int?
+  maxUses            Int?
+  maxUsesPerUser     Int?
+  usedCount          Int       @default(0)
+  active             Boolean   @default(true)
+  startsAt           DateTime?
+  expiresAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  event       Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  redemptions TicketPromoRedemption[]
+
+  @@unique([eventId, code])
+  @@index([eventId, active])
+  @@map("ticket_promos")
+}
+
+model TicketPromoRedemption {
+  id        String   @id @default(cuid())
+  promoId   String
+  eventId   String
+  orderId   String   @unique
+  userId    String?
+  createdAt DateTime @default(now())
+
+  promo TicketPromo @relation(fields: [promoId], references: [id], onDelete: Cascade)
+
+  @@index([promoId, userId])
+  @@index([eventId])
+  @@map("ticket_promo_redemptions")
 }
 
 // ─── Payments ───────────────────────────────────────────────────
@@ -4221,6 +4270,106 @@ model UserConsentRecord {
   @@map("user_consent_records")
 }
 
+/// Account-deletion queue. Rows are requests, never an automatic erase of
+/// financial or admission history. Retention periods are a policy decision.
+enum DataDeletionRequestStatus {
+  PENDING_REVIEW
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+model DataDeletionRequest {
+  id              String                     @id @default(cuid())
+  userId          String
+  status          DataDeletionRequestStatus  @default(PENDING_REVIEW)
+  discovery       Json?
+  retentionNotes  String?
+  reviewedById    String?
+  requestedAt     DateTime                   @default(now())
+  reviewedAt      DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, requestedAt])
+  @@map("data_deletion_requests")
+}
+
+enum SupportTicketStatus {
+  OPEN
+  PENDING
+  WAITING_ON_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketCategory {
+  ACCOUNT
+  PAYMENTS
+  TICKETS
+  INVITATIONS
+  ADMISSION
+  TECHNICAL
+  OTHER
+}
+
+model CustomerSupportTicket {
+  id           String                @id @default(cuid())
+  userId       String
+  assignedToId String?
+  category     SupportTicketCategory @default(OTHER)
+  status       SupportTicketStatus   @default(OPEN)
+  subject      String
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  resolvedAt   DateTime?
+
+  user       User                      @relation("SupportTicketRequester", fields: [userId], references: [id], onDelete: Cascade)
+  assignedTo User?                     @relation("SupportTicketAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages   CustomerSupportMessage[]
+  events     CustomerSupportEvent[]
+
+  @@index([userId, status, createdAt])
+  @@index([assignedToId, status])
+  @@index([status, createdAt])
+  @@map("support_tickets")
+}
+
+model CustomerSupportMessage {
+  id         String   @id @default(cuid())
+  ticketId   String
+  authorId   String
+  body       String
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  ticket CustomerSupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User                  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@map("support_ticket_messages")
+}
+
+model CustomerSupportEvent {
+  id        String   @id @default(cuid())
+  ticketId  String
+  actorId   String?
+  fromStatus SupportTicketStatus?
+  toStatus   SupportTicketStatus?
+  note      String?
+  createdAt DateTime @default(now())
+
+  ticket CustomerSupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@map("support_ticket_events")
+}
+
 // ─── InvitationOS Analytics ───────────────────────────────────────
 
 model InvitationAnalyticsEvent {
@@ -4932,6 +5081,13 @@ enum EventWalletAccountStatus {
   CLOSED
 }
 
+/// One event may hold a gift book and a ticket-revenue book. They never share
+/// a balance: withdrawals against gifts cannot spend ticket proceeds.
+enum EventWalletBook {
+  GIFT
+  TICKET
+}
+
 /// Ledger entry types. Credits are positive minor units, debits negative.
 /// Reversals/refunds are always written as new compensating entries — a
 /// financial row is never mutated or deleted.
@@ -4948,6 +5104,11 @@ enum EventWalletLedgerType {
   WITHDRAWAL_RESERVE
   WITHDRAWAL_DEBIT
   WITHDRAWAL_REVERSAL
+  TICKET_GROSS_CREDIT
+  TICKET_COMMISSION_DEBIT
+  TICKET_REFUND_DEBIT
+  TICKET_COMMISSION_REVERSAL
+  TICKET_REVERSAL
 }
 
 enum EventWalletWithdrawalStatus {
@@ -5140,19 +5301,24 @@ model EventGiftReceipt {
 
 model EventWalletAccount {
   id       String                   @id @default(cuid())
-  eventId  String                   @unique
+  eventId  String
+  book     EventWalletBook          @default(GIFT)
   currency String                   @default("GHS")
   status   EventWalletAccountStatus @default(ACTIVE)
 
   /// Cached projections of the ledger. The ledger is the source of truth; these
   /// are recomputed inside the same transaction that appends an entry.
-  balanceMinor           Int @default(0)
-  availableMinor         Int @default(0)
-  reservedMinor          Int @default(0)
-  lifetimeGiftMinor      Int @default(0)
-  lifetimeRefundMinor    Int @default(0)
-  lifetimeWithdrawnMinor Int @default(0)
-  giftCount              Int @default(0)
+  balanceMinor                  Int @default(0)
+  availableMinor                Int @default(0)
+  reservedMinor                 Int @default(0)
+  lifetimeGiftMinor             Int @default(0)
+  lifetimeRefundMinor           Int @default(0)
+  lifetimeWithdrawnMinor        Int @default(0)
+  giftCount                     Int @default(0)
+  lifetimeTicketGrossMinor      Int @default(0)
+  lifetimeTicketCommissionMinor Int @default(0)
+  lifetimeTicketRefundMinor     Int @default(0)
+  ticketSaleCount               Int @default(0)
 
   lastLedgerAt DateTime?
   frozenReason String?
@@ -5160,10 +5326,12 @@ model EventWalletAccount {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  event         Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event         Event                          @relation(fields: [eventId], references: [id], onDelete: Cascade)
   ledgerEntries EventWalletLedgerEntry[]
   withdrawals   EventWalletWithdrawalRequest[]
 
+  @@unique([eventId, book])
+  @@index([eventId])
   @@map("event_wallet_accounts")
 }
 

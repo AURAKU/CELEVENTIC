@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * browser restarts (create-event wizards, invitation details, thank-you copy).
  * Pass `storage: "session"` when a draft should die with the tab.
  *
- * This is client-only — it does not write to the database. Studio canvases
+ * This is client-only. It does not write to the database. Studio canvases
  * that already autosave to the server should keep using `useStudioAutosave`.
  */
 
@@ -31,7 +31,7 @@ export interface FormDraftKeyParts {
 }
 
 export interface UseFormDraftOptions<T extends Record<string, unknown>> extends FormDraftKeyParts {
-  /** Current form values — watched and debounced to storage. */
+  /** Current form values. Watched and debounced to storage. */
   value: T;
   /** When false, no restore/save runs (use after server hydrate). Default true. */
   enabled?: boolean;
@@ -64,7 +64,7 @@ export interface UseFormDraftResult<T extends Record<string, unknown>> {
   save: (next?: T) => void;
   /** Discard draft from storage. Does not reset React state. */
   clear: () => void;
-  /** Alias for clear — discard temporary draft. */
+  /** Alias for clear. Discard temporary draft. */
   clearDraft: () => void;
 }
 
@@ -279,7 +279,7 @@ export function useFormDraft<T extends Record<string, unknown>>({
         setLastSavedAt(new Date());
         setStatus("saved");
       } catch {
-        /* QuotaExceeded or private mode — fail silent */
+        /* QuotaExceeded or private mode. Fail silent */
       }
     },
     [storage, storageKey, clearWhenEmpty, checkEmpty]

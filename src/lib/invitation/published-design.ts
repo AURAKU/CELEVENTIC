@@ -15,10 +15,10 @@ export interface PublishableOrderDesignSource {
  * have had if it were published for the first time right now.
  *
  * Media roles stay separated:
- * - `hero` — invitation header portrait (organizer/admin controlled)
- * - `intro` — pre-invite welcome / Tap to Begin screen
- * - `background` — full-page atmosphere
- * - `reference` — swipe gallery only
+ * - `hero`. Invitation header portrait (organizer/admin controlled)
+ * - `intro`. Pre-invite welcome / Tap to Begin screen
+ * - `background`. Full-page atmosphere
+ * - `reference`. Swipe gallery only
  */
 export function buildPublishedDesignConfig(
   order: PublishableOrderDesignSource

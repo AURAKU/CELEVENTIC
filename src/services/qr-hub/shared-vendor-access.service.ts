@@ -33,7 +33,7 @@ export class SharedVendorAccessService {
 
   /**
    * Ensure one active shared vendor credential. Returns the raw token only on
-   * create/regenerate — never persisted.
+   * create/regenerate, never persisted.
    */
   async ensure(
     eventId: string,
@@ -228,7 +228,7 @@ export class SharedVendorAccessService {
           },
         });
       } catch {
-        // Unique clientRecordId on offline replay — ignore.
+        // Unique clientRecordId on offline replay. Ignore.
       }
     }
 
@@ -251,7 +251,7 @@ export class SharedVendorAccessService {
       reusable: pass?.reusable ?? true,
       operatorRoleNote: input.operatorRoleNote ?? null,
       scannedAt: new Date().toISOString(),
-      // Role heading is operator note only — never cryptographic proof.
+      // Role heading is operator note only, never cryptographic proof.
       roleVerified: false,
     };
   }
@@ -301,7 +301,7 @@ export class SharedVendorAccessService {
     }
   }
 
-  /** Safe offline verification slice — hashes/codes only, never raw tokens. */
+  /** Safe offline verification slice. Hashes/codes only, never raw tokens. */
   async offlineSlice(eventId: string) {
     const pass = await this.getActive(eventId);
     if (!pass || pass.status !== "ACTIVE") return null;

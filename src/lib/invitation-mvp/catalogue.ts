@@ -47,6 +47,8 @@ export const INVITATION_STYLES = [
   "Boardroom",
   "Launch",
   "Investor",
+  "Candlelit",
+  "Couture",
 ] as const;
 
 export const INVITATION_MOODS = [
@@ -67,7 +69,7 @@ export type InvitationStyle = (typeof INVITATION_STYLES)[number];
 
 export type CatalogTier = "free" | "premium" | "luxury";
 
-/** Per-template creative direction — stored metadata, enforced unique by scripts/check-template-uniqueness.ts */
+/** Per-template creative direction. Stored metadata, enforced unique by scripts/check-template-uniqueness.ts */
 export interface TemplateCreativeBrief {
   creativeConcept: string;
   emotionalTone: string;
@@ -78,7 +80,7 @@ export interface TemplateCreativeBrief {
 }
 
 export interface CatalogTemplate {
-  /** Unique id — matches layoutSlug (one visual identity per template) */
+  /** Unique id. Matches layoutSlug (one visual identity per template) */
   slug: string;
   name: string;
   description: string;
@@ -90,7 +92,7 @@ export interface CatalogTemplate {
   features: string[];
   isNew?: boolean;
   mood?: string;
-  // — Studio 2.0: templates as content (blueprint × theme × motif × motion) —
+  //. Studio 2.0: templates as content (blueprint × theme × motif × motion).
   tier?: CatalogTier;
   tags?: string[];
   colorFamily?: string;
@@ -125,7 +127,7 @@ export interface CatalogTemplate {
 }
 
 /**
- * One catalogue entry per layout — no recycled visuals.
+ * One catalogue entry per layout. No recycled visuals.
  * slug === layoutSlug for clarity.
  */
 export const CATALOG_TEMPLATES: CatalogTemplate[] = [
@@ -141,7 +143,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Classic",
     features: ["RSVP", "Gallery", "Countdown", "Maps", "Music"],
     creativeBrief: {
-      creativeConcept: "Satin Bow — ivory parchment tied with a satin bow ceremony",
+      creativeConcept: "Satin Bow. Ivory parchment tied with a satin bow ceremony",
       emotionalTone: "romantic",
       visualLanguage: "ivory card, satin ribbon folds, blush accents, soft foil names",
       revealMechanic: "untie satin bow",
@@ -171,7 +173,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Luxury",
     features: ["RSVP", "QR", "Music", "Gallery", "Countdown"],
     creativeBrief: {
-      creativeConcept: "Luxury Black Tie — onyx stage, interlocking rings, ring-box reveal",
+      creativeConcept: "Luxury Black Tie. Onyx stage, interlocking rings, ring-box reveal",
       emotionalTone: "luxurious",
       visualLanguage: "matte black, interlocking gold rings, spotlight beam, tuxedo contrast",
       revealMechanic: "open ring box under spotlight",
@@ -201,7 +203,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Nature",
     features: ["RSVP", "Story", "Directions", "Calendar"],
     creativeBrief: {
-      creativeConcept: "Vine Cathedral lite — palace doors into a living green arch",
+      creativeConcept: "Vine Cathedral lite. Palace doors into a living green arch",
       emotionalTone: "nature",
       visualLanguage: "forest arch, cream calligraphy, vine frames",
       revealMechanic: "palace entrance gates",
@@ -231,7 +233,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Traditional",
     features: ["RSVP", "Gallery", "Story", "QR"],
     creativeBrief: {
-      creativeConcept: "Swan Lake Romance — lace draw into a photo-develop chapter",
+      creativeConcept: "Swan Lake Romance. Lace draw into a photo-develop chapter",
       emotionalTone: "romantic",
       visualLanguage: "ornate lace overlay, warm timber, full-bleed portraits, paper tabs",
       revealMechanic: "photo develop zoom",
@@ -261,7 +263,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Boho",
     features: ["RSVP", "Gallery", "Share", "Countdown"],
     creativeBrief: {
-      creativeConcept: "Art Deco Wedding — gift-box pop into floating gold geometry",
+      creativeConcept: "Art Deco Wedding. Gift-box pop into floating gold geometry",
       emotionalTone: "playful",
       visualLanguage: "soft florals, gold hexagon frame, deco lounge warmth",
       revealMechanic: "gift box open",
@@ -291,7 +293,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Romantic",
     features: ["RSVP", "Gallery", "Music", "Calendar"],
     creativeBrief: {
-      creativeConcept: "Watercolor Garden — petal cascade into blush botanical borders",
+      creativeConcept: "Watercolor Garden. Petal cascade into blush botanical borders",
       emotionalTone: "romantic",
       visualLanguage: "blush typography, watercolor washes, botanical borders, petal drifts",
       revealMechanic: "petal fall ceremony",
@@ -321,7 +323,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "European",
     features: ["RSVP", "Maps", "Music", "QR"],
     creativeBrief: {
-      creativeConcept: "Tropical Destination — folio open into flip boarding booklet",
+      creativeConcept: "Tropical Destination. Folio open into flip boarding booklet",
       emotionalTone: "wanderlust",
       visualLanguage: "visa stamps, teal covers, tropical voyage motifs",
       revealMechanic: "flip reveal booklet",
@@ -351,7 +353,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Luxury",
     features: ["RSVP", "Gallery", "Music", "Countdown"],
     creativeBrief: {
-      creativeConcept: "Cinematic Film Premiere — marble veil into 3-2-1 premiere countdown",
+      creativeConcept: "Cinematic Film Premiere. Marble veil into 3-2-1 premiere countdown",
       emotionalTone: "cinematic",
       visualLanguage: "frosted acrylic, teal depth, metallic edges, premiere countdown",
       revealMechanic: "film countdown",
@@ -382,7 +384,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "European",
     features: ["RSVP", "QR", "Music", "Gallery", "Countdown", "Maps"],
     creativeBrief: {
-      creativeConcept: "Royal Wax Seal — gold-light intro into embossed emerald envelope; press the wax seal",
+      creativeConcept: "Royal Wax Seal. Gold-light intro into embossed emerald envelope; press the wax seal",
       emotionalTone: "regal",
       visualLanguage: "deep emerald velvet, gold crown motifs, palace columns, embossed seal, paper and metal depth",
       revealMechanic: "press wax seal on embossed emerald envelope",
@@ -415,7 +417,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Cinematic",
     features: ["RSVP", "QR", "Music", "Gallery", "Calendar"],
     creativeBrief: {
-      creativeConcept: "Editorial Love Story — title card into magazine cover; swipe page-turn chapters",
+      creativeConcept: "Editorial Love Story. Title card into magazine cover; swipe page-turn chapters",
       emotionalTone: "editorial",
       visualLanguage: "asymmetric crops, silver type, velvet darkness, film-strip collage, credit typography",
       revealMechanic: "magazine cover page turn",
@@ -446,7 +448,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Traditional",
     features: ["RSVP", "Seating", "Music", "Gallery", "Guest Wishes"],
     creativeBrief: {
-      creativeConcept: "Kente Covenant — ticket tear into a swipe of woven heritage",
+      creativeConcept: "Kente Covenant. Ticket tear into a swipe of woven heritage",
       emotionalTone: "traditional",
       visualLanguage: "woven maroon and gold, drum cadence, grand lettering",
       revealMechanic: "swipe reveal cloth",
@@ -488,12 +490,12 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     ],
     creativeBrief: {
       creativeConcept:
-        "Afari × Opoku Traditional Marriage vision board — peach silk ribbon card with exact ceremony copy and live gate QR",
+        "Afari × Opoku Traditional Marriage vision board. Peach silk ribbon card with exact ceremony copy and live gate QR",
       emotionalTone: "traditional",
       visualLanguage:
         "peach blossom backdrop, bronze Cinzel names, script ceremony title, date triptych, functional QR & RSVP footer",
       revealMechanic:
-        "embroidered cream envelope — peach wax seal lifts off, then flap unveils into the printed card",
+        "embroidered cream envelope. Peach wax seal lifts off, then flap unveils into the printed card",
       audioMood: "african ceremony drums soft",
       outroType: "hashtag forever thank-you",
     },
@@ -540,12 +542,12 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     performanceClass: "standard",
     creativeBrief: {
       creativeConcept:
-        "Blush Swan Gate — swan glide intro into an embossed blush envelope; press the champagne wax seal and the golden gate opens from the centre",
+        "Blush Swan Gate. Swan glide intro into an embossed blush envelope; press the champagne wax seal and the golden gate opens from the centre",
       emotionalTone: "romantic",
       visualLanguage:
         "embossed blush peony paper, champagne foil, ornamental golden gate, botanical line art, editorial serif and script pairing",
       revealMechanic:
-        "tap or swipe the champagne wax seal — the seal lifts slowly from the paper, the flaps unfold in depth, the inner card rises, and an ornate golden gate is built and parted from the centre",
+        "tap or swipe the champagne wax seal. The seal lifts slowly from the paper, the flaps unfold in depth, the inner card rises, and an ornate golden gate is built and parted from the centre",
       audioMood: "romantic strings and violin",
       outroType: "gate closes over a gratitude scene",
     },
@@ -581,7 +583,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     performanceClass: "standard",
     creativeBrief: {
       creativeConcept:
-        "Aurelia Editorial Wedding — ivory veil intro into a photography-led two day wedding invitation",
+        "Aurelia Editorial Wedding. Ivory veil intro into a photography-led two day wedding invitation",
       emotionalTone: "editorial-romance",
       visualLanguage:
         "ivory paper, terracotta script, champagne rules, espresso countdown, dress palettes, journey stills",
@@ -622,7 +624,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     performanceClass: "standard",
     creativeBrief: {
       creativeConcept:
-        "Seraphine Champagne Wedding — champagne veil intro into a photography-led two day wedding invitation",
+        "Seraphine Champagne Wedding. Champagne veil intro into a photography-led two day wedding invitation",
       emotionalTone: "champagne-romance",
       visualLanguage:
         "champagne paper, terracotta script, gold rules, espresso countdown, dress palettes, journey stills",
@@ -653,7 +655,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Romantic",
     features: ["RSVP", "Story", "Music", "Gallery", "Countdown"],
     creativeBrief: {
-      creativeConcept: "Botanical Bloom — living romantic garden; logo bloom into petal reveal and floating frames",
+      creativeConcept: "Botanical Bloom. Living romantic garden; logo bloom into petal reveal and floating frames",
       emotionalTone: "romantic",
       visualLanguage: "soft petals, rose light, floating botanical frames, leaf depth layers, flower parallax",
       revealMechanic: "tap flower or swipe petals to bloom",
@@ -687,7 +689,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     features: ["RSVP", "QR", "Maps", "Music", "Calendar"],
     hasParallax: true,
     creativeBrief: {
-      creativeConcept: "Horizon Boarding Pass — fabric unfold into passport stamp journey",
+      creativeConcept: "Horizon Boarding Pass. Fabric unfold into passport stamp journey",
       emotionalTone: "wanderlust",
       visualLanguage: "boarding pass folds, visa stamps, horizon light",
       revealMechanic: "passport stamp",
@@ -719,7 +721,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     features: ["RSVP", "Gallery", "Music", "Countdown", "Maps"],
     hasParallax: true,
     creativeBrief: {
-      creativeConcept: "Champagne Crystal — prism refract into glass wipe with champagne light",
+      creativeConcept: "Champagne Crystal. Prism refract into glass wipe with champagne light",
       emotionalTone: "luminous",
       visualLanguage: "frosted depth, refraction, champagne gold edges",
       revealMechanic: "glass wipe",
@@ -749,7 +751,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Traditional",
     features: ["RSVP", "Schedule", "Maps", "Music", "Calendar"],
     creativeBrief: {
-      creativeConcept: "Islamic Ornamental — quill script into geometric palace envelope",
+      creativeConcept: "Islamic Ornamental. Quill script into geometric palace envelope",
       emotionalTone: "reverent",
       visualLanguage: "gold geometry, emerald fields, ornamental arches, soft instrumental",
       revealMechanic: "islamic envelope open",
@@ -790,7 +792,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     ],
     creativeBrief: {
       creativeConcept:
-        "Memorial Candle — loving-memory envelope with dove unseal into the tribute cover",
+        "Memorial Candle. Loving-memory envelope with dove unseal into the tribute cover",
       emotionalTone: "solemn",
       visualLanguage: "candle glow, restrained portrait framing, warm stone, life timeline, memory album",
       revealMechanic: "memorial envelope dove unseal",
@@ -823,7 +825,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Cute",
     features: ["RSVP", "Tickets", "QR", "Music", "Share"],
     creativeBrief: {
-      creativeConcept: "Electric Pulse — neon pulse into confetti burst party ticket",
+      creativeConcept: "Electric Pulse. Neon pulse into confetti burst party ticket",
       emotionalTone: "high-energy",
       visualLanguage: "fuchsia neon, scratch energy, ticket QR",
       revealMechanic: "confetti burst",
@@ -1002,7 +1004,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Luxury",
     features: ["RSVP", "QR", "Agenda", "Music", "Calendar"],
     creativeBrief: {
-      creativeConcept: "Corporate Prestige — kinetic logo grid into title; scroll/tap agenda chapters",
+      creativeConcept: "Corporate Prestige. Kinetic logo grid into title; scroll/tap agenda chapters",
       emotionalTone: "corporate",
       visualLanguage: "refined grid, teal accents, precision kinetic type, glass parallax, speaker cards",
       revealMechanic: "corporate curtain into agenda chapters",
@@ -1192,7 +1194,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "gentle-drift",
     creativeBrief: {
       creativeConcept:
-        "Femmora Flagship Soft Opening — a lunch invitation with couture envelope, card rise and atelier film",
+        "Femmora Flagship Soft Opening. A lunch invitation with couture envelope, card rise and atelier film",
       emotionalTone: "quiet-luxury",
       visualLanguage: "ivory silk, champagne light, mocha type, editorial index, portrait film frame",
       revealMechanic: "silk unveil then boutique portal",
@@ -1222,7 +1224,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     mood: "Artistic",
     features: ["RSVP", "Media", "Gallery", "Music"],
     creativeBrief: {
-      creativeConcept: "Your Canvas — canvas wipe into a foil-scratch media frame",
+      creativeConcept: "Your Canvas. Canvas wipe into a foil-scratch media frame",
       emotionalTone: "creator-led",
       visualLanguage: "cinematic media frame, teal studio field, creator freedom",
       revealMechanic: "scratch foil media",
@@ -1266,7 +1268,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "still",
     performanceClass: "light",
     creativeBrief: {
-      creativeConcept: "Storybook Romance — seal impress into an unfolding gilded letter",
+      creativeConcept: "Storybook Romance. Seal impress into an unfolding gilded letter",
       emotionalTone: "storybook",
       visualLanguage: "ivory pages, foil names, silver seal, flourish motifs",
       revealMechanic: "letter unfold",
@@ -1306,7 +1308,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "still",
     performanceClass: "light",
     creativeBrief: {
-      creativeConcept: "Celestial Love — chapel glow into a rose-gold seal under starlight",
+      creativeConcept: "Celestial Love. Chapel glow into a rose-gold seal under starlight",
       emotionalTone: "hopeful",
       visualLanguage: "deep emerald pages, cream calligraphy, starlit botanical dividers",
       revealMechanic: "rose gold wax seal",
@@ -1346,7 +1348,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "still",
     performanceClass: "light",
     creativeBrief: {
-      creativeConcept: "Kente Court — drum pulse into a joyful pop reveal",
+      creativeConcept: "Kente Court. Drum pulse into a joyful pop reveal",
       emotionalTone: "celebratory",
       visualLanguage: "maroon and gold pages, grand lettering, court drums",
       revealMechanic: "pop reveal",
@@ -1386,7 +1388,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "layered-drift",
     performanceClass: "standard",
     creativeBrief: {
-      creativeConcept: "European Manor — royal orbit into gold wax with parallax foil gallery",
+      creativeConcept: "European Manor. Royal orbit into gold wax with parallax foil gallery",
       emotionalTone: "regal",
       visualLanguage: "ivory card stock, gilded frames, foil names, manor medallions",
       revealMechanic: "gold wax seal press",
@@ -1426,7 +1428,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "gentle-drift",
     performanceClass: "standard",
     creativeBrief: {
-      creativeConcept: "Palace Gates — constellation into emerald archway gates",
+      creativeConcept: "Palace Gates. Constellation into emerald archway gates",
       emotionalTone: "regal",
       visualLanguage: "cathedral arches, living vines, dusk-lit emerald depths",
       revealMechanic: "archway gates open",
@@ -1466,7 +1468,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "layered-drift",
     performanceClass: "standard",
     creativeBrief: {
-      creativeConcept: "Kente Royale — soft intro into theatrical velvet curtains with kente gold trim",
+      creativeConcept: "Kente Royale. Soft intro into theatrical velvet curtains with kente gold trim",
       emotionalTone: "traditional",
       visualLanguage: "woven maroon and gold, grand lettering, stage curtain reveal",
       revealMechanic: "wedding stage curtains",
@@ -1506,7 +1508,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "solemn",
     performanceClass: "light",
     creativeBrief: {
-      creativeConcept: "Chapel Candle Farewell — glass shimmer into a quiet curtain of remembrance",
+      creativeConcept: "Chapel Candle Farewell. Glass shimmer into a quiet curtain of remembrance",
       emotionalTone: "reverent",
       visualLanguage: "warm candle wall, soft gold on stone, restrained page rhythm",
       revealMechanic: "soft award curtain",
@@ -1546,7 +1548,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "solemn",
     performanceClass: "light",
     creativeBrief: {
-      creativeConcept: "White Lily Rest — ivory stillness with a floral envelope into quiet pages",
+      creativeConcept: "White Lily Rest. Ivory stillness with a floral envelope into quiet pages",
       emotionalTone: "serene",
       visualLanguage: "ivory lily motifs, pale stone, whisper typography",
       revealMechanic: "floral envelope open",
@@ -1586,7 +1588,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "solemn",
     performanceClass: "light",
     creativeBrief: {
-      creativeConcept: "Royal Mourning Lite — black-red-white drape into a press-hold rite",
+      creativeConcept: "Royal Mourning Lite. Black-red-white drape into a press-hold rite",
       emotionalTone: "dignified",
       visualLanguage: "mourning cloth, silver-on-black type, red honour accents",
       revealMechanic: "press and hold to open",
@@ -1637,7 +1639,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "solemn",
     performanceClass: "light",
     creativeBrief: {
-      creativeConcept: "Candlelight Tribute Chapters — spotlight into light-beam elegy chapters",
+      creativeConcept: "Candlelight Tribute Chapters. Spotlight into light-beam elegy chapters",
       emotionalTone: "solemn",
       visualLanguage: "candlelit darkness, warm gold on velvet black, portrait framing",
       revealMechanic: "light beam",
@@ -1687,7 +1689,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "solemn",
     performanceClass: "light",
     creativeBrief: {
-      creativeConcept: "White Lily Memorial Journey — aurora rise into a silver-seal tribute chapter",
+      creativeConcept: "White Lily Memorial Journey. Aurora rise into a silver-seal tribute chapter",
       emotionalTone: "tender",
       visualLanguage: "serene ivory chapters, lily dividers, soft portrait frames",
       revealMechanic: "silver wax seal",
@@ -1738,7 +1740,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     motionProfileId: "solemn",
     performanceClass: "light",
     creativeBrief: {
-      creativeConcept: "Royal Mourning Estate — light sweep into parchment scroll rite",
+      creativeConcept: "Royal Mourning Estate. Light sweep into parchment scroll rite",
       emotionalTone: "dignified",
       visualLanguage: "velvet drape, silver-on-black typography, Ghanaian mourning cloth",
       revealMechanic: "parchment scroll unroll",
@@ -1779,7 +1781,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
       "Gallery",
       "RSVP",
       "Contributions",
-      "Memory",
+      "Cloth Honour",
     ],
     tier: "premium",
     tags: ["ghanaian", "black-red", "akan", "mourning"],
@@ -1860,7 +1862,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
       slideshowStyle: "fade-carousel",
       countdownStyle: "glass",
     },
-    buttonStyle: "minimal-text",
+    buttonStyle: "solemn",
   },
   {
     slug: "kente-border-farewell",
@@ -2009,7 +2011,7 @@ export function resolveCatalogSlug(slug: string): string {
 
 export function getCatalogTemplate(slug: string) {
   const resolved = resolveCatalogSlug(slug);
-  // Prefer exact SKU match first — shared layouts must not resolve to the first lite.
+  // Prefer exact SKU match first. Shared layouts must not resolve to the first lite.
   const found =
     CATALOG_TEMPLATES.find((t) => t.slug === resolved) ??
     CATALOG_TEMPLATES.find((t) => t.layoutSlug === resolved);
@@ -2038,7 +2040,7 @@ export function filterCatalogTemplates(filters: {
   });
 }
 
-/** One template per layout — for admin / analytics */
+/** One template per layout, for admin / analytics */
 export function getUniqueLayoutCount(): number {
   return new Set(CATALOG_TEMPLATES.map((t) => t.layoutSlug)).size;
 }
@@ -2064,7 +2066,7 @@ function browseRank(t: CatalogTemplate): number {
 
 /** Near-duplicate layout pairs share one browse family key. */
 const BROWSE_FAMILY_BY_SLUG: Record<string, string> = {
-  // Botanical Bloom family — romance wins browse; secret garden is studio-only
+  // Botanical Bloom family. Romance wins browse; secret garden is studio-only
   "floral-garden": "family-botanical",
   "floral-garden-romance": "family-botanical",
   // Destination Passport family

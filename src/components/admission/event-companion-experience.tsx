@@ -16,6 +16,7 @@ import { EVENT_TIME_ZONE } from "@/lib/constants";
 import type { ResolvedFeature } from "@/lib/invitation-features/registry";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
+import { parseWeddingMenuBody } from "@/lib/invitation/wedding-board";
 import { GuestSeatingCard } from "@/components/seating/guest-seating-card";
 import { cn } from "@/lib/utils";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
@@ -86,7 +87,7 @@ function SectionRule({ color }: { color: string }) {
 }
 
 /**
- * Post-admission companion — themed to the live invitation.
+ * Post-admission companion. Themed to the live invitation.
  * Shown only after a successful gate admission (QR or manual code).
  */
 export function EventCompanionExperience({
@@ -121,8 +122,9 @@ export function EventCompanionExperience({
   const showProgramme =
     (enabled("LIVE_PROGRAMME") || theme.programmeItems.length > 0) &&
     theme.programmeItems.length > 0;
-  const showMenu =
-    enabled("EVENT_MENU") && Boolean((menuBody && menuBody.trim()) || menuUrl);
+  const menuCopy = (menuBody ?? "").trim() || (theme.menuBody ?? "").trim();
+  const menuSections = parseWeddingMenuBody(menuCopy);
+  const showMenu = Boolean(menuCopy || menuUrl);
   const whenLabel = formatEventWhen(event.startDate);
   const firstName = guestName?.trim().split(/\s+/)[0] ?? null;
 
@@ -341,12 +343,41 @@ export function EventCompanionExperience({
               Menu
             </h2>
             <SectionRule color={`${colors.secondary}99`} />
-            {menuBody?.trim() ? (
+            {menuSections.length > 0 ? (
+              <div className="mx-auto mt-6 max-w-md text-center">
+                {menuSections.map((section, sectionIndex) => (
+                  <div
+                    key={section.heading || `menu-${sectionIndex}`}
+                    className={sectionIndex === 0 ? "" : "mt-7"}
+                  >
+                    {section.heading ? (
+                      <p
+                        className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.32em] sm:text-xs"
+                        style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+                      >
+                        {section.heading}
+                      </p>
+                    ) : null}
+                    <ul className="space-y-1">
+                      {section.dishes.map((dish) => (
+                        <li
+                          key={dish}
+                          className="text-lg italic leading-snug sm:text-xl"
+                          style={{ color: colors.primary, fontFamily: fonts.body, fontWeight: 500 }}
+                        >
+                          {dish}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : menuCopy ? (
               <p
                 className="mx-auto mt-6 max-w-md whitespace-pre-line text-base leading-relaxed sm:text-lg"
                 style={{ color: colors.primary, fontWeight: 500 }}
               >
-                {menuBody.trim()}
+                {menuCopy}
               </p>
             ) : null}
             {menuUrl ? (

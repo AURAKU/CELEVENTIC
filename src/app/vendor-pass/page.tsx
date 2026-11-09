@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Bare /vendor-pass has no token — show a clear recovery screen instead of a raw 404.
+ * Bare /vendor-pass has no token. Show a clear recovery screen instead of a raw 404.
  */
 export default function VendorPassIndexPage() {
   return (

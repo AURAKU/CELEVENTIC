@@ -9,7 +9,7 @@ export const PASS_TOKEN_PREFIX = "cvp1";
 const SEGMENT = "[A-Za-z0-9_-]{22}";
 export const PASS_TOKEN_PATTERN = new RegExp(`^${PASS_TOKEN_PREFIX}\\.${SEGMENT}\\.${SEGMENT}$`);
 
-/** Cheap shape check — safe to run on untrusted scanner input. */
+/** Cheap shape check. Safe to run on untrusted scanner input. */
 export function looksLikePassToken(value: string): boolean {
   return PASS_TOKEN_PATTERN.test(value.trim());
 }
@@ -18,7 +18,7 @@ export function looksLikePassToken(value: string): boolean {
  * Extract a pass token from raw scanner input (bare token, `/admission/…`
  * URL, or `/api/admission/pass-image?token=…` image URL).
  * Returns null when the input is not a syntactically valid pass token.
- * Never treats client-decoded data as authoritative — the gate still
+ * Never treats client-decoded data as authoritative. The gate still
  * verifies the HMAC and event scope server-side.
  */
 export function extractPassToken(raw: string): string | null {
@@ -36,7 +36,7 @@ export function extractPassToken(raw: string): string | null {
     try {
       candidate = decodeURIComponent(candidate);
     } catch {
-      /* keep the raw fragment — the pattern check below still guards us */
+      /* keep the raw fragment. The pattern check below still guards us */
     }
     if (looksLikePassToken(candidate)) return candidate;
   }

@@ -36,7 +36,7 @@ describe("funeral envelope seals", () => {
 });
 
 describe("funeral catalog music", () => {
-  it("uses calm memorial tracks — never jazz/party/celebration files", () => {
+  it("uses calm memorial tracks, never jazz/party/celebration files", () => {
     const funeralEntries = Object.entries(CATALOG_MUSIC_IDENTITY).filter(
       ([, profile]) => profile.category === "funeral"
     );

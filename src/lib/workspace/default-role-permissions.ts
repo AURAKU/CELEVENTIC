@@ -1,7 +1,7 @@
 import type { EventCollaboratorRole } from "@prisma/client";
 import { EventPermissionKey } from "./permission-keys";
 
-/** Seed-only defaults — runtime reads from WorkspaceRolePermission table. */
+/** Seed-only defaults. Runtime reads from WorkspaceRolePermission table. */
 export const DEFAULT_ROLE_PERMISSIONS: Record<EventCollaboratorRole, readonly string[]> = {
   OWNER: Object.values(EventPermissionKey),
   LEAD_ORGANIZER: [

@@ -7,6 +7,11 @@ import {
   PUBLIC_GRID_LIMIT,
   type PaginatedResult,
 } from "@/lib/pagination";
+import {
+  PUBLIC_EVENT_SELECT,
+  toPublicDiscoverEvent,
+  type PublicDiscoverEvent,
+} from "@/lib/discovery/public-event";
 
 export interface DiscoveryFilters {
   city?: string;
@@ -19,12 +24,18 @@ export interface DiscoveryFilters {
   limit?: number;
 }
 
+const LIST_SELECT = {
+  ...PUBLIC_EVENT_SELECT,
+  latitude: true,
+  longitude: true,
+};
+
 export class DiscoveryService {
-  async discover(filters: DiscoveryFilters): Promise<PaginatedResult<Awaited<ReturnType<typeof prisma.event.findMany>>[number]>> {
+  async discover(filters: DiscoveryFilters): Promise<PaginatedResult<PublicDiscoverEvent>> {
     const { page, limit, skip } = parsePaginationInput(filters, { limit: PUBLIC_GRID_LIMIT });
 
-    const cacheKey = `discovery:v2:${JSON.stringify({ ...filters, page, limit })}`;
-    const cached = await cacheGet<PaginatedResult<Awaited<ReturnType<typeof prisma.event.findMany>>[number]>>(cacheKey);
+    const cacheKey = `discovery:v4:${JSON.stringify({ ...filters, page, limit })}`;
+    const cached = await cacheGet<PaginatedResult<PublicDiscoverEvent>>(cacheKey);
     if (cached) return cached;
 
     const where = {
@@ -38,10 +49,7 @@ export class DiscoveryService {
     const [events, total] = await Promise.all([
       prisma.event.findMany({
         where,
-        include: {
-          package: true,
-          _count: { select: { guests: true, tickets: true } },
-        },
+        select: LIST_SELECT,
         orderBy: [{ isFeatured: "desc" }, { startDate: "asc" }],
         skip,
         take: limit,
@@ -49,10 +57,10 @@ export class DiscoveryService {
       prisma.event.count({ where }),
     ]);
 
-    let items = events;
+    let rows = events;
 
     if (filters.latitude && filters.longitude) {
-      items = events
+      rows = events
         .map((event) => ({
           event,
           distance: this.haversineKm(
@@ -62,22 +70,24 @@ export class DiscoveryService {
             Number(event.longitude ?? 0)
           ),
         }))
-        .filter((e) => e.distance <= (filters.radiusKm ?? 50))
+        .filter((entry) => entry.distance <= (filters.radiusKm ?? 50))
         .sort((a, b) => a.distance - b.distance)
-        .map((e) => e.event);
+        .map((entry) => entry.event);
     }
 
-    const result = paginatedResult(items, total, page, limit);
+    const result = paginatedResult(rows.map(toPublicDiscoverEvent), total, page, limit);
     await cacheSet(cacheKey, result, 120);
     return result;
   }
 
-  async getFeatured() {
-    return prisma.event.findMany({
+  async getFeatured(): Promise<PublicDiscoverEvent[]> {
+    const events = await prisma.event.findMany({
       where: { isPublic: true, isFeatured: true, status: { in: ["PUBLISHED", "LIVE"] } },
+      select: PUBLIC_EVENT_SELECT,
       take: 6,
       orderBy: { startDate: "asc" },
     });
+    return events.map(toPublicDiscoverEvent);
   }
 
   async getNearbyEvents(latitude: number, longitude: number, radiusKm = 25, page = 1) {

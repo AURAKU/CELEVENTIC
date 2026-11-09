@@ -1,4 +1,4 @@
-/** Opening ceremony — the invite is an experience before content loads */
+/** Opening ceremony. The invite is an experience before content loads */
 export type OpeningExperienceId =
   | "envelope-classic"
   | "wax-seal-pink"
@@ -159,7 +159,7 @@ export type SceneTransitionId =
 
 export type ExperienceHubMode = "tabs" | "scroll" | "journey" | "storybook" | "paged";
 
-/** Branded Celeventic intro choreographies — same logo, different worlds */
+/** Branded Celeventic intro choreographies. Same logo, different worlds */
 export type IntroVariantId =
   | "engine-grid"
   | "logo-bloom"
@@ -174,7 +174,7 @@ export type IntroVariantId =
   | "candlelight"
   | "constellation"
   | "fabric-unfold"
-  // Phase 4 — additional SKU-keyed choreographies (distinct identity + tagline)
+  // Phase 4. Additional SKU-keyed choreographies (distinct identity + tagline)
   | "seal-impress"
   | "petal-cascade"
   | "neon-pulse"
@@ -226,7 +226,7 @@ export interface EventScheduleItem {
   location?: string;
 }
 
-/** Studio scene list entry — additive; legacy invites omit this and use enabledTabs */
+/** Studio scene list entry. Additive; legacy invites omit this and use enabledTabs */
 export interface StudioSceneConfig {
   id: string;
   tabId: HubTabId | "custom";
@@ -284,7 +284,7 @@ export interface EventExperienceConfig {
   thankYouScriptFontFamily?: string;
   /** Font family for the welcome / tap-to-begin gate text stack (brand, eyebrow, script, names, BEGIN). FontId from invitation theme; unset keeps each line's own template default. */
   welcomeFontFamily?: string;
-  /** Overall text scale for the welcome / tap-to-begin gate — keeps proportions, nudges size. "bold" is the max-legibility tier for busy/patterned welcome art. */
+  /** Overall text scale for the welcome / tap-to-begin gate. Keeps proportions, nudges size. "bold" is the max-legibility tier for busy/patterned welcome art. */
   welcomeFontScale?: "compact" | "cozy" | "spacious" | "bold";
   /** Manual body/ivory text color override for the welcome gate. Unset keeps smart auto-contrast against the welcome photo. */
   welcomeTextColor?: string | null;
@@ -303,28 +303,28 @@ export interface EventExperienceConfig {
   backgroundPackId?: string;
   /** When true, studio edits to experience fields are preserved on re-enrich */
   experienceCustomized?: boolean;
-  /** Phase 5 — editable scene/section list (drives enabledTabs when present) */
+  /** Phase 5. Editable scene/section list (drives enabledTabs when present) */
   scenes?: StudioSceneConfig[];
-  /** Phase 5 — parallax intensity override */
+  /** Phase 5. Parallax intensity override */
   parallaxIntensity?: StudioParallaxIntensity;
-  /** Phase 5 — primary dock button action mapping */
+  /** Phase 5. Primary dock button action mapping */
   buttonActions?: StudioButtonActions;
-  /** Phase 5 — layer stack order (background → foreground) */
+  /** Phase 5. Layer stack order (background → foreground) */
   layerOrder?: string[];
-  /** Phase 5 — hidden layer ids */
+  /** Phase 5. Hidden layer ids */
   hiddenLayers?: string[];
-  /** Phase 5 — active snap guide for preview alignment */
+  /** Phase 5. Active snap guide for preview alignment */
   snapGuideId?: string;
   /**
    * Luxury fashion flagship house DNA. Isolated from wedding/funeral
-   * ceremonies — only consumed by the fashion opening + layout.
+   * ceremonies. Only consumed by the fashion opening + layout.
    */
   fashionHouse?: import("@/lib/experience/luxury-fashion/types").LuxuryFashionHouseConfig;
   /**
    * Aurelia editorial wedding DNA. Isolated from Forever Afaris / fashion
-   * ceremonies — only consumed by the Aurelia opening + layout.
+   * ceremonies. Only consumed by the Aurelia opening + layout.
    */
-  aureliaWedding?: import("@/lib/experience/aurelia-editorial/types").AureliaWeddingConfig;
+  aureliaWedding?: Partial<import("@/lib/experience/aurelia-editorial/types").AureliaWeddingConfig>;
   /**
    * Closing "Create your own invitation with Celeventic" growth CTA.
    * Unset keeps current product default (on for non-funeral). Femmora

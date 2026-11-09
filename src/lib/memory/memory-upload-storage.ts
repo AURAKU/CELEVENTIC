@@ -4,42 +4,73 @@ import { processVideoFile } from "@/lib/video/video-processor";
 import { sniffVideoContainer } from "@/lib/video/container-sniff";
 import { ALLOWED_VIDEO_MIME_TYPES, ALLOWED_VIDEO_EXTENSIONS } from "@/lib/video/constants";
 import { extractExtension } from "@/lib/video/validation";
+import { looksLikeSvg, sniffImageFormat } from "@/lib/media/image-processor";
 import {
   MEMORY_VAULT_VIDEO_UPLOADS_ENABLED,
   memoryVaultPhotosOnlyMessage,
 } from "@/lib/memory/memory-vault-policy";
 
-const ALLOWED_IMAGE = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/jfif",
-  "image/pjpeg",
-  "image/heic",
-  "image/heif",
-  "image/avif",
-  "image/jpg",
-]);
+const SVG_MIME = new Set(["image/svg+xml", "image/svg", "text/xml+svg"]);
+
 const ALLOWED_VIDEO = new Set<string>(ALLOWED_VIDEO_MIME_TYPES);
 
 const EXT_MAP: Record<string, string> = {
   "image/jpeg": ".jpg",
   "image/jpg": ".jpg",
   "image/png": ".png",
+  "image/x-png": ".png",
   "image/webp": ".webp",
   "image/gif": ".gif",
   "image/jfif": ".jpg",
   "image/pjpeg": ".jpg",
   "image/heic": ".heic",
   "image/heif": ".heif",
+  "image/heic-sequence": ".heic",
+  "image/heif-sequence": ".heif",
   "image/avif": ".avif",
+  "image/bmp": ".bmp",
+  "image/x-bmp": ".bmp",
+  "image/x-ms-bmp": ".bmp",
+  "image/tiff": ".tiff",
+  "image/x-tiff": ".tiff",
+  "image/vnd.microsoft.icon": ".ico",
+  "image/x-icon": ".ico",
+  "image/jxl": ".jxl",
+  "image/jp2": ".jp2",
   "video/mp4": ".mp4",
   "video/webm": ".webm",
   "video/quicktime": ".mov",
 };
 
-const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif", "jfif", "heic", "heif", "avif"];
+const IMAGE_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "gif",
+  "jfif",
+  "jpe",
+  "heic",
+  "heif",
+  "hif",
+  "avif",
+  "bmp",
+  "dib",
+  "tif",
+  "tiff",
+  "ico",
+  "jxl",
+  "jp2",
+  "j2k",
+];
+
+const AMBIGUOUS_MIME = new Set(["", "application/octet-stream", "binary/octet-stream"]);
+
+function isRasterImageMime(mimeType: string): boolean {
+  const mime = mimeType.toLowerCase().trim();
+  if (!mime.startsWith("image/")) return false;
+  return !SVG_MIME.has(mime);
+}
 
 export function validateMemoryFile(
   mimeType: string,
@@ -48,18 +79,28 @@ export function validateMemoryFile(
   maxVideoMb: number,
   fileName?: string
 ): { valid: boolean; reason?: string; mediaType?: "image" | "video" } {
+  const mime = (mimeType || "").toLowerCase().trim();
   const ext = fileName ? extractExtension(fileName) : null;
+  if (SVG_MIME.has(mime) || ext === "svg") {
+    return {
+      valid: false,
+      reason: "SVG files are not accepted. Please send a JPEG, HEIC, PNG, or WebP photo.",
+    };
+  }
+  const isImageExt = !!ext && IMAGE_EXTENSIONS.includes(ext);
+  const isVideoExt = !!ext && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(ext);
   const isImage =
-    ALLOWED_IMAGE.has(mimeType) || (!!ext && IMAGE_EXTENSIONS.includes(ext));
+    isRasterImageMime(mime) ||
+    isImageExt ||
+    (AMBIGUOUS_MIME.has(mime) && !ext);
   const isVideo =
-    ALLOWED_VIDEO.has(mimeType) ||
-    mimeType.startsWith("video/") ||
-    (!!ext && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(ext));
+    !isImage &&
+    (ALLOWED_VIDEO.has(mime) || mime.startsWith("video/") || isVideoExt);
   if (!isImage && !isVideo) {
     return {
       valid: false,
       reason:
-        "That file type isn’t supported. Try any common photo (JPEG, HEIC, PNG, WebP).",
+        "That file type isn’t supported. Try any photo your phone can take (JPEG, HEIC, PNG, WebP, and more).",
     };
   }
   // iPhone photos often arrive as application/octet-stream, which is also in the
@@ -100,9 +141,9 @@ export function buildMemorySafeBaseName(now = Date.now(), rand = Math.random): s
 /**
  * Legacy generic memory upload path (`/api/memories/upload`). The main guest UI
  * (`GuestMemoryUpload`) only ever sends video through the universal `VideoUploader`
- * (`category: "GUESTBOOK"`, which always FFmpeg-transcodes — see
+ * (`category: "GUESTBOOK"`, which always FFmpeg-transcodes. See
  * `src/lib/video/processing.ts`), but this endpoint's own MIME allowlist still accepts
- * `video/mp4|webm|quicktime` directly, so it must never store a raw, unprocessed video —
+ * `video/mp4|webm|quicktime` directly, so it must never store a raw, unprocessed video.
  * iPhone/Android HEVC footage inside an untouched .mp4/.mov would be unplayable in most
  * browsers. Videos are transcoded here with the same VPS FFmpeg engine
  * (`src/lib/video/video-processor.ts`) the invitations upload route uses, producing a
@@ -110,8 +151,8 @@ export function buildMemorySafeBaseName(now = Date.now(), rand = Math.random): s
  * for every video on this path).
  *
  * Extension flow:
- * - `sourceExt` — from the original filename (no leading dot), type detection only
- * - `outputExt` — from MIME via `resolveMemoryOutputExtension` (leading dot), storage name
+ * - `sourceExt`, from the original filename (no leading dot), type detection only
+ * - `outputExt`, from MIME via `resolveMemoryOutputExtension` (leading dot), storage name
  * - videos always persist as `.mp4` after processing
  */
 export async function storeMemoryFile(
@@ -119,14 +160,24 @@ export async function storeMemoryFile(
   file: File
 ): Promise<{ url: string; thumbnailUrl: string | null; mediaType: "image" | "video"; sizeBytes: number }> {
   const buffer = Buffer.from(await file.arrayBuffer());
+  if (looksLikeSvg(buffer)) {
+    throw new Error("SVG files are not accepted. Please send a JPEG, HEIC, PNG, or WebP photo.");
+  }
+  // Magic bytes beat MIME. iPhone/Android dumps often arrive as octet-stream with no name.
+  const sniffedImage = sniffImageFormat(buffer);
   // Source filename extension (no leading dot), used only for type detection.
   const sourceExt = extractExtension(file.name);
+  const mime = (file.type || "").toLowerCase().trim();
   const isImageUpload =
-    ALLOWED_IMAGE.has(file.type) || (!!sourceExt && IMAGE_EXTENSIONS.includes(sourceExt));
+    !!sniffedImage ||
+    isRasterImageMime(mime) ||
+    (!!sourceExt && IMAGE_EXTENSIONS.includes(sourceExt)) ||
+    (AMBIGUOUS_MIME.has(mime) &&
+      !(!!sourceExt && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(sourceExt)));
   const isVideoUpload =
     !isImageUpload &&
-    (ALLOWED_VIDEO.has(file.type) ||
-      file.type.startsWith("video/") ||
+    (ALLOWED_VIDEO.has(mime) ||
+      mime.startsWith("video/") ||
       (!!sourceExt && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(sourceExt)));
 
   if (isVideoUpload && !MEMORY_VAULT_VIDEO_UPLOADS_ENABLED) {
@@ -136,7 +187,7 @@ export async function storeMemoryFile(
   if (isVideoUpload) {
     const sniff = sniffVideoContainer(buffer.subarray(0, 262_144));
     if (sniff.disallowed) {
-      throw new Error(`File was rejected — detected as ${sniff.disallowed.label}, not a video.`);
+      throw new Error(`File was rejected. Detected as ${sniff.disallowed.label}, not a video.`);
     }
     const extHint = sniff.container ?? EXT_MAP[file.type]?.replace(".", "") ?? sourceExt ?? "mp4";
     const result = await processVideoFile(buffer, { extensionHint: extHint });
@@ -157,15 +208,32 @@ export async function storeMemoryFile(
     return { url, thumbnailUrl, mediaType: "video", sizeBytes: result.outputBuffer.length };
   }
 
-  // Dotted extension for the stored image object (MIME → safe suffix).
-  const outputExt = resolveMemoryOutputExtension(file.type);
-  const safeName = `${buildMemorySafeBaseName()}${outputExt}`;
+  // Preserve animated GIF instead of flattening it through Sharp.
+  if (sniffedImage === "gif") {
+    const safeBase = buildMemorySafeBaseName();
+    const stored = await storeUploadFile("memories", eventId, `${safeBase}.gif`, buffer);
+    let thumbnailUrl: string | null = stored.url;
+    try {
+      const thumbBuffer = await sharp(buffer, { animated: false, pages: 1 })
+        .rotate()
+        .resize(400, 400, { fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 80, mozjpeg: true })
+        .toBuffer();
+      const thumb = await storeUploadFile("memories", eventId, `${safeBase}-thumb.jpg`, thumbBuffer);
+      thumbnailUrl = thumb.url;
+    } catch {
+      thumbnailUrl = stored.url;
+    }
+    return { url: stored.url, thumbnailUrl, mediaType: "image", sizeBytes: file.size };
+  }
+
+  const safeBase = buildMemorySafeBaseName();
   try {
     const { processImageBuffer } = await import("@/lib/media/image-processor");
     const processed = await processImageBuffer(buffer, {
       category: "memories",
       subPath: eventId,
-      baseName: safeName.replace(/\.[^.]+$/, ""),
+      baseName: safeBase,
       keepOriginal: true,
     });
     if (processed.status === "READY") {
@@ -177,29 +245,28 @@ export async function storeMemoryFile(
       };
     }
   } catch {
-    /* fall through to legacy sharp thumb path */
+    /* last-chance JPEG convert below */
   }
-
-  const stored = await storeUploadFile("memories", eventId, safeName, buffer);
-  let thumbnailUrl: string | null = null;
 
   try {
-    const thumbName = `thumb-${safeName.replace(outputExt, ".jpg")}`;
-    const thumbBuffer = await sharp(buffer)
+    const converted = await sharp(buffer, { failOn: "error", animated: false })
       .rotate()
-      .resize(400, 400, { fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 80, mozjpeg: true })
+      .jpeg({ quality: 88, mozjpeg: true })
       .toBuffer();
-    const thumb = await storeUploadFile("memories", eventId, thumbName, thumbBuffer);
-    thumbnailUrl = thumb.url;
+    const stored = await storeUploadFile("memories", eventId, `${safeBase}.jpg`, converted);
+    let thumbnailUrl = stored.url;
+    try {
+      const thumbBuffer = await sharp(converted)
+        .resize(400, 400, { fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 80, mozjpeg: true })
+        .toBuffer();
+      const thumb = await storeUploadFile("memories", eventId, `${safeBase}-thumb.jpg`, thumbBuffer);
+      thumbnailUrl = thumb.url;
+    } catch {
+      thumbnailUrl = stored.url;
+    }
+    return { url: stored.url, thumbnailUrl, mediaType: "image", sizeBytes: converted.length };
   } catch {
-    thumbnailUrl = stored.url;
+    throw new Error("We couldn't read that photo. Try JPEG, HEIC, PNG, or WebP.");
   }
-
-  return {
-    url: stored.url,
-    thumbnailUrl,
-    mediaType: "image",
-    sizeBytes: file.size,
-  };
 }

@@ -63,7 +63,7 @@ export function EventWorkspaceNav({ items, eventTitle, eventType }: EventWorkspa
               )}
               title={
                 item.isLocked
-                  ? `Upgrade to ${item.requiredPlan ?? "premium"} to unlock — opens billing`
+                  ? `Upgrade to ${item.requiredPlan ?? "premium"} to unlock. Opens billing`
                   : undefined
               }
             >

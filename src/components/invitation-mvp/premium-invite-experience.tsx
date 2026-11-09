@@ -29,13 +29,14 @@ export interface PremiumInviteExperienceProps {
     hostName: string;
     description: string | null;
     startDate: string;
-    startDateRaw: string;
+    startDateRaw?: string;
     venueName: string | null;
     landmark: string | null;
     mapsLink: string | null;
     contactPhone: string | null;
     dressCode: string | null;
     coverImageUrl?: string | null;
+    qrCenterImageUrl?: string | null;
     deceasedName?: string | null;
   };
   design: InvitationDesignConfig;
@@ -96,10 +97,10 @@ export interface PremiumInviteExperienceProps {
    * turned the feature off or nobody is assigned to this invitation.
    */
   placeCard?: PlaceCardViewData | null;
-  /** Heads this invitation admits — drives RSVP companion-slot controls. */
+  /** Heads this invitation admits. Drives RSVP companion-slot controls. */
   partyAllowance?: number;
   /**
-   * Existing RSVP for this personalized guest — thank-you persists on refresh.
+   * Existing RSVP for this personalized guest. Thank-you persists on refresh.
    */
   initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
   /** Confirmed attending heads when `initialRsvpStatus` is ACCEPTED. */
@@ -236,7 +237,7 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
               </p>
             )}
             <Countdown
-              target={props.event.startDateRaw}
+              target={props.event.startDateRaw || props.event.startDate}
               label={t("invite.countdown")}
               begunLabel={t("invite.celebration_begun")}
             />

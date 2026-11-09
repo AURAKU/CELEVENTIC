@@ -6,7 +6,7 @@ import { clampPartySize } from "@/lib/guest-search/party-allowance";
 /**
  * Focused pure checks for organiser guest-edit semantics used by
  * PATCH /api/invitations/[id]/personalisation and PATCH /api/guests/[id].
- * Lifecycle ARCHIVE (not hard delete) is product policy — covered by service docs.
+ * Lifecycle ARCHIVE (not hard delete) is product policy. Covered by service docs.
  */
 
 describe("guest edit path inputs", () => {

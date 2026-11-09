@@ -7,7 +7,7 @@ import type { EventGiftType, EventType } from "@prisma/client";
  * "donation" (and its cousins "donate", "contribute to our fund", "raised")
  * never appears on a celebratory template. Funeral support is the one context
  * where "support" language is appropriate, and even there we avoid "donation".
- * Every string below is a default — organisers can rewrite all of them.
+ * Every string below is a default. Organisers can rewrite all of them.
  */
 
 export interface GiftCopy {
@@ -19,13 +19,13 @@ export interface GiftCopy {
   messagePrompt: string;
   thankYouTitle: string;
   thankYouMessage: string;
-  /** Reassurance shown under the amount field — never a total or a target. */
+  /** Reassurance shown under the amount field, never a total or a target. */
   privacyNote: string;
 }
 
 const WEDDING_COPY: GiftCopy = {
   title: "Gift the Couple",
-  subtitle: "Your presence is the greatest gift — but if you wish to bless us with more",
+  subtitle: "Your presence is the greatest gift, but if you wish to bless us with more",
   description:
     "Thank you for celebrating with us. If you would like to send a cash gift, you can do so securely and privately below. Your gift goes directly to the couple.",
   ctaLabel: "Gift the Couple",
@@ -33,7 +33,7 @@ const WEDDING_COPY: GiftCopy = {
   messagePrompt: "Leave a note for the couple (optional)",
   thankYouTitle: "With love and gratitude",
   thankYouMessage:
-    "Your gift has been received with so much love. On behalf of the couple — thank you for being part of our forever.",
+    "Your gift has been received with so much love. On behalf of the couple. Thank you for being part of our forever.",
   privacyNote: "Your gift is private. Only the couple can see it.",
 };
 
@@ -237,7 +237,7 @@ export const GIFT_TYPE_LABELS: Record<EventGiftType, string> = {
   GENERAL_GIFT: "Gift",
 };
 
-/** Companion card eyebrow — never fundraising language. */
+/** Companion card eyebrow, never fundraising language. */
 export function companionGiftHeadline(giftType: EventGiftType): string {
   switch (giftType) {
     case "FUNERAL_SUPPORT":
@@ -247,7 +247,7 @@ export function companionGiftHeadline(giftType: EventGiftType): string {
   }
 }
 
-/** Short companion TAKE PART teaser — warm gesture language, never ecommerce. */
+/** Short companion TAKE PART teaser. Warm gesture language, never ecommerce. */
 export function companionGiftTeaser(giftType: EventGiftType): string {
   switch (giftType) {
     case "WEDDING_GIFT":

@@ -24,7 +24,7 @@ export type CalendarPrimaryAction =
 function isAppleSafari(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
-  // Chrome / Edge / Firefox on iOS or Mac all include "Safari" — exclude them.
+  // Chrome / Edge / Firefox on iOS or Mac all include "Safari". Exclude them.
   return /Safari/i.test(ua) && !/Chrome|CriOS|Chromium|Edg|FxiOS|OPR|Opera/i.test(ua);
 }
 
@@ -53,7 +53,7 @@ export function detectCalendarPlatform(): SmartCalendarPlatform {
   const isAndroid = /Android/.test(ua);
   const isWindows = /Windows/.test(ua);
 
-  // iPhone / iPad always hand .ics to Calendar — including Chrome/Firefox on iOS.
+  // iPhone / iPad always hand .ics to Calendar, including Chrome/Firefox on iOS.
   if (isIOS || isIPadOS) return "apple";
   if (isMac && isAppleSafari()) return "apple";
   if (isAndroid) return "google";
@@ -81,7 +81,7 @@ export function calendarFileName(title: string): string {
   return `${title.slice(0, 40).replace(/[^\w\s-]/g, "").replace(/\s+/g, "-") || "event"}.ics`;
 }
 
-/** User-gesture-safe open — a real <a> click, never window.open after await. */
+/** User-gesture-safe open. A real <a> click, never window.open after await. */
 export function openCalendarUrl(url: string) {
   const a = document.createElement("a");
   a.href = url;
@@ -110,7 +110,7 @@ export function resolveCalendarPrimaryAction(
 }
 
 /**
- * One-tap reminder — Apple Calendar (.ics), Google Calendar, or Outlook.
+ * One-tap reminder. Apple Calendar (.ics), Google Calendar, or Outlook.
  * Stays on the user-gesture stack so popup blockers and iOS Calendar handoff work.
  */
 export async function setSmartCalendarReminder(

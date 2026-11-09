@@ -1,5 +1,5 @@
 /**
- * Phase 4 — SKU-keyed creative overrides for every active catalog template.
+ * Phase 4. SKU-keyed creative overrides for every active catalog template.
  * Pilots live here too so registry build stays single-source.
  * Layout DNA remains fallback; these overrides win for new defaults only.
  *
@@ -12,7 +12,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   // ─── Phase 3 pilots (do not regress) ───────────────────────────────────────
   "royal-emerald-wedding": {
     creativeUniverse: "royal-wax-seal",
-    creativeConcept: "Royal Wax Seal — gold-light intro into embossed emerald envelope; press the wax seal",
+    creativeConcept: "Royal Wax Seal. Gold-light intro into embossed emerald envelope; press the wax seal",
     emotionalTone: "regal",
     targetAudience: "Luxury weddings and formal ceremonies",
     visualLanguage: "deep emerald velvet, gold crown motifs, palace columns, embossed seal, paper and metal depth",
@@ -43,7 +43,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "floral-garden-romance": {
     creativeUniverse: "botanical-romance",
-    creativeConcept: "Botanical Bloom — living romantic garden; logo bloom into petal reveal and floating frames",
+    creativeConcept: "Botanical Bloom. Living romantic garden; logo bloom into petal reveal and floating frames",
     emotionalTone: "romantic",
     targetAudience: "Engagements and garden weddings",
     visualLanguage: "soft petals, rose light, floating botanical frames, leaf depth layers, flower parallax",
@@ -74,7 +74,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "midnight-velvet-reception": {
     creativeUniverse: "editorial-love-story",
-    creativeConcept: "Editorial Love Story — title card into magazine cover; swipe page-turn chapters",
+    creativeConcept: "Editorial Love Story. Title card into magazine cover; swipe page-turn chapters",
     emotionalTone: "editorial",
     targetAudience: "Reception soirées and fashion-forward couples",
     visualLanguage: "asymmetric crops, silver type, velvet darkness, film-strip collage, credit typography",
@@ -106,7 +106,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   "memorial-candle-tribute": {
     creativeUniverse: "memorial-candle",
     creativeConcept:
-      "Memorial Candle — loving-memory envelope with dove unseal into the tribute cover",
+      "Memorial Candle. Loving-memory envelope with dove unseal into the tribute cover",
     emotionalTone: "solemn",
     targetAudience: "Funerals and memorial gatherings",
     visualLanguage: "candle glow, restrained portrait framing, warm stone, life timeline, memory album",
@@ -137,7 +137,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "corporate-prestige-summit": {
     creativeUniverse: "corporate-prestige",
-    creativeConcept: "Corporate Prestige — kinetic logo grid into title; scroll/tap agenda chapters",
+    creativeConcept: "Corporate Prestige. Kinetic logo grid into title; scroll/tap agenda chapters",
     emotionalTone: "corporate",
     targetAudience: "Conferences, summits, and corporate events",
     visualLanguage: "refined grid, teal accents, precision kinetic type, glass parallax, speaker cards",
@@ -170,7 +170,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   // ─── Batch 1: funeral Wave-1 shared-layout SKUs ────────────────────────────
   "candlelight-farewell": {
     creativeUniverse: "memory-album",
-    creativeConcept: "Chapel Candle Farewell — glass shimmer into a quiet curtain of remembrance",
+    creativeConcept: "Chapel Candle Farewell. Glass shimmer into a quiet curtain of remembrance",
     emotionalTone: "reverent",
     targetAudience: "Families announcing a celebration of life",
     visualLanguage: "warm candle wall, soft gold on stone, restrained page rhythm",
@@ -200,7 +200,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "white-lily-rest": {
     creativeUniverse: "lily-serenity",
-    creativeConcept: "White Lily Rest — ivory stillness with a floral envelope into quiet pages",
+    creativeConcept: "White Lily Rest. Ivory stillness with a floral envelope into quiet pages",
     emotionalTone: "serene",
     targetAudience: "Families preferring a clean, minimal memorial",
     visualLanguage: "ivory lily motifs, pale stone, whisper typography",
@@ -228,7 +228,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "royal-mourning-lite": {
     creativeUniverse: "royal-mourning",
-    creativeConcept: "Royal Mourning Lite — black-red-white drape into a press-hold rite",
+    creativeConcept: "Royal Mourning Lite. Black-red-white drape into a press-hold rite",
     emotionalTone: "dignified",
     targetAudience: "Ghanaian families honouring funeral custom",
     visualLanguage: "mourning cloth, silver-on-black type, red honour accents",
@@ -256,7 +256,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "white-lily-memorial-pages": {
     creativeUniverse: "lily-serenity",
-    creativeConcept: "White Lily Memorial Journey — aurora rise into a silver-seal tribute chapter",
+    creativeConcept: "White Lily Memorial Journey. Aurora rise into a silver-seal tribute chapter",
     emotionalTone: "tender",
     targetAudience: "Premium memorial hosts wanting a full tribute arc",
     visualLanguage: "serene ivory chapters, lily dividers, soft portrait frames",
@@ -286,7 +286,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   // ─── Batch 2: classic browse layouts ───────────────────────────────────────
   "classic-gold": {
     creativeUniverse: "gilded-classic",
-    creativeConcept: "Satin Bow — ivory parchment tied with a satin bow ceremony",
+    creativeConcept: "Satin Bow. Ivory parchment tied with a satin bow ceremony",
     emotionalTone: "romantic",
     targetAudience: "Classic romantic weddings",
     visualLanguage: "ivory card, satin ribbon folds, blush accents, soft foil names",
@@ -314,7 +314,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "luxury-rings": {
     creativeUniverse: "luxury-black-tie",
-    creativeConcept: "Luxury Black Tie — onyx stage, interlocking rings, ring-box reveal",
+    creativeConcept: "Luxury Black Tie. Onyx stage, interlocking rings, ring-box reveal",
     emotionalTone: "luxurious",
     targetAudience: "Black-tie weddings and evening ceremonies",
     visualLanguage: "high-contrast black stage, gold rings, spotlight drama",
@@ -342,7 +342,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "arch-green": {
     creativeUniverse: "architectural-romance",
-    creativeConcept: "Vine Cathedral lite — palace doors into a living green arch",
+    creativeConcept: "Vine Cathedral lite. Palace doors into a living green arch",
     emotionalTone: "nature",
     targetAudience: "Garden and outdoor weddings",
     visualLanguage: "forest arch, emerald depth, cream calligraphy",
@@ -370,7 +370,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "rustic-lace": {
     creativeUniverse: "paper-craft",
-    creativeConcept: "Swan Lake Romance — lace draw into a photo-develop chapter",
+    creativeConcept: "Swan Lake Romance. Lace draw into a photo-develop chapter",
     emotionalTone: "storybook",
     targetAudience: "Rustic and traditional weddings",
     visualLanguage: "ornate lace overlay, warm timber, full-bleed portraits, paper tabs",
@@ -398,7 +398,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "boho-hexagon": {
     creativeUniverse: "celebration-pop",
-    creativeConcept: "Art Deco Wedding — gift-box pop into floating gold geometry",
+    creativeConcept: "Art Deco Wedding. Gift-box pop into floating gold geometry",
     emotionalTone: "playful",
     targetAudience: "Engagements and free-spirited celebrations",
     visualLanguage: "soft florals, gold hexagon frame, deco lounge warmth",
@@ -426,7 +426,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "floral-garden": {
     creativeUniverse: "botanical-romance",
-    creativeConcept: "Watercolor Garden — petal cascade into blush botanical borders",
+    creativeConcept: "Watercolor Garden. Petal cascade into blush botanical borders",
     emotionalTone: "romantic",
     targetAudience: "Weddings wanting botanical borders and blush type",
     visualLanguage: "blush typography, watercolor washes, botanical borders, petal drifts",
@@ -456,7 +456,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   // ─── Batch 3: remaining browse layouts ─────────────────────────────────────
   "passport-luxe": {
     creativeUniverse: "passport-destination",
-    creativeConcept: "Tropical Destination — folio open into flip boarding booklet",
+    creativeConcept: "Tropical Destination. Folio open into flip boarding booklet",
     emotionalTone: "wanderlust",
     targetAudience: "Destination and travel-themed weddings",
     visualLanguage: "visa stamps, booklet folds, teal passport covers",
@@ -484,7 +484,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "glass-acrylic": {
     creativeUniverse: "crystal-glass",
-    creativeConcept: "Cinematic Film Premiere — marble veil into 3-2-1 premiere countdown",
+    creativeConcept: "Cinematic Film Premiere. Marble veil into 3-2-1 premiere countdown",
     emotionalTone: "cinematic",
     targetAudience: "Modern luxury weddings",
     visualLanguage: "frosted acrylic, teal depth, metallic edges, premiere countdown",
@@ -513,7 +513,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   "forever-afaris-wedding": {
     creativeUniverse: "blush-gate-romance",
     creativeConcept:
-      "Blush Swan Gate — swan glide intro into an embossed blush envelope; lift the champagne wax seal and the golden gate opens from the centre",
+      "Blush Swan Gate. Swan glide intro into an embossed blush envelope; lift the champagne wax seal and the golden gate opens from the centre",
     emotionalTone: "romantic",
     targetAudience: "Luxury garden and hall weddings",
     visualLanguage:
@@ -546,7 +546,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "kente-heritage-union": {
     creativeUniverse: "heritage-textile",
-    creativeConcept: "Kente Covenant — ticket tear into a swipe of woven heritage",
+    creativeConcept: "Kente Covenant. Ticket tear into a swipe of woven heritage",
     emotionalTone: "traditional",
     targetAudience: "Ghanaian and pan-African weddings",
     visualLanguage: "woven maroon-gold-emerald, grand lettering, drum rhythm",
@@ -574,7 +574,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "golden-islamic-nikkah": {
     creativeUniverse: "islamic-ornamental",
-    creativeConcept: "Islamic Ornamental — quill script into geometric palace envelope",
+    creativeConcept: "Islamic Ornamental. Quill script into geometric palace envelope",
     emotionalTone: "reverent",
     targetAudience: "Nikkah and Islamic wedding celebrations",
     visualLanguage: "gold geometry, emerald fields, ornamental arches, soft instrumental",
@@ -602,7 +602,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "neon-celebration-party": {
     creativeUniverse: "neon-celebration",
-    creativeConcept: "Electric Pulse — neon pulse into confetti burst party ticket",
+    creativeConcept: "Electric Pulse. Neon pulse into confetti burst party ticket",
     emotionalTone: "high-energy",
     targetAudience: "Birthdays and nightlife celebrations",
     visualLanguage: "fuchsia neon, scratch energy, ticket QR",
@@ -631,7 +631,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "custom-media": {
     creativeUniverse: "custom-media",
-    creativeConcept: "Your Canvas — canvas wipe into a foil-scratch media frame",
+    creativeConcept: "Your Canvas. Canvas wipe into a foil-scratch media frame",
     emotionalTone: "creator-led",
     targetAudience: "Hosts uploading their own artwork, video, or PDF",
     visualLanguage: "cinematic media frame, teal studio field, creator freedom",
@@ -661,7 +661,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   // ─── Batch 4: Wave-1 free + non-pilot flagship polish ──────────────────────
   "gilded-vows": {
     creativeUniverse: "gilded-classic",
-    creativeConcept: "Storybook Romance — seal impress into an unfolding gilded letter",
+    creativeConcept: "Storybook Romance. Seal impress into an unfolding gilded letter",
     emotionalTone: "storybook",
     targetAudience: "Free-tier classic weddings",
     visualLanguage: "ivory pages, foil names, silver seal, flourish motifs",
@@ -689,7 +689,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "emerald-promise": {
     creativeUniverse: "architectural-romance",
-    creativeConcept: "Celestial Love — chapel glow into a rose-gold seal under starlight",
+    creativeConcept: "Celestial Love. Chapel glow into a rose-gold seal under starlight",
     emotionalTone: "hopeful",
     targetAudience: "Free-tier botanical weddings",
     visualLanguage: "deep emerald pages, cream calligraphy, starlit botanical dividers",
@@ -717,7 +717,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "kente-court": {
     creativeUniverse: "heritage-textile",
-    creativeConcept: "Kente Court — drum pulse into a joyful pop reveal",
+    creativeConcept: "Kente Court. Drum pulse into a joyful pop reveal",
     emotionalTone: "celebratory",
     targetAudience: "Free-tier heritage weddings",
     visualLanguage: "maroon and gold pages, grand lettering, court drums",
@@ -745,7 +745,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "gilded-opulence-pages": {
     creativeUniverse: "gilded-classic",
-    creativeConcept: "European Manor — royal orbit into gold wax with parallax foil gallery",
+    creativeConcept: "European Manor. Royal orbit into gold wax with parallax foil gallery",
     emotionalTone: "regal",
     targetAudience: "Premium paged gilded weddings",
     visualLanguage: "ivory parchment, foil medallions, parallax cover drift",
@@ -773,7 +773,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "emerald-cathedral": {
     creativeUniverse: "architectural-romance",
-    creativeConcept: "Palace Gates — constellation into emerald archway gates",
+    creativeConcept: "Palace Gates. Constellation into emerald archway gates",
     emotionalTone: "regal",
     targetAudience: "Premium arched botanical weddings",
     visualLanguage: "cathedral arches, living vines, dusk-lit emerald depths",
@@ -801,7 +801,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "kente-royale-pages": {
     creativeUniverse: "heritage-textile",
-    creativeConcept: "Kente Royale — soft intro into theatrical velvet curtains with kente gold trim",
+    creativeConcept: "Kente Royale. Soft intro into theatrical velvet curtains with kente gold trim",
     emotionalTone: "traditional",
     targetAudience: "Premium royal kente weddings",
     visualLanguage: "woven maroon and gold, grand lettering, stage curtain reveal",
@@ -829,7 +829,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "candlelight-elegy-pages": {
     creativeUniverse: "memorial-candle",
-    creativeConcept: "Candlelight Tribute Chapters — spotlight into light-beam elegy chapters",
+    creativeConcept: "Candlelight Tribute Chapters. Spotlight into light-beam elegy chapters",
     emotionalTone: "solemn",
     targetAudience: "Premium memorial hosts needing biography chapters",
     visualLanguage: "candlelit darkness, warm gold on velvet black, portrait framing",
@@ -867,7 +867,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "royal-mourning-pages": {
     creativeUniverse: "royal-mourning",
-    creativeConcept: "Royal Mourning Estate — light sweep into parchment scroll rite",
+    creativeConcept: "Royal Mourning Estate. Light sweep into parchment scroll rite",
     emotionalTone: "dignified",
     targetAudience: "Full black-red-white Ghanaian funeral rites",
     visualLanguage: "velvet drape, silver-on-black typography, mourning cloth",
@@ -896,7 +896,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "passport-destination-wedding": {
     creativeUniverse: "passport-destination",
-    creativeConcept: "Horizon Boarding Pass — fabric unfold into passport stamp journey",
+    creativeConcept: "Horizon Boarding Pass. Fabric unfold into passport stamp journey",
     emotionalTone: "wanderlust",
     targetAudience: "Destination celebrations",
     visualLanguage: "boarding pass folds, visa stamps, horizon light",
@@ -924,7 +924,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "crystal-acrylic-luxury": {
     creativeUniverse: "crystal-glass",
-    creativeConcept: "Champagne Crystal — prism refract into glass wipe with champagne light",
+    creativeConcept: "Champagne Crystal. Prism refract into glass wipe with champagne light",
     emotionalTone: "luminous",
     targetAudience: "Luxury acrylic weddings",
     visualLanguage: "frosted depth, refraction, champagne gold edges",
@@ -1331,7 +1331,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   "femmora-flagship-soft-opening": {
     creativeUniverse: "fashion-flagship",
     creativeConcept:
-      "Femmora Flagship Soft Opening — Celeventic intro into a silk unveil, boutique portal and atelier film",
+      "Femmora Flagship Soft Opening. Celeventic intro into a silk unveil, boutique portal and atelier film",
     emotionalTone: "quiet-luxury",
     targetAudience: "Fashion houses, boutiques and luxury flagship openings",
     visualLanguage: "ivory silk, champagne light, mocha type, editorial index, portrait film frame",
@@ -1364,7 +1364,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   "aurelia-editorial-wedding": {
     creativeUniverse: "ivory-veil-editorial",
     creativeConcept:
-      "Aurelia Editorial Wedding — ivory veil intro into a photography-led two day wedding invitation",
+      "Aurelia Editorial Wedding. Ivory veil intro into a photography-led two day wedding invitation",
     emotionalTone: "editorial-romance",
     targetAudience: "Editorial garden and hall weddings",
     visualLanguage:
@@ -1398,7 +1398,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   "seraphine-champagne-wedding": {
     creativeUniverse: "seraphine-champagne-editorial",
     creativeConcept:
-      "Seraphine Champagne Wedding — champagne veil intro into a photography-led two day wedding invitation",
+      "Seraphine Champagne Wedding. Champagne veil intro into a photography-led two day wedding invitation",
     emotionalTone: "champagne-romance",
     targetAudience: "Champagne garden and hall weddings",
     visualLanguage:

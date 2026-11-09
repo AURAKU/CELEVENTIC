@@ -3,13 +3,13 @@
  *
  * A theme is a pure JSON document resolved to CSS custom properties at render
  * time (see theme-resolver.ts). Page components under
- * src/components/invitation-pages/ may only consume `var(--inv-*)` values —
+ * src/components/invitation-pages/ may only consume `var(--inv-*)` values.
  * never raw colors or fonts (lint-enforced).
  */
 
 export type MotionProfileId = "still" | "gentle-drift" | "layered-drift" | "solemn";
 
-/** Registered next/font ids only — arbitrary families would trigger runtime font fetches. */
+/** Registered next/font ids only. Arbitrary families would trigger runtime font fetches. */
 export type FontId =
   | "playfair"
   | "cinzel"
@@ -54,7 +54,7 @@ export interface ThemeTypographyTokens {
   displayFont: FontId;
   bodyFont: FontId;
   scriptFont: FontId;
-  /** Global type-scale multiplier, 0.85–1.2 */
+  /** Global type-scale multiplier, 0.85 to 1.2 */
   scale: number;
   letterSpacing: LetterSpacingToken;
 }
@@ -74,7 +74,7 @@ export interface ThemeMotifTokens {
 
 export interface ThemeMotionTokens {
   profileId: MotionProfileId;
-  /** 0–1; scales drift distances inside the active profile */
+  /** 0 to 1; scales drift distances inside the active profile */
   intensity: number;
 }
 

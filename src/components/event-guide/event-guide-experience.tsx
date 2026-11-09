@@ -26,7 +26,7 @@ const TAB_LABELS: Record<EventGuideTabKey, string> = {
  * The ink on a filled button, from the payload when it carries one.
  *
  * `resolveGuideTheme` decides this now and the publish gate measures the
- * decision, so the page paints what was measured rather than deciding again —
+ * decision, so the page paints what was measured rather than deciding again.
  * a guide that passed the gate and then rendered a different pair would lose
  * the whole point of the gate. Payloads published before the token existed
  * fall back to the rule the page used at the time.
@@ -95,7 +95,7 @@ export function EventGuideExperience({
     [publicToken, payload.version]
   );
 
-  // Register the worker only now — this component renders exclusively for a
+  // Register the worker only now. This component renders exclusively for a
   // published guide that loaded successfully online.
   useEffect(() => {
     clearChunkRecoveryFlag();

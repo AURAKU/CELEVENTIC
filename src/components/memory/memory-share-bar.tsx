@@ -62,7 +62,7 @@ export function MemoryShareBar({
     if (result === "unavailable") {
       const ok = await copyText(url);
       setCopied(ok);
-      await showTip(ok ? "Link copied — paste anywhere to share." : "Could not share from this browser.");
+      await showTip(ok ? "Link copied. Paste anywhere to share." : "Could not share from this browser.");
     }
   }
 

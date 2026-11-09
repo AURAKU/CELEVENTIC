@@ -11,7 +11,7 @@ type MemorialMapPreviewProps = {
 };
 
 /**
- * Always-on Google Maps glimpse for funeral details — framed to match memorial chrome.
+ * Always-on Google Maps glimpse for funeral details. Framed to match memorial chrome.
  */
 export function MemorialMapPreview({
   mapsLink,
@@ -31,7 +31,7 @@ export function MemorialMapPreview({
         {embedUrl ? (
           <>
             <iframe
-              title={`Google Map preview — ${title}`}
+              title={`Google Map preview: ${title}`}
               src={embedUrl}
               className="inv-memorial-map-iframe"
               loading="lazy"

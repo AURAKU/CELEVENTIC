@@ -1,7 +1,7 @@
 import { FeatureKey } from "@/lib/blueprints/feature-keys";
 
 /**
- * Shared Invitation Feature Layer — guest-facing feature registry.
+ * Shared Invitation Feature Layer. Guest-facing feature registry.
  *
  * These are the sections a guest can see on an invitation / post-admission
  * portal. Each maps (where one exists) to a platform `FeatureKey` so the
@@ -49,7 +49,7 @@ export interface InvitationFeatureDefault {
   version: number;
 }
 
-/** Platform defaults — layer 1 of the inheritance chain. */
+/** Platform defaults. Layer 1 of the inheritance chain. */
 export const INVITATION_FEATURE_DEFAULTS: Record<GuestFeatureKey, InvitationFeatureDefault> = {
   // Guest-only (no entitlement gate): a place card is stationery, not admission
   // hardware, so it must work on events that never turn QR admission on. It is
@@ -91,7 +91,7 @@ export interface ResolvedFeature {
   postAdmissionOnly: boolean;
   config: Record<string, unknown>;
   version: number;
-  /** Where the final `enabled` value came from — for audit/debug. */
+  /** Where the final `enabled` value came from, for audit/debug. */
   source: "invitation" | "event" | "default";
 }
 

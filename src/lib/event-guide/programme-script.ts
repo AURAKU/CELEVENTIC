@@ -2,7 +2,7 @@
  * The programme script: one document in, an arranged running order out.
  *
  * Organizers do not fill in a running order field by field. They already have
- * one — in a WhatsApp message, a Word file or the printer's proof — and they
+ * one. In a WhatsApp message, a Word file or the printer's proof, and they
  * think of it as a document. So the editor is a single script box, and this
  * module is the one pipeline that reads that script into the entries a guest
  * sees. The builder's live preview, `POST /api/event-guide` and the tests all
@@ -185,7 +185,7 @@ const EXOTIC_SPACES = /[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g;
  *
  * Deliberately absent: U+200C/U+200D (zero-width non-joiner and joiner). They
  * are letters' worth of meaning in Persian, Arabic and Indic scripts, and they
- * are what holds a family emoji together — stripping them, as this module once
+ * are what holds a family emoji together. Stripping them, as this module once
  * did, silently rewrote people's words.
  */
 const INVISIBLES =
@@ -202,7 +202,7 @@ function sliceToCap(raw: string): string {
  * Strip markup and invisible characters, keeping every printable code point.
  *
  * Ghanaian orthography (Ɛ ɛ Ɔ ɔ Ŋ ŋ and the tone marks that come with it),
- * Arabic, Chinese, emoji, curly quotes and em dashes from Word — all of it
+ * Arabic, Chinese, emoji, curly quotes and em dashes from Word. All of it
  * passes through as written. What leaves is tags, comments and characters a
  * guest could never see anyway.
  */
@@ -332,7 +332,7 @@ interface ScriptLine {
 }
 
 /**
- * Could this line be a line of verse — and nothing more important?
+ * Could this line be a line of verse, and nothing more important?
  *
  * Deliberately narrow. Anything the rest of the reader has a claim on is out:
  * a heading in capitals, a person, a time, a label ending in a colon, a line
@@ -368,9 +368,9 @@ function announcedAsVerse(lines: ScriptLine[], start: number): boolean {
  * Which lines belong to a stanza rather than to the running order.
  *
  * A run of candidate lines is verse when one of them breaks on a comma or a
- * semicolon — one line of a hymn vouches for its neighbours, which is what
+ * semicolon. One line of a hymn vouches for its neighbours, which is what
  * catches the opening line `Captain of Israel's host, and Guide` that ends on
- * no punctuation at all — or when the run is two lines or more under a line
+ * no punctuation at all, or when the run is two lines or more under a line
  * that announced a hymn. Blank lines between stanzas do not break the run,
  * because they are kept as the paragraph breaks they are.
  */
@@ -435,7 +435,7 @@ function toLines(text: string): ScriptLine[] {
  * A line continues the one above it when the organizer marked it `>`, when it
  * is indented, when it is a bullet under a timed item, when it reads as
  * prose, or when it is a line of a stanza. Everything else starts a new entry
- * — and nothing is discarded, so the whole script is accounted for. A blank
+ *, and nothing is discarded, so the whole script is accounted for. A blank
  * line inside a run of continuations is kept as a paragraph break.
  */
 function toBlocks(text: string): ScriptBlock[] {
@@ -601,7 +601,7 @@ export function programmeItemsToScript(items: GuideProgrammeItem[]): string {
       lines.push(detail ? `# ${title}` : headingLine(title));
     } else {
       const time = item.time?.trim();
-      lines.push(time ? `${time} — ${title}` : title);
+      lines.push(time ? `${time}: ${title}` : title);
     }
 
     if (detail) {
@@ -647,7 +647,7 @@ function splitOverlongTitle(value: string): { title: string; overflow?: string }
  *
  * Newlines survive: a detail written as two paragraphs is stored as two
  * paragraphs and rendered as two paragraphs, in the preview, in the editor and
- * on the guest's page. Joining with a space — what this used to do — turned a
+ * on the guest's page. Joining with a space. What this used to do. Turned a
  * reading, a soloist and a note about seating into one run-on sentence.
  */
 function joinDetail(

@@ -3,7 +3,7 @@
 import { Component, type ReactNode } from "react";
 
 interface Props {
-  /** Pipeline beat this boundary guards — used only for diagnostics. */
+  /** Pipeline beat this boundary guards. Used only for diagnostics. */
   beat: "soft-intro" | "tap-to-begin" | "reveal";
   /**
    * Advance the pipeline past the failed beat. Called once, from
@@ -14,11 +14,11 @@ interface Props {
   onFallthrough: () => void;
   /**
    * `advance` (default): soft-intro / tap / non-mandatory reveals fall through.
-   * `hold`: mandatory memorial envelope — do NOT treat errors as ceremony
+   * `hold`: mandatory memorial envelope. Do NOT treat errors as ceremony
    * completion. Surface recovery UI instead of silently opening the portal.
    */
   fallthroughPolicy?: "advance" | "hold";
-  /** Optional safe diagnostic hook — never receives guest PII. */
+  /** Optional safe diagnostic hook, never receives guest PII. */
   onError?: (error: Error, beat: Props["beat"]) => void;
   /**
    * Shown when `fallthroughPolicy="hold"` and the reveal tree throws.

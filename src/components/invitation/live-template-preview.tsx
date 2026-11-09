@@ -4,7 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
 import { buildLivePreviewProps } from "@/lib/invitation-mvp/demo-preview-data";
-import { pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
+import {
+  createInvitationAudioManager,
+  holdInvitationAudio,
+  pauseAllInvitationAudio,
+} from "@/lib/music/invitation-audio-manager";
 import { pageBackgroundFromDesign } from "@/lib/invitation/studio-media-utils";
 import { TemplatePreviewGlimpse } from "@/components/invitation/template-preview-glimpse";
 import { InvitationStaticPreviewProvider } from "@/components/invitation/invitation-static-preview";
@@ -16,6 +20,7 @@ import {
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import { Play, Smartphone, Monitor, Music2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IPHONE_PREVIEW_EVENT, IPhoneLiveStage } from "@/components/invitation/iphone-live-stage";
 
 export type LivePreviewVariant = "picker" | "card" | "hero" | "detail";
 export type PreviewDevice = "mobile" | "desktop";
@@ -32,7 +37,7 @@ const VARIANT_CONFIG: Record<
   }
 > = {
   picker: { height: 132, thumbScale: 0.32, interactive: false },
-  card: { height: 248, thumbScale: 0.36, interactive: false },
+  card: { height: 440, thumbScale: 0.42, interactive: false },
   hero: { height: 580, thumbScale: 1, interactive: true },
   detail: { height: 700, thumbScale: 1, interactive: true },
 };
@@ -113,6 +118,7 @@ function LivePreviewExperience({
   skipSoftIntro,
   skipTapGate = true,
   autoOpenReveal = false,
+  framed = true,
 }: {
   preview: ReturnType<typeof buildLivePreviewProps>;
   device: PreviewDevice;
@@ -136,17 +142,30 @@ function LivePreviewExperience({
    * (same one-shot path guests get after their open gesture).
    */
   autoOpenReveal?: boolean;
+  /** When false, the parent (iPhone stage) supplies the device chrome. */
+  framed?: boolean;
 }) {
   const bg = pageBackgroundFromDesign(preview.design);
-  const experience = (
-    <PreviewDeviceChrome device={device}>
+  const stage = (
       <div
         className="relative w-full"
         style={{
           pointerEvents: "auto",
           /* Give absolute/fixed reveal shells a real box inside scaled frames. */
-          minHeight: fullScreen ? (device === "desktop" ? 560 : 640) : 520,
-          height: fullScreen ? (device === "desktop" ? 560 : 640) : undefined,
+          minHeight: framed
+            ? fullScreen
+              ? device === "desktop"
+                ? 560
+                : 640
+              : 520
+            : "100%",
+          height: framed
+            ? fullScreen
+              ? device === "desktop"
+                ? 560
+                : 640
+              : undefined
+            : "100%",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -193,7 +212,11 @@ function LivePreviewExperience({
           eventId={memoryEventId ?? "preview-event"}
         />
       </div>
-    </PreviewDeviceChrome>
+  );
+  const experience = framed ? (
+    <PreviewDeviceChrome device={device}>{stage}</PreviewDeviceChrome>
+  ) : (
+    stage
   );
 
   // Compact catalogue/card embeds can sit under a parent link, keep chrome non-anchoring.
@@ -230,8 +253,10 @@ export function LiveTemplatePreview({
   const [device, setDevice] = useState<PreviewDevice>("mobile");
   const [containerWidth, setContainerWidth] = useState(360);
   const cfg = VARIANT_CONFIG[variant];
+  const compactStage = variant === "picker" || variant === "card";
+  const phoneStage = tapToOpen && compactStage;
 
-  const showLive = !tapToOpen || activated;
+  const showLive = phoneStage ? false : !tapToOpen || activated;
 
   const preview = useMemo(
     () =>
@@ -259,13 +284,13 @@ export function LiveTemplatePreview({
   );
   const portalLive = showLive;
   /**
-   * Catalogue tiles are too small to read a full-bleed brand film — it lands as
+   * Catalogue tiles are too small to read a full-bleed brand film. It lands as
    * a black rectangle and delays the one thing the tile exists to show. Compact
    * tiles therefore spend the tap on the template's own opening cover; the
    * ceremony itself is still performed by the viewer, never auto-rushed.
    * Hero / detail stages keep the complete guest pipeline.
    */
-  const compactStage = variant === "picker" || variant === "card";
+  /** Catalogue tiles open a focused iPhone stage instead of playing in the card. */
   const isFuneralCategory = category?.toLowerCase() === "funeral";
   /**
    * Live preview must run the same opening guests get, never skip into a
@@ -322,7 +347,7 @@ export function LiveTemplatePreview({
       ([entry]) => {
         const visible = entry.isIntersecting;
         setGlimpseVisible(visible);
-        if (activated) {
+        if (activated && !phoneStage) {
           setInView(visible);
           if (!visible) pauseAllInvitationAudio();
         }
@@ -331,7 +356,7 @@ export function LiveTemplatePreview({
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [activated]);
+  }, [activated, phoneStage]);
 
   useEffect(() => {
     return () => pauseAllInvitationAudio();
@@ -341,15 +366,41 @@ export function LiveTemplatePreview({
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [device, layoutSlug, activated]);
 
+  const previewKey = `${catalogSlug ?? layoutSlug}:${variant}`;
+
+  useEffect(() => {
+    function onOtherPreview(e: Event) {
+      const other = (e as CustomEvent<string>).detail;
+      if (other !== previewKey) {
+        setActivated(false);
+        pauseAllInvitationAudio();
+      }
+    }
+    window.addEventListener(IPHONE_PREVIEW_EVENT, onOtherPreview);
+    return () => window.removeEventListener(IPHONE_PREVIEW_EVENT, onOtherPreview);
+  }, [previewKey]);
+
   function openPreview(e: React.MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
     pauseAllInvitationAudio();
+    window.dispatchEvent(new CustomEvent(IPHONE_PREVIEW_EVENT, { detail: previewKey }));
+    if (hasMusic && preview.musicSelection && !hasTheatricalOpen) {
+      const manager = createInvitationAudioManager(
+        preview.musicSelection,
+        preview.musicSelection.url
+      );
+      if (manager) {
+        void manager.play();
+        holdInvitationAudio(manager);
+      }
+    }
     setActivated(true);
+    setInView(true);
   }
 
-  function closePreview(e: React.MouseEvent) {
-    e.stopPropagation();
+  function closePreview(e?: React.MouseEvent) {
+    e?.stopPropagation();
     pauseAllInvitationAudio();
     setActivated(false);
   }
@@ -392,14 +443,45 @@ export function LiveTemplatePreview({
             )}
           </div>
           <PreviewTapAffordance
-            compact={compactPoster}
+            compact={compactPoster || variant === "card"}
+            pin={variant === "card" ? "top" : "bottom"}
             hasMusic={hasMusic}
             label={tapCopy.label}
             subtitle={tapCopy.subtitle}
-            steps={tapSteps}
+            steps={variant === "card" ? undefined : tapSteps}
             onOpen={openPreview}
             aria-label="Tap to play this template's opening"
           />
+          {phoneStage ? (
+            <IPhoneLiveStage
+              open={activated}
+              onClose={() => closePreview()}
+              title={preview.invitationName || preview.event.title}
+              category={category}
+              nowPlaying={hasMusic ? preview.musicSelection?.title ?? null : null}
+              nowPlayingCredit="Live session"
+            >
+              <LivePreviewExperience
+                preview={preview}
+                device="mobile"
+                fullScreen
+                compactFrame={false}
+                framed={false}
+                skipReveal={hasTheatricalOpen ? false : true}
+                skipIntro
+                skipSoftIntro
+                skipTapGate
+                autoOpenReveal={false}
+                musicEnabled={hasMusic}
+                musicAutoplay={hasMusic}
+                memoryUploadUrl={memoryUploadUrl}
+                memoryAlbumUrl={memoryAlbumUrl}
+                memoryUploadQrImageUrl={memoryUploadQrImageUrl}
+                memoryEventId={memoryEventId}
+                memoryAlbumTitle={memoryAlbumTitle}
+              />
+            </IPhoneLiveStage>
+          ) : null}
         </>
       ) : (
         <>
@@ -494,7 +576,7 @@ export function LiveTemplatePreview({
                  * Guest-faithful choreography after catalogue tap:
                  * Celeventic brand MP4 → Tap to Begin → sealed envelope/curtain
                  * → guest opens the ceremony slowly. Never auto-rush the seal.
-                 * Compact tiles land straight on that sealed cover instead —
+                 * Compact tiles land straight on that sealed cover instead.
                  * the brand film needs a full screen to read as anything but black.
                  */
                 skipIntro

@@ -38,7 +38,7 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
       <button
         type="button"
         onClick={onMenuClick}
-        className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors touch-manipulation shrink-0"
+        className="lg:hidden inline-flex items-center justify-center h-11 w-11 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors touch-manipulation shrink-0"
         aria-label={t("dashboard.open_menu")}
       >
         <Menu className="h-5 w-5" />
@@ -49,7 +49,7 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
         <GlobalSearch />
       </div>
 
-      {/* Right: primary actions — same size/rhythm as social apps */}
+      {/* Right: primary actions. Same size/rhythm as social apps */}
       <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
         <div className="hidden xl:flex items-center gap-1.5 mr-1 pr-2 border-r border-slate-200/80">
           <EventSwitcher compact />
@@ -74,7 +74,9 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
           </Button>
         </Link>
 
-        <PreferencesMenu compact iconOnly />
+        <span className="hidden sm:inline-flex">
+          <PreferencesMenu compact iconOnly />
+        </span>
         <HelpLink compact />
         <span data-tour="nav-notifications" className="inline-flex">
           <NotificationBell />

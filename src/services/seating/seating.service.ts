@@ -36,7 +36,6 @@ const planInclude = {
           name: true,
           email: true,
           phone: true,
-          qrToken: true,
           status: true,
         },
       },
@@ -103,7 +102,7 @@ export class SeatingService {
 
   /**
    * Make persisted assignments exactly match the organizer's current plan.
-   * Scoped to this seatingPlanId only — never deletes the other plan's seats.
+   * Scoped to this seatingPlanId only, never deletes the other plan's seats.
    */
   async replaceAssignments(
     seatingPlanId: string,

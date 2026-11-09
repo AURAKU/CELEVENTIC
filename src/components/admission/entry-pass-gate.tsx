@@ -173,7 +173,7 @@ export function EntryPassGate({
     }
   }, [eventId]);
 
-  /** Persist first, then tell the rest of the page — the queue is the receipt. */
+  /** Persist first, then tell the rest of the page. The queue is the receipt. */
   const queueAdmission = useCallback(
     async (record: QueuedAdmission) => {
       await enqueue(record);
@@ -972,7 +972,7 @@ export function EntryPassGate({
         {hideCamera ? (
           <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
             Scan with the <span className="font-medium text-slate-800">camera above</span> or type
-            into <span className="font-medium text-slate-800">Enter code manually</span> — guest
+            into <span className="font-medium text-slate-800">Enter code manually</span>. Guest
             passes, vendor access cards and legacy guest QR all admit through that one box.
           </p>
         ) : null}
@@ -1057,7 +1057,7 @@ export function EntryPassGate({
             {awaitingQuantity && !promptOpen && (
               <div className="mt-4 space-y-3 border-t border-black/10 pt-3">
                 <p className="text-sm font-medium">
-                  {remaining} place{remaining === 1 ? "" : "s"} still open — choose how many to admit.
+                  {remaining} place{remaining === 1 ? "" : "s"} still open. Choose how many to admit.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -1124,7 +1124,7 @@ export function EntryPassGate({
             )}
             {!awaitingQuantity && !awaitingConfirm && !promptOpen && result.decision.outcome === "ALREADY_ADMITTED" && (
               <p className="mt-3 text-sm font-medium text-amber-900">
-                Already admitted — no additional entry was counted.
+                Already admitted. No additional entry was counted.
               </p>
             )}
           </div>

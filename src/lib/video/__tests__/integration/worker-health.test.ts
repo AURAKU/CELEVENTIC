@@ -7,7 +7,7 @@ import path from "node:path";
 /**
  * Regression coverage for the admin-visible "is the video worker even running?" health check
  * (src/lib/video/worker-health.ts, surfaced on /admin via src/lib/startup/system-health.ts).
- * This is what should catch — before a customer does — the exact failure mode in the mission:
+ * This is what should catch, before a customer does. The exact failure mode in the mission:
  * `celeventic-video-worker` not running on Hostinger, leaving jobs PENDING forever. It's driven
  * primarily by the worker's filesystem heartbeat (see worker-heartbeat.ts), not just queue depth,
  * so a worker that's simply busy with one large video is never mistaken for "not running".
@@ -67,8 +67,8 @@ describe("getVideoWorkerHealth", () => {
     assert.equal(health.pendingJobs, 1);
   });
 
-  it("reports critical when there's no heartbeat AND jobs are actually stuck — the real 'worker isn't running' case", async () => {
-    // No heartbeat written this test — worker is "confirmed dead".
+  it("reports critical when there's no heartbeat AND jobs are actually stuck. The real 'worker isn't running' case", async () => {
+    // No heartbeat written this test. Worker is "confirmed dead".
     const { prisma } = await import("../../../prisma");
     await prisma.backgroundJob.create({
       data: { queue: "video-process", payload: { assetId: "does-not-matter" }, status: "PENDING" },
@@ -82,8 +82,8 @@ describe("getVideoWorkerHealth", () => {
     assert.equal(health.pendingJobs, 1);
   });
 
-  it("reports warning (not critical) when there's no heartbeat but nothing is actually queued yet — no user impact", async () => {
-    // No heartbeat, no jobs — e.g. a brand-new deploy where the worker has simply never started yet.
+  it("reports warning (not critical) when there's no heartbeat but nothing is actually queued yet. No user impact", async () => {
+    // No heartbeat, no jobs. E.g. a brand-new deploy where the worker has simply never started yet.
     const { getVideoWorkerHealth } = await import("../../worker-health");
     const health = await getVideoWorkerHealth();
     assert.equal(health.status, "warning");

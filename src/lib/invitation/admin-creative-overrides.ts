@@ -1,5 +1,5 @@
 /**
- * Admin creative overrides — TS registry (no DB migration).
+ * Admin creative overrides. TS registry (no DB migration).
  * Session-scoped Map for admin assignment UI; permanent creative DNA stays in template-creative-registry.
  */
 import type {

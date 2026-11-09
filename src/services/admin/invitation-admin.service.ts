@@ -499,7 +499,7 @@ export class InvitationAdminService {
     if (!existing) throw new Error("Template not found");
     const orderCount = await prisma.invitationOrder.count({ where: { templateSlug: existing.slug } });
     if (orderCount > 0) {
-      throw new Error(`Cannot delete — ${orderCount} order(s) reference this template. Archive instead.`);
+      throw new Error(`Cannot delete: ${orderCount} order(s) reference this template. Archive instead.`);
     }
     await prisma.invitationCatalogTemplate.delete({ where: { id } });
     await createAuditLog({
@@ -644,7 +644,7 @@ export class InvitationAdminService {
     return {
       phone: (map["contact.phone"] as { value?: string })?.value ?? "020 961 2770",
       email: (map["contact.email"] as { value?: string })?.value ?? "Celeventic@gmail.com",
-      hours: (map["contact.hours"] as { value?: string })?.value ?? "Mon–Sat, 9am–6pm GMT",
+      hours: (map["contact.hours"] as { value?: string })?.value ?? "Mon to Sat, 9am to 6pm GMT",
     };
   }
 
@@ -652,7 +652,7 @@ export class InvitationAdminService {
     for (const [key, value] of Object.entries({
       "contact.phone": data.phone,
       "contact.email": data.email,
-      "contact.hours": data.hours ?? "Mon–Sat, 9am–6pm GMT",
+      "contact.hours": data.hours ?? "Mon to Sat, 9am to 6pm GMT",
     })) {
       await prisma.adminSetting.upsert({
         where: { key },

@@ -8,7 +8,7 @@ export type GuideConnection = "online" | "offline" | "stale";
  * The small honesty strip.
  *
  * Offline, a guest is told they are reading a saved copy, when it was saved,
- * and that it may have changed — enough to know whether to trust a start time
+ * and that it may have changed. Enough to know whether to trust a start time
  * without turning the guide into a warning banner.
  */
 export function OfflineBanner({
@@ -43,7 +43,7 @@ export function OfflineBanner({
       />
       <div className="min-w-0 flex-1">
         <p className="text-[0.82rem] font-semibold">
-          {offline ? "Offline — showing your saved guide" : "An updated guide is available"}
+          {offline ? "Offline. Showing your saved guide" : "An updated guide is available"}
         </p>
         <p className="mt-0.5 text-[0.76rem] leading-relaxed opacity-75">
           {offline ? (

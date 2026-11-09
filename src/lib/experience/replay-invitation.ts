@@ -1,5 +1,5 @@
 /**
- * Replay bridge — lets a template's "Replay Opening" control restart the
+ * Replay bridge. Lets a template's "Replay Opening" control restart the
  * invitation pipeline from the brand video intro (soft intro → tap → reveal)
  * without a full page reload. `PremiumInviteWrapper` owns the phase state and
  * listens for this event.

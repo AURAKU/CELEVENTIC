@@ -1,38 +1,5 @@
 import type { FashionLookbookItem, FashionNavLabel, LuxuryFashionHouseConfig } from "./types";
 
-export function mergeFashionHouse(
-  base: LuxuryFashionHouseConfig,
-  override?: Partial<LuxuryFashionHouseConfig> | null
-): LuxuryFashionHouseConfig {
-  if (!override) return base;
-  return {
-    ...base,
-    ...override,
-    navLabels: override.navLabels?.length ? override.navLabels : base.navLabels,
-    lookbookItems: override.lookbookItems !== undefined ? override.lookbookItems : base.lookbookItems,
-    silkBedUrl: override.silkBedUrl === undefined ? base.silkBedUrl : override.silkBedUrl,
-    logoUrl: override.logoUrl === undefined ? base.logoUrl : override.logoUrl,
-    shareOgImageUrl:
-      override.shareOgImageUrl === undefined ? base.shareOgImageUrl : override.shareOgImageUrl,
-    filmUrl: override.filmUrl === undefined ? base.filmUrl : override.filmUrl,
-    filmPosterUrl: override.filmPosterUrl === undefined ? base.filmPosterUrl : override.filmPosterUrl,
-    teaserClipUrl: override.teaserClipUrl === undefined ? base.teaserClipUrl : override.teaserClipUrl,
-    teaserPosterUrl: override.teaserPosterUrl === undefined ? base.teaserPosterUrl : override.teaserPosterUrl,
-    envelopeFaceLine: override.envelopeFaceLine ?? override.folioFaceLine ?? base.envelopeFaceLine ?? base.folioFaceLine,
-    folioFaceLine: override.envelopeFaceLine ?? override.folioFaceLine ?? base.envelopeFaceLine ?? base.folioFaceLine,
-    cardCtaLabel: override.cardCtaLabel ?? base.cardCtaLabel,
-    flyerCardUrl: override.flyerCardUrl === undefined ? base.flyerCardUrl : override.flyerCardUrl,
-    experienceFlyerUrl:
-      override.experienceFlyerUrl === undefined ? base.experienceFlyerUrl : override.experienceFlyerUrl,
-    visionStoreEnabled:
-      override.visionStoreEnabled === undefined ? base.visionStoreEnabled : override.visionStoreEnabled,
-    visitDayOptions:
-      override.visitDayOptions !== undefined ? override.visitDayOptions : base.visitDayOptions,
-    socialLinks: override.socialLinks !== undefined ? override.socialLinks : base.socialLinks,
-    chapters: { ...base.chapters, ...override.chapters },
-  };
-}
-
 export const LUXURY_FASHION_NAV_LABELS: FashionNavLabel[] = [
   { id: "experience", label: "Enter Experience" },
   { id: "store-preview", label: "Store Preview" },
@@ -72,9 +39,9 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   filmChapterTitle: "The first look",
   filmChapterLede: "Experience the house",
   wishesTitle: "Compliments and guest wishes to the host",
-  wishesEmpty: "The atelier is still quiet — leave the first compliment.",
+  wishesEmpty: "The atelier is still quiet. Leave the first compliment.",
   rsvpHeading: "Will we see you?",
-  rsvpAcceptedLabel: "Yes — I'll be there",
+  rsvpAcceptedLabel: "Yes. I'll be there",
   rsvpLede: "Yes, maybe, or unable to attend, we will keep your place with care.",
   finaleKicker: "A new chapter in style.",
   hoursLabel: "9 AM TO 8 PM",
@@ -132,9 +99,43 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   },
 };
 
+export function mergeFashionHouse(
+  base?: LuxuryFashionHouseConfig | null,
+  override?: Partial<LuxuryFashionHouseConfig> | null
+): LuxuryFashionHouseConfig {
+  const resolved = base ?? LUXURY_FASHION_HOUSE_DEFAULTS;
+  if (!override) return resolved;
+  return {
+    ...resolved,
+    ...override,
+    navLabels: override.navLabels?.length ? override.navLabels : resolved.navLabels,
+    lookbookItems: override.lookbookItems !== undefined ? override.lookbookItems : resolved.lookbookItems,
+    silkBedUrl: override.silkBedUrl === undefined ? resolved.silkBedUrl : override.silkBedUrl,
+    logoUrl: override.logoUrl === undefined ? resolved.logoUrl : override.logoUrl,
+    shareOgImageUrl:
+      override.shareOgImageUrl === undefined ? resolved.shareOgImageUrl : override.shareOgImageUrl,
+    filmUrl: override.filmUrl === undefined ? resolved.filmUrl : override.filmUrl,
+    filmPosterUrl: override.filmPosterUrl === undefined ? resolved.filmPosterUrl : override.filmPosterUrl,
+    teaserClipUrl: override.teaserClipUrl === undefined ? resolved.teaserClipUrl : override.teaserClipUrl,
+    teaserPosterUrl: override.teaserPosterUrl === undefined ? resolved.teaserPosterUrl : override.teaserPosterUrl,
+    envelopeFaceLine: override.envelopeFaceLine ?? override.folioFaceLine ?? resolved.envelopeFaceLine ?? resolved.folioFaceLine,
+    folioFaceLine: override.envelopeFaceLine ?? override.folioFaceLine ?? resolved.envelopeFaceLine ?? resolved.folioFaceLine,
+    cardCtaLabel: override.cardCtaLabel ?? resolved.cardCtaLabel,
+    flyerCardUrl: override.flyerCardUrl === undefined ? resolved.flyerCardUrl : override.flyerCardUrl,
+    experienceFlyerUrl:
+      override.experienceFlyerUrl === undefined ? resolved.experienceFlyerUrl : override.experienceFlyerUrl,
+    visionStoreEnabled:
+      override.visionStoreEnabled === undefined ? resolved.visionStoreEnabled : override.visionStoreEnabled,
+    visitDayOptions:
+      override.visitDayOptions !== undefined ? override.visitDayOptions : resolved.visitDayOptions,
+    socialLinks: override.socialLinks !== undefined ? override.socialLinks : resolved.socialLinks,
+    chapters: { ...resolved.chapters, ...override.chapters },
+  };
+}
+
 const FEMMORA_ASSET_MARKER = "/templates/femmora/";
 
-/** Guest-wishes kicker — each house’s uppercase nameplate, not a shared salon label. */
+/** Guest-wishes kicker. Each house’s uppercase nameplate, not a shared salon label. */
 export function fashionHouseNameplate(houseName?: string | null): string {
   const resolved = houseName?.trim() || LUXURY_FASHION_HOUSE_DEFAULTS.houseName;
   return resolved.toUpperCase();
@@ -150,7 +151,7 @@ type FashionHouseLogoInput =
   | undefined;
 
 /**
- * Guest-wishes crest — only that house’s own `logoUrl`.
+ * Guest-wishes crest. Only that house’s own `logoUrl`.
  * Femmora’s PNG is used only for a Femmora house; Vale never inherits it.
  * Empty/missing never falls back to Femmora’s mark.
  */

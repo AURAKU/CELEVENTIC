@@ -14,7 +14,7 @@ interface EntranceRevealProps {
 /**
  * Foreground entrance reveal driven by the active motion profile.
  * Content is fully present in SSR HTML; the initial-hidden state only applies
- * after hydration. A failsafe always restores visibility — clip-path / portal
+ * after hydration. A failsafe always restores visibility. Clip-path / portal
  * handoffs must never leave invitation copy stuck at opacity 0.
  */
 export function EntranceReveal({ children, delay = 0, className }: EntranceRevealProps) {

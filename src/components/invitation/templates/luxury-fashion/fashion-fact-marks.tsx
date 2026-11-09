@@ -2,7 +2,7 @@ import styles from "./luxury-fashion-flagship.module.css";
 
 export type FashionFactMarkKind = "location" | "time" | "date";
 
-/** Original couture marks for campaign facts — not a lucide/SaaS icon pack. */
+/** Original couture marks for campaign facts, not a lucide/SaaS icon pack. */
 export function FashionFactMark({ kind }: { kind: FashionFactMarkKind }) {
   if (kind === "time") {
     return (

@@ -93,9 +93,20 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
               <p className="text-slate-500 mt-1">{vendor.category}{vendor.yearsExperience ? ` · ${vendor.yearsExperience}+ years` : ""}</p>
               {location && <p className="text-sm text-slate-400 mt-1 flex items-center gap-1"><MapPin className="h-3.5 w-3.5 shrink-0" />{location}</p>}
               <div className="flex items-center gap-1 mt-2 text-sm">
-                <Star className="h-4 w-4 text-[#D4A63A] fill-[#D4A63A]" />
-                <span className="font-medium">{Number(vendor.rating).toFixed(1)}</span>
-                <span className="text-slate-400">({vendor.reviewCount} reviews)</span>
+                {vendor.reviewCount > 0 ? (
+                  <>
+                    <Star className="h-4 w-4 text-[#D4A63A] fill-[#D4A63A]" />
+                    <span className="font-medium">{Number(vendor.rating).toFixed(1)}</span>
+                    <span className="text-slate-400">({vendor.reviewCount} reviews)</span>
+                  </>
+                ) : (
+                  <span className="text-slate-400">No reviews yet</span>
+                )}
+                {!vendor.isVerified ? (
+                  <span className="ml-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    Unverified
+                  </span>
+                ) : null}
               </div>
             </div>
           </div>
@@ -141,7 +152,7 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
                   </div>
                   <p className="font-semibold text-[#0B8A83] shrink-0">
                     {formatCurrency(Number(r.priceMin))}
-                    {r.priceMax ? ` – ${formatCurrency(Number(r.priceMax))}` : "+"}
+                    {r.priceMax ? ` to ${formatCurrency(Number(r.priceMax))}` : "+"}
                   </p>
                 </div>
               )}

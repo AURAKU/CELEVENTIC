@@ -186,7 +186,9 @@ function EventWorkspaceClientInner({ eventId, eventTitle }: WorkspaceClientProps
 
   async function searchUsers() {
     if (!searchQ.trim()) return;
-    const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQ)}`);
+    const res = await fetch(
+      `/api/users/search?q=${encodeURIComponent(searchQ)}&eventId=${encodeURIComponent(eventId)}`
+    );
     const d = await res.json();
     if (res.ok) setSearchResults(d.data.items ?? []);
   }

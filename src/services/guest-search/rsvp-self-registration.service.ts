@@ -82,7 +82,7 @@ export async function notifyOrganizersOfDuplicateGuest(input: {
       emailTemplateService
         .sendLocalized("rsvp_organizer", to, locale, {
           guest: input.guestName,
-          response: `Possible duplicate — review Guests`,
+          response: `Possible duplicate. Review Guests`,
           event: input.eventTitle,
           guestsUrl: `${getAppUrlFromEnv()}${guestsLink}`,
           seatingUrl: `${getAppUrlFromEnv()}/dashboard/seating?eventId=${encodeURIComponent(input.eventId)}`,

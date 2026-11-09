@@ -1,5 +1,5 @@
 /**
- * Reveal runtime helpers — scroll lock, completion, and replay without
+ * Reveal runtime helpers. Scroll lock, completion, and replay without
  * rewriting individual reveal UIs.
  *
  * Scroll locking is centralized in invitation-scroll-lock.ts.
@@ -10,6 +10,7 @@ export {
   unlockRevealScroll,
   forceUnlockRevealScroll,
   forceUnlockInvitationViewport,
+  armLiveInvitationScroller,
   assertPortalViewportInteractive,
   getInvitationScrollLockCountForTests,
 } from "@/lib/experience-engine/invitation-scroll-lock";
@@ -38,7 +39,7 @@ export function markRevealComplete(session: RevealSession): RevealSession {
   };
 }
 
-/** Reset for REPLAY action — increments replay counter. */
+/** Reset for REPLAY action. Increments replay counter. */
 export function resetRevealForReplay(session: RevealSession): RevealSession {
   return {
     state: "idle",

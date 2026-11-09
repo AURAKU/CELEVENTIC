@@ -105,7 +105,7 @@ const candlelightElegy: InvitationThemeTokens = {
     packId: "memorial-candle",
     placements: { coverTop: "candle", divider: "ribbon" },
   },
-  // Funerals use solemn motion — slow fades, never playful drift.
+  // Funerals use solemn motion. Slow fades, never playful drift.
   motion: { profileId: "solemn", intensity: 0.35 },
   spacing: { pagePadding: "grand", blockGap: "regular", radius: 16, shadow: "soft" },
 };
@@ -178,7 +178,7 @@ const kenteRoyale: InvitationThemeTokens = {
   spacing: { pagePadding: "regular", blockGap: "regular", radius: 14, shadow: "lifted" },
 };
 
-// Memorial gold / black / white — dignified, high-contrast, easy to read.
+// Memorial gold / black / white. Dignified, high-contrast, easy to read.
 const royalMourning: InvitationThemeTokens = {
   id: "royal-mourning",
   name: "Royal Mourning",
@@ -213,7 +213,7 @@ const royalMourning: InvitationThemeTokens = {
   spacing: { pagePadding: "grand", blockGap: "regular", radius: 10, shadow: "soft" },
 };
 
-/** Memorial black / gold / white — registered for catalogue themeId `black-red-cloth`. */
+/** Memorial black / gold / white. Registered for catalogue themeId `black-red-cloth`. */
 const blackRedCloth: InvitationThemeTokens = {
   id: "black-red-cloth",
   name: "Black Red Cloth",
@@ -248,7 +248,7 @@ const blackRedCloth: InvitationThemeTokens = {
   spacing: { pagePadding: "grand", blockGap: "regular", radius: 8, shadow: "soft" },
 };
 
-/** Christian thanksgiving / celebration of life — ivory cloth. */
+/** Christian thanksgiving / celebration of life. Ivory cloth. */
 const whiteClothHomegoing: InvitationThemeTokens = {
   id: "white-cloth-homegoing",
   name: "White Cloth Homegoing",
@@ -353,7 +353,7 @@ const oneWeekVigil: InvitationThemeTokens = {
   spacing: { pagePadding: "regular", blockGap: "regular", radius: 12, shadow: "soft" },
 };
 
-/** Luxury fashion flagship — ivory silk, champagne gold, espresso ink. */
+/** Luxury fashion flagship. Ivory silk, champagne gold, espresso ink. */
 const femmoraChampagne: InvitationThemeTokens = {
   id: "femmora-champagne",
   name: "Femmora Champagne",

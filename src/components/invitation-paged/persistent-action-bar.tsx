@@ -129,7 +129,7 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
     }
     if (result === "cancelled") return;
 
-    // Desktop / restricted webviews — open channel sheet.
+    // Desktop / restricted webviews. Open channel sheet.
     setSheetOpen(true);
   }
 

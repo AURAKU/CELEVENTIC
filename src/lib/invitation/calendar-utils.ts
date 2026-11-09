@@ -71,7 +71,7 @@ export function toGoogleCalendarDates(
   return `${fmt(start)}/${fmt(end)}`;
 }
 
-/** Calendar LOCATION — venue name plus the street line shown on the invitation. */
+/** Calendar LOCATION. Venue name plus the street line shown on the invitation. */
 export function calendarEventLocation(
   venueName?: string | null,
   address?: string | null
@@ -305,7 +305,7 @@ export async function shareOrDownloadIcs(
       });
       return "shared";
     } catch (err) {
-      // User cancelled share — don't force a download.
+      // User cancelled share. Don't force a download.
       if (err instanceof DOMException && err.name === "AbortError") {
         throw err;
       }

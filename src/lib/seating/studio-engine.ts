@@ -228,7 +228,7 @@ export function detectSeatingConflicts(input: {
     seatLabel?: string | null;
     status?: string;
   }>;
-  /** Confirmed intentional splits — suppress unresolved GROUP_SPLIT. */
+  /** Confirmed intentional splits. Suppress unresolved GROUP_SPLIT. */
   confirmedSplitInvitationIds?: Set<string>;
 }): SeatingConflict[] {
   const conflicts: SeatingConflict[] = [];

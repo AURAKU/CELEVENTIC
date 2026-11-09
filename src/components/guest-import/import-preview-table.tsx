@@ -282,7 +282,7 @@ export function ImportPreviewTable({
                 <td className="px-3 py-2 text-xs text-slate-500">
                   {row.tableNumber
                     ? `${row.tableNumber}${row.seatLabel ? ` · ${row.seatLabel}` : ""}`
-                    : "—"}
+                    : "None"}
                 </td>
                 <td className="px-3 py-2">
                   <span

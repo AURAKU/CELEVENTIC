@@ -16,7 +16,7 @@ async function loadContactSettings(): Promise<PublicContactSettings> {
   return {
     phone: (map["contact.phone"] as { value?: string })?.value ?? LEGAL_CONTACT.phone,
     email: (map["contact.email"] as { value?: string })?.value ?? LEGAL_CONTACT.email,
-    hours: (map["contact.hours"] as { value?: string })?.value ?? "Mon–Sat, 9am–6pm GMT",
+    hours: (map["contact.hours"] as { value?: string })?.value ?? "Mon to Sat, 9am to 6pm GMT",
   };
 }
 

@@ -61,7 +61,7 @@ export function clampAdmitted(next: number, allowance: number): number {
 /**
  * Derive the durable admission state from the count.
  * `wasReset` distinguishes a fresh invite (NOT_ADMITTED) from one that reached
- * zero via an explicit reset (ADMISSION_RESET) — both lock the portal, but the
+ * zero via an explicit reset (ADMISSION_RESET). Both lock the portal, but the
  * distinction is surfaced to organisers, never to guests.
  */
 export function deriveAdmissionState(
@@ -113,7 +113,7 @@ export function summarize(
 
 /**
  * Narrow the default "unlock on first admitted head" rule to the organiser's
- * chosen policy. Only ever narrows — never grants access the summary denied.
+ * chosen policy. Only ever narrows, never grants access the summary denied.
  * RSVP / invite-open never reach here with admittedCount > 0.
  */
 export function applyPortalUnlockPolicy(

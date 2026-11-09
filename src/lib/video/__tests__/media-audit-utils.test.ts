@@ -19,7 +19,7 @@ function mapEntry(partial: Partial<SourcePlaybackMapEntry> & Pick<SourcePlayback
   };
 }
 
-describe("classifyMediaFile — converted sources", () => {
+describe("classifyMediaFile. Converted sources", () => {
   it("MOV with processed MP4 maps to source_converted (not needs_conversion)", () => {
     const kind = classifyMediaFile({
       relativePath: "invitations/u1/clip.mov",
@@ -78,7 +78,7 @@ describe("classifyMediaFile — converted sources", () => {
       playbackCompatible: true,
       sourceExists: false,
     });
-    // Valid playback still wins — converted mapping is authoritative for classification
+    // Valid playback still wins. Converted mapping is authoritative for classification
     // when playback exists; orphaned_source is reserved for map-only walks without source.
     // When sourceExists=false AND no valid playback gate fails... hasValidPlayback is true here.
     // Force no playback to assert orphaned:
@@ -194,7 +194,7 @@ describe("URL normalisation", () => {
     assert.equal(shouldUpdateStoredMediaUrl(cdn), false);
   });
 
-  it("idempotent rerun — already normalised URLs do not need update", () => {
+  it("idempotent rerun. Already normalised URLs do not need update", () => {
     assert.equal(shouldUpdateStoredMediaUrl("/uploads/invitations/u1/processed/9-playback.mp4"), false);
     assert.equal(
       normalizeStoredMediaUrl("/uploads/invitations/u1/processed/9-playback.mp4"),

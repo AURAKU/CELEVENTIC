@@ -56,6 +56,7 @@ import { GuestPassCard } from "@/components/guest-portal/guest-pass-card";
 import { GuestHelpChip } from "@/components/celeventic-guide/guest-contextual-help";
 import { InviteGuestHelpFab } from "@/components/celeventic-guide/guest-quick-actions";
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
+import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import { formatEventDetailsTime } from "@/lib/invitation-blocks/event-details";
 import { cn } from "@/lib/utils";
@@ -104,6 +105,8 @@ function Countdown({ target, begunLabel, label, style }: { target: string; begun
 
 export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   const { t, locale } = useLocale();
+  const staticPreview = useInvitationStaticPreview();
+  const viewportMode = staticPreview ? "thumbnail" : props.embedded ? "embedded" : "live";
 
   const localized = props.localizedVersions?.[locale];
   const displayEvent = useMemo(() => ({
@@ -304,7 +307,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   const pagedTheme = props.design?.theme;
   if (pagedTheme && (experience?.hubMode === "paged" || !experience?.hubMode || Boolean(props.design?.blueprintId))) {
     return (
-      <InviteViewportShell mode={props.embedded ? "embedded" : "live"} scrollable={false}>
+      <InviteViewportShell mode={viewportMode} scrollable={false} className={staticPreview ? "h-full" : undefined}>
         <PagedInvitationViewer
           context={{
             invitation: displayInvitation,
@@ -326,7 +329,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               props.memoryVaultEnabled || Boolean(props.memoryUploadUrl),
           }}
         />
-        <InviteGuestHelpFab />
+        {staticPreview ? null : <InviteGuestHelpFab />}
       </InviteViewportShell>
     );
   }
@@ -380,9 +383,13 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
   return (
     <InviteViewportShell
-      mode={props.embedded ? "embedded" : "live"}
-      scrollable
-      className={cn("relative overflow-x-hidden", fashionOwnsPaper ? "bg-[#FBF7F0]" : "bg-[#FAF8F4]")}
+      mode={viewportMode}
+      scrollable={!staticPreview}
+      className={cn(
+        "relative overflow-x-hidden",
+        staticPreview && "h-full",
+        fashionOwnsPaper ? "bg-[#FBF7F0]" : "bg-[#FAF8F4]"
+      )}
       style={{
         backgroundColor:
           fashionOwnsPaper
@@ -953,7 +960,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
         </div>
 
-        <InviteGuestHelpFab />
+        {staticPreview ? null : <InviteGuestHelpFab />}
 
         {!templateOwnsJourney &&
           !props.embedded &&

@@ -1,5 +1,5 @@
 /**
- * Experience Engine — shared contracts for Phase 2 foundation.
+ * Experience Engine. Shared contracts for Phase 2 foundation.
  * Thin types that compose existing DNA / creative registry / motion systems.
  */
 import type { OpeningExperienceId, OutroExperienceId, SceneTransitionId } from "@/lib/experience/experience-types";

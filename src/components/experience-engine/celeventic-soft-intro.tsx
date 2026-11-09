@@ -40,7 +40,7 @@ export interface CeleventicSoftIntroProps {
    */
   onPlaybackStart?: () => void;
   /**
-   * Invitation link or id — scopes sessionStorage only (never auto-skips the
+   * Invitation link or id. Scopes sessionStorage only (never auto-skips the
    * visible intro on first paint).
    */
   invitationId?: string;
@@ -48,9 +48,9 @@ export interface CeleventicSoftIntroProps {
    * When true (Replay Opening), clear session memory for a fresh play.
    */
   forcePlay?: boolean;
-  /** @deprecated Ignored — soft intro is video-only. */
+  /** @deprecated Ignored. Soft intro is video-only. */
   logoUrl?: string;
-  /** @deprecated Ignored — brand video is the only intro. */
+  /** @deprecated Ignored. Brand video is the only intro. */
   atmosphereUrl?: string | null;
   accentColor?: string;
   secondaryColor?: string;
@@ -58,7 +58,7 @@ export interface CeleventicSoftIntroProps {
   quickHold?: boolean;
   /**
    * When true (catalogue / studio phone frame), fill the parent shell and use
-   * silent muted autoplay — separate from the live invitation opening gate.
+   * silent muted autoplay. Separate from the live invitation opening gate.
    */
   embedded?: boolean;
 }
@@ -107,8 +107,8 @@ export function CeleventicSoftIntro({
   const onPlaybackStartRef = useRef(onPlaybackStart);
   onPlaybackStartRef.current = onPlaybackStart;
   // Held in a ref so a parent re-render (i18n bootstrap, session refresh, a
-  // consent banner) cannot change the identity of `finish` — and through it
-  // every timer that depends on `finish` — while the film is on screen.
+  // consent banner) cannot change the identity of `finish`, and through it
+  // every timer that depends on `finish`, while the film is on screen.
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -194,7 +194,7 @@ export function CeleventicSoftIntro({
 
   /**
    * A media load/decode failure must never leave a blank stage. The poster
-   * still fills the black frame, and the pipeline always continues — either
+   * still fills the black frame, and the pipeline always continues. Either
    * from the guest's tap or from a long-stop timer.
    */
   const handleRealLoadFailure = useCallback(() => {
@@ -247,7 +247,7 @@ export function CeleventicSoftIntro({
   /**
    * The outro always reaches `onComplete`. Tying the hand-off to `exiting`
    * rather than to a timer created inside a callback means a re-render can at
-   * worst restart the 720ms fade — never cancel it and strand the guest on the
+   * worst restart the 720ms fade, never cancel it and strand the guest on the
    * faded-out black overlay with the invitation still unmounted beneath it.
    */
   useEffect(() => {
@@ -272,7 +272,7 @@ export function CeleventicSoftIntro({
     }
 
     if (!embedded) {
-      // Park at frame zero unmuted, paused — gate authorizes play().
+      // Park at frame zero unmuted, paused. Gate authorizes play().
       prepareIntroVideoForGesturePlayback(video);
       try {
         video.pause();
@@ -330,7 +330,7 @@ export function CeleventicSoftIntro({
       return;
     }
 
-    // Synchronous prep inside the gesture — then a single play().
+    // Synchronous prep inside the gesture, then a single play().
     prepareIntroVideoForGesturePlayback(video);
     playCallCountRef.current += 1;
     diagnose("open-invitation-gesture");
@@ -449,7 +449,7 @@ export function CeleventicSoftIntro({
       data-video-failed={videoFailed ? "true" : "false"}
       data-play-calls={String(playCallCountRef.current)}
     >
-      {/* Screen-reader only — never announce marketing copy during playback */}
+      {/* Screen-reader only, never announce marketing copy during playback */}
       {showOpenGate ? (
         <p className={styles.srStatus} aria-live="polite">
           {playError

@@ -2,8 +2,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Filesystem heartbeat the standalone `video-jobs-worker` process writes on every tick — and
- * after every individual job it processes (see `src/lib/queue.ts`'s `processJobs`) — so it stays
+ * Filesystem heartbeat the standalone `video-jobs-worker` process writes on every tick, and
+ * after every individual job it processes (see `src/lib/queue.ts`'s `processJobs`), so it stays
  * fresh even while the worker is legitimately busy with a single long-running transcode. This is
  * the authoritative "is the worker process actually alive" signal used by the Next.js app
  * (`worker-health.ts` for the admin dashboard, `inline-fallback.ts` for self-healing stuck
@@ -12,7 +12,7 @@ import path from "node:path";
  * A pure queue-depth/age signal can't make that distinction: with the default
  * `VIDEO_PROCESSOR_CONCURRENCY=1`, one large upload can legitimately occupy the worker for up to
  * `VIDEO_PROCESSOR_TIMEOUT_MS` while a second, unrelated job's row sits `PENDING` the whole time
- * despite the worker being perfectly healthy — flagging that as "worker down" would be a false
+ * despite the worker being perfectly healthy. Flagging that as "worker down" would be a false
  * positive with real consequences (needlessly failing a video that was always going to finish).
  *
  * Deliberately a plain JSON file, not a DB table: both the Next app and the worker already run
@@ -31,14 +31,14 @@ export interface WorkerHeartbeat {
   updatedAt: string;
 }
 
-/** Best-effort — a filesystem hiccup here must never break actual job processing. */
+/** Best-effort. A filesystem hiccup here must never break actual job processing. */
 export async function writeWorkerHeartbeat(): Promise<void> {
   try {
     await mkdir(STATE_DIR, { recursive: true });
     const payload: WorkerHeartbeat = { pid: process.pid, updatedAt: new Date().toISOString() };
     await writeFile(HEARTBEAT_PATH, JSON.stringify(payload));
   } catch {
-    /* best-effort — a missed heartbeat write just makes the next liveness check slightly stale */
+    /* best-effort. A missed heartbeat write just makes the next liveness check slightly stale */
   }
 }
 
@@ -66,7 +66,7 @@ export interface WorkerLiveness {
   ageMs: number | null;
 }
 
-/** Full liveness detail — used by `worker-health.ts` to build a richer admin-facing report. */
+/** Full liveness detail. Used by `worker-health.ts` to build a richer admin-facing report. */
 export async function getWorkerLiveness(): Promise<WorkerLiveness> {
   const heartbeat = await readWorkerHeartbeat();
   if (!heartbeat) return { alive: false, heartbeat: null, ageMs: null };

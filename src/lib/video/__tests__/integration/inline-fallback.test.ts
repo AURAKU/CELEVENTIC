@@ -8,7 +8,7 @@ import path from "node:path";
 /**
  * Regression coverage for the exact reported bug: the UI repeats "Video is taking longer than
  * expected to process…" forever because `celeventic-video-worker` isn't draining the queue.
- * `maybeKickStaleQueuedAsset` (src/lib/video/inline-fallback.ts) is the self-healing fix — this
+ * `maybeKickStaleQueuedAsset` (src/lib/video/inline-fallback.ts) is the self-healing fix. This
  * exercises all four branches against the real dev database:
  *
  *   1. Worker confirmed alive (fresh heartbeat)              -> asset left untouched, no matter how stale.
@@ -99,7 +99,7 @@ describe("maybeKickStaleQueuedAsset", () => {
   });
 
   it("leaves the asset alone when it hasn't been QUEUED long enough yet, even if the worker looks dead", async () => {
-    process.env.VIDEO_INLINE_FALLBACK_AFTER_MS = "600000"; // 10 minutes — this test's asset was queued 5s ago
+    process.env.VIDEO_INLINE_FALLBACK_AFTER_MS = "600000"; // 10 minutes. This test's asset was queued 5s ago
     const { maybeKickStaleQueuedAsset } = await import("../../inline-fallback");
     const asset = await createQueuedAsset({ queuedAt: new Date() });
     try {
@@ -112,7 +112,7 @@ describe("maybeKickStaleQueuedAsset", () => {
   });
 
   it("kicks off inline processing (asset leaves QUEUED) for a small/medium file once the worker is confirmed dead and stale enough", async () => {
-    // No heartbeat file exists (beforeEach wiped the dir) — worker is "confirmed dead".
+    // No heartbeat file exists (beforeEach wiped the dir). Worker is "confirmed dead".
     const { maybeKickStaleQueuedAsset } = await import("../../inline-fallback");
     const { prisma } = await import("../../../prisma");
     const asset = await createQueuedAsset({ sizeBytes: BigInt(1024) }); // well under the 200MB default cap
@@ -123,7 +123,7 @@ describe("maybeKickStaleQueuedAsset", () => {
 
       // ...but the kicked processQueuedVideoAsset() call must actually be running: poll briefly
       // for the DB row to leave QUEUED (it will fail fast here since no real file backs this
-      // originalKey — the point is proving the kick fired at all, not a full successful transcode).
+      // originalKey. The point is proving the kick fired at all, not a full successful transcode).
       let reloaded = await prisma.videoAsset.findUniqueOrThrow({ where: { id: asset.id } });
       const deadline = Date.now() + 5000;
       while (reloaded.status === "QUEUED" && Date.now() < deadline) {

@@ -8,11 +8,11 @@ import { JourneyPreviewStrip } from "@/components/celeventic-guide/journey-previ
 export const metadata: Metadata = {
   title: "How Celeventic Works · Celeventic Guide",
   description:
-    "Interactive walkthrough of the Celeventic platform — invitations, RSVP, QR admission, Event Guide, gifts, vendors, and Memory Vault for guests, hosts, door staff, and vendors.",
+    "Interactive walkthrough of the Celeventic platform. Invitations, RSVP, QR admission, Event Guide, gifts, vendors, and Memory Vault for guests, hosts, door staff, and vendors.",
   openGraph: {
     title: "How Celeventic Works",
     description:
-      "Explore the full Celeventic journey in motion — from the first invitation tap to Memory Vault.",
+      "Explore the full Celeventic journey in motion, from the first invitation tap to Memory Vault.",
     type: "website",
   },
   alternates: {

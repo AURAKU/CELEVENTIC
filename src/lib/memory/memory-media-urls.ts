@@ -33,7 +33,7 @@ export function deriveMemoryVariantUrls(mediaUrl: string): {
   };
 }
 
-/** Prefer thumbnail/poster for grid cells — never the full media URL when a derivative exists. */
+/** Prefer thumbnail/poster for grid cells, never the full media URL when a derivative exists. */
 export function pickMemoryGridSrc(item: MemoryMediaLike): string {
   const thumb = item.thumbnailUrl?.trim();
   if (thumb) return thumb;
@@ -53,7 +53,7 @@ export function pickMemoryFullSrc(item: MemoryMediaLike): string {
 }
 
 /**
- * Responsive srcset for photo lightbox — browser picks the lightest sharp asset.
+ * Responsive srcset for photo lightbox. Browser picks the lightest sharp asset.
  * Order: medium (1200) → large/master (2000). Thumbnail stays out of lightbox.
  */
 export function pickMemoryPhotoSrcSet(item: MemoryMediaLike): string | null {

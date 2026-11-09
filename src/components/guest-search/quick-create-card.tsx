@@ -32,7 +32,7 @@ function publicInviteUrl(url: string): string {
 }
 
 /**
- * Add Guest — one create path for the whole CRM.
+ * Add Guest. One create path for the whole CRM.
  *
  * Creates a personalised invitation (link, entry pass, place card). Name is
  * the only required field; allowance is suggested from the typed name.
@@ -295,7 +295,7 @@ export function QuickCreateCard({ eventId, onCreated, onChanged }: QuickCreateCa
               </ul>
               <p className="mt-2 text-xs text-amber-800">
                 If this is a different person, add a distinguishing detail to the name
-                (for example &quot;Kofi Mensah (Kumasi)&quot;) — or find and edit the existing
+                (for example &quot;Kofi Mensah (Kumasi)&quot;), or find and edit the existing
                 guest instead of minting a second invitation.
               </p>
               <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-amber-900">
@@ -306,7 +306,7 @@ export function QuickCreateCard({ eventId, onCreated, onChanged }: QuickCreateCa
                   onChange={(e) => setConfirmDifferentPerson(e.target.checked)}
                 />
                 <span>
-                  This is a different person — create a separate invitation anyway
+                  This is a different person. Create a separate invitation anyway
                 </span>
               </label>
             </div>
@@ -315,7 +315,7 @@ export function QuickCreateCard({ eventId, onCreated, onChanged }: QuickCreateCa
           {previewOpen && preview && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
               <p className="flex items-center gap-2 font-semibold text-slate-700">
-                <Sparkles className="h-3.5 w-3.5" /> {preview.displayName || "—"}
+                <Sparkles className="h-3.5 w-3.5" /> {preview.displayName || "None"}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Badge variant="outline">

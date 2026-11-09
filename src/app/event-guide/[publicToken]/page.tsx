@@ -14,7 +14,7 @@ type Ctx = {
 /**
  * The unified Event Guide.
  *
- * Renders the *published snapshot* only — a draft edit is unreachable here by
+ * Renders the *published snapshot* only. A draft edit is unreachable here by
  * construction. Any problem resolves to a themed unavailable page rather than a
  * 404 shell or a 500, because a guest meets this page standing at a venue.
  */
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Ctx): Promise<Metadata> {
   }
 
   return {
-    title: `${result.payload.header.eventTitle} — Event Guide`,
+    title: `${result.payload.header.eventTitle}. Event Guide`,
     description: "Programme, seating and menu for this celebration.",
     // A guide token is a private link handed out on a printed sign.
     robots: { index: false, follow: false },

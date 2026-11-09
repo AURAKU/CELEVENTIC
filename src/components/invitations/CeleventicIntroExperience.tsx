@@ -19,7 +19,7 @@ import {
 
 /**
  * next/image throws on empty src and on hosts outside remotePatterns.
- * Event logos often arrive as "" or third-party URLs — never let that nuke the page.
+ * Event logos often arrive as "" or third-party URLs, never let that nuke the page.
  */
 function safeIntroLogoSrc(logoUrl?: string | null): string {
   const resolved = resolvePublicMediaUrl(logoUrl);

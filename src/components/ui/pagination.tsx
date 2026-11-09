@@ -41,7 +41,7 @@ export function PaginationBar({
     <div className={cn("flex flex-col sm:flex-row items-center justify-between gap-3 pt-4", className)}>
       {showSummary && (
         <p className="text-sm text-slate-500">
-          Showing {from}–{to} of {total.toLocaleString()}
+          Showing {from} to {to} of {total.toLocaleString()}
         </p>
       )}
       <nav className="flex flex-wrap items-center justify-center sm:justify-end gap-1" aria-label="Pagination">
@@ -124,7 +124,7 @@ export function PaginationLinks({
   return (
     <div className={cn("flex flex-col sm:flex-row items-center justify-between gap-3 pt-4", className)}>
       <p className="text-sm text-slate-500">
-        Showing {from}–{to} of {total.toLocaleString()}
+        Showing {from} to {to} of {total.toLocaleString()}
       </p>
       <nav className="flex items-center gap-1" aria-label="Pagination">
         {page > 1 ? (

@@ -254,7 +254,7 @@ export function computeGuestCrmPeopleStats(
       }
     }
     // Fully/partially admitted parties with only CHECKED_IN rows still have
-    // remaining heads to expect — treat them as Accepted for planning.
+    // remaining heads to expect. Treat them as Accepted for planning.
     if (best === 0 || (status === "INVITED" && members.every((m) => m.status === "CHECKED_IN"))) {
       return members.some((m) => m.status === "CHECKED_IN") ? "ACCEPTED" : status;
     }
@@ -274,8 +274,8 @@ export function computeGuestCrmPeopleStats(
     if (admitted > 0) counts.CHECKED_IN += admitted;
 
     if (remaining > 0) {
-      // No gate admissions yet — use the party's RSVP/planning status in full.
-      // Partial admission — leftover heads keep their planning bucket.
+      // No gate admissions yet. Use the party's RSVP/planning status in full.
+      // Partial admission. Leftover heads keep their planning bucket.
       let status = pickPlanningStatus(members);
       if (admitted === 0) {
         // Prefer explicit CHECKED_IN only when gate count is missing but CRM

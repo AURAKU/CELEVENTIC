@@ -22,13 +22,13 @@ const WELCOME: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi — I’m Celeventic Customer Service. Tell me what you need help with (invitations, RSVP, QR passes, Event Guide, gifts, vendors, Memory Vault, or the dashboard). I’ll give clear step-by-step guidance. For a live agent, WhatsApp or call 0595968686.",
+    "Hi. I’m Celeventic Customer Service. Tell me what you need help with (invitations, RSVP, QR passes, Event Guide, gifts, vendors, Memory Vault, or the dashboard). I’ll give clear step-by-step guidance. For a live agent, WhatsApp or call 0595968686.",
   relatedGuides: [{ slug: "how-celeventic-works", title: "How Celeventic Works" }],
 };
 
 const SUGGESTIONS = [
   "How does Celeventic work?",
-  "I got an invitation — what do I do?",
+  "I got an invitation. What do I do?",
   "How do I scan guest QR codes?",
   "Where do I create an event?",
 ];
@@ -107,7 +107,7 @@ export function GuideAssistantChat() {
         {
           id: `a-err-${Date.now()}`,
           role: "assistant",
-          content: `Sorry — I hit a temporary issue. ${formatLocalEscalation()}`,
+          content: `Sorry. I hit a temporary issue. ${formatLocalEscalation()}`,
         },
       ]);
     } finally {
@@ -214,7 +214,7 @@ export function GuideAssistantChat() {
             <div className="flex gap-2 border-t border-slate-100 bg-white px-3 py-2">
               <a
                 href={guideSupportWhatsAppUrl(
-                  "Hello Celeventic Customer Care — I need help from Customer Service chat."
+                  "Hello Celeventic Customer Care. I need help from Customer Service chat."
                 )}
                 target="_blank"
                 rel="noopener noreferrer"

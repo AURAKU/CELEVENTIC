@@ -2,8 +2,8 @@
  * Central mobile money / payment channel mapping for the Gift Experience.
  *
  * Ghanaian networks rebrand (Vodafone → Telecel, Airtel + Tigo → AirtelTigo)
- * long before payment processors update their channel codes. Every surface —
- * guest picker, initialize route, verification, receipts, dashboard filters —
+ * long before payment processors update their channel codes. Every surface.
+ * guest picker, initialize route, verification, receipts, dashboard filters.
  * reads from this one table so a rename is a single-line change.
  */
 

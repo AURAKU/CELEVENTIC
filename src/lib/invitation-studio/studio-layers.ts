@@ -1,5 +1,5 @@
 /**
- * Studio layers panel model — MVP list of composited invitation layers.
+ * Studio layers panel model. MVP list of composited invitation layers.
  * Order drives guest z-index stacking; visibility hides layers; snap guides aid studio alignment.
  */
 
@@ -32,7 +32,7 @@ export const DEFAULT_STUDIO_LAYERS: StudioLayer[] = [
   { id: "environment", label: "Particles / atmosphere", visible: true },
 ];
 
-/** Snap guide presets — percentages of canvas for MVP alignment */
+/** Snap guide presets. Percentages of canvas for MVP alignment */
 export const SNAP_GUIDES = [
   { id: "center", label: "Center", x: 50, y: 50 },
   { id: "safe-top", label: "Safe top", x: 50, y: 18 },

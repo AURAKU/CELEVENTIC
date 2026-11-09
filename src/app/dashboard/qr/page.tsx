@@ -147,7 +147,7 @@ export default function QrVerifyPage() {
         return;
       }
 
-      const validation = validateOfflineToken(eventId, trimmed);
+      const validation = await validateOfflineToken(eventId, trimmed);
       recordOfflineScan(eventId, {
         qrToken: validation.syncToken ?? trimmed,
         result: validation.result,

@@ -29,6 +29,8 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
 
   // ── Header ──
   { namespace: "header", key: "features", enValue: "Features", frValue: "Fonctionnalités" },
+  { namespace: "header", key: "services", enValue: "Services", frValue: "Services" },
+  { namespace: "header", key: "marketplace", enValue: "Marketplace", frValue: "Marketplace" },
   { namespace: "header", key: "invitations", enValue: "Invitations", frValue: "Invitations" },
   { namespace: "header", key: "templates", enValue: "Templates", frValue: "Modèles" },
   { namespace: "header", key: "pricing", enValue: "Pricing", frValue: "Tarifs" },

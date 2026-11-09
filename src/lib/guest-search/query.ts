@@ -2,11 +2,11 @@ import { cleanName, foldDiacritics, stripTitles } from "@/lib/guest-import/name"
 import { tableDisplayName } from "@/lib/seating/seating-types";
 
 /**
- * Smart Guest Search — query understanding and ranking.
+ * Smart Guest Search. Query understanding and ranking.
  *
  * Pure: no Prisma, no network, no clock. The organiser types one box and means
- * any of five different things — a name, a phone number, an email, an
- * admission code, or a table — so the query is classified first and the
+ * any of five different things. A name, a phone number, an email, an
+ * admission code, or a table, so the query is classified first and the
  * database is only asked for what the query could plausibly match.
  *
  * Ranking happens here rather than in SQL because SQLite cannot express
@@ -47,7 +47,7 @@ export interface ParsedQuery {
   isEmpty: boolean;
 }
 
-/** Longest query we will act on — beyond this it is a paste, not a search. */
+/** Longest query we will act on. Beyond this it is a paste, not a search. */
 export const MAX_QUERY_LENGTH = 120;
 
 /** Shortest query that may hit the database. One letter matches everything. */
@@ -93,7 +93,7 @@ export function phoneDigits(input: string | null | undefined): string {
  * The comparable tail of a phone number.
  *
  * Organisers type "0244123456" for a guest stored as "+233244123456". Both
- * share the last nine digits, so that suffix — not the whole string — is what
+ * share the last nine digits, so that suffix, not the whole string. Is what
  * a phone search compares.
  */
 export const PHONE_SUFFIX_LENGTH = 9;
@@ -131,7 +131,7 @@ export function parseSearchQuery(raw: string): ParsedQuery {
   const digits = phoneDigits(trimmed);
   const digitsOnly = /^[\s+()\d.-]+$/.test(trimmed) && digits.length > 0;
 
-  // A bare 4- or 6-digit run is an admission code — that is the shape the gate
+  // A bare 4- or 6-digit run is an admission code, that is the shape the gate
   // prints. It stays a possible phone fragment too; both are searched.
   const code = digitsOnly && (digits.length === 4 || digits.length === 6) ? digits : null;
   if (code) kinds.push("code");
@@ -330,7 +330,7 @@ function recencyOf(value: Date | number | null | undefined): number {
 
 /**
  * Score, drop non-matches, and order. Ties break on recency then name so the
- * list is stable between keystrokes — a result must not jump under the cursor.
+ * list is stable between keystrokes. A result must not jump under the cursor.
  */
 export function rankCandidates<T extends RankableCandidate>(
   query: ParsedQuery,

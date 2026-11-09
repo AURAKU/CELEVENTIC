@@ -76,7 +76,7 @@ describe("programme normalisation", () => {
 
   it("reads a draft saved as a script with its derived items", () => {
     const items = normalizeProgrammeItems({
-      script: "2:00 PM — Ceremony",
+      script: "2:00 PM. Ceremony",
       items: [{ title: "Ceremony", time: "2:00 PM" }],
     });
     assert.equal(items.length, 1);
@@ -224,7 +224,7 @@ describe("date formatting", () => {
 
   it("shows both ends of a multi-day event", () => {
     const label = formatGuideDate("2026-08-06T15:00:00Z", "2026-08-08T15:00:00Z");
-    assert.match(label!, /Thursday, 6 August 2026 – Saturday, 8 August 2026/);
+    assert.match(label!, /Thursday, 6 August 2026 to Saturday, 8 August 2026/);
   });
 
   it("returns null rather than 'Invalid Date' for junk", () => {

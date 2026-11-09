@@ -122,7 +122,7 @@ export function MessagesClient() {
         <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
           <MessageSquare className="h-6 w-6 text-brand-600 shrink-0" /> Messages
         </h1>
-        <p className="page-subtitle">Vendor enquiries, admin notices, and replies</p>
+        <p className="page-subtitle">Vendor enquiries, Customisation briefs, and Celeventic team chat</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-0 lg:min-h-[28rem]">

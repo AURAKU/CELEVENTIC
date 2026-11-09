@@ -1,7 +1,7 @@
 /**
  * CSV injection defence.
  *
- * A guest called `=cmd|'/c calc'!A1` is not a guest — it is a payload aimed at
+ * A guest called `=cmd|'/c calc'!A1` is not a guest. It is a payload aimed at
  * whoever opens the organiser's exported list in Excel or Sheets, which will
  * happily evaluate a leading `=`, `+`, `-`, `@`, tab or carriage return as a
  * formula. Both directions are covered:

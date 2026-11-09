@@ -210,7 +210,7 @@ function MemorialCandleShell(props: ShellProps) {
       className="relative min-h-[100dvh] w-full flex items-center justify-center p-4 overflow-hidden"
       style={{ background: theme.background }}
     >
-      {/* Soft ambient candle glow — solemn depth, not wedding drift */}
+      {/* Soft ambient candle glow. Solemn depth, not wedding drift */}
       <div
         className="pointer-events-none absolute inset-0 animate-pulse opacity-50"
         aria-hidden

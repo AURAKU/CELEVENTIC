@@ -146,7 +146,7 @@ export default async function PublicTemplatesPage({
 
           <div className="mt-14 text-center">
             <Button size="lg" asChild>
-              <Link href="/auth/register">Start Designing, Free</Link>
+              <Link href="/auth/register?intent=host">Start Designing, Free</Link>
             </Button>
           </div>
         </div>

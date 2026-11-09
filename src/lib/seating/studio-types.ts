@@ -1,5 +1,5 @@
 /**
- * Celeventic Seating Studio — shared types.
+ * Celeventic Seating Studio. Shared types.
  *
  * Layout lives in SeatingPlan.layout (JSON). Assignments stay in SeatingAssignment
  * (guestId → table/seat). Guest-facing surfaces read published visibility settings
@@ -129,7 +129,7 @@ export interface StudioSettings {
   snapToGrid: boolean;
   showGrid: boolean;
   directionsFromEntrance?: string[];
-  /** Reception only — TABLE_ONLY reserves capacity without chair labels. */
+  /** Reception only. TABLE_ONLY reserves capacity without chair labels. */
   receptionMode?: ReceptionAssignmentMode;
   guestCountSource?: "MAXIMUM_INVITED" | "RSVP_CONFIRMED" | "CUSTOM";
   customExpectedPeople?: number;

@@ -1,7 +1,7 @@
 /**
  * Event Guide theming.
  *
- * "Use Invitation Theme" is `resolveCompanionTheme` — the same resolver the
+ * "Use Invitation Theme" is `resolveCompanionTheme`. The same resolver the
  * Event Companion uses, so the guide is a visual continuation of the invite
  * rather than a second design system. Overrides are a validated, narrow layer
  * on top, and publishing is gated on WCAG contrast so an organizer cannot ship
@@ -103,13 +103,13 @@ const ACTION_INK_DARK = "#1f1a12";
  * Whichever of the two reads better, which is what the guest's page has
  * always done and what the publish gate now measures. Between them they cover
  * every accent there is: the worst case is the crossover shade around
- * luminance 0.2, and even there the better ink still clears 4:1 — so a filled
+ * luminance 0.2, and even there the better ink still clears 4:1, so a filled
  * action can always be made readable without touching the organizer's colour.
  * That is why publishing never has to argue with an organizer about their
  * accent; it only ever argues about the background they chose for body text.
  *
- * Returns the light ink for an accent we cannot measure — a gradient or a
- * named colour — and leaves the gate to report it as unmeasured.
+ * Returns the light ink for an accent we cannot measure. A gradient or a
+ * named colour, and leaves the gate to report it as unmeasured.
  */
 export function onActionInk(accent: string): string {
   const onLight = contrastRatio(ACTION_INK_LIGHT, accent);
@@ -231,8 +231,8 @@ function mix(color: [number, number, number], target: [number, number, number], 
 }
 
 /**
- * Nudge `color` toward black or white — whichever direction the background
- * allows — until it clears `required` against it.
+ * Nudge `color` toward black or white. Whichever direction the background
+ * allows, until it clears `required` against it.
  *
  * Used for small label type. Stepping in small increments keeps as much of the
  * organizer's hue as the ratio permits, so a champagne gold becomes a deeper
@@ -260,7 +260,7 @@ export function ensureReadable(
   return { color: toHex(target), adjusted: true };
 }
 
-/** WCAG 2.1 contrast ratio, 1–21. Null when either token is not a plain hex. */
+/** WCAG 2.1 contrast ratio, 1 to 21. Null when either token is not a plain hex. */
 export function contrastRatio(a: string, b: string): number | null {
   const la = relativeLuminance(a);
   const lb = relativeLuminance(b);
@@ -288,20 +288,20 @@ export interface ContrastAssessment {
 
 /**
  * Publish gate. Text needs 4.5:1; large display text and the primary action
- * need 3:1. Unmeasurable tokens (gradients) are reported, not failed — failing
+ * need 3:1. Unmeasurable tokens (gradients) are reported, not failed. Failing
  * them would block legitimate designs we cannot evaluate numerically.
  *
  * Every pair is the pair that actually renders, never the raw decorative
  * token. Small labels are measured against the derived `labelColor`, and a
- * filled button against the ink the page really sets on it — measuring
+ * filled button against the ink the page really sets on it. Measuring
  * `colors.background` on `colors.accent` was a combination the guest's page
  * has never drawn, and it failed perfectly readable invitation palettes at
  * the publish button with nothing the organizer could do about it.
  *
  * A decorative colour that is lovely as a rule but unreadable as type is
  * adjusted rather than rejected: the organizer keeps their palette and the
- * guest can still read it. What is left failing is a genuine conflict — body
- * text the same value as its background — which no derivation can rescue.
+ * guest can still read it. What is left failing is a genuine conflict. Body
+ * text the same value as its background, which no derivation can rescue.
  */
 export function assessGuideContrast(theme: GuideThemeTokens): ContrastAssessment {
   const labelColor =

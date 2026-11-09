@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-// The signing key is read lazily inside each helper, so setting it here — before
-// any test body runs — is enough; no dynamic import gymnastics required.
+// The signing key is read lazily inside each helper, so setting it here, before
+// any test body runs. Is enough; no dynamic import gymnastics required.
 process.env.ADMISSION_PASS_SECRET ??= "test-admission-secret-do-not-use-in-production";
 
 import {
@@ -35,7 +35,7 @@ test("tokens carry no database identifiers", () => {
   assert.equal(prefix, "cvp1");
   assert.equal(nonce.length, 22);
   assert.equal(tag.length, 22);
-  // cuid ids used by Prisma start with "c" and are 25 chars — nothing that
+  // cuid ids used by Prisma start with "c" and are 25 chars. Nothing that
   // shape may appear anywhere in the payload.
   assert.ok(!/c[a-z0-9]{24}/.test(token));
 });

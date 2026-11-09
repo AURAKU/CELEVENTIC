@@ -21,7 +21,7 @@ function ebmlHeader(docType: "webm" | "matroska"): Buffer {
   return Buffer.concat([magic, Buffer.alloc(16), Buffer.from(docType, "ascii"), Buffer.alloc(256)]);
 }
 
-describe("validateVideoDescriptor — broad format allowlist", () => {
+describe("validateVideoDescriptor. Broad format allowlist", () => {
   for (const ext of ALLOWED_VIDEO_EXTENSIONS) {
     it(`accepts .${ext} with its canonical MIME type`, () => {
       const result = validateVideoDescriptor(
@@ -67,7 +67,7 @@ describe("validateVideoDescriptor — broad format allowlist", () => {
   });
 });
 
-describe("validateVideoSignature — post-upload byte-level checks", () => {
+describe("validateVideoSignature. Post-upload byte-level checks", () => {
   it("accepts a real MP4 (H.264) signature", () => {
     const buf = mp4Header("isom", ["avc1"]);
     const result = validateVideoSignature(buf, "mp4");
@@ -144,7 +144,7 @@ describe("validateVideoSignature — post-upload byte-level checks", () => {
   });
 
   it("rejects an unrecognized container that isn't in the ambiguous-but-allowed set", () => {
-    const junk = Buffer.alloc(4096, 0x41); // "AAAA..." — matches nothing
+    const junk = Buffer.alloc(4096, 0x41); // "AAAA...". Matches nothing
     const result = validateVideoSignature(junk, "mp4");
     assert.equal(result.valid, false);
   });

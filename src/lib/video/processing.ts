@@ -33,9 +33,9 @@ import { videoAssetOwnerWrite } from "@/lib/video/owner";
 
 /**
  * Which engine transcodes queued videos for the universal (S3-backed) upload pipeline.
- * "mediaconvert" — AWS Elemental MediaConvert (multi-rendition + HLS, requires AWS creds).
- * "ffmpeg"       — VPS-local ffmpeg via `src/lib/video/video-processor.ts` (single MP4 + poster,
- *                  no HLS/ABR in v1 — see docs/video-processing.md). This is what Hostinger
+ * "mediaconvert". AWS Elemental MediaConvert (multi-rendition + HLS, requires AWS creds).
+ * "ffmpeg". VPS-local ffmpeg via `src/lib/video/video-processor.ts` (single MP4 + poster,
+ *                  no HLS/ABR in v1. See docs/video-processing.md). This is what Hostinger
  *                  production uses today.
  * Explicit `VIDEO_PROCESSOR` env wins; otherwise auto-detect based on what's configured.
  */
@@ -65,26 +65,26 @@ export function assertOwnership(asset: VideoAsset, ownerId: string) {
   if (asset.ownerId !== ownerId) throw new OwnershipError();
 }
 
-const HEADER_SNIFF_BYTES = 262_144; // 256KB — enough for ftyp/EBML/RIFF headers and most moov atoms.
+const HEADER_SNIFF_BYTES = 262_144; // 256KB. Enough for ftyp/EBML/RIFF headers and most moov atoms.
 
 /**
  * Runs once, right after the browser confirms the S3 upload finished (single PUT or
  * multipart complete). Verifies the object really exists with the right size, sniffs
  * its real container from the bytes (never trusting the client), extracts best-effort
- * metadata, and queues MediaConvert processing. Idempotent — safe to call twice for the
+ * metadata, and queues MediaConvert processing. Idempotent. Safe to call twice for the
  * same asset; the second call is a no-op that returns the already-finalized asset.
  */
 export async function finalizeVideoUpload(assetId: string): Promise<VideoAsset> {
   const asset = await prisma.videoAsset.findUniqueOrThrow({ where: { id: assetId } });
 
   if (asset.status !== "UPLOADING") {
-    // Already finalized (or cancelled) — return current state instead of redoing work.
+    // Already finalized (or cancelled). Return current state instead of redoing work.
     return asset;
   }
 
   const head = await headVideoObject(asset.originalKey);
   if (!head.exists) {
-    return failAsset(asset.id, "Upload did not complete — object not found in storage.");
+    return failAsset(asset.id, "Upload did not complete. Object not found in storage.");
   }
 
   const limits = await getVideoCategoryLimits(asset.category as VideoCategory);
@@ -144,13 +144,13 @@ export async function finalizeVideoUpload(assetId: string): Promise<VideoAsset> 
 }
 
 /**
- * Local-disk + VPS FFmpeg fallback for the universal video pipeline — used automatically
+ * Local-disk + VPS FFmpeg fallback for the universal video pipeline. Used automatically
  * when S3 isn't configured/usable on this environment (see `storage-strategy.ts`), e.g.
  * Hostinger production without AWS creds.
  *
  * ASYNC BY DESIGN (v2): the raw bytes arrive in this single HTTP request (the browser posted
  * them straight to our API instead of to S3), but transcoding does NOT happen inline here
- * anymore — a large upload holding the request open through several minutes of ffmpeg work
+ * anymore. A large upload holding the request open through several minutes of ffmpeg work
  * was exactly what produced the `ECONNRESET` failures under load (client/proxy idle-timeouts
  * killing the socket mid-transcode). Instead this: validates the descriptor → persists the
  * raw bytes to disk (or S3, if it becomes available mid-flight) at the asset's reserved
@@ -189,7 +189,7 @@ export async function queueLocalVideoUpload(assetId: string, buffer: Buffer): Pr
     return failAsset(asset.id, `Video is too long for this category. Max ${Math.round(limits.maxDurationSeconds)}s.`);
   }
 
-  // Persist the raw bytes NOW (cheap disk write), before spending any time on ffmpeg — this
+  // Persist the raw bytes NOW (cheap disk write), before spending any time on ffmpeg. This
   // is the entire fix: the HTTP response can return the instant this write finishes instead
   // of after several minutes of transcoding.
   await storeUploadFileAtRelativePath(asset.originalKey, buffer);
@@ -249,7 +249,7 @@ export interface CreateAndQueueLocalVideoAssetInput {
  * One-shot variant of the presign -> upload -> queue dance for callers (like the legacy
  * `/api/invitations/upload` route) that receive the whole file in a single request with no
  * separate presign step. Creates the `VideoAsset` row and immediately hands it to
- * `queueLocalVideoUpload` — same async/202 contract, same background worker, same poll
+ * `queueLocalVideoUpload`. Same async/202 contract, same background worker, same poll
  * endpoint (`GET /api/uploads/video/:id`) as the rest of the universal pipeline.
  */
 export async function createAndQueueLocalVideoAsset(
@@ -290,21 +290,21 @@ export async function createAndQueueLocalVideoAsset(
 }
 
 /**
- * Background-worker counterpart to `queueLocalVideoUpload` — runs ffmpeg against the
+ * Background-worker counterpart to `queueLocalVideoUpload`. Runs ffmpeg against the
  * original bytes already sitting on local disk (or S3, for the "S3 configured but forced
  * ffmpeg mode without an original ever going through the local-fallback route" edge case,
- * which never reaches this function — see `processQueuedVideoAsset`'s branch below), stores
+ * which never reaches this function. See `processQueuedVideoAsset`'s branch below), stores
  * the processed MP4 + poster, and marks the asset READY/FAILED. Same idempotency contract as
  * every other worker entry point: only acts on `QUEUED` assets.
  *
  * IMPORTANT: this runs inside the standalone `video-jobs-worker` process (plain `tsx`, no
  * Next.js server/request context), so it must NEVER call `getVideoCategoryLimits` (or
- * anything else backed by `unstable_cache`) — `next/cache` throws "incrementalCache missing"
+ * anything else backed by `unstable_cache`). `next/cache` throws "incrementalCache missing"
  * outside a Next request. The duration/size gate already ran once, safely, inside the Next.js
  * API route in `queueLocalVideoUpload` before this job was ever dispatched; the sibling
  * `processQueuedVideoAssetWithFfmpeg` (MediaConvert-adjacent VPS bridge) follows the same rule.
  *
- * `deps.transcode` is an injection seam for tests — defaults to the real ffmpeg pipeline.
+ * `deps.transcode` is an injection seam for tests. Defaults to the real ffmpeg pipeline.
  */
 export async function processQueuedVideoAssetLocalFfmpeg(
   asset: VideoAsset,
@@ -410,7 +410,7 @@ export async function processQueuedVideoAsset(assetId: string): Promise<void> {
   if (!asset || asset.status !== "QUEUED") return;
 
   if (!isVideoProcessingEnabled()) {
-    // Ops has intentionally paused processing platform-wide — leave QUEUED for a later run.
+    // Ops has intentionally paused processing platform-wide. Leave QUEUED for a later run.
     return;
   }
 
@@ -418,9 +418,9 @@ export async function processQueuedVideoAsset(assetId: string): Promise<void> {
 
   if (mode === "ffmpeg") {
     // The original bytes for THIS asset may live on local disk (Hostinger with no S3 at
-    // all — see `queueLocalVideoUpload`) or in S3 (S3 configured but ffmpeg forced/MediaConvert
+    // all. See `queueLocalVideoUpload`) or in S3 (S3 configured but ffmpeg forced/MediaConvert
     // unavailable). `context.originalStorage` is stamped at upload time and is the source of
-    // truth per-asset — never a global assumption — since the two modes can coexist across an
+    // truth per-asset, never a global assumption. Since the two modes can coexist across an
     // environment's lifetime (e.g. S3 creds added after some assets already went local).
     const context = (asset.context as Record<string, unknown> | null) ?? null;
     const originalStorage = context?.originalStorage;
@@ -433,7 +433,7 @@ export async function processQueuedVideoAsset(assetId: string): Promise<void> {
   }
 
   if (!isMediaConvertConfigured()) {
-    // Environment gap, not a defect in this video — leave QUEUED so it self-heals once
+    // Environment gap, not a defect in this video. Leave QUEUED so it self-heals once
     // AWS_MEDIACONVERT_ROLE_ARN (and friends) are set, per the docs in .env.example.
     return;
   }
@@ -474,7 +474,7 @@ export async function processQueuedVideoAsset(assetId: string): Promise<void> {
 /**
  * VPS bridge: same QUEUED -> READY/FAILED contract as the MediaConvert path above, but runs
  * ffmpeg locally on this box instead of submitting an AWS job. Used automatically when
- * `VIDEO_PROCESSOR=ffmpeg` (or MediaConvert isn't configured) — i.e. production Hostinger.
+ * `VIDEO_PROCESSOR=ffmpeg` (or MediaConvert isn't configured). I.e. production Hostinger.
  * v1 limitation: single MP4 rendition + poster, no HLS/ABR ladder (see docs/video-processing.md).
  */
 async function processQueuedVideoAssetWithFfmpeg(asset: VideoAsset): Promise<void> {
@@ -537,7 +537,7 @@ async function processQueuedVideoAssetWithFfmpeg(asset: VideoAsset): Promise<voi
   }
 }
 
-/** Exported for tests — MediaConvert's FRAME_CAPTURE output naming convention (7-digit zero-padded sequence). */
+/** Exported for tests. MediaConvert's FRAME_CAPTURE output naming convention (7-digit zero-padded sequence). */
 export function frameCaptureUrl(baseUrl: string, modifier: string, sequence = 0): string {
   const seq = String(sequence).padStart(7, "0");
   return `${baseUrl}${modifier}.${seq}.jpg`;
@@ -545,7 +545,7 @@ export function frameCaptureUrl(baseUrl: string, modifier: string, sequence = 0)
 
 /**
  * Polls all in-flight MediaConvert jobs and reconciles their status into VideoAsset rows.
- * Runs on an interval from the worker script (see scripts/video-jobs-worker.ts) — this is
+ * Runs on an interval from the worker script (see scripts/video-jobs-worker.ts). This is
  * lightweight orchestration only, never heavy media processing on the VPS itself.
  */
 export async function pollActiveVideoProcessingJobs(batchSize = 25): Promise<{ checked: number; completed: number; failed: number }> {
@@ -573,9 +573,9 @@ export async function pollActiveVideoProcessingJobs(batchSize = 25): Promise<{ c
         });
         failed++;
       }
-      // SUBMITTED / PROGRESSING — leave as-is, checked again next tick.
+      // SUBMITTED / PROGRESSING. Leave as-is, checked again next tick.
     } catch (error) {
-      // Transient AWS API error — leave PROCESSING, will retry next poll. Log for ops visibility.
+      // Transient AWS API error. Leave PROCESSING, will retry next poll. Log for ops visibility.
       // eslint-disable-next-line no-console
       console.error(`[video-jobs-worker] failed to poll MediaConvert job for asset ${asset.id}:`, error);
     }
@@ -634,7 +634,7 @@ async function markVideoReady(
 /** Category-specific fan-out once a video is ready: update the guestbook row / create the vendor portfolio row. */
 async function runReadySideEffects(asset: VideoAsset & { memoryUpload?: { id: string } | null }) {
   if (asset.category === "GUESTBOOK" && asset.memoryUpload) {
-    // Grid cells must show a still poster — never the video file. Prefer the light
+    // Grid cells must show a still poster, never the video file. Prefer the light
     // thumbnail derivative, then the detail poster, never leave thumbnailUrl empty when
     // a poster exists.
     const posterStill = asset.thumbnailUrl || asset.posterUrl || null;
@@ -660,7 +660,7 @@ async function runReadySideEffects(asset: VideoAsset & { memoryUpload?: { id: st
           sizeBytes: Number(asset.sizeBytes),
         });
       } catch {
-        // Plan limits changed between upload and processing — video stays READY/queryable
+        // Plan limits changed between upload and processing. Video stays READY/queryable
         // via VideoAsset even if it can't be auto-attached to the portfolio grid.
       }
     }

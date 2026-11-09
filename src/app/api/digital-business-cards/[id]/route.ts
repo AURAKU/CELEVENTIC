@@ -6,7 +6,6 @@ import { DIGITAL_CARD_THEMES } from "@/lib/digital-business-card/themes";
 import {
   getDigitalCardForUser,
   isDigitalCardLive,
-  renewDigitalCardSubscription,
   updateDigitalCard,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { prisma } from "@/lib/prisma";
@@ -40,8 +39,6 @@ const updateSchema = z.object({
   slug: z.string().min(2).max(48).optional(),
   isPublished: z.boolean().optional(),
   nfcEnabled: z.boolean().optional(),
-  /** Soft renew — used after billing success; extends ACTIVE by 30 days */
-  renewSubscription: z.boolean().optional(),
 });
 
 const themeIds = new Set(DIGITAL_CARD_THEMES.map((t) => t.id));
@@ -70,13 +67,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return NextResponse.json({ error: "Unknown theme" }, { status: 400 });
   }
 
-  if (parsed.data.renewSubscription) {
-    const renewed = await renewDigitalCardSubscription(session.user.id, id, "ACTIVE", 30);
-    if (!renewed) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json({ success: true, data: { ...renewed, isLive: isDigitalCardLive(renewed) } });
-  }
-
-  const { renewSubscription: _r, email, ...rest } = parsed.data;
+  const { email, ...rest } = parsed.data;
   const emailNorm = email === "" ? null : email;
 
   const updated = await updateDigitalCard(session.user.id, id, {

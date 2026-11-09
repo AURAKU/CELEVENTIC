@@ -26,15 +26,56 @@ export const CATALOG_CATEGORY_PRIMARY_EVENT_TYPE: Record<string, string> = {
 export const CATALOG_CATEGORY_EVENT_TYPES: Record<string, readonly string[]> = {
   Wedding: ["WEDDING"],
   Engagement: ["WEDDING"],
-  Birthday: ["BIRTHDAY", "PRIVATE_EVENT"],
+  Birthday: ["BIRTHDAY", "PRIVATE_EVENT", "CONCERT"],
   Funeral: ["FUNERAL"],
   Church: ["CHURCH_PROGRAM", "CUSTOM"],
-  Corporate: ["CORPORATE_EVENT", "CONFERENCE", "PRODUCT_LAUNCH"],
+  Corporate: [
+    "CORPORATE_EVENT",
+    "CONFERENCE",
+    "PRODUCT_LAUNCH",
+    "SCHOOL_EVENT",
+    "CONCERT",
+    "FESTIVAL",
+  ],
   Lunch: ["PRODUCT_LAUNCH", "CORPORATE_EVENT", "PRIVATE_EVENT"],
   Conference: ["CONFERENCE", "CORPORATE_EVENT"],
   Concert: ["CONCERT", "FESTIVAL"],
-  "Private Event": ["PRIVATE_EVENT", "CUSTOM", "BIRTHDAY"],
+  "Private Event": ["PRIVATE_EVENT", "CUSTOM", "BIRTHDAY", "CHURCH_PROGRAM"],
 };
+
+/**
+ * Catalogue category to open when browsing by event type.
+ * Maps onto populated SKU categories so a type never lands on an empty grid.
+ */
+export const EVENT_TYPE_TO_CATALOG_CATEGORY: Record<string, string> = {
+  WEDDING: "Wedding",
+  ENGAGEMENT: "Engagement",
+  FUNERAL: "Funeral",
+  BIRTHDAY: "Birthday",
+  CORPORATE_EVENT: "Corporate",
+  PRODUCT_LAUNCH: "Corporate",
+  CHURCH_PROGRAM: "Private Event",
+  PRIVATE_EVENT: "Private Event",
+  CONFERENCE: "Corporate",
+  CONCERT: "Corporate",
+  FESTIVAL: "Corporate",
+  SCHOOL_EVENT: "Corporate",
+  CUSTOM: "Private Event",
+};
+
+export function catalogBrowseHref(eventType: string): string {
+  const params = new URLSearchParams();
+  params.set("eventType", eventType);
+  if (eventType !== "WEDDING" && eventType !== "ENGAGEMENT") {
+    const category = EVENT_TYPE_TO_CATALOG_CATEGORY[eventType];
+    if (category) params.set("category", category);
+  }
+  return `/invitations/catalogue?${params.toString()}`;
+}
+
+export function eventPlanHref(eventType: string): string {
+  return `/dashboard/events/create?eventType=${encodeURIComponent(eventType)}`;
+}
 
 const ALIAS_TO_EVENT_TYPE: Record<string, string> = {
   Engagement: "WEDDING",

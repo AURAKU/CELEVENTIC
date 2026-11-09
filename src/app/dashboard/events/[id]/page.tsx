@@ -40,11 +40,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             <p className="text-xs text-slate-500">Guests</p>
           </div>
           <div className="text-center p-4 rounded-lg bg-brand-50">
-            <p className="text-2xl font-bold text-brand-700">{event.tickets?.length ?? 0}</p>
+            <p className="text-2xl font-bold text-brand-700">{event._count?.tickets ?? event.tickets?.length ?? 0}</p>
             <p className="text-xs text-slate-500">Ticket Types</p>
           </div>
           <div className="text-center p-4 rounded-lg bg-brand-50">
-            <p className="text-2xl font-bold text-brand-700">{event.invitations?.length ?? 0}</p>
+            <p className="text-2xl font-bold text-brand-700">{event._count?.invitations ?? 0}</p>
             <p className="text-xs text-slate-500">Invitations</p>
           </div>
           <div className="text-center p-4 rounded-lg bg-brand-50">
@@ -73,6 +73,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         contactPhone={event.contactPhone}
         dressCode={event.dressCode}
         expectedGuests={event.expectedGuests}
+        rsvpDeadline={event.rsvpDeadline?.toISOString() ?? null}
       >
         {statsCard}
       </EventOverviewClient>

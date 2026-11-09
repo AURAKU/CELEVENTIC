@@ -33,7 +33,7 @@ function rememberGateDevice(eventId: string, deviceId: string): void {
   try {
     window.localStorage.setItem(deviceKey(eventId), deviceId);
   } catch {
-    /* private mode — sync still works for the life of this tab */
+    /* private mode. Sync still works for the life of this tab */
   }
 }
 
@@ -124,7 +124,7 @@ export interface GateSyncResult {
 
 /**
  * Replay everything captured offline. Records the server could not resolve stay
- * queued — a gate must never quietly lose an admission it already waved through.
+ * queued. A gate must never quietly lose an admission it already waved through.
  */
 export async function syncGateQueue(eventId: string): Promise<GateSyncResult> {
   const pending = await listQueue(eventId);

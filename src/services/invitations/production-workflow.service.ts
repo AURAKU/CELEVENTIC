@@ -16,7 +16,7 @@ import type {
 
 export class ProductionWorkflowService {
   inferWorkflowType(packageSlug: string, addonSlugs: string[] = []): InvitationWorkflowType {
-    if (packageSlug === "bespoke") return "BESPOKE";
+    if (packageSlug === "bespoke" || packageSlug === "customisation") return "BESPOKE";
     if (addonSlugs.some((s) => s.includes("ai"))) return "AI_ASSISTED";
     if (["signature", "prestige"].includes(packageSlug)) return "DESIGNER_ASSISTED";
     return "SELF_SERVICE";
@@ -56,7 +56,7 @@ export class ProductionWorkflowService {
     const included = order.package.revisions;
     const used = order.revisionsUsed;
     const remaining = Math.max(0, included - used);
-    // Guard against legacy/dev-seeded `shareUrl` values that point at localhost —
+    // Guard against legacy/dev-seeded `shareUrl` values that point at localhost.
     // this summary feeds the customer-facing "Your Invitation Link" card directly.
     const safeOrder = order.shareUrl
       ? { ...order, shareUrl: sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) }

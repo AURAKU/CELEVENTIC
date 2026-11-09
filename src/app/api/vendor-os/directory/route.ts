@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { vendorDirectoryService } from "@/services/vendor-os/vendor-directory.service";
+import { toPublicVendorCard } from "@/lib/privacy/public-vendor";
 
 export async function GET(req: Request) {
   const p = new URL(req.url).searchParams;
@@ -17,5 +18,18 @@ export async function GET(req: Request) {
     limit: p.get("limit") ? Number(p.get("limit")) : 24,
   });
   const categories = await vendorDirectoryService.getCategories();
-  return NextResponse.json({ success: true, data: { ...data, categories } });
+  return NextResponse.json({
+    success: true,
+    data: {
+      ...data,
+      vendors: data.vendors.map((vendor) => ({
+        ...toPublicVendorCard(vendor as unknown as Record<string, unknown>),
+        rateCards: vendor.rateCards,
+        services: vendor.services,
+        categoryAssignments: vendor.categoryAssignments,
+        _count: vendor._count,
+      })),
+      categories,
+    },
+  });
 }

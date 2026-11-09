@@ -1,4 +1,4 @@
-/** Event-scoped 4-digit gate codes (0000–9999). Pure helpers — safe for client bundles. */
+/** Event-scoped 4-digit gate codes (0000 to 9999). Pure helpers. Safe for client bundles. */
 
 const MANUAL_CODE_PATTERN = /^\d{4}$/;
 

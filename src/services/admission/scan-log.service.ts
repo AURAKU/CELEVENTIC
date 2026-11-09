@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 /**
  * One chronological log of every admission event at a gate.
  *
- * Scans live in four tables — legacy guest/ticket QR, Guest Entry Pass
+ * Scans live in four tables. Legacy guest/ticket QR, Guest Entry Pass
  * admissions, vendor access-card entries and shared access passes. Reading only
  * one of them is why the gate screen could look empty while people were walking
  * in, so this merges all four into a single dated feed.
@@ -190,7 +190,7 @@ export async function getUnifiedScanLog(
     }),
   ]);
 
-  // Scanner ids live as plain columns on some tables — resolve every name in
+  // Scanner ids live as plain columns on some tables. Resolve every name in
   // one read rather than per row.
   const userIds = new Set<string>();
   for (const row of admissionEvents) if (row.scannerUserId) userIds.add(row.scannerUserId);

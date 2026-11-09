@@ -108,7 +108,7 @@ export async function getServerAppUrl(): Promise<string> {
   }
 }
 
-/** Client resolver — prefers current browser origin on live domains. */
+/** Client resolver. Prefers current browser origin on live domains. */
 export function getClientAppUrl(): string {
   if (typeof window !== "undefined") {
     const origin = window.location.origin;
@@ -127,7 +127,7 @@ export function sanitizePublicUrl(url: string, baseUrl?: string): string {
     const parsed = new URL(url);
     // Scheme-less input like "localhost:3000/invite/x" (a legacy/dev-seeded
     // value stored without `http://`) parses as a URL with protocol
-    // `"localhost:"` and an opaque origin — not `http(s):` — rather than
+    // `"localhost:"` and an opaque origin, not `http(s):`, rather than
     // throwing, so it must be rejected here and handled by the regex fallback
     // below instead of silently passing through unmodified.
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {

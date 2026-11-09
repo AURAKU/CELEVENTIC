@@ -106,6 +106,23 @@ describe("event companion theme", () => {
     assert.ok(Array.isArray(theme.programmeItems));
   });
 
+  it("keeps wedding-board dining copy off the companion programme and onto menuBody", () => {
+    const fixture = JSON.parse(
+      readFileSync(join(process.cwd(), "scripts/fixtures/edwin-lordina-design.json"), "utf8")
+    );
+    const theme = resolveCompanionTheme({
+      designConfig: fixture,
+      template: { slug: "forever-afaris-wedding", config: null },
+    });
+    assert.equal(
+      theme.programmeItems.some((item) => /menu/i.test(item.title) || item.id === "menu"),
+      false
+    );
+    assert.match(theme.menuBody, /STARTERS/);
+    assert.match(theme.menuBody, /Beef spring rolls/);
+    assert.ok(theme.programmeItems.some((item) => item.id === "reception"));
+  });
+
   it("handles missing optional media URL without crashing", () => {
     const theme = resolveCompanionTheme({
       designConfig: {

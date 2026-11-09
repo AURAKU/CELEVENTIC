@@ -1,5 +1,5 @@
 /**
- * Central Action Registry — extends guest-portal-actions with aliases + validation.
+ * Central Action Registry. Extends guest-portal-actions with aliases + validation.
  * Canonical keys remain InvitationActionKey; aliases resolve before resolveGuestPortalActions.
  */
 import {
@@ -140,7 +140,7 @@ export function validateExperienceAction(
       }
       break;
     case "MEMORY_UPLOAD":
-      // Catalog previews may provision a real demo Album URL — allow tap-through when vault is entitled
+      // Catalog previews may provision a real demo Album URL. Allow tap-through when vault is entitled
       if (preview.suppressMemoryUpload && ents.memoryVault !== true) {
         return {
           key,
@@ -344,7 +344,7 @@ export function pickActionsFromStudioMapping(
       }
       continue;
     }
-    // "story" — prefer STORY scroll action if present in resolved set
+    // "story". Prefer STORY scroll action if present in resolved set
     if (slot === "story") {
       const story = actions.find((a) => a.key === ("STORY" as InvitationActionKey));
       if (story && !seen.has(story.key)) {

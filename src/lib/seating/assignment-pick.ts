@@ -1,5 +1,5 @@
 /**
- * Dual-stage seating helpers — pick ceremony vs reception assignments safely.
+ * Dual-stage seating helpers. Pick ceremony vs reception assignments safely.
  */
 
 export type SeatingPlanTypeValue = "RECEPTION" | "CEREMONY";

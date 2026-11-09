@@ -1,11 +1,11 @@
 /**
  * Single source of truth for "should this video upload go direct-to-S3, or fall back to
- * local disk + VPS FFmpeg?" Pure/testable — no env reads, no I/O — so callers (API routes)
+ * local disk + VPS FFmpeg?" Pure/testable. No env reads, no I/O, so callers (API routes)
  * pass in the already-read env values and this just makes the decision.
  *
  * Design intent: a missing/incomplete S3 configuration is an environment gap, NOT a reason
  * to dead-end a legitimate upload. Production (Hostinger VPS) may run indefinitely without
- * S3 — `VIDEO_PROCESSOR=ffmpeg` + local disk is a fully supported, permanent deployment mode,
+ * S3. `VIDEO_PROCESSOR=ffmpeg` + local disk is a fully supported, permanent deployment mode,
  * not just a dev fallback. The only way to get the old hard-block behavior back is the
  * explicit opt-out `VIDEO_LOCAL_FALLBACK_ENABLED=false`.
  */
@@ -20,13 +20,13 @@ export interface VideoStorageDecision {
 
 const DEFAULT_PROVIDER = "s3";
 
-/** `MEDIA_STORAGE_PROVIDER` — trimmed/lowercased; unset/blank defaults to "s3" (the historical default). */
+/** `MEDIA_STORAGE_PROVIDER`. Trimmed/lowercased; unset/blank defaults to "s3" (the historical default). */
 export function normalizeProvider(raw: string | undefined | null): string {
   const trimmed = (raw ?? "").trim().toLowerCase();
   return trimmed || DEFAULT_PROVIDER;
 }
 
-/** `VIDEO_LOCAL_FALLBACK_ENABLED` — defaults to enabled; only the literal string "false" disables it. */
+/** `VIDEO_LOCAL_FALLBACK_ENABLED`. Defaults to enabled; only the literal string "false" disables it. */
 export function isLocalFallbackEnabled(raw: string | undefined | null): boolean {
   return (raw ?? "true").trim().toLowerCase() !== "false";
 }

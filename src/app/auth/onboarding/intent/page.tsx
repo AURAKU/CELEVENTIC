@@ -1,31 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { AuthLayout } from "@/components/layout/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OnboardingIntentGrid } from "@/components/auth/onboarding-intent-grid";
 import {
+  clearSignupIntent,
+  findOnboardingIntent,
   ONBOARDING_INTENT_OPTIONS,
+  readSignupIntent,
   VENDOR_SERVICE_CATEGORIES,
   type OnboardingIntentOption,
 } from "@/lib/auth/onboarding-intents";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 /** Post-Google OAuth intent selection for users without accountType. */
 export default function OnboardingIntentPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [selected, setSelected] = useState<OnboardingIntentOption | null>(null);
   const [organizationName, setOrganizationName] = useState("");
   const [vendorCategory, setVendorCategory] = useState<string>("Photographers");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [booting, setBooting] = useState(true);
+  const appliedStored = useRef(false);
 
-  async function saveIntent(option: OnboardingIntentOption) {
-    if (option.id === "ORGANIZATION" && !organizationName.trim()) {
+  async function saveIntent(option: OnboardingIntentOption, extras?: { organizationName?: string; vendorCategory?: string }) {
+    if (option.id === "ORGANIZATION" && !(extras?.organizationName ?? organizationName).trim()) {
       setSelected(option);
-      setError("Add your organization name to continue.");
+      setError("Add your organisation name to continue.");
+      setBooting(false);
       return;
     }
 
@@ -39,8 +48,11 @@ export default function OnboardingIntentPage() {
           accountType: option.id,
           joinIntent: option.joinIntent,
           organizationName:
-            option.id === "ORGANIZATION" ? organizationName.trim() : undefined,
-          vendorCategory: option.id === "VENDOR" ? vendorCategory : undefined,
+            option.id === "ORGANIZATION"
+              ? (extras?.organizationName ?? organizationName).trim()
+              : undefined,
+          vendorCategory:
+            option.id === "VENDOR" ? extras?.vendorCategory ?? vendorCategory : undefined,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -49,29 +61,91 @@ export default function OnboardingIntentPage() {
       };
       if (!res.ok) {
         setError(data.error || "Could not save your choice");
+        setBooting(false);
         return;
       }
+      clearSignupIntent();
       router.push(data.redirect ?? "/dashboard/getting-started");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
+      setBooting(false);
     } finally {
       setLoading(false);
     }
   }
 
+  useEffect(() => {
+    if (status === "loading") return;
+    if (status === "unauthenticated") {
+      router.replace("/auth/onboarding");
+      return;
+    }
+    const accountType = (session?.user as { accountType?: string | null } | undefined)?.accountType;
+    const completed = (session?.user as { onboardingCompletedAt?: string | null } | undefined)
+      ?.onboardingCompletedAt;
+    if (accountType && completed) {
+      router.replace("/dashboard");
+      return;
+    }
+    if (accountType && !completed) {
+      router.replace(
+        accountType === "VENDOR" ? "/vendor/onboarding" : "/dashboard/getting-started"
+      );
+      return;
+    }
+
+    const stored = readSignupIntent();
+    if (!stored) {
+      setBooting(false);
+      return;
+    }
+    const option = findOnboardingIntent(stored.id, stored.joinIntent);
+    if (!option) {
+      setBooting(false);
+      return;
+    }
+    setSelected(option);
+    if (stored.organizationName) setOrganizationName(stored.organizationName);
+    if (stored.vendorCategory) setVendorCategory(stored.vendorCategory);
+    if (option.requiresConfirmFields && option.id === "ORGANIZATION" && !stored.organizationName) {
+      setBooting(false);
+      return;
+    }
+    if (appliedStored.current) return;
+    appliedStored.current = true;
+    void saveIntent(option, {
+      organizationName: stored.organizationName,
+      vendorCategory: stored.vendorCategory,
+    });
+  }, [status, session, router]);
+
   function handleSelect(option: OnboardingIntentOption) {
     setSelected(option);
     setError("");
-    // Paths that need extra fields stay on this screen; others continue immediately.
     if (option.requiresConfirmFields) return;
     void saveIntent(option);
   }
 
+  if (booting) {
+    return (
+      <AuthLayout
+        title="Setting up your workspace"
+        subtitle="One moment. We're applying the choice you already made."
+      >
+        <div className="space-y-3">
+          <div className="h-4 rounded bg-slate-100 animate-pulse" />
+          <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+        </div>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout
-      title="What would you like to do on Celeventic?"
-      subtitle="Choose one option to personalize your workspace."
+      wide
+      title="How will you use Celeventic?"
+      subtitle="Google sign-in is done. Choose one option so we can open the right home screen."
     >
       <div className="space-y-6">
         {error && (
@@ -79,39 +153,16 @@ export default function OnboardingIntentPage() {
             {error}
           </div>
         )}
-        <div className="grid sm:grid-cols-2 gap-4">
-          {ONBOARDING_INTENT_OPTIONS.map((type) => {
-            const Icon = type.icon;
-            const isSelected =
-              selected?.id === type.id && selected.joinIntent === type.joinIntent;
-            return (
-              <button
-                key={`${type.id}-${type.joinIntent}`}
-                type="button"
-                disabled={loading}
-                onClick={() => handleSelect(type)}
-                className={`text-left p-5 rounded-2xl border-2 transition-all touch-manipulation min-h-[120px] disabled:opacity-60 ${
-                  isSelected
-                    ? "border-brand-500 bg-brand-50 shadow-md"
-                    : "border-slate-200 hover:border-brand-300"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="p-2.5 rounded-xl bg-brand-100 text-brand-700">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  {isSelected && <Check className="h-5 w-5 text-brand-600" />}
-                </div>
-                <h3 className="font-semibold mt-3">{type.title}</h3>
-                <p className="text-sm text-slate-500 mt-1">{type.description}</p>
-              </button>
-            );
-          })}
-        </div>
+        <OnboardingIntentGrid
+          options={ONBOARDING_INTENT_OPTIONS}
+          selected={selected}
+          disabled={loading}
+          onSelect={handleSelect}
+        />
 
         {selected?.id === "ORGANIZATION" && (
           <div className="space-y-2">
-            <Label htmlFor="organizationName">Organization Name</Label>
+            <Label htmlFor="organizationName">Organisation name</Label>
             <Input
               id="organizationName"
               value={organizationName}
@@ -124,10 +175,10 @@ export default function OnboardingIntentPage() {
 
         {selected?.id === "VENDOR" && (
           <div className="space-y-2">
-            <Label htmlFor="vendorCategory">Primary service category</Label>
+            <Label htmlFor="vendorCategory">What do you offer?</Label>
             <select
               id="vendorCategory"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
               value={vendorCategory}
               onChange={(e) => setVendorCategory(e.target.value)}
             >
@@ -147,7 +198,7 @@ export default function OnboardingIntentPage() {
             disabled={loading}
             onClick={() => selected && void saveIntent(selected)}
           >
-            {loading ? "Saving..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
+            {loading ? "Saving…" : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         )}
 

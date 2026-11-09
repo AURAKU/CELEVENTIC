@@ -8,7 +8,7 @@ import { looksLikeXlsx, parseXlsx, XlsxParseError } from "./xlsx";
  * One entry point for every way an organiser can hand us a guest list.
  *
  * Format is detected from the bytes, not the file extension, so a `.csv` that
- * is really an Excel export (or the reverse — a common outcome of "Save As")
+ * is really an Excel export (or the reverse. A common outcome of "Save As")
  * still parses instead of importing one row of binary noise.
  */
 
@@ -35,7 +35,7 @@ function capRows(table: ParsedTable, source: GuestImportSource): ParseResult {
   };
 }
 
-/** Parse pasted text — one name per line, or a delimited/tab-pasted table. */
+/** Parse pasted text. One name per line, or a delimited/tab-pasted table. */
 export function parsePastedText(text: string): ParseResult {
   if (!text.trim()) throw new ImportParseError("Paste at least one guest name.");
 

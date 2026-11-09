@@ -258,8 +258,9 @@ test("Aurelia catalog DNA is unique and wired into default design", () => {
   assert.equal(design.experience?.introVariant, AURELIA_INTRO_ID);
   assert.equal(design.experience?.openingExperience, AURELIA_OPENING_ID);
   const demo = CATALOG_DEMO_IDENTITIES[AURELIA_CATALOG_SLUG];
-  assert.match(demo.hostName, /Enock/);
-  assert.match(demo.hostName, /Ruth/);
+  assert.match(demo.hostName, /Selene Addae/);
+  assert.match(demo.hostName, /Raphael Quaye/);
+  assert.equal(/enock|\bruth\b/i.test(JSON.stringify(demo)), false);
   assert.equal(FORBIDDEN.test(JSON.stringify(demo)), false);
 });
 
@@ -380,7 +381,7 @@ test("Aurelia plays Ordinary as the invitation score", () => {
     "src/components/invitation-os/premium-invite-wrapper.tsx",
     "utf8"
   );
-  assert.match(wrapperSrc, /if \(next === "portal"\) \{\s*void startAudio\(\);/s);
+  assert.match(wrapperSrc, /if \(next === "portal"\) \{\s*void startAudio\(\);/);
 });
 
 test("Seraphine plays Canon in D as the invitation score", () => {
@@ -757,8 +758,8 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.id, "outfits");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.title, "Wedding Guest Outfits");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.scriptLine, "Dress Code: Garden Soirée");
-  assert.match(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.note ?? "", /Ladies — Florals & Fascinators/);
-  assert.match(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.note ?? "", /Gentlemen — Suited & Sophisticated/);
+  assert.match(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.note ?? "", /Ladies. Florals & Fascinators/);
+  assert.match(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.note ?? "", /Gentlemen. Suited & Sophisticated/);
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.imageUrl, SERAPHINE_GUEST_OUTFITS);
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.gentlemenImageUrl, SERAPHINE_GUEST_OUTFITS_GENTLEMEN);
   assert.equal(SERAPHINE_GUEST_OUTFITS_GENTLEMEN, "/templates/seraphine/guest-outfits-gentlemen.jpg");
@@ -775,7 +776,7 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   );
   assert.match(
     mergeAureliaWedding({}, SERAPHINE_WEDDING_DEFAULTS).dressCodes[1]?.note ?? "",
-    /Ladies — Florals & Fascinators/
+    /Ladies. Florals & Fascinators/
   );
   assert.equal(
     mergeAureliaWedding({}, SERAPHINE_WEDDING_DEFAULTS).dressCodes[1]?.imageUrl,
@@ -863,8 +864,9 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.equal(aureliaDesign.experience?.openingExperience, AURELIA_OPENING_ID);
 
   const demo = CATALOG_DEMO_IDENTITIES[SERAPHINE_CATALOG_SLUG];
-  assert.match(demo.hostName, /Kojo/);
-  assert.match(demo.hostName, /Fafa/);
+  assert.match(demo.hostName, /Nhyira Owusu/);
+  assert.match(demo.hostName, /Elikem Tetteh/);
+  assert.equal(/kojo|\bfafa\b/i.test(JSON.stringify(demo)), false);
   assert.equal(FORBIDDEN.test(JSON.stringify(demo)), false);
   assert.equal(FORBIDDEN.test(JSON.stringify(SERAPHINE_WEDDING_DEFAULTS)), false);
   assert.doesNotMatch(JSON.stringify(SERAPHINE_WEDDING_DEFAULTS), /Enock|Ruth|TLPCI|Tse-Addo|Ohene|Prince/i);
@@ -1036,10 +1038,10 @@ test("Aurelia guest copy has no pause dashes between clauses", () => {
   assert.match(merged.venuesLede, /turn-by-turn/);
   assert.match(merged.faqs.find((item) => item.id === "park")?.answer ?? "", /On-site/);
   assert.equal(merged.dressLede.includes("—"), false);
-  assert.equal(merged.dressLede.includes(" – "), false);
+  assert.equal(merged.dressLede.includes(" to "), false);
   assert.equal(
     mergeAureliaWedding({
-      dressLede: "Come dressed to be photographed — we would love the day to look as beautiful as it feels.",
+      dressLede: "Come dressed to be photographed. We would love the day to look as beautiful as it feels.",
     }).dressLede,
     "Come dressed to be photographed. We would love the day to look as beautiful as it feels."
   );

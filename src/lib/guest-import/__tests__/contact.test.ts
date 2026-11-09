@@ -6,7 +6,7 @@ import { normalizeEmail, normalizeGhanaPhone, normalizePlainPhone } from "../con
  * Contact normalisation.
  *
  * Ghana numbers arrive in at least six shapes and Excel eats leading zeros, so
- * every one of those shapes has a case here. Nothing may ever *reject* a row —
+ * every one of those shapes has a case here. Nothing may ever *reject* a row.
  * a bad number costs an SMS, not an invitation.
  */
 

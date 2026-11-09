@@ -10,7 +10,7 @@ type MemorialCandleProps = {
 
 /**
  * Soft white memorial candle with a lit-flame entrance and gentle flicker.
- * Decorative — prefers-reduced-motion keeps a steady glow without flicker.
+ * Decorative. Prefers-reduced-motion keeps a steady glow without flicker.
  */
 export function MemorialCandle({ side, delayMs = 0 }: MemorialCandleProps) {
   const [lit, setLit] = useState(false);

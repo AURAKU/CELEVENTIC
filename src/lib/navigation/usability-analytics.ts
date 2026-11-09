@@ -1,4 +1,4 @@
-/** Fire-and-forget usability events — no sensitive content. */
+/** Fire-and-forget usability events. No sensitive content. */
 export type UsabilityEvent =
   | "page_viewed"
   | "primary_action_clicked"

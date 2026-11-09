@@ -8,7 +8,7 @@ function fullKey(namespace: string, key: string) {
   return `${namespace}.${key}`;
 }
 
-/** Bundled EN/FR dictionaries — always available without DB or network. */
+/** Bundled EN/FR dictionaries. Always available without DB or network. */
 export function buildStaticMessageDictionaries(): LocaleMessages {
   const en: MessageDictionary = {};
   const fr: MessageDictionary = {};

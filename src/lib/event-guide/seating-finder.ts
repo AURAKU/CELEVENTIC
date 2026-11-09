@@ -7,7 +7,7 @@
  *  1. A lookup resolves to exactly one party, or to nothing. There is no code
  *     path that returns a list of guests, and no path that returns another
  *     party's seat.
- *  2. Party isolation — members are filtered to the matched party's own
+ *  2. Party isolation. Members are filtered to the matched party's own
  *     `invitationId`, so a mislinked guest row can never leak across parties.
  *
  * Pure module. The Prisma reads live in the service; everything decidable
@@ -54,7 +54,7 @@ export function normalizeQuery(mode: SeatingMode, raw: string): string {
   return mode === "ADMISSION_CODE" ? normalizeAdmissionCode(raw) : normalizeNameKey(raw);
 }
 
-/** Rejects short input before any database read — cheap and non-enumerable. */
+/** Rejects short input before any database read. Cheap and non-enumerable. */
 export function validateQueryLength(
   mode: SeatingMode,
   query: string,
@@ -91,7 +91,7 @@ export interface CandidateParty {
 
 /**
  * Score a party against a name query. Exact key match beats a full-token
- * match, which beats a prefix match. Anything weaker does not match at all —
+ * match, which beats a prefix match. Anything weaker does not match at all.
  * fuzzy matching on a public endpoint is an enumeration oracle.
  */
 export function scorePartyNameMatch(party: CandidateParty, query: string): number {
@@ -126,7 +126,7 @@ export function scorePartyNameMatch(party: CandidateParty, query: string): numbe
  * Build the guest-visible result for one party.
  *
  * Assignments are read from the party's primary guest, and members are filtered
- * to this party's own invitation — the same isolation rule as
+ * to this party's own invitation. The same isolation rule as
  * `/api/event-seat/verify`.
  */
 export function buildSeatingMatch(party: CandidateParty): GuideSeatingMatch {
@@ -168,7 +168,7 @@ export function buildSeatingMatch(party: CandidateParty): GuideSeatingMatch {
 /**
  * Pick a single winner from scored candidates.
  *
- * A tie at the top is reported as ambiguous with a count only — never with the
+ * A tie at the top is reported as ambiguous with a count only, never with the
  * candidate names, which would turn the finder into a guest-list oracle.
  */
 export function selectSeatingOutcome(
@@ -196,7 +196,7 @@ export function selectSeatingOutcome(
 /**
  * Typeahead, without turning the finder into a guest list.
  *
- * A guest types `kofi`, is told "we could not find that", and gives up — when
+ * A guest types `kofi`, is told "we could not find that", and gives up. When
  * the list has them as `Kofi Mensah-Boateng`. Suggestions fix that, and they
  * are the one feature on this endpoint that could plausibly leak a guest list,
  * so the rules are narrow and all of them are enforced on the server:
@@ -204,7 +204,7 @@ export function selectSeatingOutcome(
  *  - **Name mode only.** Someone typing an admission code is never offered
  *    names. There is no query in code mode that returns a suggestion.
  *  - **Nothing new is revealed.** A suggestion is the party label a successful
- *    lookup would already have shown, and nothing else — no seat, no table, no
+ *    lookup would already have shown, and nothing else. No seat, no table, no
  *    member list, no code, no contact detail. The shape returned is a string.
  *  - **Prefix-anchored, never fuzzy.** Every token typed must begin a token of
  *    the name. Fuzzy matching on a public endpoint is an enumeration oracle.
@@ -213,7 +213,7 @@ export function selectSeatingOutcome(
  */
 export const SEATING_SUGGESTION_LIMIT = 5;
 
-/** Looser than a lookup — a typeahead fires per word, not per attempt. */
+/** Looser than a lookup. A typeahead fires per word, not per attempt. */
 export const SEATING_SUGGESTION_RATE_LIMIT = { attempts: 40, windowSeconds: 60 } as const;
 
 /** Bounded scan: a keystroke must never cost a full guest-list read. */

@@ -44,7 +44,7 @@ export class AiDesignAdvisorService {
         slug: t.slug,
         name: t.name,
         score,
-        reason: `${t.style} template for ${t.category} — ${t.description.slice(0, 60)}`,
+        reason: `${t.style} template for ${t.category}: ${t.description.slice(0, 60)}`,
       };
     })
       .sort((a, b) => b.score - a.score)

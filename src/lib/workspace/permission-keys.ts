@@ -1,4 +1,4 @@
-/** Event-scoped permission keys — role mappings live in the database. */
+/** Event-scoped permission keys. Role mappings live in the database. */
 export const EventPermissionKey = {
   VIEW_EVENT: "VIEW_EVENT",
   EDIT_EVENT: "EDIT_EVENT",

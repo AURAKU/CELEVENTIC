@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 interface PreviewTapAffordanceProps {
   compact?: boolean;
   hasMusic?: boolean;
+  /** Keep the live snippet readable; pin the play chip to the top. */
+  pin?: "top" | "bottom";
   /** Override primary label (default: Tap to view invitation) */
   label?: string;
   /** Optional secondary line under the CTA */
@@ -27,6 +29,7 @@ interface PreviewTapAffordanceProps {
 export function PreviewTapAffordance({
   compact,
   hasMusic,
+  pin = "bottom",
   label = "Tap to view invitation",
   subtitle,
   steps,
@@ -35,7 +38,7 @@ export function PreviewTapAffordance({
   "aria-label": ariaLabel = "Tap to open live template preview",
 }: PreviewTapAffordanceProps) {
   const beats = steps?.filter(Boolean) ?? [];
-  const describedBy = beats.length ? `${ariaLabel} — ${beats.join(", then ")}` : ariaLabel;
+  const describedBy = beats.length ? `${ariaLabel}: ${beats.join(", then ")}` : ariaLabel;
 
   return (
     <button
@@ -47,10 +50,13 @@ export function PreviewTapAffordance({
       }}
       className={cn(
         // Above glimpse (z-10) and any decorative layers, never under the poster
-        "absolute inset-0 z-30 flex flex-col items-center justify-end w-full h-full",
-        // Soft bottom scrim only, keep envelope / cover readable (no heavy wash)
-        "bg-gradient-to-t from-black/40 via-black/[0.07] to-transparent",
-        "pt-8 pb-3 sm:pb-4 px-3",
+        "absolute inset-0 z-30 flex flex-col w-full h-full",
+        pin === "top" ? "justify-start items-end" : "justify-end items-center",
+        // Soft scrim only, keep the live invitation snippet readable
+        pin === "top"
+          ? "bg-gradient-to-b from-black/35 via-black/[0.04] to-transparent"
+          : "bg-gradient-to-t from-black/40 via-black/[0.07] to-transparent",
+        pin === "top" ? "pt-3 pb-8 px-3" : "pt-8 pb-3 sm:pb-4 px-3",
         "transition-colors hover:from-black/48 hover:via-black/10 active:scale-[0.997]",
         "touch-manipulation cursor-pointer border-0",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-6px] focus-visible:outline-white/80",

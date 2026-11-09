@@ -61,13 +61,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, data: message });
     }
 
-    if (!body.recipientId) {
+    const recipientId =
+      body.recipientId ??
+      (body.threadId
+        ? await messageService.resolveThreadRecipient(session.user.id, body.threadId)
+        : null);
+
+    if (!recipientId) {
       return NextResponse.json({ error: "recipientId or leadId required" }, { status: 400 });
     }
 
     const message = await messageService.send({
       senderId: session.user.id,
-      recipientId: body.recipientId,
+      recipientId,
       subject: body.subject,
       body: body.body,
       threadId: body.threadId,

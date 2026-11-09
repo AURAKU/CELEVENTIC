@@ -90,7 +90,7 @@ describe("sign geometry", () => {
 });
 
 describe("QR labelling", () => {
-  it("labels nothing on a single-code sign — there is nothing to confuse", () => {
+  it("labels nothing on a single-code sign. There is nothing to confuse", () => {
     const copy = resolveSignCopy(content({ layout: "single" }));
     assert.equal(copy.primaryLabel, null);
     assert.equal(copy.secondaryLabel, null);
@@ -132,7 +132,7 @@ describe("sign copy", () => {
       assert.ok(copy.eyebrow.length > 0, template);
       assert.ok(copy.instruction.length > 0, template);
       assert.ok(copy.supporting.length > 0, template);
-      // A guest reads this from two metres away — no jargon, no URLs.
+      // A guest reads this from two metres away. No jargon, no URLs.
       assert.doesNotMatch(copy.instruction, /https?:|qr code|token|app store/i, template);
     }
   });

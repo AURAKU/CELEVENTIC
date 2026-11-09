@@ -1,6 +1,6 @@
 import { createLucideIcon } from "lucide-react";
 
-/** Lucide Lab dress mark — couture silhouette for collection nav and doors. */
+/** Lucide Lab dress mark. Couture silhouette for collection nav and doors. */
 export const FashionDressIcon = createLucideIcon("dress", [
   [
     "path",

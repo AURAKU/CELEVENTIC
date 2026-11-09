@@ -2,8 +2,8 @@
  * Event Guide content composition.
  *
  * The guide does not own a second copy of the programme or the menu. It
- * composes what the event already has — the invitation's studio programme and
- * the Event Companion menu — and only prefers its own values when an organizer
+ * composes what the event already has. The invitation's studio programme and
+ * the Event Companion menu, and only prefers its own values when an organizer
  * has explicitly edited them in the guide builder.
  *
  * Pure module: no Prisma, no `next/*`, so it is shared by the server, the
@@ -24,8 +24,8 @@ import {
  * Caps sized for a programme an organizer actually pastes.
  *
  * The old ceilings (60 items, 400 characters of detail) were written for a
- * hand-typed list. The programme script is a document — an order of service
- * with readings, soloists and a note under half of them — and the promise made
+ * hand-typed list. The programme script is a document. An order of service
+ * with readings, soloists and a note under half of them, and the promise made
  * in the editor is that nothing is left out, so the ceilings are the size of a
  * long real programme rather than of a form.
  */
@@ -97,7 +97,7 @@ export function normalizeProgrammeItems(raw: unknown): GuideProgrammeItem[] {
  * Read a stored programme draft in either shape it can have on disk.
  *
  * The column began life as a bare array of items. Since the editor became a
- * script — one document the organizer types or pastes — the draft is stored as
+ * script. One document the organizer types or pastes. The draft is stored as
  * `{ script, items }`: the script is what the organizer wrote, the items are
  * what we derived from it for guests and for the offline pack. Older rows are
  * still arrays and still read correctly, with an empty script that the editor
@@ -254,5 +254,5 @@ export function formatGuideDate(
   if (endDate.toISOString().slice(0, 10) === startDate.toISOString().slice(0, 10)) {
     return startLabel;
   }
-  return `${startLabel} – ${guideDateLabel(endDate)}`;
+  return `${startLabel} to ${guideDateLabel(endDate)}`;
 }

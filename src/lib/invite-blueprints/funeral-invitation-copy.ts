@@ -56,11 +56,11 @@ export type MemorialNameCardLines = {
   primary: string;
   /** Popular name without A.K.A prefix, e.g. MADAM VIDA */
   aka?: string;
-  /** Lifespan, e.g. 1953 – 2026 */
+  /** Lifespan, e.g. 1953 to 2026 */
   years?: string;
 };
 
-/** Age in whole years from a memorial lifespan string (e.g. "1953 – 2026" → 73). */
+/** Age in whole years from a memorial lifespan string (e.g. "1953 to 2026" → 73). */
 export function resolveMemorialAgeYears(years?: string | null): number | null {
   if (!years) return null;
   const match = years.match(/(\d{4})\s*[–\-—]\s*(\d{4})/);
@@ -87,7 +87,7 @@ export function parseMemorialNameCard(raw: string): MemorialNameCardLines {
   );
   if (yearsMatch) {
     const end = /present|now/i.test(yearsMatch[2]!) ? yearsMatch[2]!.toUpperCase() : yearsMatch[2];
-    years = `${yearsMatch[1]} – ${end}`;
+    years = `${yearsMatch[1]} to ${end}`;
     text = text.slice(0, yearsMatch.index).replace(/[•·|\-\s]+$/g, "").trim();
   }
 
@@ -191,7 +191,7 @@ export interface FuneralProgrammeStep {
   date: string;
   /** Highlighted venue / place phrase. */
   place: string;
-  /** Optional highlighted time window (e.g. "4:30am – 9:00am"). */
+  /** Optional highlighted time window (e.g. "4:30am to 9:00am"). */
   time?: string;
 }
 
@@ -256,8 +256,8 @@ export function buildFuneralProgramme(
   const intermentPlace = resolveIntermentPlace(event);
   const thanksgiving = thanksgivingDateLine(event.startDateRaw, serviceDate);
 
-  const layingTime = "4:30am – 9:00am";
-  const ritesTime = "1:00pm – 6:00pm";
+  const layingTime = "4:30am to 9:00am";
+  const ritesTime = "1:00pm to 6:00pm";
   const thanksTime = "9:00am";
 
   return [

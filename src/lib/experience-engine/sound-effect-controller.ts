@@ -1,5 +1,5 @@
 /**
- * SoundEffectController — thin facade over reveal-sounds for Experience Engine.
+ * SoundEffectController. Thin facade over reveal-sounds for Experience Engine.
  */
 import {
   playPaperUnfoldSound,

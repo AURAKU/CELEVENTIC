@@ -2,13 +2,15 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Camera, ImagePlus, Loader2 } from "lucide-react";
-import {
-  MEMORY_VAULT_IMAGE_COMPRESSION,
-  smartCompressImage,
-} from "@/lib/image/smart-compress";
 import { readOrCreateClientGuestKey } from "@/lib/memory/memory-guest-identity";
+import {
+  ALBUM_CAMERA_ACCEPT,
+  ALBUM_PHOTO_ACCEPT,
+  compressAlbumPhoto,
+  isAlbumPhotoFile,
+} from "@/lib/memory/album-photo-file";
 
-const IMAGE_ACCEPT = "image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif,.avif,.bmp,.tif,.tiff";
+const UPLOAD_CONCURRENCY = 4;
 
 export interface AlbumUploadConfig {
   token: string;
@@ -16,24 +18,6 @@ export interface AlbumUploadConfig {
   allowAnonymousUploads: boolean;
   maxImageSizeMb: number;
   windowOpen: boolean;
-}
-
-async function preparePhoto(file: File): Promise<File> {
-  if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(file.name)) {
-    return file;
-  }
-  try {
-    const compressed = await smartCompressImage(file, MEMORY_VAULT_IMAGE_COMPRESSION);
-    const ext = compressed.blob.type.includes("png")
-      ? "png"
-      : compressed.blob.type.includes("webp")
-        ? "webp"
-        : "jpg";
-    const stem = file.name.replace(/\.[^.]+$/, "") || "memory";
-    return new File([compressed.blob], `${stem}.${ext}`, { type: compressed.blob.type || "image/jpeg" });
-  } catch {
-    return file;
-  }
 }
 
 export function AlbumUploadBar({
@@ -58,26 +42,68 @@ export function AlbumUploadBar({
       setStatus(null);
       return;
     }
+
+    const files = Array.from(list);
+    const photos = files.filter(isAlbumPhotoFile);
+    const skipped = files.length - photos.length;
+    if (!photos.length) {
+      setError("Choose a photo. JPEG, HEIC, PNG, WebP, GIF, AVIF, BMP, and similar formats all work.");
+      setStatus(null);
+      return;
+    }
+
     setBusy(true);
-    setError(null);
+    setError(
+      skipped > 0
+        ? skipped === 1
+          ? "One file wasn’t a photo, so it was skipped."
+          : `${skipped} files weren’t photos, so they were skipped.`
+        : null
+    );
     let saved = 0;
+    let failed = 0;
     let pending = false;
-    try {
-      for (const file of Array.from(list)) {
-        setStatus(`Adding ${file.name}…`);
-        const prepared = await preparePhoto(file);
-        const body = new FormData();
-        body.append("token", upload.token);
-        body.append("file", prepared);
-        body.append("consent", "true");
-        body.append("guestKey", guestKey);
-        if (name.trim()) body.append("uploaderName", name.trim());
-        const res = await fetch("/api/memories/upload", { method: "POST", body });
-        const json = (await res.json()) as { error?: string; data?: { status?: string } };
-        if (!res.ok) throw new Error(json.error || "Could not add that photo.");
-        if (json.data?.status === "PENDING") pending = true;
-        saved += 1;
+    let nextIndex = 0;
+    let firstFailure = "";
+
+    async function worker() {
+      while (true) {
+        const i = nextIndex++;
+        if (i >= photos.length) return;
+        const file = photos[i]!;
+        setStatus(
+          photos.length === 1
+            ? "Adding your photo…"
+            : `Adding ${Math.min(saved + failed + 1, photos.length)} of ${photos.length}…`
+        );
+        try {
+          const prepared = await compressAlbumPhoto(file);
+          const body = new FormData();
+          body.append("token", upload.token);
+          body.append("file", prepared);
+          body.append("consent", "true");
+          body.append("guestKey", guestKey);
+          if (name.trim()) body.append("uploaderName", name.trim());
+          const res = await fetch("/api/memories/upload", { method: "POST", body });
+          const json = (await res.json()) as { error?: string; data?: { status?: string } };
+          if (!res.ok) throw new Error(json.error || "Could not add that photo.");
+          if (json.data?.status === "PENDING") pending = true;
+          saved += 1;
+        } catch (cause) {
+          failed += 1;
+          if (!firstFailure && cause instanceof Error && cause.message) {
+            firstFailure = cause.message;
+          }
+        }
       }
+    }
+
+    await Promise.all(
+      Array.from({ length: Math.min(UPLOAD_CONCURRENCY, photos.length) }, () => worker())
+    );
+
+    if (saved > 0) {
+      onUploaded();
       setStatus(
         pending
           ? "Sent to the hosts. It appears here once they approve it."
@@ -85,15 +111,21 @@ export function AlbumUploadBar({
             ? "Added to the album. Guests can like, comment, and download it."
             : `${saved} photos added. Guests can like, comment, and download them.`
       );
-      onUploaded();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add that photo.");
+    } else {
       setStatus(null);
-    } finally {
-      setBusy(false);
-      if (libraryRef.current) libraryRef.current.value = "";
-      if (cameraRef.current) cameraRef.current.value = "";
     }
+    if (failed > 0) {
+      setError(
+        saved > 0
+          ? `${failed} photo${failed === 1 ? "" : "s"} could not be added. Try those again.`
+          : firstFailure ||
+              "Those photos could not be added. Try another shot or export as JPEG."
+      );
+    }
+
+    setBusy(false);
+    if (libraryRef.current) libraryRef.current.value = "";
+    if (cameraRef.current) cameraRef.current.value = "";
   }
 
   const buttonStyle = {
@@ -138,7 +170,7 @@ export function AlbumUploadBar({
           onClick={() => libraryRef.current?.click()}
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-          Add photos
+          {busy ? status || "Adding…" : "Add photos"}
         </button>
         <button
           type="button"
@@ -157,7 +189,7 @@ export function AlbumUploadBar({
       <input
         ref={libraryRef}
         type="file"
-        accept={IMAGE_ACCEPT}
+        accept={ALBUM_PHOTO_ACCEPT}
         multiple
         className="sr-only"
         onChange={(event) => void onFiles(event.target.files)}
@@ -165,7 +197,7 @@ export function AlbumUploadBar({
       <input
         ref={cameraRef}
         type="file"
-        accept={IMAGE_ACCEPT}
+        accept={ALBUM_CAMERA_ACCEPT}
         capture="environment"
         className="sr-only"
         onChange={(event) => void onFiles(event.target.files)}
@@ -178,10 +210,10 @@ export function AlbumUploadBar({
         }}
       >
         {upload.windowOpen
-          ? `Up to ${upload.maxImageSizeMb}MB each. Guests can like, comment, and download. Only an admin or the organizer can remove a photo.`
+          ? `Any photo your phone can take, including JPEG, HEIC, PNG, WebP, GIF, AVIF, and BMP. Up to ${upload.maxImageSizeMb}MB each. Guests can like, comment, and download. Only an admin or the organizer can remove a photo.`
           : "Photo uploads are closed for this celebration."}
       </p>
-      {status ? (
+      {status && !busy ? (
         <p className="mt-2 text-sm" style={{ color: "var(--memory-color-ink, #1B365D)" }}>
           {status}
         </p>

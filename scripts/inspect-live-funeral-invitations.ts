@@ -33,12 +33,20 @@ async function main() {
         { templateSlug: { contains: "candle" } },
       ],
     },
-    include: {
-      invitation: { select: { id: true, uniqueLink: true, status: true } },
-    },
     orderBy: { updatedAt: "desc" },
     take: 40,
   });
+
+  const invitationIds = orders
+    .map((order) => order.invitationId)
+    .filter((id): id is string => Boolean(id));
+  const invitations = invitationIds.length
+    ? await prisma.invitation.findMany({
+        where: { id: { in: invitationIds } },
+        select: { id: true, uniqueLink: true, status: true },
+      })
+    : [];
+  const invitationById = new Map(invitations.map((row) => [row.id, row]));
 
   console.log("=== Funeral / memorial production orders (safe fields only) ===\n");
   console.log(
@@ -69,7 +77,9 @@ async function main() {
 
     const row = [
       (order.invitationId ?? "—").slice(0, 28).padEnd(28),
-      (order.invitation?.uniqueLink ?? "—").slice(0, 24).padEnd(24),
+      (order.invitationId ? invitationById.get(order.invitationId)?.uniqueLink ?? "—" : "—")
+        .slice(0, 24)
+        .padEnd(24),
       (order.eventTitle ?? "—").slice(0, 30).padEnd(30),
       order.templateSlug.slice(0, 26).padEnd(26),
       (design.layout ?? "—").slice(0, 24).padEnd(24),

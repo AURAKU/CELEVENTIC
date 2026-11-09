@@ -2,7 +2,7 @@
  * The one way the import screens talk to the API.
  *
  * Written because the failure that actually strands an organiser is not a
- * clean 4xx — the API is careful about those — it is the response that never
+ * clean 4xx. The API is careful about those. It is the response that never
  * parses: a proxy timeout, an upload rejected before the route runs, a dropped
  * connection mid-import. A bare `await res.json()` throws on all three, the
  * `setBusy(false)` after it never runs, and the button stays disabled with no
@@ -21,7 +21,7 @@ const STATUS_FALLBACKS: Record<number, string> = {
   403: "You do not have permission to manage this event's guest list.",
   404: "That import no longer exists. It may have been discarded.",
   413: "That file is too large to upload.",
-  429: "Too many requests — wait a moment and try again.",
+  429: "Too many requests. Wait a moment and try again.",
   502: "The server did not respond. Try again in a moment.",
   503: "The server is busy. Try again in a moment.",
   504: "That took too long to respond. Try again in a moment.",

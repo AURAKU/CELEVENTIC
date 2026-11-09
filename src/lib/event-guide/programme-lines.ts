@@ -3,9 +3,9 @@
  * about where it belongs.
  *
  * Two modules need the same answers. `programme-script` asks them while it is
- * reading the organizer's document — is this line a stanza of the hymn above
+ * reading the organizer's document. Is this line a stanza of the hymn above
  * it, or the next thing that happens? `programme-layout` asks them again at
- * render time — is this line a person, or the heading of a list of people?
+ * render time. Is this line a person, or the heading of a list of people?
  * They were once two copies of the same regular expressions, which is how a
  * role recognised by one and missed by the other put a hymn's verses into a
  * roster of ministers.
@@ -24,7 +24,7 @@ export function words(value: string): string[] {
 /**
  * Written in capitals.
  *
- * Scripts without letter case — Arabic, Chinese, Hebrew — are never "shouted",
+ * Scripts without letter case. Arabic, Chinese, Hebrew. Are never "shouted",
  * which is what keeps this from reading a whole Chinese programme as a title
  * page.
  */
@@ -48,8 +48,8 @@ export const HONORIFIC =
 /**
  * A part someone plays, rather than a thing that happens at a time.
  *
- * Plurals are spelled out because a programme heads its lists in the plural —
- * `OFFICIATING MINISTERS`, `COUNSELLORS` — and that heading is exactly the
+ * Plurals are spelled out because a programme heads its lists in the plural.
+ * `OFFICIATING MINISTERS`, `COUNSELLORS`, and that heading is exactly the
  * line this has to recognise.
  */
 export const ROLE_WORD =
@@ -63,7 +63,7 @@ export const ROSTER_HEADING =
  * A line that announces something with words to be sung under it.
  *
  * `OPENING HYMN` is followed by the hymn's title, and that title is followed
- * by its stanzas — none of which are items of the running order. Deliberately
+ * by its stanzas. None of which are items of the running order. Deliberately
  * excludes `PROCESSIONAL` and `RECESSIONAL`: those are things that happen,
  * and organizers write them as items far more often than as music cues.
  */

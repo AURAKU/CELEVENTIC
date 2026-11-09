@@ -1,5 +1,5 @@
 /**
- * The Forever Afaris wedding board — content + ceremony guarantees.
+ * The Forever Afaris wedding board. Content + ceremony guarantees.
  * Run: npm run test:live-editability
  *
  * These lock in the contract the luxury wedding template depends on: the
@@ -8,17 +8,22 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   DEFAULT_WEDDING_BOARD,
   WEDDING_SECTION_ORDER,
   distinctInvitationPhrase,
   invitationPhrasesMatch,
+  isMenuProgrammeItem,
   mergeWeddingBoard,
   normaliseSectionOrder,
+  parseWeddingMenuBody,
   resolveAfarisCoupleNames,
   resolveGateTitle,
   resolveIntroCoupleLine,
   resolveOpeningInstruction,
+  splitProgrammeForGuestSurfaces,
   withoutPhraseDashes,
   type WeddingSectionId,
 } from "../wedding-board";
@@ -140,15 +145,15 @@ describe("mergeWeddingBoard", () => {
     );
   });
 
-  it("strips em dashes from published guest prose so copy never shows — between phrases", () => {
+  it("strips em dashes from published guest prose so copy never shows. Between phrases", () => {
     assert.equal(
-      withoutPhraseDashes("a joyful yes — we can't wait"),
+      withoutPhraseDashes("a joyful yes. We can't wait"),
       "a joyful yes, we can't wait"
     );
     assert.equal(
       mergeWeddingBoard({
         storyBody:
-          "From a first hello to this joyful yes — we can't wait to celebrate.",
+          "From a first hello to this joyful yes. We can't wait to celebrate.",
       }).storyBody,
       "From a first hello to this joyful yes, we can't wait to celebrate."
     );
@@ -242,8 +247,72 @@ describe("palette", () => {
  * The sealed envelope now opens from a tap anywhere on the ceremony, not just
  * the 82px wax seal. Stored copy that names the seal as the only target would
  * describe something narrower than what actually works, so it is repaired at
- * read time — while genuinely host-authored copy is left untouched.
+ * read time, while genuinely host-authored copy is left untouched.
  */
+describe("splitProgrammeForGuestSurfaces", () => {
+  const items = [
+    {
+      id: "white",
+      time: "SAT 26 DEC · 9:00 AM",
+      title: "White Wedding, Church Ceremony",
+      description: "Assemblies of God Tema Community 12 TCC",
+    },
+    {
+      id: "menu",
+      time: "RECEPTION",
+      title: "Wedding Menu",
+      description: "STARTERS\nBeef spring rolls\nSALADS\nGhanaian mixed salad",
+    },
+    {
+      id: "reception",
+      time: "SAT 26 DEC · 3:00 PM",
+      title: "Reception",
+      description: "Combos & Casa, East Legon Hills",
+    },
+  ];
+
+  it("recognises menu rows by id or title", () => {
+    assert.equal(isMenuProgrammeItem({ id: "menu", title: "Dinner" }), true);
+    assert.equal(isMenuProgrammeItem({ id: "reception-menu", title: "Reception" }), true);
+    assert.equal(isMenuProgrammeItem({ id: "food", title: "The Menu" }), true);
+    assert.equal(isMenuProgrammeItem({ id: "reception", title: "Reception" }), false);
+  });
+
+  it("keeps the schedule on the invitation and lifts dining copy for after admit", () => {
+    const split = splitProgrammeForGuestSurfaces(items);
+    assert.deepEqual(
+      split.scheduleItems.map((item) => item.id),
+      ["white", "reception"]
+    );
+    assert.match(split.menuBody, /Beef spring rolls/);
+    assert.doesNotMatch(split.menuBody, /Combos/);
+  });
+
+  it("parses course headings for the post-admission page", () => {
+    const sections = parseWeddingMenuBody(splitProgrammeForGuestSurfaces(items).menuBody);
+    assert.deepEqual(
+      sections.map((section) => [section.heading, section.dishes]),
+      [
+        ["STARTERS", ["Beef spring rolls"]],
+        ["SALADS", ["Ghanaian mixed salad"]],
+      ]
+    );
+  });
+
+  it("keeps dining copy off the live invitation programme list", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/invitation/templates/forever-afaris-wedding.tsx"),
+      "utf8"
+    );
+    assert.match(source, /splitProgrammeForGuestSurfaces/);
+    assert.match(source, /guestProgrammeItems\.map/);
+    assert.doesNotMatch(
+      source,
+      /programmeItems\.map\(\(item\) => \(\s*<li key=\{item\.id\}/
+    );
+  });
+});
+
 describe("resolveOpeningInstruction", () => {
   it("defaults to tap-anywhere phrasing", () => {
     assert.equal(resolveOpeningInstruction(undefined), "Tap anywhere to open");

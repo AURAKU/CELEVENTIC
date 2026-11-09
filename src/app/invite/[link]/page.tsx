@@ -60,6 +60,7 @@ import {
 } from "@/lib/invitation/guest-event-details";
 import { isOpenHostInvitation } from "@/services/guest-search/rsvp-self-registration.service";
 import { resolvePostAdmissionEnabled } from "@/lib/admission/canonical-companion";
+import { entryPassNoteFromDesign } from "@/lib/invitation/wedding-board";
 import {
   confirmedAttendingFromParty,
   rsvpChoiceFromGuest,
@@ -250,7 +251,7 @@ export default async function InvitePage({
 
   // Guest-specific invite links (one guest on this invitation) should lock the
   // RSVP name even when `?guest=` is missing from a copied/shared URL.
-  // Open / general template invitations must never lock — each RSVP mints its
+  // Open / general template invitations must never lock. Each RSVP mints its
   // own personalised invitation instead of attaching to the shared link.
   const openHost = isOpenHostInvitation({
     name: invitation.name,
@@ -306,7 +307,7 @@ export default async function InvitePage({
   const coverImageUrl = resolvePublicMediaUrl(event.coverImageUrl) || null;
 
   // Once the organizer/admin publishes Studio work for this event, every guest
-  // link for the selected event must render that live production design —
+  // link for the selected event must render that live production design.
   // never a catalogue snapshot stamped onto a secondary invitation at create.
   const catalogSlug =
     productionOrder?.templateSlug ??
@@ -462,18 +463,19 @@ export default async function InvitePage({
         passView.settings.qrAdmissionEnabled &&
         passView.settings.displayPassOnInvitation
       ) {
-        // Capacity and assigned seating render on the place card only — the
+        // Capacity and assigned seating render on the place card only. The
         // entry pass is QR + admission code + save/print.
         entryPass = {
           token: passView.token,
           code: passView.pass.code,
-          // Invitation party label only — never a foreign GuestPass.displayName.
+          // Invitation party label only, never a foreign GuestPass.displayName.
           displayName:
             invitation.name?.trim() ||
             personalizedGuest.name?.trim() ||
             passView.pass.displayName,
           status: passView.pass.status,
-          instructions: passView.settings.passInstructions,
+          instructions:
+            entryPassNoteFromDesign(design) || passView.settings.passInstructions,
           allowDownload: passView.settings.allowPassDownload,
           allowPrint: passView.settings.allowPassPrint,
         };

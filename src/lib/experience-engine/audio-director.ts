@@ -1,5 +1,5 @@
 /**
- * AudioDirector — facade over invitation-audio-manager + resolve-invitation-music.
+ * AudioDirector. Facade over invitation-audio-manager + resolve-invitation-music.
  * Does not rebuild playback; adds a stable director API for the Experience Engine.
  */
 import type { MusicSelection } from "@/lib/music/music-types";
@@ -28,9 +28,9 @@ export interface AudioDirector {
   setVolume: (v: number) => void;
   setLoop: (loop: boolean) => void;
   fadeTo: (volume: number, durationMs?: number) => void;
-  /** Soft start at scene begin — fade in from near-zero if not already playing. */
+  /** Soft start at scene begin. Fade in from near-zero if not already playing. */
   onSceneStart: (opts?: { fadeMs?: number; volume?: number }) => Promise<boolean>;
-  /** Outro bed — optional fade-out then pause. */
+  /** Outro bed. Optional fade-out then pause. */
   onOutro: (opts?: { fadeMs?: number; pause?: boolean }) => void;
   restart: () => Promise<boolean>;
   destroy: () => void;

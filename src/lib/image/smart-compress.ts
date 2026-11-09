@@ -6,7 +6,7 @@
  * rejecting large uploads, callers compress first and upload the result.
  *
  * Strategy, in order of preference (each step is cheaper visually than the next):
- *   1. Cap the longest edge at `maxEdge` — pixels beyond the display size are
+ *   1. Cap the longest edge at `maxEdge`. Pixels beyond the display size are
  *      invisible, so removing them is free quality-wise.
  *   2. Step the encoder quality down toward `minQuality`.
  *   3. Only if still over budget, shrink dimensions further (never below `minEdge`).
@@ -20,7 +20,7 @@ export interface SmartCompressOptions {
   maxEdge?: number;
   /** Byte budget. Compression stops as soon as output fits. */
   targetBytes?: number;
-  /** Encoder quality floor — never degrade past this. */
+  /** Encoder quality floor, never degrade past this. */
   minQuality?: number;
   /** Starting encoder quality. */
   startQuality?: number;
@@ -115,6 +115,43 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+type LoadedBitmap = {
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+  close: () => void;
+};
+
+/**
+ * Prefer createImageBitmap (decodes HEIC on Safari, AVIF/WebP on modern Chrome)
+ * then fall back to HTMLImageElement.
+ */
+async function loadBitmap(blob: Blob, objectUrl: string): Promise<LoadedBitmap> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" });
+      if (bitmap.width && bitmap.height) {
+        return {
+          source: bitmap,
+          width: bitmap.width,
+          height: bitmap.height,
+          close: () => bitmap.close(),
+        };
+      }
+      bitmap.close();
+    } catch {
+      /* decode via <img> instead */
+    }
+  }
+  const img = await loadImage(objectUrl);
+  return {
+    source: img,
+    width: img.naturalWidth,
+    height: img.naturalHeight,
+    close: () => undefined,
+  };
+}
+
 function toBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Encode failed"))), type, quality);
@@ -143,7 +180,7 @@ export function canvasHasAlpha(source: CanvasImageSource, w: number, h: number):
       if (data[i] < 250) return true;
     }
   } catch {
-    // Tainted canvas (cross-origin) — assume alpha so we never flatten to black.
+    // Tainted canvas (cross-origin). Assume alpha so we never flatten to black.
     return true;
   }
   return false;
@@ -211,15 +248,17 @@ export async function smartCompressImage(
   const minEdge = options?.minEdge ?? DEFAULTS.minEdge;
 
   const src = URL.createObjectURL(input);
+  let loaded: LoadedBitmap | null = null;
   try {
-    const img = await loadImage(src);
-    const naturalW = img.naturalWidth;
-    const naturalH = img.naturalHeight;
+    loaded = await loadBitmap(input, src);
+    const naturalW = loaded.width;
+    const naturalH = loaded.height;
     if (!naturalW || !naturalH) throw new Error("Invalid image");
+    const img = loaded.source;
 
     const hasAlpha = canvasHasAlpha(img, naturalW, naturalH);
 
-    // Already small enough and within the display cap — don't re-encode, which
+    // Already small enough and within the display cap. Don't re-encode, which
     // would only add generational loss.
     if (input.size <= targetBytes && Math.max(naturalW, naturalH) <= maxEdge) {
       return {
@@ -306,6 +345,7 @@ export async function smartCompressImage(
       originalBytes: input.size,
     };
   } finally {
+    loaded?.close();
     URL.revokeObjectURL(src);
   }
 }

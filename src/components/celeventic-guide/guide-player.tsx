@@ -233,7 +233,7 @@ export function GuidePlayer({
         <div className="absolute inset-0 flex flex-col items-center justify-end p-6 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
           <p className="text-white font-display text-xl text-center">{title}</p>
           <p className="text-white/80 text-sm mt-2 text-center">
-            Interactive walkthrough below — video recording coming soon.
+            Interactive walkthrough below. Video recording coming soon.
           </p>
           <Button type="button" variant="secondary" className="mt-4" onClick={share}>
             <Share2 className="h-4 w-4 mr-2" /> Share

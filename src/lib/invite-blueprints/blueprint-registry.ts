@@ -3,7 +3,7 @@ import type { InviteBlueprint, InviteCategory } from "./blueprint-types";
 /**
  * Page order within a blueprint is fixed to protect narrative quality
  * (cover opens, guest wishes sit above closing, closing always ends with
- * the viral footer). Free-tier blueprints stay lean — premium value lives
+ * the viral footer). Free-tier blueprints stay lean. Premium value lives
  * in story / venue / map pages.
  */
 
@@ -63,7 +63,7 @@ export const INVITE_BLUEPRINTS: Record<string, InviteBlueprint> = {
   [weddingFree.id]: weddingFree,
   [funeralCore.id]: funeralCore,
   [funeralFree.id]: funeralFree,
-  // Ghanaian catalogue SKUs — same narrative spine, distinct cultural DNA elsewhere
+  // Ghanaian catalogue SKUs. Same narrative spine, distinct cultural DNA elsewhere
   "funeral-akan-cloth-v1": { ...funeralCore, id: "funeral-akan-cloth-v1" },
   "funeral-homegoing-v1": { ...funeralCore, id: "funeral-homegoing-v1" },
   "funeral-kente-banner-v1": { ...funeralCore, id: "funeral-kente-banner-v1" },

@@ -14,12 +14,6 @@ const nextConfig: NextConfig = {
   // can be handled at the reverse proxy. Reduces one TransformStream pipeline involved in
   // `controller[kState].transformAlgorithm is not a function` races under Node < 24.15.
   compress: false,
-  // Large app: eslint during `next build` routinely exceeds agent kill windows (SIGTERM ~8m).
-  // Lint separately via `npm run lint`; keep production compile focused on page generation.
-  eslint: { ignoreDuringBuilds: true },
-  // Same rationale as eslint — full-project tsc during build OOM/kills under concurrent agent pressure.
-  // Run `npx tsc --noEmit` / focused tests separately for type QA.
-  typescript: { ignoreBuildErrors: true },
   images: {
     // Logo uses quality={100}; declare allowed qualities for Next 15/16
     qualities: [75, 90, 95, 100],
@@ -50,6 +44,8 @@ const nextConfig: NextConfig = {
       { source: "/terms", destination: "/legal/terms", permanent: false },
       // Settings Billing used a non-existent dashboard path; keep bookmarks working
       { source: "/dashboard/marketplace", destination: "/marketplace", permanent: false },
+      // Exact /templates only. /templates/* are static invitation covers in public/templates.
+      { source: "/templates", destination: "/invitations/catalogue", permanent: false },
     ];
   },
 };

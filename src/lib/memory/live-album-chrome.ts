@@ -2,7 +2,7 @@ import {
   AURELIA_LAYOUT_SLUG,
   SERAPHINE_LAYOUT_SLUG,
 } from "@/lib/experience/aurelia-editorial";
-import type { InvitationDesignConfig } from "@/types/invitation-design";
+import type { InvitationDesignConfig, InvitationLayoutSlug } from "@/types/invitation-design";
 import { liveAlbumKey } from "./live-album";
 import {
   resolveMemoryAlbumIdentity,
@@ -14,7 +14,7 @@ import {
   type MemoryThemeCssVars,
 } from "./memory-theme";
 
-export const LIVE_ALBUM_PREVIEW_LAYOUT: Record<string, string> = {
+export const LIVE_ALBUM_PREVIEW_LAYOUT: Record<string, InvitationLayoutSlug> = {
   "preview-seraphine-champagne-wedding": SERAPHINE_LAYOUT_SLUG,
   "preview-aurelia-editorial-wedding": AURELIA_LAYOUT_SLUG,
 };

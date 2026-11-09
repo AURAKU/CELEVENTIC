@@ -2,7 +2,7 @@
 
 import styles from "./funeral-experience.module.css";
 
-/** Tasteful original ornaments — not copied from reference artwork. */
+/** Tasteful original ornaments, not copied from reference artwork. */
 export function CeremonialOrnament({
   variant = "line",
 }: {

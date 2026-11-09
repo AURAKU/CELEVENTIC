@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { BASE_CURRENCY, DEFAULT_EXCHANGE_RATES, type DisplayCurrency } from "@/lib/commerce/constants";
 
-/** P2002 = unique constraint violation — another concurrent request already seeded this row. */
+/** P2002 = unique constraint violation. Another concurrent request already seeded this row. */
 function isUniqueConstraintError(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
@@ -18,7 +18,7 @@ export class CurrencyService {
   /**
    * Process-lifetime cache: once we've confirmed currencies exist (or just seeded them),
    * never re-check on this instance again. Combined with the `count()` short-circuit below,
-   * this is what eliminates the P1008 socket-timeout storm — every prior request to
+   * this is what eliminates the P1008 socket-timeout storm. Every prior request to
    * `/api/commerce/currencies` ran a full batch of `upsert()` writes (currencies + exchange
    * rates) on *every single call*, exhausting the Prisma connection pool under load. Now a
    * write only ever happens once per empty table, and every other call (including the very
@@ -27,11 +27,11 @@ export class CurrencyService {
   private seededChecked = false;
 
   /**
-   * Seeds the default currencies/exchange rates ONLY when the `currencies` table is empty —
+   * Seeds the default currencies/exchange rates ONLY when the `currencies` table is empty.
    * never on every request. `skipDuplicates` isn't available on `createMany` for this
    * project's SQLite datasource, so a concurrent cold-start race (two requests both see an
    * empty table before either has written) is instead handled by swallowing the resulting
-   * unique-constraint error — whichever request wins, the seed rows end up correct either way.
+   * unique-constraint error. Whichever request wins, the seed rows end up correct either way.
    */
   async ensureCurrenciesSeeded() {
     if (this.seededChecked) return;

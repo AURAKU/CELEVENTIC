@@ -9,7 +9,7 @@ import { GIFT_PAYMENT_METHODS } from "@/lib/gifts/gift-providers";
 /**
  * Organiser-side reporting over gift payments.
  *
- * Everything here is behind an event permission check performed by the caller —
+ * Everything here is behind an event permission check performed by the caller.
  * these queries deliberately return contributor identities and amounts, which
  * is exactly the data that must never reach a guest surface.
  */
@@ -87,7 +87,7 @@ function buildWhere(filters: GiftTransactionFilters): Prisma.EventGiftPaymentWhe
   return where;
 }
 
-/** Method lives in metadata JSON, which SQLite cannot filter on — do it in memory. */
+/** Method lives in metadata JSON, which SQLite cannot filter on. Do it in memory. */
 function matchesMethod(metadata: unknown, method?: string | "ALL"): boolean {
   if (!method || method === "ALL") return true;
   return (metadata as { method?: string } | null)?.method === method;
@@ -103,7 +103,7 @@ export class GiftAdminService {
     const filteringByMethod = Boolean(filters.method && filters.method !== "ALL");
 
     if (filteringByMethod) {
-      // Metadata method lives in JSON — page a capped recent window in memory.
+      // Metadata method lives in JSON. Page a capped recent window in memory.
       const all = await prisma.eventGiftPayment.findMany({
         where,
         orderBy: { createdAt: "desc" },
@@ -172,7 +172,7 @@ export class GiftAdminService {
     };
   }
 
-  /** Daily gift totals for the organiser chart — organiser-only aggregates. */
+  /** Daily gift totals for the organiser chart. Organiser-only aggregates. */
   async dailySeries(eventId: string, days = 30) {
     const since = new Date(Date.now() - days * 86_400_000);
     const rows = await prisma.eventGiftPayment.findMany({
@@ -271,7 +271,7 @@ export class GiftAdminService {
     return result.count > 0;
   }
 
-  /** Gifts the signed-in user sent — their own rows only, across all events. */
+  /** Gifts the signed-in user sent. Their own rows only, across all events. */
   async listMyGifts(userId: string, options: { page?: number | string | null } = {}) {
     const { page, limit, skip } = parsePaginationInput(
       { page: options.page, limit: 10 },

@@ -39,7 +39,7 @@ export interface TraditionalMarriageRespondProps {
   showRsvp: boolean;
   /** Organiser-set heads this invitation admits (gate + RSVP ceiling). */
   partyAllowance?: number;
-  /** Server-known RSVP — thank-you on refresh / reopen. */
+  /** Server-known RSVP. Thank-you on refresh / reopen. */
   initialRsvpStatus?: PersistedRsvpChoice | null;
   initialAttendingCount?: number | null;
   organizerPhone?: string | null;
@@ -48,6 +48,8 @@ export interface TraditionalMarriageRespondProps {
   collectEmail?: boolean;
   /** Named host buttons. When set, they replace the single Call / WhatsApp row. */
   reachHosts?: ReactNode;
+  /** When set, guests are told what the QR and admission code are for. */
+  entryPassNote?: string | null;
 }
 
 type RsvpChoice = PersistedRsvpChoice;
@@ -76,6 +78,7 @@ export function TraditionalMarriageRespond({
   organizerEmail,
   reachHosts,
   collectEmail = true,
+  entryPassNote,
 }: TraditionalMarriageRespondProps) {
   const { t } = useLocale();
   const staticPreview = useInvitationStaticPreview();
@@ -150,7 +153,7 @@ export function TraditionalMarriageRespond({
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
     const payload = guestId
-      ? { guestId, response, ...contact }
+      ? { guestId, invitationId, response, ...contact }
       : { invitationId, guestName: guestName.trim(), response, ...contact };
 
     if (!guestId && !guestName.trim()) {
@@ -255,6 +258,15 @@ export function TraditionalMarriageRespond({
             data-testid="rsvp-capacity"
           >
             {capacityLine}
+          </p>
+        ) : null}
+        {entryPassNote?.trim() ? (
+          <p
+            className="font-[family-name:var(--font-cormorant)] text-sm sm:text-[0.95rem] leading-relaxed max-w-[22rem] mx-auto"
+            style={{ color: PALETTE.dress }}
+            data-testid="rsvp-entry-pass-note"
+          >
+            {entryPassNote.trim()}
           </p>
         ) : null}
       </div>

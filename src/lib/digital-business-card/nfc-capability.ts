@@ -1,6 +1,6 @@
 /**
  * Honest Web NFC capability detection.
- * Web NFC is primarily Chrome on Android — never claim “NFC ready” universally.
+ * Web NFC is primarily Chrome on Android, never claim “NFC ready” universally.
  */
 
 export type NfcWriteSupport = {

@@ -10,7 +10,7 @@ const FLOWERS = [
 ] as const;
 
 /**
- * Symbolic flower tribute only — no marketplace checkout.
+ * Symbolic flower tribute only. No marketplace checkout.
  * Persists locally per memorial so guests can leave a gentle gesture.
  */
 export function FlowerTribute({
@@ -51,7 +51,7 @@ export function FlowerTribute({
       </p>
       {chosen ? (
         <p className={`${styles.gold} text-sm`}>
-          Thank you — your {FLOWERS.find((f) => f.id === chosen)?.label ?? "flower"} has been left in
+          Thank you. Your {FLOWERS.find((f) => f.id === chosen)?.label ?? "flower"} has been left in
           remembrance.
         </p>
       ) : (

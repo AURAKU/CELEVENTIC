@@ -1,7 +1,7 @@
 /**
  * Canonical couple display name is Event.hostName.
  * Older create-event drafts and workspace configuration.typeSpecific may still
- * store a duplicate key `coupleNames` — resolve to hostName when reading.
+ * store a duplicate key `coupleNames`. Resolve to hostName when reading.
  */
 export function resolveCoupleName(input: {
   hostName?: string | null;

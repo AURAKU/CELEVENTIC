@@ -14,7 +14,7 @@ export type PublicDesignStudioItem = {
   name: string;
   slug: string;
   category: string;
-  style: string;
+  style: string | null;
   description: string | null;
   productType: string;
   isPremium: boolean;
@@ -134,7 +134,7 @@ function sampleContext(category: string, name: string): TemplateRenderContext {
       return {
         event_title: "Coastal Beats Festival",
         host_name: "Celeventic Festivals",
-        event_date: "19–21 June",
+        event_date: "19 to 21 June",
         event_time: "Gates 2 PM",
         venue: "Labadi Beach Park",
         landmark: "Accra",
@@ -146,7 +146,7 @@ function sampleContext(category: string, name: string): TemplateRenderContext {
       return {
         event_title: "Africa Growth Summit",
         host_name: "Celeventic Events",
-        event_date: "14–15 June",
+        event_date: "14 to 15 June",
         event_time: "8:30 AM",
         venue: "Mövenpick Accra",
         landmark: "Accra",

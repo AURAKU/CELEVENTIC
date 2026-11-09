@@ -18,7 +18,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
   {
     slug: "how-celeventic-works",
     title: "How Celeventic Works",
-    summary: "Invite → RSVP → Admit → Guide → Celebrate → Remember — the full guest journey in one cinematic walkthrough.",
+    summary: "Invite → RSVP → Admit → Guide → Celebrate → Remember. The full guest journey in one cinematic walkthrough.",
     body: "Celeventic is the operating system for celebrations: hosts design invitations and run the floor; guests RSVP and enter with QR; scanners admit online or offline; Event Guide keeps programme, seating, and menu close; gifts and Memory Vault complete the day.",
     role: "GUEST",
     category: "PLATFORM",
@@ -34,16 +34,16 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     transcript:
       "Welcome to Celeventic. Guests open a cinematic invitation, RSVP, and receive a personal QR pass. On event day scanners admit guests, groups, and vendors. Event Guide shows programme, seating, and menu. Guests can send gifts and upload memories. Hosts run invitations, guests, seating, admission, gifts, tickets, marketplace, and Memory Vault from one dashboard.",
     steps: steps(
-      ["Invite", "Open a branded digital invitation — envelope, seal, and media — from a link. No app required."],
+      ["Invite", "Open a branded digital invitation. Envelope, seal, and media, from a link. No app required."],
       ["RSVP", "Confirm attendance for yourself and plus guests; hosts see live counts."],
       ["Admit", "Present your personal QR. Door staff scan online or offline for secure entry."],
       ["Guide", "Use Event Guide for programme, seating lookup, menu, venue, and day-of help."],
-      ["Celebrate", "Enjoy the day with clear access — optional gifts, wishes, and companion tools."],
+      ["Celebrate", "Enjoy the day with clear access. Optional gifts, wishes, and companion tools."],
       ["Remember", "Upload photos and videos to Memory Vault; hosts moderate the shared album."]
     ),
   },
 
-  // ── Guest 1–13 ──
+  // ── Guest 1 to 13 ──
   {
     slug: "welcome-to-celeventic",
     title: "Welcome to Celeventic",
@@ -58,7 +58,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     posterUrl: "/guides/posters/welcome.svg",
     steps: steps(
       ["Open the link", "Use the invitation or Event Guide link you received."],
-      ["Explore safely", "Everything you need is on one guest journey — no app install required."],
+      ["Explore safely", "Everything you need is on one guest journey. No app install required."],
       ["Need help?", "Use Help & Guides anytime, or contact the host."]
     ),
   },
@@ -75,7 +75,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     posterUrl: "/guides/posters/invitation.svg",
     steps: steps(
       ["Tap the link", "Open the invite from WhatsApp, SMS, or email."],
-      ["Allow media", "Play music or video if prompted — audio never autoplays unmuted."],
+      ["Allow media", "Play music or video if prompted. Audio never autoplays unmuted."],
       ["Continue", "Move to RSVP or your pass when ready."]
     ),
   },
@@ -111,7 +111,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     steps: steps(
       ["Find your pass", "After RSVP, your QR appears on the invitation or pass page."],
       ["Save it", "Screenshot or keep the link offline-ready on your phone."],
-      ["Present at entry", "Show the QR brightly — staff scan it to admit you."]
+      ["Present at entry", "Show the QR brightly. Staff scan it to admit you."]
     ),
   },
   {
@@ -230,7 +230,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     posterUrl: "/guides/posters/wishes.svg",
     steps: steps(
       ["Open Wishes", "Find Wishes on the invitation or thank-you flow."],
-      ["Write sincerely", "Keep it kind — messages may be moderated."],
+      ["Write sincerely", "Keep it kind. Messages may be moderated."],
       ["Submit", "Your wish appears when the host publishes it."]
     ),
   },
@@ -254,7 +254,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
   {
     slug: "thank-you-experience-guest",
     title: "Thank You Experience",
-    summary: "After the event — thank-you pages, memories, and closing moments.",
+    summary: "After the event. Thank-you pages, memories, and closing moments.",
     role: "GUEST",
     category: "CELEBRATE",
     status: "PUBLISHED",
@@ -269,7 +269,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     ),
   },
 
-  // ── Organizer 14–31 ──
+  // ── Organizer 14 to 31 ──
   {
     slug: "create-an-event",
     title: "Create an Event",
@@ -591,7 +591,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     ),
   },
 
-  // ── Vendor 32–33 ──
+  // ── Vendor 32 to 33 ──
   {
     slug: "vendor-pass",
     title: "Vendor Pass",
@@ -627,7 +627,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     ),
   },
 
-  // ── Security / Scanner 34–37 ──
+  // ── Security / Scanner 34 to 37 ──
   {
     slug: "scan-guest",
     title: "Scan Guest",
@@ -732,7 +732,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     steps: steps(
       ["Enable payment features", "Turn on what your plan supports."],
       ["Track status", "See completed, pending, and failed payments."],
-      ["Reconcile safely", "Use receipts and ledger views — never guess."]
+      ["Reconcile safely", "Use receipts and ledger views, never guess."]
     ),
   },
   {
@@ -791,7 +791,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
   {
     slug: "privacy-and-data",
     title: "Privacy & Your Data",
-    summary: "What Celeventic stores for invitations, RSVPs, and admission — and your choices.",
+    summary: "What Celeventic stores for invitations, RSVPs, and admission, and your choices.",
     role: "GUEST",
     category: "PRIVACY",
     status: "PUBLISHED",
@@ -801,7 +801,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     posterUrl: "/guides/posters/welcome.svg",
     steps: steps(
       ["Only what the host needs", "RSVP and admission details stay event-scoped."],
-      ["Secure links", "Treat invitation links like tickets — don't reshare blindly."],
+      ["Secure links", "Treat invitation links like tickets. Don't reshare blindly."],
       ["Ask the host", "Contact the organizer or support for data requests."]
     ),
   },
@@ -817,7 +817,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     relatedSlugs: ["open-your-invitation"],
     posterUrl: "/guides/posters/invitation.svg",
     steps: steps(
-      ["Retry the original link", "Open from WhatsApp, SMS, or email — not a screenshot."],
+      ["Retry the original link", "Open from WhatsApp, SMS, or email, not a screenshot."],
       ["Try another browser", "Safari or Chrome usually work best."],
       ["Ask the host", "They can resend your personal link."]
     ),

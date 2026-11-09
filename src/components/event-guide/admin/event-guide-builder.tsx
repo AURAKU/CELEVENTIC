@@ -110,7 +110,7 @@ export function EventGuideBuilder({
         <div className="min-w-0">
           <h1 className="text-2xl font-bold">Event Guide</h1>
           <p className="text-slate-500">
-            {eventTitle} — one QR for your programme, seating and menu
+            {eventTitle}. One QR for your programme, seating and menu
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

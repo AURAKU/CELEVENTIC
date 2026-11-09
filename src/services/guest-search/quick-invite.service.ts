@@ -28,9 +28,9 @@ export { DuplicateGuestError } from "@/lib/guest-search/duplicate-guests";
 /**
  * Quick Invitation Generator.
  *
- * One field is mandatory: the name. Everything a guest needs to be admitted —
+ * One field is mandatory: the name. Everything a guest needs to be admitted.
  * a unique link, a signed QR pass, an event-scoped admission code, a place
- * card — is derived from it. Phone and email are delivery conveniences, not
+ * card. Is derived from it. Phone and email are delivery conveniences, not
  * prerequisites, because the most common way an invitation actually reaches a
  * Ghanaian guest is the host handing them a link in a WhatsApp chat that
  * already exists.
@@ -119,7 +119,7 @@ export async function previewQuickInvitation(input: {
     hint: suggestion.hint,
     normalizedPhone: phoneResult.normalized ? phoneResult.value : null,
     phoneWarning: phoneResult.invalid
-      ? "That does not look like a reachable phone number — it will be saved as typed."
+      ? "That does not look like a reachable phone number. It will be saved as typed."
       : null,
     emailWarning: emailResult.invalid
       ? "That email address looks wrong, so it will not be saved."
@@ -133,7 +133,7 @@ export async function previewQuickInvitation(input: {
  *
  * The invitation, its guest row and its group are written in a single
  * transaction; the pass and gate code are issued after it commits. That split
- * is deliberate — pass issuance runs its own transaction and allocates a
+ * is deliberate. Pass issuance runs its own transaction and allocates a
  * globally-scarce code, so holding the invitation transaction open across it
  * would serialise every concurrent create on the event.
  */
@@ -415,7 +415,7 @@ export type InvitationLifecycleAction =
  *
  * Delete is reserved for organiser/admin cleanup of wrong or duplicate guest
  * invitations. The event's published Studio invitation cannot be hard-deleted
- * here — that would take down the live production template for every guest.
+ * here, that would take down the live production template for every guest.
  */
 export async function setInvitationLifecycle(params: {
   eventId: string;
@@ -455,7 +455,7 @@ export async function setInvitationLifecycle(params: {
         data: { archivedAt: null },
       });
       // Reissue rather than ensure: archiving revoked the pass, and a revoked
-      // pass is not reactivated — it stays on record so the QR already in a
+      // pass is not reactivated. It stays on record so the QR already in a
       // guest's phone is recognised and refused, while they receive a new one.
       const { regenerateInvitationPass } = await import("@/services/admission/guest-pass.service");
       await regenerateInvitationPass(invitation.id, params.actorUserId, `Restored: ${reason}`);
@@ -486,7 +486,7 @@ export async function setInvitationLifecycle(params: {
       });
       if (publishedStudio) {
         throw new Error(
-          "This is the event's live Studio invitation. Archive it instead — deleting it would take down the live production template."
+          "This is the event's live Studio invitation. Archive it instead. Deleting it would take down the live production template."
         );
       }
 

@@ -125,7 +125,7 @@ export default async function TemplateDetailPage({
           <p className="text-sm text-slate-500 mb-6 -mt-3">
             Additional staffing, extra event hours, travel/logistics and custom requests are quoted separately.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
             {packages.map((pkg) => (
               <PackageCard
                 key={pkg.slug}

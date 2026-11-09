@@ -1,5 +1,5 @@
 /**
- * Editable Ghanaian funeral terminology — never hardcode a single tradition.
+ * Editable Ghanaian funeral terminology, never hardcode a single tradition.
  */
 
 export const FUNERAL_LABEL_PRESETS = {
@@ -11,10 +11,10 @@ export const FUNERAL_LABEL_PRESETS = {
     "Final Funeral Rites",
   ],
   lifeDates: [
-    "Sunrise — Sunset",
-    "Born — Called Home",
-    "Born — Transitioned",
-    "Born — Called to Glory",
+    "Sunrise. Sunset",
+    "Born. Called Home",
+    "Born. Transitioned",
+    "Born. Called to Glory",
   ],
   programmeItems: [
     "Wake Keeping",
@@ -100,30 +100,30 @@ export const CULTURAL_RELIGIOUS_PRESETS: {
   { id: "family-custom", label: "Family Custom", suggestedTheme: "eternal-rose" },
 ];
 
-/** Tasteful Adinkra options — meaning required before use. */
+/** Tasteful Adinkra options. Meaning required before use. */
 export const ADINKRA_SYMBOLS = [
   {
     id: "gye-nyame",
     name: "Gye Nyame",
-    meaning: "Except God — supremacy of God",
+    meaning: "Except God. Supremacy of God",
     usage: "Faith-centred memorials when the family affirms Christian or traditional devotion to God.",
   },
   {
     id: "sankofa",
     name: "Sankofa",
-    meaning: "Return and fetch it — learn from the past",
+    meaning: "Return and fetch it. Learn from the past",
     usage: "Legacy and life-story sections; never as decoration alone.",
   },
   {
     id: "dwennimmen",
     name: "Dwennimmen",
-    meaning: "Ram's horns — humility and strength",
+    meaning: "Ram's horns. Humility and strength",
     usage: "When honouring resilience and character.",
   },
   {
     id: "fihankra",
     name: "Fihankra",
-    meaning: "House / compound — security and community",
+    meaning: "House / compound. Security and community",
     usage: "Family announcement and gathering sections.",
   },
 ] as const;
@@ -151,16 +151,16 @@ export function formatLifeDates(opts: {
 
   switch (format) {
     case "years":
-      return [by, py].filter(Boolean).join(" — ") || "";
+      return [by, py].filter(Boolean).join(". ") || "";
     case "full-dates":
-      return [bf, pf].filter(Boolean).join(" — ") || "";
+      return [bf, pf].filter(Boolean).join(". ") || "";
     case "born-called-home":
-      return by && py ? `Born ${by} — Called Home ${py}` : [bf, pf].filter(Boolean).join(" — ");
+      return by && py ? `Born ${by}. Called Home ${py}` : [bf, pf].filter(Boolean).join(". ");
     case "born-transitioned":
-      return by && py ? `Born ${by} — Transitioned ${py}` : [bf, pf].filter(Boolean).join(" — ");
+      return by && py ? `Born ${by}. Transitioned ${py}` : [bf, pf].filter(Boolean).join(". ");
     case "sunrise-sunset":
     default:
-      return by && py ? `Sunrise ${by} · Sunset ${py}` : [bf, pf].filter(Boolean).join(" — ");
+      return by && py ? `Sunrise ${by} · Sunset ${py}` : [bf, pf].filter(Boolean).join(". ");
   }
 }
 

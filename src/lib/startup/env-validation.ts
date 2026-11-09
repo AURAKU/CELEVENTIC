@@ -93,14 +93,14 @@ export function validateEnvironment(): EnvCheck[] {
         severity = "warning";
         message =
           spec.key === "AWS_CLOUDFRONT_URL"
-            ? "CDN / public base URL not set — S3 virtual-host URLs will be used when S3 is enabled"
-            : `${spec.label} not set — local disk upload fallback when S3 incomplete`;
+            ? "CDN / public base URL not set. S3 virtual-host URLs will be used when S3 is enabled"
+            : `${spec.label} not set. Local disk upload fallback when S3 incomplete`;
       } else if (spec.group === "payments") {
         severity = "warning";
-        message = `${spec.label} not configured — checkout disabled for this provider`;
+        message = `${spec.label} not configured. Checkout disabled for this provider`;
       } else if (spec.key.startsWith("GOOGLE_") || spec.key === "RESEND_API_KEY") {
         severity = "warning";
-        message = `${spec.label} not configured — feature disabled`;
+        message = `${spec.label} not configured. Feature disabled`;
       } else {
         severity = "warning";
         message = `${spec.label} not configured (optional)`;
@@ -128,7 +128,7 @@ export type StorageMode = "aws-s3" | "aws-s3-no-cdn" | "local-fallback" | "aws-i
 
 export interface StorageEnvSummary {
   mode: StorageMode;
-  /** Operator message — never includes secret values. */
+  /** Operator message, never includes secret values. */
   message: string;
   /** Keys that are set (names only). */
   presentKeys: string[];
@@ -167,7 +167,7 @@ export function getStorageEnvSummary(): StorageEnvSummary {
   if (allRequired && hasCdn) {
     return {
       mode: "aws-s3",
-      message: "AWS S3 + CDN configured — media uploads use cloud storage",
+      message: "AWS S3 + CDN configured. Media uploads use cloud storage",
       presentKeys: [...presentKeys],
       missingRequiredKeys: [],
       hasCdn: true,
@@ -177,7 +177,7 @@ export function getStorageEnvSummary(): StorageEnvSummary {
     return {
       mode: "aws-s3-no-cdn",
       message:
-        "AWS S3 configured — add CloudFront / AWS_S3_PUBLIC_BASE_URL for fastest CDN delivery",
+        "AWS S3 configured. Add CloudFront / AWS_S3_PUBLIC_BASE_URL for fastest CDN delivery",
       presentKeys: [...presentKeys],
       missingRequiredKeys: [],
       hasCdn: false,
@@ -186,7 +186,7 @@ export function getStorageEnvSummary(): StorageEnvSummary {
   if (anySet) {
     return {
       mode: "aws-incomplete",
-      message: `AWS S3 incomplete (missing ${missingRequiredKeys.join(", ")}) — using local upload fallback`,
+      message: `AWS S3 incomplete (missing ${missingRequiredKeys.join(", ")}), using local upload fallback`,
       presentKeys: [...presentKeys],
       missingRequiredKeys: [...missingRequiredKeys],
       hasCdn,
@@ -194,7 +194,7 @@ export function getStorageEnvSummary(): StorageEnvSummary {
   }
   return {
     mode: "local-fallback",
-    message: "AWS S3 not configured — uploads use local disk fallback (dev-safe)",
+    message: "AWS S3 not configured. Uploads use local disk fallback (dev-safe)",
     presentKeys: [],
     missingRequiredKeys: [...S3_REQUIRED_KEYS],
     hasCdn: false,
@@ -231,7 +231,7 @@ export function getEnvironmentHealthSummary(
   details.push(
     paymentsConfigured
       ? "Payments: at least one provider key present"
-      : "Payments: no provider keys — checkouts unavailable until configured"
+      : "Payments: no provider keys. Checkouts unavailable until configured"
   );
 
   if (coreMissing.length > 0 || storage.mode === "aws-incomplete") {
@@ -239,8 +239,8 @@ export function getEnvironmentHealthSummary(
       status: coreMissing.length > 0 ? "critical" : "warning",
       message:
         coreMissing.length > 0
-          ? `Failed — missing ${coreMissing.join(", ")}`
-          : `Degraded — ${storage.message}`,
+          ? `Failed. Missing ${coreMissing.join(", ")}`
+          : `Degraded: ${storage.message}`,
       details,
       storage,
       coreMissing,
@@ -256,7 +256,7 @@ export function getEnvironmentHealthSummary(
     if (!paymentsConfigured) parts.push("payments unset");
     return {
       status: "warning",
-      message: `Degraded — ${parts.join("; ")}`,
+      message: `Degraded: ${parts.join("; ")}`,
       details,
       storage,
       coreMissing,
@@ -266,7 +266,7 @@ export function getEnvironmentHealthSummary(
 
   return {
     status: "healthy",
-    message: "Environment connected — core, S3+CDN, and payments configured",
+    message: "Environment connected. Core, S3+CDN, and payments configured",
     details,
     storage,
     coreMissing,

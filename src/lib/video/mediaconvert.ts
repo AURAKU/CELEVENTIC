@@ -77,7 +77,7 @@ export interface RenditionSpec {
   audioBitrate: number;
 }
 
-/** Standard ladder — MediaConvert `ScalingBehavior: FIT_NO_UPSCALE` guarantees we never upscale small sources. */
+/** Standard ladder. MediaConvert `ScalingBehavior: FIT_NO_UPSCALE` guarantees we never upscale small sources. */
 const STANDARD_RENDITIONS: RenditionSpec[] = [
   { name: "360p", width: 640, height: 360, videoBitrate: 800_000, audioBitrate: 96_000 },
   { name: "480p", width: 854, height: 480, videoBitrate: 1_400_000, audioBitrate: 96_000 },
@@ -96,7 +96,7 @@ const COMPACT_RENDITION: RenditionSpec = {
 function renditionsForCategory(category: VideoCategory): RenditionSpec[] {
   switch (category) {
     case "INVITATION_BACKGROUND":
-      // Short, looping, decorative — keep file size small; one compact rendition is enough.
+      // Short, looping, decorative. Keep file size small; one compact rendition is enough.
       return [COMPACT_RENDITION];
     case "GUESTBOOK":
     case "VENDOR_PORTFOLIO":
@@ -277,7 +277,7 @@ export async function buildMediaConvertJobPlan(input: {
   // No `VideoSelector`/codec restriction on the input: MediaConvert auto-probes the source
   // codec and decodes it before encoding outputs. This means H.264, HEVC/H.265 (iPhone/Android
   // HEVC shipped inside .mp4/.mov), ProRes, MPEG-2, VP8/VP9, etc. all flow through the same
-  // job settings below and are always transcoded to H.264/AAC (+ HLS) — HEVC is never served
+  // job settings below and are always transcoded to H.264/AAC (+ HLS). HEVC is never served
   // as the only public delivery format.
   const settings: JobSettings = {
     Inputs: [

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./funeral-experience.module.css";
 
 /**
- * Memorial audio — never autoplays without Enter Memorial / Sound On.
+ * Memorial audio, never autoplays without Enter Memorial / Sound On.
  * Failure must never block memorial entry.
  */
 export function MemorialAudioController({

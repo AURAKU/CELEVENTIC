@@ -26,8 +26,11 @@ import {
 } from "@/lib/digital-business-card/types";
 import { buildVCard } from "@/lib/digital-business-card/vcard";
 import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capability";
-import { smartCardShortUrl } from "@/lib/digital-business-card/product";
-import { SMARTCARD_PROFILE_MODES } from "@/lib/digital-business-card/product";
+import {
+  SMARTCARD_PRODUCT_NAME,
+  SMARTCARD_PROFILE_MODES,
+  smartCardShortUrl,
+} from "@/lib/digital-business-card/product";
 
 function socialHref(kind: string, value: string): string {
   const v = value.trim();
@@ -130,7 +133,7 @@ export function DigitalCardPublicView({
       if (navigator.share) {
         await navigator.share({
           title: card.displayName,
-          text: `${card.displayName} · Celeventic SmartCard`,
+          text: `${card.displayName} · ${SMARTCARD_PRODUCT_NAME}`,
           url: shortUrl,
         });
         return;
@@ -171,7 +174,7 @@ export function DigitalCardPublicView({
         const reader = new NDEFReader();
         await reader.write({ records: [{ recordType: "url", data: shortUrl }] });
       }
-      setNfcMsg("NFC tag written with your SmartCard redirect. Tap phones to open this identity.");
+      setNfcMsg("NFC tag written with your CeleCard redirect. Tap phones to open this identity.");
     } catch {
       setNfcMsg("Could not write NFC. Copy the short link and use an NFC writer app.");
     }
@@ -201,7 +204,7 @@ export function DigitalCardPublicView({
       setConnectDone(true);
       setConnectOpen(false);
     } catch {
-      setConnectError("Network error — try again.");
+      setConnectError("Network error. Try again.");
     } finally {
       setConnecting(false);
     }
@@ -216,7 +219,7 @@ export function DigitalCardPublicView({
         <div className="max-w-md rounded-2xl border border-slate-200/80 bg-white/90 p-8 text-center shadow-xl backdrop-blur">
           <p className="font-display text-xl font-semibold text-slate-900">Card unavailable</p>
           <p className="mt-2 text-sm text-slate-600">
-            This SmartCard is offline. The owner can renew their plan to keep the identity live.
+            This CeleCard is offline. It only works while the owner&apos;s subscription is paid.
           </p>
         </div>
       </main>
@@ -226,7 +229,7 @@ export function DigitalCardPublicView({
   return (
     <main className="min-h-app-viewport pb-28" style={{ background: theme.stageBackground }}>
       <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-10 sm:py-14">
-        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: theme.muted }}>
+        <p className="mx-auto w-fit rounded-full bg-white/94 px-3 py-1 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-900 shadow-sm">
           Sharing as · {modeLabel}
         </p>
 
@@ -240,7 +243,7 @@ export function DigitalCardPublicView({
         />
 
         {card.bio ? (
-          <p className="text-center text-sm leading-relaxed" style={{ color: theme.muted }}>
+          <p className="rounded-2xl bg-white/94 px-4 py-3 text-center text-sm font-medium leading-relaxed text-slate-900 shadow-sm">
             {card.bio}
           </p>
         ) : null}
@@ -252,7 +255,7 @@ export function DigitalCardPublicView({
           aria-label="Share Center"
         >
           <div className="mb-3 flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: theme.muted }}>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-800">
               Share Center
             </p>
             <label className="sr-only" htmlFor="share-as">
@@ -290,7 +293,7 @@ export function DigitalCardPublicView({
               className="min-h-11"
               onClick={() => {
                 setNfcMsg(
-                  "Wallet passes use a Smart QR for universal sharing. Apple Wallet NFC requires Apple entitlements — coming next."
+                  "Wallet passes use a Smart QR for universal sharing. Apple Wallet NFC requires Apple entitlements. Coming next."
                 );
               }}
             >
@@ -306,7 +309,7 @@ export function DigitalCardPublicView({
             </div>
           ) : null}
           {nfcMsg ? (
-            <p className="mt-3 text-center text-[11px] leading-relaxed" style={{ color: theme.muted }}>
+            <p className="mt-3 text-center text-[11px] font-medium leading-relaxed text-slate-700">
               {nfcMsg}
             </p>
           ) : null}
@@ -316,8 +319,8 @@ export function DigitalCardPublicView({
           {card.email ? (
             <a
               href={`mailto:${card.email}`}
-              className="flex items-center gap-3 rounded-xl border bg-white/80 px-4 py-3 text-sm font-medium shadow-sm backdrop-blur transition hover:shadow-md"
-              style={{ borderColor: theme.border, color: theme.text }}
+              className="flex items-center gap-3 rounded-xl border bg-white/92 px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm backdrop-blur transition hover:shadow-md"
+              style={{ borderColor: theme.border }}
             >
               <Mail className="h-4 w-4 shrink-0" style={{ color: theme.accent }} />
               {card.email}
@@ -326,8 +329,8 @@ export function DigitalCardPublicView({
           {card.phone ? (
             <a
               href={`tel:${card.phone}`}
-              className="flex items-center gap-3 rounded-xl border bg-white/80 px-4 py-3 text-sm font-medium shadow-sm backdrop-blur transition hover:shadow-md"
-              style={{ borderColor: theme.border, color: theme.text }}
+              className="flex items-center gap-3 rounded-xl border bg-white/92 px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm backdrop-blur transition hover:shadow-md"
+              style={{ borderColor: theme.border }}
             >
               <Phone className="h-4 w-4 shrink-0" style={{ color: theme.accent }} />
               {card.phone}
@@ -339,8 +342,8 @@ export function DigitalCardPublicView({
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-xl border bg-white/80 px-4 py-3 text-sm font-medium shadow-sm backdrop-blur transition hover:shadow-md"
-              style={{ borderColor: theme.border, color: theme.text }}
+              className="flex items-center gap-3 rounded-xl border bg-white/92 px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm backdrop-blur transition hover:shadow-md"
+              style={{ borderColor: theme.border }}
             >
               <link.Icon className="h-4 w-4 shrink-0" style={{ color: theme.accent }} />
               {link.label}
@@ -374,10 +377,10 @@ export function DigitalCardPublicView({
               void submitConnect();
             }}
           >
-            <p className="font-display text-base font-semibold" style={{ color: theme.text }}>
+            <p className="font-display text-base font-semibold text-slate-900">
               Connect Back
             </p>
-            <p className="text-xs" style={{ color: theme.muted }}>
+            <p className="text-xs font-medium text-slate-700">
               Share your details with consent. No Celeventic account required.
             </p>
             <input
@@ -432,8 +435,8 @@ export function DigitalCardPublicView({
           </form>
         ) : null}
 
-        <p className="text-center text-[11px] tracking-wide uppercase" style={{ color: theme.muted }}>
-          Celeventic SmartCard
+        <p className="mx-auto w-fit rounded-full bg-white/94 px-3 py-1 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-900">
+          {SMARTCARD_PRODUCT_NAME}
         </p>
       </div>
 

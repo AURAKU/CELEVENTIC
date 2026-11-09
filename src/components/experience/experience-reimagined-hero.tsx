@@ -48,7 +48,13 @@ export function ExperienceReimaginedHero() {
           <div className="relative">
             <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 via-transparent to-teal-500/20 rounded-3xl blur-2xl" />
             <div className="relative rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
-              <LiveTemplatePreview layoutSlug={FEATURED_LAYOUT} category="Wedding" variant="hero" showDeviceToggle />
+              <LiveTemplatePreview
+                layoutSlug={FEATURED_LAYOUT}
+                catalogSlug={FEATURED_LAYOUT}
+                category="Wedding"
+                variant="hero"
+                showDeviceToggle
+              />
             </div>
             <p className="text-center text-xs text-slate-500 mt-3">Tap to begin the full cinematic experience</p>
           </div>

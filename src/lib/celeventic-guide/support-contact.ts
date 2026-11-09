@@ -2,7 +2,7 @@ import { buildWhatsAppUrl } from "@/lib/invitation/guest-portal-actions";
 
 /**
  * Celeventic customer care for Guide Assistant escalation.
- * WhatsApp / voice — Ghana mobile (local display + E.164 for wa.me).
+ * WhatsApp / voice. Ghana mobile (local display + E.164 for wa.me).
  */
 export const GUIDE_SUPPORT_CONTACT = {
   displayPhone: "0595968686",
@@ -14,7 +14,7 @@ export const GUIDE_SUPPORT_CONTACT = {
 } as const;
 
 export function guideSupportWhatsAppUrl(
-  message = "Hello Celeventic support — I need help with the platform."
+  message = "Hello Celeventic support. I need help with the platform."
 ): string {
   return buildWhatsAppUrl(GUIDE_SUPPORT_CONTACT.whatsAppE164, message);
 }

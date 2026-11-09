@@ -1,5 +1,5 @@
 /**
- * Memorial envelope family detection — which live funeral invitations MUST
+ * Memorial envelope family detection, which live funeral invitations MUST
  * run the wax-seal-black envelope ceremony regardless of stale persisted DNA.
  */
 import { SKU_CREATIVE_OVERRIDES } from "@/lib/invitation/template-creative-sku-overrides";

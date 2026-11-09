@@ -32,7 +32,7 @@ function importedRows(text: string) {
   };
 }
 
-describe("parsePastedText — name lists", () => {
+describe("parsePastedText. Name lists", () => {
   it("keeps a 'Surname, First' list whole instead of importing surnames only", () => {
     const { source, rows } = importedRows("Mensah, Kofi\nBoateng, Ama\nOsei, Yaw");
 
@@ -88,7 +88,7 @@ describe("parsePastedText — name lists", () => {
   });
 });
 
-describe("parsePastedText — contact details on the line", () => {
+describe("parsePastedText. Contact details on the line", () => {
   it("splits a name from the email and phone beside it", () => {
     const { rows } = importedRows(
       "Ama Serwaa\nKwabena Osei, kwabena@example.com, 0244123456"
@@ -126,7 +126,7 @@ describe("parsePastedText — contact details on the line", () => {
   });
 });
 
-describe("parsePastedText — real tables", () => {
+describe("parsePastedText. Real tables", () => {
   it("reads a spreadsheet copy-paste with a header row", () => {
     const { source, rows } = importedRows(
       "Name,Email,Phone,Party size\nKofi Mensah,k@e.com,0244123456,2\nAma Serwaa,a@e.com,0201234567,1"

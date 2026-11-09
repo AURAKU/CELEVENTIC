@@ -1,5 +1,5 @@
 /**
- * Celeventic Funeral Experience — design tokens & flagship themes.
+ * Celeventic Funeral Experience. Design tokens & flagship themes.
  * Honour the deceased; technology stays behind the memorial.
  */
 
@@ -57,7 +57,7 @@ export const FUNERAL_EXPERIENCE_THEMES: FuneralThemeTokens[] = [
   {
     id: "eternal-rose",
     name: "Eternal Rose",
-    tagline: "Ivory, blush and champagne — warm celebration of life",
+    tagline: "Ivory, blush and champagne. Warm celebration of life",
     mood: ["Grace", "Love", "Family", "Warmth"],
     introDefault: "floral-reveal",
     motionDefault: "ceremonial",
@@ -80,7 +80,7 @@ export const FUNERAL_EXPERIENCE_THEMES: FuneralThemeTokens[] = [
   {
     id: "golden-legacy",
     name: "Golden Legacy",
-    tagline: "Charcoal, gold and ivory — formal honour",
+    tagline: "Charcoal, gold and ivory. Formal honour",
     mood: ["Legacy", "Honour", "Respect"],
     introDefault: "ghanaian-regal",
     motionDefault: "ceremonial",
@@ -103,7 +103,7 @@ export const FUNERAL_EXPERIENCE_THEMES: FuneralThemeTokens[] = [
   {
     id: "heavenly-peace",
     name: "Heavenly Peace",
-    tagline: "Clouds, cream and soft gold — serene farewell",
+    tagline: "Clouds, cream and soft gold. Serene farewell",
     mood: ["Peace", "Serenity", "Remembrance"],
     introDefault: "heavenly-reveal",
     motionDefault: "gentle",
@@ -126,7 +126,7 @@ export const FUNERAL_EXPERIENCE_THEMES: FuneralThemeTokens[] = [
   {
     id: "ghana-heritage",
     name: "Ghana Heritage",
-    tagline: "Black, red and gold — ceremonial tradition",
+    tagline: "Black, red and gold. Ceremonial tradition",
     mood: ["Tradition", "Heritage", "Family"],
     introDefault: "ghanaian-regal",
     motionDefault: "ceremonial",
@@ -149,7 +149,7 @@ export const FUNERAL_EXPERIENCE_THEMES: FuneralThemeTokens[] = [
   {
     id: "burgundy-honour",
     name: "Burgundy Honour",
-    tagline: "Burgundy, ivory and gold — distinguished",
+    tagline: "Burgundy, ivory and gold. Distinguished",
     mood: ["Mature", "Formal", "Distinguished"],
     introDefault: "candle-remembrance",
     motionDefault: "gentle",
@@ -218,7 +218,7 @@ export const FUNERAL_EXPERIENCE_THEMES: FuneralThemeTokens[] = [
   {
     id: "midnight-memorial",
     name: "Midnight Memorial",
-    tagline: "Navy, silver and muted gold — modern luxury",
+    tagline: "Navy, silver and muted gold. Modern luxury",
     mood: ["Modern", "Quiet luxury"],
     introDefault: "minimal-memorial",
     motionDefault: "gentle",
@@ -241,7 +241,7 @@ export const FUNERAL_EXPERIENCE_THEMES: FuneralThemeTokens[] = [
   {
     id: "pure-white-farewell",
     name: "Pure White Farewell",
-    tagline: "White, ivory and soft grey — minimal",
+    tagline: "White, ivory and soft grey. Minimal",
     mood: ["Restraint", "Clarity", "Peace"],
     introDefault: "minimal-memorial",
     motionDefault: "minimal",
@@ -264,7 +264,7 @@ export const FUNERAL_EXPERIENCE_THEMES: FuneralThemeTokens[] = [
   {
     id: "celebration-of-life",
     name: "Celebration of Life",
-    tagline: "Warm neutrals — photography-led remembrance",
+    tagline: "Warm neutrals. Photography-led remembrance",
     mood: ["Gratitude", "Story", "Warmth"],
     introDefault: "memory-journey",
     motionDefault: "gentle",
@@ -310,7 +310,7 @@ export const FUNERAL_EXPERIENCE_THEMES: FuneralThemeTokens[] = [
   {
     id: "church-memorial",
     name: "Church Memorial",
-    tagline: "Elegant Christian memorial — optional cross & scripture",
+    tagline: "Elegant Christian memorial. Optional cross & scripture",
     mood: ["Faith", "Hope", "Comfort"],
     introDefault: "candle-remembrance",
     motionDefault: "gentle",

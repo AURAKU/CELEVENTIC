@@ -127,7 +127,7 @@ export async function abortMultipartUpload(key: string, uploadId: string): Promi
     const { client, cfg } = await requireS3();
     await client.send(new AbortMultipartUploadCommand({ Bucket: cfg.bucket, Key: key, UploadId: uploadId }));
   } catch {
-    // Best-effort — S3 auto-expires incomplete multipart uploads via lifecycle rules too.
+    // Best-effort. S3 auto-expires incomplete multipart uploads via lifecycle rules too.
     // Also covers callers on environments without S3 configured (local-fallback assets never
     // have a multipartUploadId, but stay defensive).
   }
@@ -155,7 +155,7 @@ export async function headVideoObject(key: string): Promise<VideoHeadInfo> {
   }
 }
 
-/** Fetch a whole object — used by the FFmpeg (VPS) processing path to download the raw upload for transcoding. */
+/** Fetch a whole object. Used by the FFmpeg (VPS) processing path to download the raw upload for transcoding. */
 export async function getFullVideoObject(key: string): Promise<Buffer | null> {
   const { client, cfg } = await requireS3();
   try {
@@ -168,7 +168,7 @@ export async function getFullVideoObject(key: string): Promise<Buffer | null> {
   }
 }
 
-/** Upload a processed output (MP4 / poster JPEG) back to the video bucket — used by the FFmpeg processing path. */
+/** Upload a processed output (MP4 / poster JPEG) back to the video bucket. Used by the FFmpeg processing path. */
 export async function putVideoObject(key: string, buffer: Buffer, contentType: string): Promise<void> {
   const { client, cfg } = await requireS3();
   await client.send(
@@ -182,7 +182,7 @@ export async function putVideoObject(key: string, buffer: Buffer, contentType: s
   );
 }
 
-/** Fetch a byte range of the object — used for magic-byte signature sniffing and MP4 metadata parsing. */
+/** Fetch a byte range of the object. Used for magic-byte signature sniffing and MP4 metadata parsing. */
 export async function getVideoObjectRange(key: string, start: number, endInclusive: number): Promise<Buffer | null> {
   const { client, cfg } = await requireS3();
   try {
@@ -202,17 +202,17 @@ export async function deleteVideoObject(key: string): Promise<void> {
     const { client, cfg } = await requireS3();
     await client.send(new DeleteObjectCommand({ Bucket: cfg.bucket, Key: key }));
   } catch {
-    // best-effort — also covers local-fallback assets, which never had an S3 object to begin
+    // best-effort, also covers local-fallback assets, which never had an S3 object to begin
     // with (S3 isn't configured on this environment), so there's nothing to clean up there.
   }
 }
 
 /**
- * Deletes every object under a key prefix — used when removing a finished VideoAsset, since
+ * Deletes every object under a key prefix. Used when removing a finished VideoAsset, since
  * the exact processed-derivative keys vary by processing engine (single ffmpeg MP4+poster vs.
  * MediaConvert's multi-rendition + HLS ladder + numbered thumbnail frames). Paginates through
  * `ListObjectsV2` so it scales past the 1000-key `DeleteObjects` limit. Best-effort: silently
- * no-ops when S3 isn't configured or the prefix doesn't exist — never blocks a delete request.
+ * no-ops when S3 isn't configured or the prefix doesn't exist, never blocks a delete request.
  */
 export async function deleteVideoObjectsByPrefix(prefix: string): Promise<void> {
   try {
@@ -232,7 +232,7 @@ export async function deleteVideoObjectsByPrefix(prefix: string): Promise<void> 
       continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
     } while (continuationToken);
   } catch {
-    // best-effort — covers unconfigured S3 and already-empty prefixes alike.
+    // best-effort. Covers unconfigured S3 and already-empty prefixes alike.
   }
 }
 
@@ -248,7 +248,7 @@ export async function getVideoPublicBaseUrl(): Promise<string | null> {
 
 /**
  * Build the CDN-facing URL for a processed (non-raw) key. Processed output should always be
- * served through CloudFront in production — this only falls back to a virtual-hosted S3 URL
+ * served through CloudFront in production. This only falls back to a virtual-hosted S3 URL
  * for local/dev setups that haven't configured a CDN yet.
  */
 export async function buildPublicVideoUrl(key: string): Promise<string> {

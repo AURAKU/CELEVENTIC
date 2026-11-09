@@ -61,7 +61,7 @@ export function TutorialClient({ guide }: { guide: TutorialViewModel }) {
           />
           {guide.videoProductionRequired !== false && !guide.videoUrl ? (
             <p className="text-center text-xs font-semibold uppercase tracking-wide text-amber-800">
-              VIDEO PRODUCTION REQUIRED — interactive walkthrough ships now
+              VIDEO PRODUCTION REQUIRED. Interactive walkthrough ships now
             </p>
           ) : null}
         </div>

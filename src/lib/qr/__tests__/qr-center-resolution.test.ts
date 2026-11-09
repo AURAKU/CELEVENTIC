@@ -35,7 +35,7 @@ describe("QR center resolution", () => {
     assert.equal(mark.source, "couple");
   });
 
-  it("ignores gallery and intro dumps — those are not the QR center", () => {
+  it("ignores gallery and intro dumps. Those are not the QR center", () => {
     const mark = resolveQrCenterMark({
       heroImageUrl: "/templates/aurelia/hero.jpg",
       introImageUrl: "/uploads/events/intro-kente.jpg",

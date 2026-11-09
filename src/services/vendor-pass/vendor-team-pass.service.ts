@@ -1,5 +1,5 @@
 /**
- * Vendor & Team Access Passes — capacity-tracked, never guest invitations.
+ * Vendor & Team Access Passes. Capacity-tracked, never guest invitations.
  */
 
 import type {
@@ -640,7 +640,7 @@ async function findPassForAdmit(input: {
       include,
     });
     if (pass) return { pass, wrongEvent: false as const };
-    // Token is valid but owned by another event — never admit across events.
+    // Token is valid but owned by another event, never admit across events.
     const elsewhere = await prisma.vendorTeamPass.findFirst({
       where: { tokenHash: hash, archivedAt: null },
       select: { id: true },
@@ -686,7 +686,7 @@ export interface AdmitVendorTeamPassInput {
 }
 
 /**
- * Record a refused scan so the host sees the full story on the entry log —
+ * Record a refused scan so the host sees the full story on the entry log.
  * a vendor turned away at 11pm matters as much as one let in.
  */
 async function logDeniedEntry(
@@ -1049,7 +1049,7 @@ export async function getVendorTeamPassHistory(
   };
 }
 
-/** Offline package slice — capacity-aware vendor team passes for one event. */
+/** Offline package slice. Capacity-aware vendor team passes for one event. */
 export async function offlineVendorTeamSlice(eventId: string) {
   const rows = await prisma.vendorTeamPass.findMany({
     where: {

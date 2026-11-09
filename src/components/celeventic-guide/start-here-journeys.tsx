@@ -25,7 +25,7 @@ export function StartHereJourneys({
             Start Here
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            Pick your role for a short learning path — Guest, Organizer, Vendor, or Scanner.
+            Pick your role for a short learning path. Guest, Organizer, Vendor, or Scanner.
           </p>
         </div>
       </div>
@@ -72,7 +72,7 @@ export function StartHereJourneys({
 
       {START_HERE_JOURNEYS.length === 0 ? null : (
         <p className="text-xs text-slate-400">
-          Prefer browsing? Use search and filters below — or open{" "}
+          Prefer browsing? Use search and filters below, or open{" "}
           <Link href="/guide/how-celeventic-works" className="text-brand-700 hover:underline">
             How Celeventic Works
           </Link>

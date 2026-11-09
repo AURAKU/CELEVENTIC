@@ -46,7 +46,7 @@ export function FirstTimeHelpBanner() {
         <div className="flex-1 min-w-0">
           <p className="font-display text-lg font-semibold text-slate-900">New to Celeventic?</p>
           <p className="text-sm text-slate-600 mt-1 leading-relaxed">
-            Start with a short role path, or watch How Celeventic Works — invitation, RSVP, QR, Event Guide, and Memory Vault.
+            Start with a short role path, or watch How Celeventic Works. Invitation, RSVP, QR, Event Guide, and Memory Vault.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 shrink-0">

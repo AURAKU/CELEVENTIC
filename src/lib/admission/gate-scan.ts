@@ -1,7 +1,7 @@
 /**
  * Classify raw gate input (camera decode, screenshot upload, or keypad)
  * before it hits a write path. Classification is client-safe shape routing
- * only — admission still requires server HMAC / event-scope validation.
+ * only. Admission still requires server HMAC / event-scope validation.
  */
 import { extractPassToken } from "@/lib/admission/pass-token-format";
 import {

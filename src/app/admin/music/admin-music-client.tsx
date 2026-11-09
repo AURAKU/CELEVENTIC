@@ -539,7 +539,7 @@ export function AdminMusicClient() {
                     clipValid ? "text-emerald-700" : "text-amber-700"
                   }`}
                 >
-                  Clip must be {ADMIN_CLIP_MIN_SEC}–{ADMIN_CLIP_MAX_SEC} seconds.
+                  Clip must be {ADMIN_CLIP_MIN_SEC} to {ADMIN_CLIP_MAX_SEC} seconds.
                   {!clipValid && ` Adjust the handles (current ${Math.round(clipLen)}s).`}
                 </p>
               </div>
@@ -598,7 +598,7 @@ export function AdminMusicClient() {
                           track.category}
                         {track.durationSec ? ` · ${formatAudioTime(track.durationSec)}` : ""}
                         {track.clipStartSec != null && track.clipEndSec != null
-                          ? ` · from ${formatAudioTime(track.clipStartSec)}–${formatAudioTime(track.clipEndSec)}`
+                          ? ` · from ${formatAudioTime(track.clipStartSec)} to ${formatAudioTime(track.clipEndSec)}`
                           : ""}
                       </p>
                       {assigned > 0 && (

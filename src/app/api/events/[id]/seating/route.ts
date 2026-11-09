@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { seatingService } from "@/services/seating/seating.service";
 import { seatingPartyService } from "@/services/seating/seating-party.service";
 import type { SeatingLayout } from "@/services/seating/seating.service";
-import { requireEventPermission, verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission } from "@/lib/event-access";
 import { EventPermissionKey } from "@/lib/workspace/permission-keys";
 import type { UserRole } from "@prisma/client";
 import { z } from "zod";
@@ -25,7 +25,6 @@ const seatingGuestSelect = {
   name: true,
   email: true,
   phone: true,
-  qrToken: true,
   status: true,
   plusOnes: true,
   invitationId: true,
@@ -56,7 +55,7 @@ const seatingGuestSelect = {
   },
 };
 
-/** Load every active guest for the event — organizers must not lose roster rows to a silent cap. */
+/** Load every active guest for the event. Organizers must not lose roster rows to a silent cap. */
 async function loadAllSeatingGuests(eventId: string) {
   type SeatingGuest = Awaited<
     ReturnType<typeof prisma.guest.findMany<{ select: typeof seatingGuestSelect }>>
@@ -85,7 +84,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const { id: eventId } = await params;
   try {
-    await verifyEventAccess(eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.EDIT_SEATING
+    );
     const plans = await seatingService.getPlansForEvent(eventId);
     const plan = plans.find((row) => row.planType === "RECEPTION") ?? plans[0] ?? null;
 
@@ -142,7 +146,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             name: guest.name,
             email: guest.email,
             phone: guest.phone,
-            qrToken: guest.qrToken,
             status: guest.status,
             plusOnes: guest.plusOnes,
             invitationId: guest.invitationId,
@@ -177,7 +180,7 @@ const upsertSchema = z
   .object({
     name: z.string().trim().min(1).max(120),
     planType: z.enum(["RECEPTION", "CEREMONY"]).optional().default("RECEPTION"),
-    /** Client layout.revision when saving — reject if server is newer. */
+    /** Client layout.revision when saving. Reject if server is newer. */
     expectedRevision: z.number().int().min(0).optional(),
     layout: z
       .object({

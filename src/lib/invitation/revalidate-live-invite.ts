@@ -25,6 +25,6 @@ export async function revalidateLiveInvite(input: {
     const { revalidatePath } = await import("next/cache");
     for (const path of paths) revalidatePath(path);
   } catch {
-    // No request scope — nothing is cached to purge.
+    // No request scope. Nothing is cached to purge.
   }
 }

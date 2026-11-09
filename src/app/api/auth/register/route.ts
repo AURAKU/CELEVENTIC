@@ -12,9 +12,9 @@ function emptyToUndefined(v: unknown): unknown {
 const registerSchema = z
   .object({
     name: z
-      .string({ required_error: "Username is required" })
+      .string({ required_error: "Your name is required" })
       .trim()
-      .min(2, "Username must be at least 2 characters"),
+      .min(2, "Please enter your name (at least 2 characters)"),
     email: z.preprocess(
       emptyToUndefined,
       z.string().email("Enter a valid email address").optional()
@@ -28,7 +28,7 @@ const registerSchema = z
       required_error: "Please choose what you'd like to do",
       invalid_type_error: "Please choose what you'd like to do",
     }),
-    // Optional public handle — empty/short values are ignored (never block signup).
+    // Optional public handle. Empty/short values are ignored (never block signup).
     username: z.preprocess(emptyToUndefined, z.string().optional()),
     companyName: z.preprocess(emptyToUndefined, z.string().optional()),
     city: z.preprocess(emptyToUndefined, z.string().optional()),
@@ -50,7 +50,7 @@ const registerSchema = z
     if (data.accountType === "ORGANIZATION" && !data.organizationName) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Organization name is required",
+        message: "Organisation name is required",
         path: ["organizationName"],
       });
     }

@@ -8,14 +8,14 @@ import { MemorialCandle } from "./memorial-candle";
 import { resolveDeceasedName } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
 
-/** Condolences / Guest wishes — sits directly above the closing page. */
+/** Condolences / Guest wishes. Sits directly above the closing page. */
 export function GuestWishesPage({ context, page }: InvitePageProps) {
   const isFuneral = context.category === "funeral";
   const deceasedName = isFuneral ? resolveDeceasedName(context.event) : null;
   const accent =
     context.theme.color.accent ??
     context.design.colors?.accent ??
-    (isFuneral ? "#9c3a3a" : "#0B8A83");
+    "var(--inv-accent)";
 
   return (
     <PageFrame pageId={page.id} label={page.label} altSurface>

@@ -167,7 +167,7 @@ describe("sync conflicts", () => {
     assert.equal(report.packGuideVersion, 4);
     assert.equal(report.freshPackRequired, true);
 
-    // Counters are additive facts about the night, so they still merge — only
+    // Counters are additive facts about the night, so they still merge. Only
     // content would have conflicted, and a pack never uploads content.
     assert.equal(report.accepted, true);
     assert.equal(apply.length, 1);
@@ -228,7 +228,7 @@ describe("replaying a queue never double-counts", () => {
     assert.equal(report.duplicateRecords, 1);
   });
 
-  it("is idempotent — syncing the same queue twice changes nothing the second time", () => {
+  it("is idempotent. Syncing the same queue twice changes nothing the second time", () => {
     const records = [record({ clientRecordId: "r1" }), record({ clientRecordId: "r2" })];
     const first = planOfflineSync({
       request: { packVersion: 1, guideVersion: 4, records },

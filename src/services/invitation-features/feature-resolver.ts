@@ -10,7 +10,7 @@ import {
 } from "@/lib/invitation-features/registry";
 
 /**
- * Shared Invitation Feature Layer — DB-backed resolver.
+ * Shared Invitation Feature Layer. DB-backed resolver.
  *
  * Combines the three inheritance levels into an ordered, guest-safe feature map:
  *   invitation override (Invitation.featureConfig)
@@ -63,7 +63,7 @@ function buildEventFlags(
   return flags;
 }
 
-/** Pure combine — exposed for tests without a DB. */
+/** Pure combine. Exposed for tests without a DB. */
 export function combineFeatureStates(
   invitation: Pick<InvitationForFeatures, "postAdmissionEnabled" | "featureConfig">,
   enabledRows: { featureKey: string; isEnabled: boolean }[]

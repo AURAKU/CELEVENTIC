@@ -2,7 +2,7 @@
  * Seating planning signals from invitation engagement.
  *
  * OPENED / ACCEPTED / DECLINED / MAYBE help organisers arrange seats.
- * CHECKED_IN means the guest was admitted at the gate — not a planning RSVP.
+ * CHECKED_IN means the guest was admitted at the gate, not a planning RSVP.
  *
  * Priority only sorts the assign list. Organisers may seat any guest
  * regardless of RSVP response.

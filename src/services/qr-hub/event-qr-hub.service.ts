@@ -61,7 +61,7 @@ export class EventQrHubService {
 
     const assets: QrHubAssetCard[] = [];
 
-    // Gift — reuse campaign
+    // Gift. Reuse campaign
     const campaign = await giftCampaignService.getByEvent(eventId);
     if (campaign) {
       const { giftUrl, qrImageUrl } = await giftCampaignService.links(campaign);
@@ -109,7 +109,7 @@ export class EventQrHubService {
         statusLabel: link.status,
         url,
         qrPreviewUrl: qrUrl(url, eventId),
-        // Both guide links are managed from the guide builder, not from here —
+        // Both guide links are managed from the guide builder, not from here.
         // rotating or printing them needs the publication state beside them.
         openStudioHref:
           link.type === "EVENT_GUIDE" || link.type === "EVENT_GUIDE_OFFLINE"
@@ -158,7 +158,7 @@ export class EventQrHubService {
       assets.push({
         kind: "COMPANION",
         title: "Event Companion (landing)",
-        purpose: "Public companion landing — personal details still require admission.",
+        purpose: "Public companion landing. Personal details still require admission.",
         enabled: true,
         statusLabel: "ACTIVE",
         url: companionUrl,

@@ -1,11 +1,11 @@
 /**
- * Experience Engine concept map — documents Phase 2 vocabulary and where it lives.
+ * Experience Engine concept map. Documents Phase 2 vocabulary and where it lives.
  * Prefer importing implementations from `@/lib/experience-engine` / components barrel.
  */
 export const EXPERIENCE_ENGINE_CONCEPT_MAP = {
   InvitationExperience: {
     module: "@/components/experience-engine/invitation-experience",
-    role: "Thin orchestrator — reveal + sequence + viewport + error boundary",
+    role: "Thin orchestrator. Reveal + sequence + viewport + error boundary",
   },
   ExperienceScene: {
     module: "@/components/experience-engine/experience-scene",

@@ -1,4 +1,4 @@
-/** Public-facing AGI Engine branding — never expose provider names to guests/clients */
+/** Public-facing AGI Engine branding, never expose provider names to guests/clients */
 
 export const AGI_ENGINE = {
   name: "AGI Engine",

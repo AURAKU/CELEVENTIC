@@ -1,4 +1,12 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { decimalToMinorUnits, minorToDecimalString } from "@/lib/gifts/money";
+import { eventWalletService } from "@/services/gifts/event-wallet.service";
+import {
+  postTicketRefund,
+  postTicketSale,
+  readTicketCommissionPercent,
+} from "@/services/tickets/ticket-ledger.service";
 
 export interface RecordTransactionOptions {
   createdBy?: string;
@@ -105,7 +113,13 @@ export class WalletService {
     if (!eventId) return null;
 
     if (payment.purpose === "TICKET_PURCHASE") {
-      return this.settleTicketPayment(eventId, payment);
+      return this.settleTicketPayment(eventId, {
+        id: payment.id,
+        amount: payment.amount,
+        currency: payment.currency,
+        reference: payment.reference,
+        ticketOrderId: payment.ticketOrderId,
+      });
     }
 
     const amount = Number(payment.amount);
@@ -118,7 +132,7 @@ export class WalletService {
     };
 
     const txType = typeMap[payment.purpose] ?? "income";
-    const description = `${payment.purpose.replace(/_/g, " ").toLowerCase()} — ${payment.reference}`;
+    const description = `${payment.purpose.replace(/_/g, " ").toLowerCase()}: ${payment.reference}`;
 
     await this.recordRevenue(eventId, amount, description, txType, {
       paymentId: payment.id,
@@ -133,66 +147,111 @@ export class WalletService {
 
   async settleTicketPayment(
     eventId: string,
-    payment: { id: string; amount: unknown; currency: string; reference: string }
+    payment: {
+      id: string;
+      amount: unknown;
+      currency: string;
+      reference: string;
+      ticketOrderId?: string | null;
+    }
   ) {
     const existing = await prisma.walletTransaction.findFirst({
       where: { paymentId: payment.id, type: "ticket_revenue" },
     });
     if (existing) return { eventId, amount: Number(existing.amount), type: "ticket_revenue" };
 
-    const setting = await prisma.adminSetting.findUnique({
-      where: { key: "pricing.ticket_commission" },
-    });
-    const pct = (setting?.value as { percent?: number })?.percent ?? 5;
-    const gross = Number(payment.amount);
-    const fee = Math.round(gross * pct) / 100;
-    const net = gross - fee;
+    const commissionPercent = await readTicketCommissionPercent();
+    const grossMinor = decimalToMinorUnits(payment.amount, payment.currency);
     const wallet = await this.getOrCreateEventWallet(eventId);
 
-    await prisma.$transaction([
-      prisma.wallet.update({
+    const posted = await prisma.$transaction(async (tx) => {
+      const sale = await postTicketSale(
+        {
+          eventId,
+          paymentId: payment.id,
+          orderId: payment.ticketOrderId,
+          grossMinor,
+          commissionPercent,
+          currency: payment.currency,
+          reference: payment.reference,
+        },
+        tx
+      );
+
+      if (sale.alreadyApplied) return sale;
+
+      const netDecimal = new Prisma.Decimal(minorToDecimalString(sale.netMinor, payment.currency));
+      const feeDecimal = new Prisma.Decimal(minorToDecimalString(sale.feeMinor, payment.currency));
+
+      await tx.wallet.update({
         where: { id: wallet.id },
         data: {
-          balance: { increment: net },
-          revenue: { increment: net },
-          ...(fee > 0 ? { expenses: { increment: fee } } : {}),
+          balance: { increment: netDecimal },
+          revenue: { increment: netDecimal },
+          ...(sale.feeMinor > 0 ? { expenses: { increment: feeDecimal } } : {}),
         },
-      }),
-      prisma.walletTransaction.create({
+      });
+      await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,
           eventId,
           type: "ticket_revenue",
-          amount: net,
+          amount: netDecimal,
           currency: payment.currency,
           source: "payment",
           reference: payment.reference,
           paymentId: payment.id,
-          description: `Ticket sales — ${payment.reference}`,
+          description: `Ticket sales: ${payment.reference}`,
           isLocked: true,
         },
-      }),
-      ...(fee > 0
-        ? [
-            prisma.walletTransaction.create({
-              data: {
-                walletId: wallet.id,
-                eventId,
-                type: "platform_fee",
-                amount: -fee,
-                currency: payment.currency,
-                source: "payment",
-                reference: payment.reference,
-                paymentId: payment.id,
-                description: `Platform commission (${pct}%)`,
-                isLocked: true,
-              },
-            }),
-          ]
-        : []),
-    ]);
+      });
+      if (sale.feeMinor > 0) {
+        await tx.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            eventId,
+            type: "platform_fee",
+            amount: feeDecimal.negated(),
+            currency: payment.currency,
+            source: "payment",
+            reference: payment.reference,
+            paymentId: payment.id,
+            description: `Platform commission (${commissionPercent}%)`,
+            isLocked: true,
+          },
+        });
+      }
 
-    return { eventId, amount: net, fee, type: "ticket_revenue" };
+      return sale;
+    });
+
+    return {
+      eventId,
+      amount: posted.netMinor / 100,
+      fee: posted.feeMinor / 100,
+      netMinor: posted.netMinor,
+      feeMinor: posted.feeMinor,
+      alreadyApplied: posted.alreadyApplied,
+      type: "ticket_revenue",
+    };
+  }
+
+  async reverseTicketPayment(
+    eventId: string,
+    orderId: string,
+    payment: { id: string; currency: string }
+  ) {
+    return prisma.$transaction(async (tx) => {
+      return postTicketRefund(
+        {
+          eventId,
+          orderId,
+          paymentId: payment.id,
+          currency: payment.currency,
+        },
+        tx
+      );
+    });
   }
 
   async getWalletSummary(
@@ -244,6 +303,8 @@ export class WalletService {
     const contributionTotal = Number(contributions._sum.amount ?? 0);
     const pages = Math.max(1, Math.ceil(transactionTotal / limit));
 
+    const ticketLedger = await eventWalletService.reconcile(eventId, "TICKET").catch(() => null);
+
     return {
       wallet: {
         ...walletBase,
@@ -264,6 +325,14 @@ export class WalletService {
         netProfit: revenue - expenses,
         contributionTotal,
       },
+      ticketLedger: ticketLedger
+        ? {
+            balanceMinor: ticketLedger.ledgerBalanceMinor,
+            projectedMinor: ticketLedger.accountBalanceMinor,
+            drifted: ticketLedger.drifted,
+            entryCount: ticketLedger.entryCount,
+          }
+        : null,
     };
   }
 

@@ -12,7 +12,7 @@ export interface CreateVendorInput {
   location?: string;
 }
 
-/** Legacy vendor service — delegates to VendorOS where possible */
+/** Legacy vendor service. Delegates to VendorOS where possible */
 export class VendorService {
   async create(input: CreateVendorInput) {
     await seedVendorOs();

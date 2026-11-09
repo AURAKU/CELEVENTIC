@@ -106,13 +106,13 @@ function matchLayout(
   const isDark = brightness < 0.35;
 
   if (name.includes("lace") || name.includes("rustic") || hasWood) {
-    return { layout: "rustic-lace", reason: "Warm wood and lace tones detected — rustic heritage style", confidence: 0.88 };
+    return { layout: "rustic-lace", reason: "Warm wood and lace tones detected. Rustic heritage style", confidence: 0.88 };
   }
   if (name.includes("arch") || hasGreen || (isDark && !hasGold)) {
     return { layout: "arch-green", reason: "Deep green palette suits an arched botanical invitation", confidence: 0.86 };
   }
   if (name.includes("boho") || name.includes("floral") || (isLight && !hasGold)) {
-    return { layout: "boho-hexagon", reason: "Soft florals and cream tones — modern boho romantic", confidence: 0.84 };
+    return { layout: "boho-hexagon", reason: "Soft florals and cream tones. Modern boho romantic", confidence: 0.84 };
   }
   if (hasGold || name.includes("luxury") || name.includes("ring") || isDark) {
     return { layout: "luxury-rings", reason: "Gold accents and contrast suggest a luxury celebration", confidence: 0.87 };

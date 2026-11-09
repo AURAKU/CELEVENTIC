@@ -66,9 +66,9 @@ describe("reading a programme script", () => {
 
   it("keeps both ends of a time range", () => {
     const items = read("1:00 PM - 2:00 PM Guest arrival\n14:00-15:00 Cocktails");
-    assert.equal(items[0]!.time, "1:00 PM – 2:00 PM");
+    assert.equal(items[0]!.time, "1:00 PM to 2:00 PM");
     assert.equal(items[0]!.title, "Guest arrival");
-    assert.equal(items[1]!.time, "14:00 – 15:00");
+    assert.equal(items[1]!.time, "14:00 to 15:00");
     assert.equal(items[1]!.title, "Cocktails");
   });
 
@@ -377,7 +377,7 @@ describe("detail under an item", () => {
   });
 
   it("keeps the head line's detail above its indented paragraphs", () => {
-    const items = read("2:00 PM - Vows — Exchange of rings\n  Music by the choir");
+    const items = read("2:00 PM - Vows | Exchange of rings\n  Music by the choir");
     assert.equal(items[0]!.description, "Exchange of rings\nMusic by the choir");
   });
 
@@ -406,7 +406,7 @@ describe("leaving nothing out", () => {
     "the rings are blessed before they are exchanged.",
     "- Reading: 1 Corinthians 13",
     "🎂 Cutting of the cake",
-    "18:30 晚宴 — 自助餐",
+    "18:30 晚宴. 自助餐",
     "٢:٠٠ م - الزفاف",
     "Toasts and speeches",
   ].join("\n");
@@ -615,13 +615,13 @@ describe("what the script guarantees downstream", () => {
   });
 
   it("shortens a detail that runs past what the guide stores, and says so", () => {
-    const result = parseProgrammeScript(`2:00 PM — Ceremony\n  ${"detail ".repeat(400)}`);
+    const result = parseProgrammeScript(`2:00 PM - Ceremony\n  ${"detail ".repeat(400)}`);
     assert.equal(result.items[0]!.description!.length, 2000);
     assert.equal(result.shortened, true);
   });
 
   it("does not claim to have shortened an ordinary script", () => {
-    assert.equal(parseProgrammeScript("2:00 PM — Ceremony — Vows").shortened, false);
+    assert.equal(parseProgrammeScript("2:00 PM - Ceremony - Vows").shortened, false);
   });
 
   it("produces items the published payload can carry verbatim", () => {
@@ -635,7 +635,7 @@ describe("what the script guarantees downstream", () => {
     assert.deepEqual(Object.keys(heading!).sort(), ["id", "kind", "time", "title"]);
   });
 
-  it("is stable — reading the same script twice yields the same items", () => {
+  it("is stable. Reading the same script twice yields the same items", () => {
     const script = "2:00 PM — Ceremony — Vows\n4:30 PM — Reception";
     assert.deepEqual(read(script), read(script));
   });
@@ -643,14 +643,14 @@ describe("what the script guarantees downstream", () => {
 
 describe("writing a programme back out as a script", () => {
   const script = [
-    "12:30 PM — Guests seated",
+    "12:30 PM - Guests seated",
     "  Ushers will show you to your seats.",
     "",
     "  Please silence your phones.",
     "CEREMONY",
-    "2:00 PM — Exchange of vows",
+    "2:00 PM - Exchange of vows",
     "Reception:",
-    "7:00 PM — Dinner",
+    "7:00 PM - Dinner",
   ].join("\n");
 
   it("round-trips a programme through the script and back", () => {
@@ -671,7 +671,7 @@ describe("writing a programme back out as a script", () => {
       { id: "c", time: "7:00 PM", title: "Dinner", description: "Buffet service" },
     ]);
 
-    assert.equal(written, "1:00 PM — Arrival\nReception:\n7:00 PM — Dinner\n  Buffet service");
+    assert.equal(written, "1:00 PM: Arrival\nReception:\n7:00 PM: Dinner\n  Buffet service");
   });
 
   it("writes nothing for a programme with nothing in it", () => {

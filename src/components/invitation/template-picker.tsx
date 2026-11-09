@@ -39,6 +39,7 @@ export function TemplatePicker({ templates, selected, onSelect, disabled }: Temp
         >
           <LiveTemplatePreview
             layoutSlug={t.slug}
+            catalogSlug={t.slug}
             category={t.category}
             variant="picker"
             showBadge={false}

@@ -116,7 +116,7 @@ export function isAwsS3Configured(): boolean {
   return getAwsS3Config() !== null;
 }
 
-/** Alias — preferred name in call sites / docs. */
+/** Alias. Preferred name in call sites / docs. */
 export function isS3Enabled(): boolean {
   return isAwsS3Configured();
 }
@@ -143,21 +143,21 @@ export function getAwsStorageHealth(): {
       configured: false,
       hasCdn: false,
       message: partial
-        ? "AWS S3 incomplete — local upload fallback until region, keys, and bucket are all set"
-        : "AWS S3 not configured — local upload fallback (dev-safe)",
+        ? "AWS S3 incomplete. Local upload fallback until region, keys, and bucket are all set"
+        : "AWS S3 not configured. Local upload fallback (dev-safe)",
     };
   }
   if (!cfg.publicBaseUrl) {
     return {
       configured: true,
       hasCdn: false,
-      message: "AWS S3 configured — add CloudFront / AWS_S3_PUBLIC_BASE_URL for fastest CDN delivery",
+      message: "AWS S3 configured. Add CloudFront / AWS_S3_PUBLIC_BASE_URL for fastest CDN delivery",
     };
   }
   return {
     configured: true,
     hasCdn: true,
-    message: "AWS S3 + CDN configured — media uploads use cloud storage",
+    message: "AWS S3 + CDN configured. Media uploads use cloud storage",
   };
 }
 
@@ -227,7 +227,7 @@ export function publicUrlForS3Key(cfg: AwsS3Config, key: string): string {
   if (cfg.publicBaseUrl) {
     return `${cfg.publicBaseUrl}/${key}`;
   }
-  // Virtual-hosted–style URL (works when bucket is public / CloudFront not set yet)
+  // Virtual-hosted to style URL (works when bucket is public / CloudFront not set yet)
   if (cfg.endpoint) {
     return `${cfg.endpoint.replace(/\/+$/, "")}/${cfg.bucket}/${key}`;
   }

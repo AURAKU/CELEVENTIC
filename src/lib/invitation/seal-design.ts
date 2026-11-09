@@ -1,11 +1,11 @@
 /**
- * Wax-seal visual design system — additive layer on top of `sealInitials`.
+ * Wax-seal visual design system. Additive layer on top of `sealInitials`.
  * Lets hosts pick a designed seal (color/material) plus font, size, and text
  * color for the monogram/word shown on the envelope wax seal. Consumed by
  * `EmbroideredEnvelopeFace` (photoreal Traditional Marriage seal) and the
  * CSS circular seal in `EnvelopeCollectionReveal` for every other envelope.
  *
- * All fields are optional and additive — invites saved before this feature
+ * All fields are optional and additive. Invites saved before this feature
  * shipped resolve to `classic-peach-pearl` / auto font / medium size, which
  * reproduces the original look pixel-for-pixel.
  */
@@ -17,7 +17,7 @@ export type SealDesignId =
   | "cream-linen"
   | "forest-green"
   | "charcoal"
-  /** Funeral / memorial poured-wax materials — never peach wedding pearl */
+  /** Funeral / memorial poured-wax materials, never peach wedding pearl */
   | "soft-candle"
   | "ivory-dove"
   | "garnet-cloth"
@@ -48,25 +48,25 @@ export interface SealDesignPreset {
   description: string;
   /** CSS background for the small swatch chip in the Studio picker. */
   swatch: string;
-  /** True when the wax face reads dark — flips ink highlight/stroke to light tones. */
+  /** True when the wax face reads dark. Flips ink highlight/stroke to light tones. */
   dark?: boolean;
   deep: SealGradientStop[];
   face: SealGradientStop[];
   rim: SealGradientStop[];
   well: SealGradientStop[];
   bead: SealGradientStop[];
-  /** Default ink color for 1–3 letter monograms on this seal. */
+  /** Default ink color for 1 to 3 letter monograms on this seal. */
   monogramColor: string;
   /** Default ink color for short words/phrases on this seal. */
   wordColor: string;
 }
 
-/** Six designed seals — real wax/foil materials, never a flat generic hue. */
+/** Six designed seals. Real wax/foil materials, never a flat generic hue. */
 export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   {
     id: "classic-peach-pearl",
     label: "Classic Peach Pearl",
-    description: "The original TM embroidered envelope seal — pearlescent peach with a beaded rim.",
+    description: "The original TM embroidered envelope seal. Pearlescent peach with a beaded rim.",
     swatch: "linear-gradient(135deg, #fbe4d6 0%, #e8b49a 55%, #c07860 100%)",
     deep: [
       { offset: "0%", color: "#e8b49a" },
@@ -103,7 +103,7 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   {
     id: "burgundy-wax",
     label: "Deep Burgundy Wax",
-    description: "Poured-wine sealing wax with a gold bead ring — timeless invitation stamp.",
+    description: "Poured-wine sealing wax with a gold bead ring. Timeless invitation stamp.",
     swatch: "linear-gradient(135deg, #c96a7a 0%, #7c1f30 55%, #4a1220 100%)",
     deep: [
       { offset: "0%", color: "#8a2436" },
@@ -140,7 +140,7 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   {
     id: "gold-foil-rim",
     label: "Gold Foil Rim",
-    description: "Bright antique-gold foil with espresso ink — luxe metallic finish.",
+    description: "Bright antique-gold foil with espresso ink. Luxe metallic finish.",
     swatch: "linear-gradient(135deg, #f7e7ad 0%, #dcb84f 55%, #8a6a14 100%)",
     deep: [
       { offset: "0%", color: "#e8c877" },
@@ -214,7 +214,7 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   {
     id: "forest-green",
     label: "Forest Green",
-    description: "Deep emerald wax with a gold bead ring — rich botanical contrast.",
+    description: "Deep emerald wax with a gold bead ring. Rich botanical contrast.",
     swatch: "linear-gradient(135deg, #6cb98e 0%, #256b4a 55%, #123324 100%)",
     deep: [
       { offset: "0%", color: "#2f6b4c" },
@@ -251,7 +251,7 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   {
     id: "charcoal",
     label: "Charcoal",
-    description: "Modern graphite wax with pale gold ink — editorial, low-glare finish.",
+    description: "Modern graphite wax with pale gold ink. Editorial, low-glare finish.",
     swatch: "linear-gradient(135deg, #8f8f8f 0%, #3a3a3a 55%, #181818 100%)",
     dark: true,
     deep: [
@@ -289,7 +289,7 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   {
     id: "soft-candle",
     label: "Soft Candle Wax",
-    description: "Warm amber mourning wax — candlelight memorial envelopes.",
+    description: "Warm amber mourning wax. Candlelight memorial envelopes.",
     swatch: "linear-gradient(135deg, #f6e2b8 0%, #c4893a 55%, #6b3a14 100%)",
     face: [
       { offset: "0%", color: "#fff6e4" },
@@ -323,7 +323,7 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   {
     id: "ivory-dove",
     label: "Ivory Dove",
-    description: "Pale ivory wax with quiet pearl sheen — soft farewell envelopes.",
+    description: "Pale ivory wax with quiet pearl sheen. Soft farewell envelopes.",
     swatch: "linear-gradient(135deg, #ffffff 0%, #ebe4d8 55%, #b9ae9c 100%)",
     face: [
       { offset: "0%", color: "#ffffff" },
@@ -452,7 +452,7 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   {
     id: "obsidian-gold",
     label: "Obsidian Gold",
-    description: "Midnight wax with a gold bead — one-week vigil and night rites.",
+    description: "Midnight wax with a gold bead. One-week vigil and night rites.",
     swatch: "linear-gradient(135deg, #6a6a6a 0%, #1a1a1a 55%, #050505 100%)",
     dark: true,
     face: [
@@ -484,7 +484,7 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   {
     id: "soft-slate",
     label: "Soft Slate",
-    description: "Muted blue-grey wax — quiet memorial pages.",
+    description: "Muted blue-grey wax. Quiet memorial pages.",
     swatch: "linear-gradient(135deg, #d0d8e0 0%, #6a7888 55%, #2a3440 100%)",
     dark: true,
     face: [
@@ -516,7 +516,7 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
   },
 ];
 
-/** CSS linear-gradient string from a seal face stop list — for CSS circular envelopes. */
+/** CSS linear-gradient string from a seal face stop list, for CSS circular envelopes. */
 export function sealFaceCssBackground(designId?: string | null): string {
   const preset = getSealDesignPreset(designId);
   const stops = preset.face.map((s) => `${s.color} ${s.offset}`).join(", ");
@@ -529,7 +529,7 @@ export function getSealDesignPreset(id?: string | null): SealDesignPreset {
   return SEAL_DESIGN_PRESETS.find((p) => p.id === id) ?? SEAL_DESIGN_PRESETS[0];
 }
 
-/** Curated seal fonts — pulled from the brand's existing script / serif / sans stack. */
+/** Curated seal fonts. Pulled from the brand's existing script / serif / sans stack. */
 export const SEAL_FONT_OPTIONS: {
   id: SealFontChoice;
   label: string;
@@ -565,7 +565,7 @@ export const SEAL_SIZE_LABELS: Record<SealSizeId, string> = {
   md: "Medium",
   lg: "Large",
 };
-/** Uniform scale multiplier applied to the seal text — keeps every seal's
+/** Uniform scale multiplier applied to the seal text. Keeps every seal's
  * carefully-tuned clamp() sizing intact while giving a visible S/M/L step. */
 export const SEAL_SIZE_SCALE: Record<SealSizeId, number> = {
   sm: 0.86,
@@ -648,7 +648,7 @@ export function sealHexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-/** Engraved-ink shadow/stroke treatment for seal lettering — adapts to light/dark wax. */
+/** Engraved-ink shadow/stroke treatment for seal lettering. Adapts to light/dark wax. */
 export function sealInkStyle(
   color: string,
   dark: boolean,

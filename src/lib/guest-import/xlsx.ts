@@ -7,7 +7,7 @@ import { looksLikeHeaderRow } from "./table-parse";
  *
  * An .xlsx is a ZIP of XML parts. Reading the handful we need (shared strings
  * plus the first worksheet) is a few hundred lines, and keeping it in-tree
- * avoids pulling a large spreadsheet library — with its own parser surface —
+ * avoids pulling a large spreadsheet library, with its own parser surface.
  * into a path that accepts organiser uploads. Runs server-side only: the file
  * is posted to the API and parsed in Node, so nothing lands in the client bundle.
  *
@@ -175,7 +175,7 @@ export function parseWorksheet(xml: string, sharedStrings: string[]): string[][]
         } else if (type === "b") {
           value = raw === "1" ? "TRUE" : raw === "0" ? "FALSE" : raw;
         } else if (type === "e") {
-          // A cell holding #REF!/#N/A carries no guest data — treat as blank.
+          // A cell holding #REF!/#N/A carries no guest data. Treat as blank.
           value = "";
         } else {
           value = raw;

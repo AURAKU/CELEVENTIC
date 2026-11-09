@@ -26,7 +26,7 @@ function isStaleAssetError(error: Error): boolean {
 
 /**
  * Reload once to pick up the current build. Never more than once per session
- * per invitation — a reload loop in front of a wedding invitation is worse than
+ * per invitation. A reload loop in front of a wedding invitation is worse than
  * an honest recovery card.
  */
 function recoverFromStaleAssets(error: Error): boolean {
@@ -48,7 +48,7 @@ function recoverFromStaleAssets(error: Error): boolean {
  * Error boundary for every `/invite/*` route.
  *
  * Invitations are the one surface where a guest has no idea what Celeventic is,
- * no account, and no second route to try — so this boundary is deliberately
+ * no account, and no second route to try, so this boundary is deliberately
  * quieter and warmer than the app-wide one. It never mentions "error",
  * "digest", or the platform's internals unless the guest opens the details, and
  * its first move is always to try to fix itself.

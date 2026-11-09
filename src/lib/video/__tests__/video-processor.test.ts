@@ -125,7 +125,7 @@ describe("parseFfprobeJson", () => {
   });
 });
 
-describe("isAlreadyBrowserCompatible — remux-only fast path", () => {
+describe("isAlreadyBrowserCompatible. Remux-only fast path", () => {
   it("accepts a standard H.264/AAC 1080p, unrotated, SDR source", () => {
     assert.equal(isAlreadyBrowserCompatible(probe()), true);
   });
@@ -207,12 +207,12 @@ describe("buildVideoFilterChain", () => {
   });
 });
 
-describe("computeScaleBounds — portrait/landscape-aware, never the old symmetric-only bound", () => {
+describe("computeScaleBounds. Portrait/landscape-aware, never the old symmetric-only bound", () => {
   it("uses landscape bounds (1920 wide x 1080 tall box) for a landscape source", () => {
     assert.deepEqual(computeScaleBounds({ width: 1920, height: 1080, rotation: 0 }), { maxWidth: 1920, maxHeight: 1080 });
   });
 
-  it("swaps to portrait bounds (1080 wide x 1920 tall box) for a portrait source — the bug this fixes", () => {
+  it("swaps to portrait bounds (1080 wide x 1920 tall box) for a portrait source. The bug this fixes", () => {
     // A naive min(1920,iw):min(1080,ih) box would squeeze a 1080x1920 phone clip into a
     // 1080x1080 square (shrinking it to ~608x1080) instead of preserving its native 1080x1920.
     assert.deepEqual(computeScaleBounds({ width: 1080, height: 1920, rotation: 0 }), { maxWidth: 1080, maxHeight: 1920 });
@@ -220,7 +220,7 @@ describe("computeScaleBounds — portrait/landscape-aware, never the old symmetr
 
   it("uses the POST-rotation orientation, not the raw stream orientation, for a 90°-rotated source", () => {
     // Raw stream is landscape (1920x1080) but a 90° rotation tag means the displayed frame is
-    // portrait (1080x1920) — the bounding box must follow the displayed orientation.
+    // portrait (1080x1920). The bounding box must follow the displayed orientation.
     assert.deepEqual(computeScaleBounds({ width: 1920, height: 1080, rotation: 90 }), { maxWidth: 1080, maxHeight: 1920 });
     assert.deepEqual(computeScaleBounds({ width: 1920, height: 1080, rotation: 270 }), { maxWidth: 1080, maxHeight: 1920 });
   });
@@ -234,7 +234,7 @@ describe("computeScaleBounds — portrait/landscape-aware, never the old symmetr
   });
 });
 
-describe("buildVideoFilter — single source of truth for the -vf chain and pipeline choice", () => {
+describe("buildVideoFilter. Single source of truth for the -vf chain and pipeline choice", () => {
   it("reports pipeline 'sdr' for a non-HDR source, with no zscale/tonemap regardless of capabilities", () => {
     const { pipeline, filter } = buildVideoFilter(probe(), { hasZscale: true, hasTonemap: true });
     assert.equal(pipeline, "sdr");
@@ -247,7 +247,7 @@ describe("buildVideoFilter — single source of truth for the -vf chain and pipe
     assert.match(filter, /zscale=t=linear/);
   });
 
-  it("reports pipeline 'hdr-fallback' when HDR but zscale/tonemap are unavailable — never throws", () => {
+  it("reports pipeline 'hdr-fallback' when HDR but zscale/tonemap are unavailable, never throws", () => {
     const { pipeline, filter } = buildVideoFilter(probe({ isHdr: true, videoCodec: "hevc" }), { hasZscale: false, hasTonemap: false });
     assert.equal(pipeline, "hdr-fallback");
     assert.doesNotMatch(filter, /zscale|tonemap|gbrpf32le/);
@@ -270,7 +270,7 @@ describe("buildVideoFilter — single source of truth for the -vf chain and pipe
 });
 
 describe("buildTranscodeArgs", () => {
-  it("never uses a shell — returns a flat argv array with the input/output paths as literal args", () => {
+  it("never uses a shell. Returns a flat argv array with the input/output paths as literal args", () => {
     const args = buildTranscodeArgs("/tmp/in.mov", "/tmp/out.mp4", probe());
     assert.ok(Array.isArray(args));
     assert.ok(args.every((a) => typeof a === "string"));
@@ -297,21 +297,21 @@ describe("buildTranscodeArgs", () => {
     assert.ok(!args.includes("aac"));
   });
 
-  it("never passes -autorotate — ffmpeg 6.1.1/Ubuntu (and other builds) can misparse it as belonging to the wrong file context ('Option autorotate ... cannot be applied to output url ... Error parsing options'); default demuxer autorotate (already enabled) bakes in rotation instead", () => {
+  it("never passes -autorotate. Ffmpeg 6.1.1/Ubuntu (and other builds) can misparse it as belonging to the wrong file context ('Option autorotate ... cannot be applied to output url ... Error parsing options'); default demuxer autorotate (already enabled) bakes in rotation instead", () => {
     for (const rotation of [0, 90, 180, 270] as const) {
       const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ rotation }));
       assert.ok(!args.includes("-autorotate"), `must not include -autorotate for rotation=${rotation}`);
     }
   });
 
-  it("-i immediately follows -y — no flag is interposed between them that could be misparsed", () => {
+  it("-i immediately follows -y. No flag is interposed between them that could be misparsed", () => {
     const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ rotation: 90 }));
     assert.equal(args[0], "-y");
     assert.equal(args[1], "-i");
     assert.equal(args[2], "in.mov");
   });
 
-  it("never adds an explicit rotate/transpose filter — relies solely on ffmpeg's default (always-on) demuxer autorotate behavior, never a second explicit filter (no double-rotate)", () => {
+  it("never adds an explicit rotate/transpose filter. Relies solely on ffmpeg's default (always-on) demuxer autorotate behavior, never a second explicit filter (no double-rotate)", () => {
     const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ rotation: 90, width: 1920, height: 1080 }));
     const vfIdx = args.indexOf("-vf");
     assert.ok(vfIdx !== -1);
@@ -370,7 +370,7 @@ describe("buildTranscodeArgs", () => {
     assert.ok(!hdrTonemapArgs.includes("-color_primaries"), "the tonemap filter chain already outputs bt709 pixels");
   });
 
-  it("[yuvj420p -> yuv420p range] tags -color_range tv for the sdr pipeline — format=yuv420p alone doesn't resolve a full-range MJPEG/yuvj420p source", () => {
+  it("[yuvj420p -> yuv420p range] tags -color_range tv for the sdr pipeline. Format=yuv420p alone doesn't resolve a full-range MJPEG/yuvj420p source", () => {
     const args = buildTranscodeArgs("in.mp4", "out.mp4", probe());
     const idx = args.indexOf("-color_range");
     assert.ok(idx !== -1, "-color_range must be present for the sdr pipeline");
@@ -387,7 +387,7 @@ describe("buildTranscodeArgs", () => {
     assert.equal(args[idx + 1], "tv");
   });
 
-  it("[hdr-tonemap] does NOT add -color_range (the zscale chain already sets range via r=tv) — avoids double-tagging", () => {
+  it("[hdr-tonemap] does NOT add -color_range (the zscale chain already sets range via r=tv). Avoids double-tagging", () => {
     const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ isHdr: true, videoCodec: "hevc" }), {
       hasZscale: true,
       hasTonemap: true,
@@ -462,7 +462,7 @@ describe("hasExternalConverter / getExternalConverterPath", () => {
     assert.equal(hasExternalConverter(), false);
   });
 
-  it("is opted out by default — presence of the binary alone must not enable it", () => {
+  it("is opted out by default. Presence of the binary alone must not enable it", () => {
     delete process.env.VIDEO_USE_EXTERNAL_CONVERTER;
     assert.equal(isExternalConverterOptedIn(), false);
     // Even if a real Hostinger-style path "exists" check were true, opt-in stays false.
@@ -489,7 +489,7 @@ describe("hasExternalConverter / getExternalConverterPath", () => {
   });
 });
 
-/** Shared real-ffmpeg fixture — a genuinely valid, tiny H.264 MP4 — used by several suites below. */
+/** Shared real-ffmpeg fixture. A genuinely valid, tiny H.264 MP4. Used by several suites below. */
 async function makeTinyH264Mp4(): Promise<Buffer> {
   const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-fixture-"));
   const out = path.join(dir, "tiny.mp4");
@@ -513,7 +513,7 @@ async function makeTinyH264Mp4(): Promise<Buffer> {
   }
 }
 
-describe("processVideoFile — adaptive default + external fallthrough", () => {
+describe("processVideoFile. Adaptive default + external fallthrough", () => {
   const ORIGINAL_PATH = process.env.CELEVENTIC_VIDEO_CONVERTER_PATH;
   const ORIGINAL_OPT_IN = process.env.VIDEO_USE_EXTERNAL_CONVERTER;
   const ORIGINAL_PROCESSOR_PATH = process.env.VIDEO_PROCESSOR_PATH;
@@ -529,7 +529,7 @@ describe("processVideoFile — adaptive default + external fallthrough", () => {
 
   async function writeFailingZscaleConverter(dir: string): Promise<string> {
     // Mimics the Hostinger binary hard-failing on missing zscale while leaving a partial output
-    // behind — that partial must NOT be treated as success; adaptive ffmpeg must take over.
+    // behind, that partial must NOT be treated as success; adaptive ffmpeg must take over.
     const scriptPath = path.join(dir, "celeventic-process-video");
     const script = `#!/usr/bin/env bash
 set -euo pipefail
@@ -605,7 +605,7 @@ exit 1
 
   async function writeConverterThatExitsZeroWithGarbage(dir: string): Promise<string> {
     // Simulates a converter that reports success (exit 0, non-empty file) but the file is not
-    // actually a valid video — must be caught by ffprobe validation, not just a non-empty check.
+    // actually a valid video. Must be caught by ffprobe validation, not just a non-empty check.
     const scriptPath = path.join(dir, "celeventic-process-video");
     const script = `#!/usr/bin/env bash
 set -euo pipefail
@@ -624,7 +624,7 @@ exit 0
     return scriptPath;
   }
 
-  it("does not trust a non-empty external-converter output alone — verifies with ffprobe and falls through if invalid", async () => {
+  it("does not trust a non-empty external-converter output alone. Verifies with ffprobe and falls through if invalid", async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-garbage-"));
     try {
       const converter = await writeConverterThatExitsZeroWithGarbage(dir);
@@ -650,7 +650,7 @@ exit 0
   });
 });
 
-describe("even output dimensions — the exact reported bug: '[libx264] width not divisible by 2 (883x1920)' on a 1206x2622 portrait source", () => {
+describe("even output dimensions. The exact reported bug: '[libx264] width not divisible by 2 (883x1920)' on a 1206x2622 portrait source", () => {
   it("end-to-end: transcodeWithHdrFallback on a REAL 1206x2622 portrait clip produces even width/height (884x1920), not the previously-crashing odd 883", async (t) => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-even-dims-"));
     const inputPath = path.join(dir, "portrait-1206x2622.mp4");
@@ -673,7 +673,7 @@ describe("even output dimensions — the exact reported bug: '[libx264] width no
       const fullCaps = { hasZscale: false, hasTonemap: false, hasLibx264: true, hasAac: true, hasHevcDecoder: true, hasColorspace: false };
 
       // Before the `force_divisible_by=2` fix this threw: "[libx264] width not divisible by 2
-      // (883x1920)" — must not throw now, and the retry-on-divisibility safety net in
+      // (883x1920)". Must not throw now, and the retry-on-divisibility safety net in
       // `runTranscodeAttempt` must never even need to engage.
       await transcodeWithHdrFallback(inputPath, outputPath, portraitProbe, 30_000, fullCaps);
 
@@ -686,8 +686,8 @@ describe("even output dimensions — the exact reported bug: '[libx264] width no
       ]);
       const [w, h] = stdout.trim().split(",").map(Number);
       assert.ok(Number.isFinite(w) && Number.isFinite(h), "output must report real dimensions");
-      assert.equal(w % 2, 0, `output width ${w} must be even — libx264 requires it`);
-      assert.equal(h % 2, 0, `output height ${h} must be even — libx264 requires it`);
+      assert.equal(w % 2, 0, `output width ${w} must be even. Libx264 requires it`);
+      assert.equal(h % 2, 0, `output height ${h} must be even. Libx264 requires it`);
       assert.equal(h, 1920, "long edge must be capped at 1920");
       assert.ok(w < h, "must remain portrait");
     } finally {
@@ -705,7 +705,7 @@ describe("even output dimensions — the exact reported bug: '[libx264] width no
       await writeFile(inputPath, await makeTinyH264Mp4());
 
       // A fake `ffmpeg` that deterministically reproduces the exact reported failure UNLESS the
-      // `-vf` value contains the safety-net filter appended by `withEvenDimensionsSafety` — this
+      // `-vf` value contains the safety-net filter appended by `withEvenDimensionsSafety`. This
       // isolates and proves the RETRY mechanism itself, independently of whether the primary
       // `force_divisible_by=2` fix already prevents the failure from happening at all.
       await writeFile(
@@ -744,10 +744,10 @@ describe("even output dimensions — the exact reported bug: '[libx264] width no
   });
 });
 
-describe("processVideoFile — friendly, non-leaking error messages", () => {
-  it("never exposes raw ffmpeg/ffprobe stderr (temp paths, filter-graph syntax) in the user-facing error — only the deliberately-worded preflight message", async () => {
+describe("processVideoFile. Friendly, non-leaking error messages", () => {
+  it("never exposes raw ffmpeg/ffprobe stderr (temp paths, filter-graph syntax) in the user-facing error. Only the deliberately-worded preflight message", async () => {
     // Genuinely undecodable input reaches the SAME preflight message this module has always used
-    // (already asserted elsewhere) — proving the sanitizer passes short, deliberate messages
+    // (already asserted elsewhere). Proving the sanitizer passes short, deliberate messages
     // through untouched, it does not rewrite everything into one generic sentence.
     const garbage = Buffer.from("this is not a video file at all, just some plain text bytes");
     const result = await processVideoFile(garbage, { extensionHint: "mp4", timeoutMs: 30_000 });
@@ -762,7 +762,7 @@ describe("processVideoFile — friendly, non-leaking error messages", () => {
     // least one of ffprobe/ffmpeg's calls in the pipeline.
     const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-friendly-error-"));
     try {
-      // Valid MP4 box structure (ftyp) followed by garbage — enough for some demuxers to start
+      // Valid MP4 box structure (ftyp) followed by garbage. Enough for some demuxers to start
       // "reading" a video stream and then fail deep inside decode/filter, exercising the raw
       // runProcess failure path rather than the early "no valid stream" preflight check.
       const bogus = Buffer.concat([
@@ -770,7 +770,7 @@ describe("processVideoFile — friendly, non-leaking error messages", () => {
         Buffer.alloc(4096, 0xff),
       ]);
       const result = await processVideoFile(bogus, { extensionHint: "mp4", timeoutMs: 30_000 });
-      if (result.success) return; // some ffmpeg builds tolerate this fixture — not what this test targets
+      if (result.success) return; // some ffmpeg builds tolerate this fixture, not what this test targets
       assert.doesNotMatch(result.error ?? "", /\/tmp\/|\/private\/|Command failed|libavformat|libavcodec/i);
     } finally {
       await rm(dir, { recursive: true, force: true }).catch(() => {});
@@ -778,7 +778,7 @@ describe("processVideoFile — friendly, non-leaking error messages", () => {
   });
 });
 
-describe("transcodeWithHdrFallback — retries once, cleans up partial output, never fails the whole upload", () => {
+describe("transcodeWithHdrFallback. Retries once, cleans up partial output, never fails the whole upload", () => {
   it("reproduces the exact production bug (HDR pipeline attempted, zscale missing) and recovers via retry", async () => {
     // This is the literal repro for 'No such filter: zscale' on macOS ffmpeg 8.1.2 / any build
     // without libzimg: force the HDR pipeline to be *attempted* (as if capabilities incorrectly
@@ -786,7 +786,7 @@ describe("transcodeWithHdrFallback — retries once, cleans up partial output, n
     // machine. On a build that truly lacks zscale, the first attempt fails and this function
     // must remove the partial output and retry with the plain scale/format pipeline instead of
     // throwing. On a build that does have zscale (e.g. Ubuntu VPS), the first attempt just
-    // succeeds directly — either way, the function must resolve with valid output.
+    // succeeds directly. Either way, the function must resolve with valid output.
     const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-hdr-retry-"));
     const inputPath = path.join(dir, "in.mp4");
     const outputPath = path.join(dir, "out.mp4");
@@ -806,7 +806,7 @@ describe("transcodeWithHdrFallback — retries once, cleans up partial output, n
   });
 });
 
-describe("Semaphore — bounds concurrent ffmpeg/converter runs", () => {
+describe("Semaphore. Bounds concurrent ffmpeg/converter runs", () => {
   it("only allows `max` concurrent holders and queues the rest", async () => {
     const sem = new Semaphore(1);
     const release1 = await sem.acquire();

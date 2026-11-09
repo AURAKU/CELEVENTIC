@@ -57,7 +57,7 @@ export function useEventContext() {
             ];
           }
         } catch {
-          /* ignore — picker stays as-is */
+          /* ignore. Picker stays as-is */
         }
       }
 

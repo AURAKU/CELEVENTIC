@@ -90,7 +90,7 @@ export interface CreateOrderInput {
   eventType?: string;
   /** Studio 2.0: theme chosen in the live preview (registry id) */
   themeId?: string;
-  /** Viral-footer attribution — referring invitation's uniqueLink */
+  /** Viral-footer attribution. Referring invitation's uniqueLink */
   attributionRef?: string;
 }
 
@@ -388,8 +388,8 @@ export class InvitationOrderService {
   }
 
   /**
-   * Owner-or-admin load. Platform admins support hosts directly inside Studio —
-   * including on already-published invitations — so they must be able to reach
+   * Owner-or-admin load. Platform admins support hosts directly inside Studio.
+   * including on already-published invitations, so they must be able to reach
    * an order they do not own. Everyone else stays scoped to their own orders.
    */
   async getOrderForActor(
@@ -495,10 +495,8 @@ export class InvitationOrderService {
         // remains the default (see qrBrandingService.resolveCenterMark).
         qrCenterImageUrl: qrPhotoUrl,
         qrLogoSize: qrPhotoUrl ? "bold" : null,
-        isPublic: true,
         status: "PUBLISHED",
         organizerId: order.userId,
-        pricingType: "FREE",
       },
     });
 
@@ -572,6 +570,15 @@ export class InvitationOrderService {
         name: order.user.name,
         url: shareUrl,
       });
+    }
+
+    try {
+      const { unlockPaidInvitationPackage } = await import(
+        "@/services/packages/unlock-paid-package.service"
+      );
+      await unlockPaidInvitationPackage(orderId);
+    } catch (error) {
+      console.warn("[invitation-order] package unlock after publish", error);
     }
 
     return { order: updated, invitation, event, shareUrl };

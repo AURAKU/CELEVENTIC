@@ -51,7 +51,7 @@ async function stageBatch(
   });
 }
 
-/** Confirm and drain the chunked job by hand — no worker runs in tests. */
+/** Confirm and drain the chunked job by hand. No worker runs in tests. */
 async function generateFully(batchId: string): Promise<void> {
   const { generateBatchChunk } = await import("../generation.service");
   for (let pass = 0; pass < 50; pass++) {
@@ -342,7 +342,7 @@ describe("saving settings from the review step", () => {
   /**
    * The wizard saves the organiser's settings immediately before confirming.
    * That save used to re-derive every row from the source cells, which threw
-   * away renamed guests, corrected allowances and — fatally — the duplicate
+   * away renamed guests, corrected allowances and. Fatally. The duplicate
    * decisions that confirmation waits for. The import became impossible to
    * complete: resolve every duplicate, press create, get told the duplicates
    * still need a decision.
@@ -600,7 +600,7 @@ describe("general passes", () => {
     assert.equal(await db.invitation.count({ where: { generalPassBatchId: batch.id } }), 8);
   });
 
-  it("Method B issues a distinct pass per registration — the shared link is not a credential", async () => {
+  it("Method B issues a distinct pass per registration. The shared link is not a credential", async () => {
     const db = await loadPrisma();
     const { createGeneralPassBatch, registerForGeneralPass } = await import(
       "../general-pass.service"

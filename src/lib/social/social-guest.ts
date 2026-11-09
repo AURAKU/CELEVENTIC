@@ -73,7 +73,7 @@ function isArchivedGuest(guest: SocialGuestRecord): boolean {
  * this when an explicit `?guest=` query is present so a sole assigned guest
  * cannot leak into public crawler cards or image URLs.
  *
- * Personalization is derived only from URL + invitation records — never
+ * Personalization is derived only from URL + invitation records, never
  * cookies, localStorage, or the current browser session.
  */
 export function resolveSocialInvitationGuest(input: {

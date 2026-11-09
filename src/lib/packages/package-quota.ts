@@ -88,9 +88,13 @@ export async function assertInvitationQuota(eventId: string, adding = 1): Promis
   const current = await prisma.invitation.count({ where: { eventId } });
   if (current + adding > quota.invitationLimit) {
     throw new PackageQuotaError(
-      `Your ${quota.packageName} plan allows ${quota.invitationLimit} invitation${
-        quota.invitationLimit === 1 ? "" : "s"
-      }. You have ${current}. Upgrade to a paid plan to create more.`
+      quota.isFree
+        ? `Free is capped at ${quota.invitationLimit} invitation${
+            quota.invitationLimit === 1 ? "" : "s"
+          }. You have ${current}. Unlock Starter (₵450) for 75 invitation sends.`
+        : `Your ${quota.packageName} plan allows ${quota.invitationLimit} invitation${
+            quota.invitationLimit === 1 ? "" : "s"
+          }. You have ${current}. Upgrade to a higher plan to create more.`
     );
   }
 }
@@ -108,7 +112,9 @@ export async function assertGuestQuota(
   const seatsNeeded = adding + Math.max(0, plusOnes);
   if (current + seatsNeeded > quota.guestLimit) {
     throw new PackageQuotaError(
-      `Your ${quota.packageName} plan allows up to ${quota.guestLimit} guests. You have ${current}. Upgrade to a paid plan to invite more.`
+      quota.isFree
+        ? `Free is capped at ${quota.guestLimit} guests. You have ${current}. Unlock Starter (₵450) for 75 guests.`
+        : `Your ${quota.packageName} plan allows up to ${quota.guestLimit} guests. You have ${current}. Upgrade to invite more.`
     );
   }
 }

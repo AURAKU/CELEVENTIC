@@ -95,7 +95,7 @@ describe("RSVP organizer email graceful degradation contract", () => {
     ];
     for (const err of failures) {
       assert.ok(err instanceof CommunicationProviderError);
-      // RSVP path catches these — never rethrow as unhandled.
+      // RSVP path catches these, never rethrow as unhandled.
       const recorded = { status: "failed" as const, message: err.message };
       assert.equal(recorded.status, "failed");
     }

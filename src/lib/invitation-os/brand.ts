@@ -1,4 +1,4 @@
-/** Celeventic luxury brand voice — Ghana-first, globally refined */
+/** Celeventic luxury brand voice. Ghana-first, globally refined */
 export const CELEVENTIC_BRAND = {
   tagline: "Celebrations | Events | Tickets",
   voice: "warm, elegant, culturally aware, premium but approachable",

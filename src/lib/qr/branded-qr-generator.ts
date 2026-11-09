@@ -25,7 +25,7 @@ const QR_MARGIN = 4;
  * (see QR_LOGO_SIZE_PRESETS) so scans stay reliable with error-correction H.
  */
 const FRAME_PAD_RATIO = 0.12;
-/** Corner radius as a fraction of the white frame — modest so the mark isn't clipped */
+/** Corner radius as a fraction of the white frame. Modest so the mark isn't clipped */
 const FRAME_RADIUS_RATIO = 0.14;
 /**
  * Extra inset past the geometric corner-clearance so contain-fitted marks
@@ -41,7 +41,7 @@ const HERO_PAD_RATIO = 0.045;
 const BRAND_DARK = "#0B8A83";
 const BRAND_LIGHT = "#FFFFFF";
 
-/** Pass mode — pure black/white, wider quiet zone, compact logo for screen scanning */
+/** Pass mode. Pure black/white, wider quiet zone, compact logo for screen scanning */
 const PASS_DARK = "#000000";
 const PASS_LIGHT = "#FFFFFF";
 /** ISO quiet zone is 4; pass uses 6 so phone bezels / screenshots keep a clean border. */
@@ -49,8 +49,8 @@ const PASS_MARGIN = 6;
 /**
  * Keep the framed center mark readable on entry passes without eating
  * too many modules. Error-correction H tolerates ~30% damage; framed inset
- * = logoRatio × ~1.24 stays ≤ ~24% width even at bold — still phone-scannable.
- * (Previous 0.10–0.12 made couple photos look like a speck.)
+ * = logoRatio × ~1.24 stays ≤ ~24% width even at bold. Still phone-scannable.
+ * (Previous 0.10 to 0.12 made couple photos look like a speck.)
  */
 const PASS_LOGO_RATIOS: Record<QrDashboardLogoSize, number> = {
   subtle: 0.14,
@@ -59,7 +59,7 @@ const PASS_LOGO_RATIOS: Record<QrDashboardLogoSize, number> = {
 };
 
 /**
- * Event Guide mode — maximum decode reliability for guest device cameras
+ * Event Guide mode. Maximum decode reliability for guest device cameras
  * (iPhone Camera, Google Lens, tablet gallery). Pure black modules, extra-wide
  * quiet zone, and **no center logo** so finder patterns stay intact under
  * warm venue lighting and uneven focus.
@@ -242,7 +242,7 @@ export async function loadCenterImageBuffer(imageUrl?: string | null): Promise<B
         const meta = await sharp(buf).metadata();
         if (meta.width && meta.height) return buf;
       } catch {
-        // invalid image — fall through
+        // invalid image. Fall through
       }
     }
   }
@@ -295,7 +295,7 @@ async function buildLogoOverlay(
   const logoSource = await loadCenterImageBuffer(centerImageUrl);
   const { frameSize, radius, pad, innerLogo } = logoInsetLayout(size, logoRatio, photograph);
   const passMode = mode === "pass";
-  // Pass mode: no soft shadow / grey stroke — those halos confuse phone scanners.
+  // Pass mode: no soft shadow / grey stroke. Those halos confuse phone scanners.
   const shadowBlur = passMode ? 0 : Math.max(4, Math.round(frameSize * 0.04));
   const shadowOffset = passMode ? 0 : Math.max(2, Math.round(frameSize * 0.02));
   const canvasSize = frameSize + shadowBlur * 2 + shadowOffset;
@@ -352,7 +352,7 @@ export async function generateBrandedQrPng(
   const { dark, light, margin } = colorsForMode(mode, logoSize);
   const qrBuffer = await renderCrispQrPng(targetUrl, size, { dark, light, margin });
 
-  // Guide mode: never overlay a logo — guest phone cameras need every module.
+  // Guide mode: never overlay a logo. Guest phone cameras need every module.
   if (mode === "guide") {
     return qrBuffer;
   }

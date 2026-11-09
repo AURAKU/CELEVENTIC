@@ -28,7 +28,7 @@ describe("InvitationSharingService.buildWhatsAppPack", () => {
   it("never emits a mangled double-URL when given an already-absolute sharePath", () => {
     // Regression guard: the WhatsApp route previously passed the *raw*,
     // unsanitized `order.shareUrl` here instead of the sanitized relative
-    // `sharePath`, which — for a stale absolute URL — got concatenated onto
+    // `sharePath`, which, for a stale absolute URL. Got concatenated onto
     // `appUrl` into a broken link like "https://www.celeventic.com/http://localhost:3000/invite/x".
     const pack = service.buildWhatsAppPack({
       eventTitle: "Some Event",

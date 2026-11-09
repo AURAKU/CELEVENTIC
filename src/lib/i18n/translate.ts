@@ -25,7 +25,7 @@ export function interpolate(template: string, params?: Record<string, string | n
 }
 
 /**
- * Resolve translated copy. Never returns a raw i18n key — falls back to static
+ * Resolve translated copy. Never returns a raw i18n key. Falls back to static
  * bundle, then humanized key text.
  */
 export function resolveTranslation(

@@ -67,9 +67,11 @@ export default function MarketplacePage() {
     const d = await res.json();
     if (res.ok) {
       setPurchased((prev) => new Set([...prev, id]));
-      alert(d.data.free ? "Free template unlocked!" : "Purchase successful, template unlocked!");
+      alert("Template unlocked.");
+    } else if (res.status === 402) {
+      alert("Paid templates need a verified checkout. Direct unlock is not available yet.");
     } else {
-      alert(d.error);
+      alert(d.error || "Could not unlock this template.");
     }
   }
 

@@ -31,7 +31,7 @@ import introStyles from "./forever-afaris-invitation-intro.module.css";
  *
  * sealed envelope (tap the champagne wax seal) → seal lifts → flaps unfold →
  * magical auto intro (#THE FOREVER AFARIS / CHELSY & JEFFERY) dissolves into
- * the invitation underneath. No ENTER tap — the intro completes itself.
+ * the invitation underneath. No ENTER tap. The intro completes itself.
  *
  * Everything is CSS/SVG/Framer Motion. Reduced motion collapses the journey to
  * a short dignified open that still supplies the interaction browsers require
@@ -64,7 +64,7 @@ export interface WeddingOpeningProps {
    * miss the envelope, and the ceremony is never skipped silently.
    */
   allowSkip?: boolean;
-  /** Framed catalogue/studio preview — absolute shell instead of viewport-fixed. */
+  /** Framed catalogue/studio preview. Absolute shell instead of viewport-fixed. */
   embedded?: boolean;
   onComplete: () => void;
   /** Fires on the first open gesture, the audio-unlock hook for the pipeline. */
@@ -72,12 +72,6 @@ export interface WeddingOpeningProps {
 }
 
 const MOTE_COUNT = 18;
-/**
- * The seal still lifts, then the page is free. A guest who scrolls or taps
- * again during this beat is not held for the rest of the choreography.
- */
-const UNSEAL_HOLD_MS = 280;
-const OPEN_RELEASE_MS = 720;
 const INTRO_DURATION_MS = 420;
 const INTRO_REDUCED_MS = 200;
 
@@ -157,7 +151,7 @@ export function ForeverAfarisWeddingOpening({
   /**
    * The whole ceremony is now one tap target, so the same gesture can reach
    * `openEnvelope` from the seal button and from the stage behind it in the
-   * same tick — before `stage` has re-rendered. A ref is the only guard that
+   * same tick, before `stage` has re-rendered. A ref is the only guard that
    * closes that window.
    */
   const openedRef = useRef(false);
@@ -168,11 +162,6 @@ export function ForeverAfarisWeddingOpening({
   }, []);
 
   useEffect(() => clearTimers, [clearTimers]);
-
-  const after = useCallback((ms: number, fn: () => void) => {
-    const id = setTimeout(fn, ms);
-    timers.current.push(id);
-  }, []);
 
   const parallax = useParallax(
     stage === "sealed" || stage === "unsealing" || stage === "gate",
@@ -194,18 +183,11 @@ export function ForeverAfarisWeddingOpening({
     if (openedRef.current || stage !== "sealed") return;
     openedRef.current = true;
     onBegin?.();
-    // Soft release pulse, not a crack.
     vibrate([8, 28, 14], haptics);
-    if (prefersReduced) {
-      // Reduced motion still reaches the golden gate — never skip straight
-      // into the invitation body on open/refresh.
-      setStage("gate");
-      return;
-    }
-    setStage("unsealing");
-    after(UNSEAL_HOLD_MS, () => setStage("envelopeOpening"));
-    after(OPEN_RELEASE_MS, () => finish());
-  }, [after, finish, haptics, onBegin, prefersReduced, stage]);
+    if (shellRef.current) shellRef.current.style.pointerEvents = "none";
+    // Free the invitation immediately. The overlay must not eat the first scroll.
+    finish();
+  }, [finish, haptics, onBegin, stage]);
 
   const enterThroughGate = useCallback(() => {
     if (stage !== "gate") return;
@@ -213,52 +195,12 @@ export function ForeverAfarisWeddingOpening({
     finish();
   }, [finish, onBegin, stage]);
 
-  // After the open tap, a scroll or another tap frees the page at once.
-  // The short auto-release still plays the seal lift when the guest waits.
   useEffect(() => {
     if (stage === "sealed" || stage === "done") return;
-
-    let armed = false;
-    const armId = window.setTimeout(() => {
-      armed = true;
-    }, 160);
-
-    const dismiss = () => {
-      if (!armed) return;
-      finish();
-    };
-
-    const autoId =
-      stage === "gate"
-        ? window.setTimeout(
-            () => finish(),
-            prefersReduced ? INTRO_REDUCED_MS : INTRO_DURATION_MS
-          )
-        : 0;
-
-    let touchY = 0;
-    const onTouchStart = (event: TouchEvent) => {
-      touchY = event.touches[0]?.clientY ?? 0;
-    };
-    const onTouchMove = (event: TouchEvent) => {
-      const y = event.touches[0]?.clientY ?? touchY;
-      if (Math.abs(y - touchY) > 6) dismiss();
-    };
-    const onWheel = (event: WheelEvent) => {
-      if (Math.abs(event.deltaY) > 0 || Math.abs(event.deltaX) > 0) dismiss();
-    };
-
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("wheel", onWheel, { passive: true });
-    return () => {
-      window.clearTimeout(armId);
-      window.clearTimeout(autoId);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("wheel", onWheel);
-    };
-  }, [finish, prefersReduced, stage]);
+    if (shellRef.current) shellRef.current.style.pointerEvents = "none";
+    const id = window.setTimeout(() => finish(), 0);
+    return () => window.clearTimeout(id);
+  }, [finish, stage]);
 
   const skip = useCallback(() => {
     onBegin?.();
@@ -294,7 +236,7 @@ export function ForeverAfarisWeddingOpening({
           }
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: prefersReduced ? 0.15 : 0.65, ease: "easeInOut" }}
+          transition={{ duration: 0 }}
           role="dialog"
           aria-label="Wedding invitation opening ceremony"
           // The entire ceremony is the tap target while the envelope is sealed:
@@ -381,7 +323,7 @@ export function ForeverAfarisWeddingOpening({
             </ParallaxLayer>
           )}
 
-          {/* Magical auto intro — dissolves into the invitation underneath */}
+          {/* Magical auto intro. Dissolves into the invitation underneath */}
           {stage === "gate" && (
             <InvitationIntro
               title={resolveGateTitle(gateWord)}
@@ -674,7 +616,7 @@ function Envelope({
       />
 
       {/*
-        Wax seal. Rises whole and upright with the flap — never breaks, never
+        Wax seal. Rises whole and upright with the flap, never breaks, never
         skews away. Tapping it is one of several ways in; the stage behind it
         accepts the same gesture.
       */}

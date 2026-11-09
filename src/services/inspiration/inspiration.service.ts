@@ -39,7 +39,7 @@ export class InspirationService {
       data: { status: "ANALYZING" },
     });
 
-    // Mock AI analysis — replace with vision API in production
+    // Mock AI analysis. Replace with vision API in production
     const analysis = {
       colors: ["#0D9488", "#D4AF37", "#FFFFFF"],
       layout: "centered-elegant",

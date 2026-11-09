@@ -20,7 +20,7 @@ test("4-digit codes are the default for ordinary events", () => {
 
 test("codes widen to 6 digits when the guest list needs the capacity", () => {
   // Above 40% density of the 10,000-code space, collisions and guessability
-  // both get uncomfortable — promote before that happens, not after.
+  // both get uncomfortable. Promote before that happens, not after.
   assert.equal(resolveCodeLength(4001), LONG_CODE_LENGTH);
   assert.equal(resolveCodeLength(25_000), LONG_CODE_LENGTH);
 });

@@ -1,7 +1,7 @@
 import { CATALOG_TEMPLATES } from "@/lib/invitation-mvp/catalogue";
 import { getTemplatePreset } from "@/lib/invitation-templates";
 
-/** Static poster gradient for catalogue thumbnails — no live invite mounted. */
+/** Static poster gradient for catalogue thumbnails. No live invite mounted. */
 export function resolveTemplatePosterGradient(layoutSlug: string): string {
   const catalog = CATALOG_TEMPLATES.find(
     (t) => t.layoutSlug === layoutSlug || t.slug === layoutSlug

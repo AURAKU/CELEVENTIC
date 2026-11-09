@@ -3,11 +3,11 @@ import { VIDEO_PROCESS_QUEUE } from "@/lib/video/queues";
 import { getWorkerLiveness } from "@/lib/video/worker-heartbeat";
 
 /**
- * Answers the single most common video-support question — "is the background worker even
- * running?" — for the admin system-health dashboard. Primary signal is the worker's own
+ * Answers the single most common video-support question. "is the background worker even
+ * running?", for the admin system-health dashboard. Primary signal is the worker's own
  * filesystem heartbeat (`worker-heartbeat.ts`), which correctly distinguishes "not running" from
  * "running but busy with a previous large video" (a pure queue-depth check cannot make that
- * distinction — see that module's docblock). Queue depth/backlog is still reported as secondary,
+ * distinction. See that module's docblock). Queue depth/backlog is still reported as secondary,
  * useful context even when the worker is confirmed alive.
  */
 
@@ -54,7 +54,7 @@ export async function getVideoWorkerHealth(): Promise<VideoWorkerHealth> {
     return {
       status: hasImpact ? "critical" : "warning",
       message: hasImpact
-        ? `No heartbeat from celeventic-video-worker — ${pendingJobs} job(s) queued and ${stuckProcessingAssets} video(s) stuck PROCESSING. ${START_HERE}`
+        ? `No heartbeat from celeventic-video-worker: ${pendingJobs} job(s) queued and ${stuckProcessingAssets} video(s) stuck PROCESSING. ${START_HERE}`
         : `No heartbeat from celeventic-video-worker yet (nothing queued right now, so no user impact so far). ${START_HERE}`,
       workerAlive: false,
       heartbeatAgeMs: liveness.ageMs,
@@ -68,7 +68,7 @@ export async function getVideoWorkerHealth(): Promise<VideoWorkerHealth> {
   if (pendingJobs > 0) {
     return {
       status: "warning",
-      message: `Worker is alive and ticking, but ${pendingJobs} video job(s) are backlogged — normal under heavy load with the default VIDEO_PROCESSOR_CONCURRENCY=1.`,
+      message: `Worker is alive and ticking, but ${pendingJobs} video job(s) are backlogged. Normal under heavy load with the default VIDEO_PROCESSOR_CONCURRENCY=1.`,
       workerAlive: true,
       heartbeatAgeMs: liveness.ageMs,
       pendingJobs,

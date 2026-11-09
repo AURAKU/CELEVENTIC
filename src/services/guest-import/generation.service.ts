@@ -26,12 +26,12 @@ import { GUEST_IMPORT_QUEUE } from "./queues";
 import { queueBatchDeliveries } from "./delivery.service";
 
 /**
- * Bulk Guest Import — generation.
+ * Bulk Guest Import. Generation.
  *
  * Turns confirmed rows into the platform's *existing* objects: an Invitation
  * per party, its Guest rows, a Guest Entry Pass (QR + admission code), the
  * Place Card feature flag, and an optional seating assignment. There is no
- * parallel invitation or QR stack — a bulk-imported guest is indistinguishable
+ * parallel invitation or QR stack. A bulk-imported guest is indistinguishable
  * from a hand-added one at the gate, on the invite page and in analytics.
  *
  * Three properties make this safe to run against a 5,000-name list on a small
@@ -216,7 +216,7 @@ async function generateRow(
       if (manualCode) {
         await prisma.guest
           .update({ where: { id: guestId }, data: { manualCode } })
-          .catch(() => undefined); // lost a unique race — the pass code still works
+          .catch(() => undefined); // lost a unique race. The pass code still works
       }
     }
   }
@@ -274,7 +274,7 @@ async function attachToExisting(
   }
 
   if (row.decision === "UPDATE_EXISTING" && existingGuest) {
-    // Fill gaps only — an import must not wipe a contact an organiser typed by hand.
+    // Fill gaps only. An import must not wipe a contact an organiser typed by hand.
     await prisma.guest.update({
       where: { id: existingGuest.id },
       data: {

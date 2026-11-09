@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export type InviteViewportMode = "live" | "embedded" | "thumbnail";
@@ -25,8 +25,27 @@ export function InviteViewportShell({
   children,
   scrollable = true,
 }: InviteViewportShellProps) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const liveScrollable = mode === "live" && scrollable;
+
+  useEffect(() => {
+    if (!liveScrollable) return;
+    const node = scrollerRef.current;
+    if (!node) return;
+    node.style.pointerEvents = "auto";
+    node.style.overflowY = "auto";
+    node.style.touchAction = "pan-y";
+    try {
+      node.focus({ preventScroll: true });
+    } catch {
+      /* ignore */
+    }
+  }, [liveScrollable]);
+
   return (
     <div
+      ref={scrollerRef}
+      tabIndex={liveScrollable ? -1 : undefined}
       className={cn(
         "invite-viewport-root w-full",
         mode === "live" && "invite-viewport-live",

@@ -3,9 +3,12 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { walletService } from "@/services/wallet/wallet.service";
-import { verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission } from "@/lib/workspace/event-access";
+import { EventPermissionKey } from "@/lib/workspace/permission-keys";
 import { createAuditLog } from "@/lib/audit";
 import { parsePaginationFromUrl } from "@/lib/pagination";
+import { rateLimit } from "@/lib/rate-limit";
+import type { UserRole } from "@prisma/client";
 
 const expenseSchema = z.object({
   eventId: z.string(),
@@ -22,7 +25,12 @@ export async function GET(req: Request) {
   if (!eventId) return NextResponse.json({ error: "eventId required" }, { status: 400 });
 
   try {
-    await verifyEventAccess(eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.MANAGE_FINANCES
+    );
     const { page, limit } = parsePaginationFromUrl(req.url, { limit: 10 });
     const summary = await walletService.getWalletSummary(eventId, { page, limit });
     return NextResponse.json({ success: true, data: summary });
@@ -36,9 +44,18 @@ export async function POST(req: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    const limited = await rateLimit(`wallet-expense:${session.user.id}`, 40, 60);
+    if (!limited.success) {
+      return NextResponse.json({ error: "Too many wallet changes. Please wait a moment." }, { status: 429 });
+    }
     const body = await req.json();
     const data = expenseSchema.parse(body);
-    await verifyEventAccess(data.eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      data.eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.MANAGE_FINANCES
+    );
     await walletService.recordExpense(data.eventId, data.category, data.amount, data.description, session.user.id);
     await createAuditLog({
       userId: session.user.id,

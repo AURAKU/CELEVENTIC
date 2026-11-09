@@ -60,7 +60,7 @@ export function isAureliaFamilySocialLayout(input: {
 export function buildLiveSocialInvitationInput(input: {
   appUrl: string;
   invitation: LiveInvitationLike;
-  liveDesign?: InvitationDesignConfig | null;
+  liveDesign?: Partial<InvitationDesignConfig> | null;
   catalogSlug?: string | null;
   layoutSlug?: string | null;
   productionOrder?: ProductionOrderLike;

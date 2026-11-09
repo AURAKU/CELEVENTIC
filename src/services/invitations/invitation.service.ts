@@ -16,10 +16,14 @@ import {
   edwinPublishedContentIsCurrent,
 } from "@/lib/invitation/edwin-published-design";
 import {
+  EDWIN_PUBLIC_INVITE_PATH,
   EDWIN_PUBLISHED_INVITE_LINK,
-  publicInviteAliasTarget,
+  inviteLinkIdentityKeys,
 } from "@/lib/invitation/public-invite-alias";
 import { assertGuestQuota, assertInvitationQuota } from "@/lib/packages/package-quota";
+import { isRsvpOpen, RsvpClosedError } from "@/lib/rsvp/deadline";
+import { shouldReuseLatestRsvp } from "@/lib/rsvp/idempotency";
+import { buildRsvpExportCsv } from "@/lib/rsvp/export";
 
 export interface CreateInvitationInput {
   eventId: string;
@@ -113,27 +117,32 @@ export class InvitationService {
    *
    * The exact token is tried first so a clean link still costs one query.
    * Only when that misses do we attempt repair (percent-encoding, wrapping
-   * `<…>`, trailing slash/punctuation, whitespace, case) — links arrive via
+   * `<…>`, trailing slash/punctuation, whitespace, case). Links arrive via
    * WhatsApp, SMS and email clients that mangle them routinely.
    */
   async getInvitationByLink(rawLink: string) {
     const requested = rawLink.trim();
-    const direct = await this.findInvitationByExactLink(requested);
-    const aliasTarget = publicInviteAliasTarget(requested);
-    const invitation =
-      direct ??
-      (aliasTarget && aliasTarget !== requested
-        ? await this.findInvitationByExactLink(aliasTarget)
-        : null) ??
-      (await (async () => {
-        const canonical = await repairInviteLink(requested);
-        if (!canonical || canonical === requested) return null;
-        return this.findInvitationByExactLink(canonical);
-      })());
+    let invitation = null as Awaited<ReturnType<InvitationService["findInvitationByExactLink"]>>;
+    for (const identity of inviteLinkIdentityKeys(requested)) {
+      invitation = await this.findInvitationByExactLink(identity);
+      if (invitation) break;
+    }
+    if (!invitation) {
+      const canonical = await repairInviteLink(requested);
+      if (canonical && canonical !== requested) {
+        invitation = await this.findInvitationByExactLink(canonical);
+      }
+    }
     if (!invitation) return null;
-    const publishedEdwin = invitation.uniqueLink === EDWIN_PUBLISHED_INVITE_LINK;
+    const publishedEdwin =
+      invitation.uniqueLink === EDWIN_PUBLISHED_INVITE_LINK ||
+      invitation.uniqueLink === EDWIN_PUBLIC_INVITE_PATH;
     const songReady = invitation.event.defaultMusicTrack?.url === EDWIN_EVENT_SONG_URL;
-    if (publishedEdwin && (!edwinPublishedContentIsCurrent(invitation.designConfig) || !songReady)) {
+    const portalReady = invitation.postAdmissionEnabled;
+    if (
+      publishedEdwin &&
+      (!edwinPublishedContentIsCurrent(invitation.designConfig) || !songReady || !portalReady)
+    ) {
       try {
         await applyEdwinPublishedDesign(invitation.uniqueLink);
         return this.findInvitationByExactLink(invitation.uniqueLink);
@@ -178,7 +187,7 @@ export class InvitationService {
    * Resolve the guest for a personalized invite link (`/invite/{link}?guest={qrToken}`).
    *
    * Strict invitation-party isolation: the guest must belong to THIS invitation.
-   * Never fall back to event-scoped token lookup — that mixed unrelated parties
+   * Never fall back to event-scoped token lookup, that mixed unrelated parties
    * (e.g. “The OBUAH Family” into “Akua & Kelly”) on the same public page.
    */
   async getGuestForInvitation(invitationId: string, guestToken: string) {
@@ -248,7 +257,7 @@ export class InvitationService {
     const { allocateManualAdmissionCode } = await import("@/lib/qr/manual-code");
     const manualCode = await allocateManualAdmissionCode(input.eventId);
 
-    // Never auto-attach to the newest event invitation — that polluted unrelated
+    // Never auto-attach to the newest event invitation, that polluted unrelated
     // party rosters. Guests without an explicit invitationId stay unlinked until
     // the organiser assigns them (or quick-invite / import mints a party).
     const invitationId = input.invitationId?.trim() || null;
@@ -297,7 +306,7 @@ export class InvitationService {
   async submitRsvp(guestId: string, response: "ACCEPTED" | "DECLINED" | "MAYBE", message?: string) {
     const statusMap = { ACCEPTED: "ACCEPTED", DECLINED: "DECLINED", MAYBE: "MAYBE" } as const;
 
-    // RSVP is a seating / planning signal — never demote gate admission.
+    // RSVP is a seating / planning signal, never demote gate admission.
     const guest = await prisma.guest.findUnique({
       where: { id: guestId },
       select: {
@@ -312,6 +321,7 @@ export class InvitationService {
             id: true,
             title: true,
             organizerId: true,
+            rsvpDeadline: true,
             organizer: { select: { id: true, email: true, name: true } },
             collaborators: {
               where: { isActive: true },
@@ -319,9 +329,19 @@ export class InvitationService {
             },
           },
         },
+        rsvps: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     });
     if (!guest) throw new Error("Guest not found");
+
+    if (!isRsvpOpen(new Date(), guest.event.rsvpDeadline)) {
+      throw new RsvpClosedError(guest.event.rsvpDeadline!);
+    }
+
+    const latest = guest.rsvps[0] ?? null;
+    if (shouldReuseLatestRsvp(latest, { response, message })) {
+      return latest;
+    }
 
     const [rsvp] = await Promise.all([
       prisma.rsvp.create({ data: { guestId, response, message } }),
@@ -333,7 +353,7 @@ export class InvitationService {
           }),
     ]);
 
-    // Organizer/admin planning signal — never fail the guest's RSVP if notify lags.
+    // Organizer/admin planning signal, never fail the guest's RSVP if notify lags.
     await this.notifyOrganizersOfRsvp({
       guestId: guest.id,
       guestName: guest.name,
@@ -576,6 +596,44 @@ export class InvitationService {
       },
       defaultInviteUniqueLink: primaryInvite?.uniqueLink ?? null,
     };
+  }
+
+  async exportEventRsvpsCsv(eventId: string) {
+    const guests = await prisma.guest.findMany({
+      where: { eventId, archivedAt: null },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        status: true,
+        plusOnes: true,
+        invitation: { select: { name: true } },
+        rsvps: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { response: true, message: true, createdAt: true },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+      take: 5000,
+    });
+
+    return buildRsvpExportCsv(
+      guests.map((guest) => {
+        const latest = guest.rsvps[0] ?? null;
+        return {
+          name: guest.name,
+          email: guest.email,
+          phone: guest.phone,
+          status: guest.status,
+          plusOnes: guest.plusOnes,
+          latestResponse: latest?.response ?? null,
+          latestMessage: latest?.message ?? null,
+          respondedAt: latest?.createdAt.toISOString() ?? null,
+          invitationName: guest.invitation?.name ?? null,
+        };
+      })
+    );
   }
 }
 

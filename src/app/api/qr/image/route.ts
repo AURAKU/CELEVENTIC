@@ -67,7 +67,7 @@ export async function GET(req: Request) {
       const requestedLogoSize = parseQrLogoSizeQuery(searchParams.get("logoSize"));
       const pinnedCenter =
         requestedCenter && isPinnedQrCenterAllowed(requestedCenter) ? requestedCenter : null;
-      // Guide mode: no center logo — guest phone cameras need every module intact.
+      // Guide mode: no center logo. Guest phone cameras need every module intact.
       // `center` query is allowlisted public paths only (uploaded photo or official logo).
       let center = mode === "guide" ? null : pinnedCenter;
       let logoSize = requestedLogoSize;

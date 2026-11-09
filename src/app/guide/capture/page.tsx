@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { canAccessAdminPanel } from "@/lib/rbac";
 
 /**
- * Guide Capture Mode — internal stub only.
+ * Guide Capture Mode. Internal stub only.
  * Full recording workflow is deferred; route is admin-gated.
  */
 export default async function GuideCaptureStubPage() {
@@ -20,10 +21,14 @@ export default async function GuideCaptureStubPage() {
       <p className="text-slate-600 leading-relaxed">
         Capture Mode for recording Celeventic Guide videos is stubbed for this release. Use storyboard
         scripts in <code className="text-sm bg-slate-100 px-1 rounded">src/lib/celeventic-guide/storyboards</code>{" "}
-        and upload finished media URLs via <a className="text-brand-700 hover:underline" href="/admin/guides">/admin/guides</a>.
+        and upload finished media URLs via{" "}
+        <Link className="text-brand-700 hover:underline" href="/admin/guides">
+          /admin/guides
+        </Link>
+        .
       </p>
       <p className="text-sm text-slate-500">
-        Offline “Save for offline” video caching is also deferred — architecture can reuse the existing
+        Offline “Save for offline” video caching is also deferred. Architecture can reuse the existing
         Event Guide offline pack patterns later.
       </p>
     </main>

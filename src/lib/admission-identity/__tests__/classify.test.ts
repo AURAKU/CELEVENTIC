@@ -20,7 +20,7 @@ describe("classifyAdmissionIdentity", () => {
     assert.ok(result.badges.includes("Complete"));
   });
 
-  it("does not invent missing-code for capacity — only when code absent", () => {
+  it("does not invent missing-code for capacity. Only when code absent", () => {
     const missing = classifyAdmissionIdentity({
       uniqueLink: "abc1234567890xyz",
       hasLivePass: true,

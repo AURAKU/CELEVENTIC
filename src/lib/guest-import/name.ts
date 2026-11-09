@@ -3,8 +3,8 @@ import type { GuestPartyType } from "@prisma/client";
 /**
  * Name intelligence for bulk guest import.
  *
- * Turns the way people actually write a guest list — "Mr & Mrs Mensah",
- * "Kofi Boateng +1", "The Asante Family", "Ushers Team (8)" — into a party
+ * Turns the way people actually write a guest list. "Mr & Mrs Mensah",
+ * "Kofi Boateng +1", "The Asante Family", "Ushers Team (8)", into a party
  * type and, where it is unambiguous, an allowance.
  *
  * The hard rule: a suggestion is never silently authoritative. FAMILY and
@@ -45,7 +45,7 @@ export interface NameAnalysis {
   /** Heads this invitation should admit. */
   partySize: number;
   /**
-   * False when the size is a floor rather than a fact — FAMILY/GROUP without
+   * False when the size is a floor rather than a fact. FAMILY/GROUP without
    * an explicit count. Callers must make the organiser confirm.
    */
   allowanceConfirmed: boolean;
@@ -87,7 +87,7 @@ export function stripTitles(input: string): string {
 /**
  * Comparison key for duplicate detection: case-, accent-, title- and
  * punctuation-insensitive, with tokens sorted so "Kofi Mensah" and
- * "Mensah Kofi" collide. Collisions surface for review — never a silent merge.
+ * "Mensah Kofi" collide. Collisions surface for review, never a silent merge.
  */
 export function nameKey(input: string): string {
   const base = foldDiacritics(stripTitles(cleanName(input)))
@@ -171,7 +171,7 @@ function splitCouple(text: string): [string, string] | null {
   const right = text.slice(match.index + match[0].length).trim();
   if (!left || !right) return null;
 
-  // A second joiner means three or more parties — handled as a group.
+  // A second joiner means three or more parties. Handled as a group.
   if (COUPLE_JOINERS.test(right)) return null;
   return [left, right];
 }
@@ -237,7 +237,7 @@ export function analyseName(input: string, defaultPartySize = 1): NameAnalysis {
     const rightIsTitleOnly = TITLE_SET.has(rawRight.replace(/\./g, "").trim().toLowerCase());
 
     if (leftIsTitleOnly && !rightIsTitleOnly) {
-      // "Mr & Mrs Mensah" — one printed name, two heads, no member names.
+      // "Mr & Mrs Mensah". One printed name, two heads, no member names.
       return {
         ...base,
         partyType: "COUPLE",

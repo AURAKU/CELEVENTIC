@@ -105,9 +105,9 @@ export function ImportHistoryPanel({ eventId }: { eventId: string }) {
 
     setMessage(
       action === "rollback"
-        ? `Rolled back — removed ${result.data.invitationsRemoved ?? 0} invitation${result.data.invitationsRemoved === 1 ? "" : "s"}.`
+        ? `Rolled back. Removed ${result.data.invitationsRemoved ?? 0} invitation${result.data.invitationsRemoved === 1 ? "" : "s"}.`
         : action === "archive"
-          ? `Archived — revoked ${result.data.passesRevoked ?? 0} pass${result.data.passesRevoked === 1 ? "" : "es"}.`
+          ? `Archived. Revoked ${result.data.passesRevoked ?? 0} pass${result.data.passesRevoked === 1 ? "" : "es"}.`
           : `Restored ${result.data.invitationsRestored ?? 0} invitation${result.data.invitationsRestored === 1 ? "" : "s"}.`
     );
     await Promise.all([load(), checkSafety(batchId)]);

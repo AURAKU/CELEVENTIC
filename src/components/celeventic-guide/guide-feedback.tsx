@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,7 +37,7 @@ export function GuideFeedback({ slug }: { slug: string }) {
         {done === "no" ? (
           <>
             .{" "}
-            <a href="/legal/contact" className="text-brand-700 hover:underline">Contact support</a> if you still need help.
+            <Link href="/legal/contact" className="text-brand-700 hover:underline">Contact support</Link> if you still need help.
           </>
         ) : (
           "."

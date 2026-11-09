@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Check,
@@ -10,7 +10,6 @@ import {
   Loader2,
   Nfc,
   Plus,
-  RefreshCw,
   Save,
   Smartphone,
 } from "lucide-react";
@@ -20,9 +19,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
+import { DigitalCardThemePicker } from "@/components/digital-business-card/digital-card-theme-picker";
 import { DIGITAL_CARD_THEMES, type DigitalCardThemeId } from "@/lib/digital-business-card/themes";
+import { SMARTCARD_PLANS, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
 import {
-  DIGITAL_CARD_MONTHLY_PRICE_GHS,
   DIGITAL_CARD_TRIAL_DAYS,
   digitalCardPublicUrl,
   normalizeSocials,
@@ -76,8 +76,17 @@ export function DigitalCardStudioClient() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [planId, setPlanId] = useState<SmartCardPlanId>("yearly");
+  const [paying, setPaying] = useState(false);
+  const themeFromQuery = useRef<DigitalCardThemeId | null>(null);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+  const applyThemeQuery = useCallback(() => {
+    const themeId = themeFromQuery.current;
+    if (!themeId) return;
+    setForm((prev) => (prev.themeId === themeId ? prev : { ...prev, themeId }));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,6 +103,7 @@ export function DigitalCardStudioClient() {
         const found = list.find((c) => c.id === activeId);
         if (found) selectCard(found);
       }
+      applyThemeQuery();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load cards");
     } finally {
@@ -105,6 +115,44 @@ export function DigitalCardStudioClient() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get("plan");
+    if (fromQuery && SMARTCARD_PLANS.some((p) => p.id === fromQuery)) {
+      setPlanId(fromQuery as SmartCardPlanId);
+    }
+    const themeQuery = params.get("theme");
+    if (themeQuery && DIGITAL_CARD_THEMES.some((theme) => theme.id === themeQuery)) {
+      themeFromQuery.current = themeQuery as DigitalCardThemeId;
+      applyThemeQuery();
+    }
+    const reference = params.get("reference") || params.get("trxref");
+    if (params.get("payment") === "callback" && reference) {
+      void (async () => {
+        try {
+          const res = await fetch(
+            `/api/digital-business-cards/subscribe/confirm?reference=${encodeURIComponent(reference)}`
+          );
+          const json = await res.json();
+          if (res.ok && json.data?.status === "SUCCESSFUL") {
+            setMessage("Subscription paid. Your CeleCard is live.");
+            await load();
+          } else if (!res.ok) {
+            setError(json.error || "Payment could not be confirmed yet.");
+          }
+        } catch {
+          setError("Payment confirmation failed.");
+        } finally {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("payment");
+          url.searchParams.delete("reference");
+          url.searchParams.delete("trxref");
+          window.history.replaceState({}, "", url.pathname + url.search);
+        }
+      })();
+    }
+  }, [applyThemeQuery, load]);
 
   function selectCard(card: CardRow) {
     setActiveId(card.id);
@@ -167,7 +215,11 @@ export function DigitalCardStudioClient() {
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Save failed");
-      setMessage(activeId ? "Card updated." : "Card created — 14-day trial started.");
+      setMessage(
+        activeId
+          ? "Card updated."
+          : `Card saved. Design for ${DIGITAL_CARD_TRIAL_DAYS} days. Pay a plan to go live.`
+      );
       await load();
       if (!activeId && json.data?.id) {
         setActiveId(json.data.id);
@@ -180,24 +232,35 @@ export function DigitalCardStudioClient() {
     }
   }
 
-  async function renew() {
-    if (!activeId) return;
-    setSaving(true);
+  async function subscribe() {
+    if (!activeId) {
+      setError("Save the card first, then activate a plan.");
+      return;
+    }
+    setPaying(true);
     setError(null);
     try {
-      const res = await fetch(`/api/digital-business-cards/${activeId}`, {
-        method: "PATCH",
+      const res = await fetch(`/api/digital-business-cards/${activeId}/subscribe`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ renewSubscription: true }),
+        body: JSON.stringify({ planId }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Renew failed");
-      setMessage("Subscription renewed for 30 days. Your link stays live.");
-      await load();
+      if (!res.ok) throw new Error(json.error || "Checkout failed");
+      if (json.data?.free) {
+        setMessage("Plan activated. Your CeleCard is live.");
+        await load();
+        return;
+      }
+      if (json.data?.authorizationUrl) {
+        window.location.href = json.data.authorizationUrl as string;
+        return;
+      }
+      throw new Error("Paystack did not return a checkout URL");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Renew failed");
+      setError(e instanceof Error ? e.message : "Checkout failed");
     } finally {
-      setSaving(false);
+      setPaying(false);
     }
   }
 
@@ -220,14 +283,14 @@ export function DigitalCardStudioClient() {
         <div className="max-w-2xl">
           <div className="mb-2 inline-flex items-center gap-2 text-[#0B8A83]">
             <CreditCard className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]">Digital business card</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em]">CeleCard</span>
           </div>
           <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">
             One link for every contact
           </h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Design a premium card, connect LinkedIn, website, WhatsApp and more, then share via QR or
-            NFC. A monthly plan keeps your public page live for anyone you meet.
+            Design a premium identity, then share via QR, NFC, Wallet or link. The public page stays
+            offline until a paid plan is active. Monthly, 3 months, 6 months, or yearly.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -243,8 +306,8 @@ export function DigitalCardStudioClient() {
       </div>
 
       <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
-        <strong>₵{DIGITAL_CARD_MONTHLY_PRICE_GHS}/month</strong> keeps your card link active. New cards
-        include a {DIGITAL_CARD_TRIAL_DAYS}-day trial. Renew anytime to stay discoverable.
+        Studio design is open for {DIGITAL_CARD_TRIAL_DAYS} days. <strong>QR, NFC and the public
+        link work only while a subscription is paid.</strong>
         {active ? (
           <span className="ml-2">
             Status:{" "}
@@ -400,29 +463,13 @@ export function DigitalCardStudioClient() {
 
             <div>
               <Label className="mb-3 block">Theme</Label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {DIGITAL_CARD_THEMES.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, themeId: t.id }))}
-                    className={`rounded-xl border p-2 text-left transition ${
-                      form.themeId === t.id
-                        ? "border-[#0B8A83] ring-2 ring-[#0B8A83]/25"
-                        : "border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    <div
-                      className="mb-2 h-12 rounded-lg"
-                      style={{ background: t.cardBackground, border: `1px solid ${t.border}` }}
-                    />
-                    <p className="text-xs font-semibold text-slate-800">{t.previewLabel}</p>
-                    {t.premium ? (
-                      <span className="text-[10px] uppercase tracking-wide text-amber-700">Premium</span>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
+              <p className="mb-3 text-xs text-slate-500">
+                Cinema, landmarks, ateliers, and world art. Original compositions, never licensed characters or brand marks.
+              </p>
+              <DigitalCardThemePicker
+                value={form.themeId}
+                onChange={(themeId) => setForm((f) => ({ ...f, themeId }))}
+              />
             </div>
 
             <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -482,14 +529,36 @@ export function DigitalCardStudioClient() {
                   <Smartphone className="mr-2 h-4 w-4" />
                   Copy for NFC / share
                 </Button>
-                {activeId ? (
-                  <Button type="button" size="sm" className="bg-[#0B8A83] hover:bg-[#097a74]" onClick={renew}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Renew 30 days (₵{DIGITAL_CARD_MONTHLY_PRICE_GHS})
-                  </Button>
-                ) : null}
+                <div className="grid grid-cols-2 gap-1.5">
+                  {SMARTCARD_PLANS.map((plan) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => setPlanId(plan.id)}
+                      className={`rounded-lg border px-2 py-1.5 text-left text-[11px] ${
+                        planId === plan.id
+                          ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
+                          : "border-slate-200 text-slate-600"
+                      }`}
+                    >
+                      <span className="font-semibold">{plan.label}</span>
+                      <span className="ml-1">₵{plan.priceGhs}</span>
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="bg-[#0B8A83] hover:bg-[#097a74]"
+                  onClick={subscribe}
+                  disabled={!activeId || paying}
+                >
+                  {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                  Activate {SMARTCARD_PLANS.find((p) => p.id === planId)?.label} · ₵
+                  {SMARTCARD_PLANS.find((p) => p.id === planId)?.priceGhs}
+                </Button>
                 <Button asChild variant="ghost" size="sm">
-                  <Link href="/dashboard/settings?tab=billing">Manage billing</Link>
+                  <Link href="/dashboard/business-card/billing">Manage billing</Link>
                 </Button>
               </div>
               {active ? (

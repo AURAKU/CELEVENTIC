@@ -235,7 +235,7 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
                 <span
                   key={tag.id}
                   className="rounded-full border border-brand-200 bg-brand-50/80 px-2 py-0.5 text-[10px] font-medium text-brand-800"
-                  title="Private organizer tag — guests never see this"
+                  title="Private organizer tag. Guests never see this"
                 >
                   {tag.label}
                 </span>
@@ -298,11 +298,11 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
               onClick={() =>
                 runLifecycle(
                   "ARCHIVE",
-                  `Archive ${card.name}? The invitation is hidden and the pass stops working. You can restore it later — nothing is permanently deleted.`
+                  `Archive ${card.name}? The invitation is hidden and the pass stops working. You can restore it later. Nothing is permanently deleted.`
                 )
               }
               disabled={busy}
-              title="Archive invitation (soft remove — restoreable)"
+              title="Archive invitation (soft remove. Restoreable)"
             >
               <Archive className="h-3.5 w-3.5 shrink-0" /> Archive
             </Button>
@@ -421,7 +421,7 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
                     onClick={() =>
                       runLifecycle(
                         "ARCHIVE",
-                        `Archive ${card.name}? The invitation is hidden and the pass stops working. You can restore it later — nothing is permanently deleted.`
+                        `Archive ${card.name}? The invitation is hidden and the pass stops working. You can restore it later. Nothing is permanently deleted.`
                       )
                     }
                   >

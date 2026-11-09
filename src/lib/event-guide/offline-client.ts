@@ -100,7 +100,7 @@ export async function purgeGuide(publicToken: string): Promise<void> {
 /**
  * Register the guide worker.
  *
- * Only called from a successfully loaded, published guide — a draft or revoked
+ * Only called from a successfully loaded, published guide. A draft or revoked
  * guide never reaches this code, so a guest never caches unapproved content.
  */
 export async function registerGuideWorker(
@@ -134,7 +134,7 @@ export interface GuideFetchResult {
  * Refresh the payload from the network, falling back to the stored copy.
  *
  * A `410` means the guide was genuinely retired, so the local copy is purged.
- * Any other failure is treated as "we are offline" — a transient 500 must never
+ * Any other failure is treated as "we are offline". A transient 500 must never
  * destroy a guest's working offline guide mid-event.
  */
 export async function refreshGuidePayload(publicToken: string): Promise<GuideFetchResult> {

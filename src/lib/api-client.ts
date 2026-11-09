@@ -1,5 +1,5 @@
 /**
- * Laravel API client — proxies to backend when LARAVEL_API_URL is set.
+ * Laravel API client. Proxies to backend when LARAVEL_API_URL is set.
  * Falls back to local Next.js API routes when not configured.
  */
 

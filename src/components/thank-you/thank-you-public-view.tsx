@@ -247,7 +247,7 @@ export function ThankYouPublicView(props: ThankYouPublicViewProps) {
 
       {previewMode && (
         <div className="relative z-20 bg-amber-500/90 px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-[0.18em] text-amber-950">
-          Preview — not published
+          Preview, not published
         </div>
       )}
 

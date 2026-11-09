@@ -15,19 +15,19 @@ import { GENERAL_PASS_QUEUE } from "./queues";
  *
  * Two ways to admit people you cannot name in advance:
  *
- *  **Method A — fixed quantity.** Mint N unique passes now. Each is a real
+ *  **Method A. Fixed quantity.** Mint N unique passes now. Each is a real
  *  Invitation with its own signed QR and admission code, so "Guest 037" is
  *  scanned, counted and (if it walks in twice) refused exactly like a named
  *  guest. Print them, hand them out, done.
  *
- *  **Method B — open registration.** Publish one link. Each person who opens
+ *  **Method B. Open registration.** Publish one link. Each person who opens
  *  it and registers is *issued their own* unique pass. The shared link is a
  *  door to the form, never a credential: forwarding it to a hundred people
  *  produces a hundred distinct, individually revocable passes rather than one
  *  QR that a hundred people screenshot.
  *
- * Both reuse the existing Invitation + GuestPass stack, so nothing downstream —
- * scanner, offline package, analytics, place card — needs to know the
+ * Both reuse the existing Invitation + GuestPass stack, so nothing downstream.
+ * scanner, offline package, analytics, place card. Needs to know the
  * difference.
  */
 
@@ -208,7 +208,7 @@ export async function mintGeneralPassChunk(
     data: {
       issuedCount,
       status: remaining === 0 ? "ACTIVE" : minted === 0 ? "FAILED" : "GENERATING",
-      error: minted === 0 && remaining > 0 ? "Minting stalled — retry from the general passes panel." : null,
+      error: minted === 0 && remaining > 0 ? "Minting stalled. Retry from the general passes panel." : null,
     },
   });
 
@@ -341,7 +341,7 @@ export async function registerForGeneralPass(input: RegistrationInput): Promise<
   };
 }
 
-/** Public shape of an open registration page — no organiser data leaks. */
+/** Public shape of an open registration page. No organiser data leaks. */
 export async function getRegistrationPage(token: string) {
   const batch = await prisma.generalPassBatch.findUnique({
     where: { registrationToken: token },
@@ -470,7 +470,7 @@ export async function closeGeneralPassBatch(
 }
 
 /**
- * Revoke every pass in a batch — the "these leaked" button.
+ * Revoke every pass in a batch. The "these leaked" button.
  *
  * Passes are revoked rather than deleted so a revoked printout is recognised
  * and politely refused at the gate instead of reading as an unknown QR, and so

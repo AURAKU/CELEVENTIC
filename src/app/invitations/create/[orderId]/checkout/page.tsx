@@ -16,6 +16,7 @@ import {
   formatInvitationPriceGhs,
   getInvitationPackage,
   invitationPackageContactMessage,
+  isCustomisationInvitationPackage,
   isQuoteOnlyInvitationPackage,
 } from "@/lib/invitation-mvp/packages";
 import { GUIDE_SUPPORT_CONTACT, guideSupportWhatsAppUrl } from "@/lib/celeventic-guide/support-contact";
@@ -83,8 +84,13 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (data.data.threadId) {
+      window.location.href = `/dashboard/messages?thread=${encodeURIComponent(String(data.data.threadId))}`;
+      return;
+    }
+
     if (data.data.free || data.data.unlockStudio) {
-      window.location.href = `/invitations/create/${orderId}/studio`;
+      window.location.href = data.data.next || `/invitations/create/${orderId}/studio`;
       return;
     }
 
@@ -101,6 +107,7 @@ export default function CheckoutPage() {
 
   const quoteOnly = isQuoteOnlyInvitationPackage(String(order.packageSlug ?? ""));
   const bundledPkg = getInvitationPackage(String(order.packageSlug ?? ""));
+  const customisation = isCustomisationInvitationPackage(String(order.packageSlug ?? ""));
   const amountGhs = adminBypass ? 0 : quoteOnly ? 0 : pricing.totalGhs;
   const pkg = order.package as { name?: string; revisions?: number; deliveryDays?: number } | null;
   const contactHref = bundledPkg ? guideSupportWhatsAppUrl(invitationPackageContactMessage(bundledPkg)) : `mailto:${GUIDE_SUPPORT_CONTACT.email}`;
@@ -228,7 +235,9 @@ export default function CheckoutPage() {
               <p className="mt-3 text-center text-xs text-slate-400">
                 {adminBypass
                   ? "Admin unlock · Customize in Studio, then publish when ready."
-                  : "Secure payment · After payment you customize in Studio, then publish when ready."}
+                  : customisation
+                    ? "Secure payment · After Paystack confirms, you chat with the Celeventic team in Messages and Studio unlocks."
+                    : "Secure payment · After payment you customize in Studio, then publish when ready."}
               </p>
             </>
           )}

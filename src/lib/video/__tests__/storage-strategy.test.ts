@@ -6,7 +6,7 @@ import {
   isLocalFallbackEnabled,
 } from "../storage-strategy";
 
-describe("resolveVideoStorageStrategy — the root-cause fix for 'Video storage is not configured'", () => {
+describe("resolveVideoStorageStrategy. The root-cause fix for 'Video storage is not configured'", () => {
   it("uses S3 when the provider is s3 and S3 is actually ready", () => {
     const decision = resolveVideoStorageStrategy({
       providerEnv: "s3",
@@ -16,7 +16,7 @@ describe("resolveVideoStorageStrategy — the root-cause fix for 'Video storage 
     assert.deepEqual(decision, { strategy: "s3", blocked: false });
   });
 
-  it("falls back to local — never blocks — when MEDIA_STORAGE_PROVIDER is unset and S3 isn't ready (the reported bug's exact scenario)", () => {
+  it("falls back to local, never blocks. When MEDIA_STORAGE_PROVIDER is unset and S3 isn't ready (the reported bug's exact scenario)", () => {
     const decision = resolveVideoStorageStrategy({
       providerEnv: undefined,
       s3Ready: false,

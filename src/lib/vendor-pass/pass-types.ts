@@ -1,5 +1,5 @@
 /**
- * Vendor pass types — pure rules, unit-tested without Prisma.
+ * Vendor pass types. Pure rules, unit-tested without Prisma.
  *
  * The platform ships a fixed set of built-in types (the `VendorTeamPassType`
  * enum). On top of that, each event carries its own list of organiser-created
@@ -153,7 +153,7 @@ export type VendorPassTypeCreateDecision =
 
 /**
  * Validate a new organiser-created type against the built-ins and the event's
- * existing rows. Reviving a previously hidden type is a create, not an error —
+ * existing rows. Reviving a previously hidden type is a create, not an error.
  * that is how an organiser undoes a deletion.
  */
 export function resolveVendorPassTypeCreate(
@@ -214,7 +214,7 @@ export function resolveVendorPassTypeDeletion(input: {
     if (inUse > 0 && !input.confirm) {
       return {
         ok: false,
-        error: `${inUse} ${passWord} still use this type. Hiding it keeps those passes working but removes it from new passes — confirm to continue.`,
+        error: `${inUse} ${passWord} still use this type. Hiding it keeps those passes working but removes it from new passes. Confirm to continue.`,
         requiresConfirmation: true,
       };
     }
@@ -230,7 +230,7 @@ export function resolveVendorPassTypeDeletion(input: {
     if (!input.confirm) {
       return {
         ok: false,
-        error: `${inUse} ${passWord} still use this type. Removing it keeps those passes working but stops it being offered for new ones — confirm to continue.`,
+        error: `${inUse} ${passWord} still use this type. Removing it keeps those passes working but stops it being offered for new ones. Confirm to continue.`,
         requiresConfirmation: true,
       };
     }

@@ -203,7 +203,7 @@ export function AdminUsersClient({
           canPromoteToAdmin
             ? actorRole === "SUPER_ADMIN"
               ? "Super Admin, create users, assign any role including Super Admin."
-              : "Admin, create users, assign roles, promote to Admin, and manage all non–Super Admin accounts."
+              : "Admin, create users, assign roles, promote to Admin, and manage all non Super Admin accounts."
             : "Manage users on the platform."
         }
         count={total}

@@ -127,7 +127,7 @@ describe("never leaks non-public hosts into a guest payload", () => {
         `${url} should resolve to something`
       );
     }
-    // 172.32 is outside the private 172.16/12 block — a real public address.
+    // 172.32 is outside the private 172.16/12 block. A real public address.
     assert.equal(
       resolvePublicMediaUrl("https://172.32.0.1/uploads/e1/a.jpg"),
       "https://172.32.0.1/uploads/e1/a.jpg"

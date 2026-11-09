@@ -9,7 +9,7 @@ import { summarize } from "../admission-logic";
 import { describeHeldSeats, resolveSeatingContinuity, type PartySeat } from "../seating-continuity";
 
 /**
- * Partial group admission — the "party of three arrives in two waves" story,
+ * Partial group admission. The "party of three arrives in two waves" story,
  * end to end through the pure decision engine and the seating projection.
  */
 
@@ -124,7 +124,7 @@ test("a party of three admits two, then the third arrives later on the same pass
   assert.equal(first.resultingAdmittedCount, 2);
   assert.equal(first.resultingStatus, "PARTIALLY_ADMITTED");
 
-  // The pass stays usable — that is the whole point of partial admission.
+  // The pass stays usable, that is the whole point of partial admission.
   const later = decideAdmission(
     pass({ partySize: 3, admittedCount: 2, status: "PARTIALLY_ADMITTED" }),
     settings(),
@@ -233,7 +233,7 @@ test("the late arrival takes the seat that was being held rather than a new one"
 });
 
 test("a party admitted as a bare quantity still gets seats revealed in a stable order", () => {
-  // Nobody was ticked off by name — the gate only knows "two of you are here".
+  // Nobody was ticked off by name. The gate only knows "two of you are here".
   const c = resolveSeatingContinuity([seat(1, false), seat(2, false), seat(3, false)], 3, 2);
   assert.deepEqual(
     c.revealed.map((s) => s.guestId),

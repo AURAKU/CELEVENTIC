@@ -40,7 +40,7 @@ export const BUNDLED_MUSIC_FILES = [
 export type BundledMusicFile = (typeof BUNDLED_MUSIC_FILES)[number];
 
 export interface LayoutMusicProfile {
-  /** Unique catalog id — one per layout, never shared */
+  /** Unique catalog id. One per layout, never shared */
   trackId: string;
   title: string;
   category: string;
@@ -56,7 +56,7 @@ export interface LayoutMusicProfile {
 }
 
 /**
- * One unique audible identity per template layout — genre-fit file + dedicated trackId.
+ * One unique audible identity per template layout. Genre-fit file + dedicated trackId.
  * passport-luxe / passport-destination-wedding intentionally share travel-wanderlust
  * with non-overlapping windows. Funeral layouts use memorial-piano / memorial-violin.
  */
@@ -195,7 +195,7 @@ export const LAYOUT_MUSIC_IDENTITY: Record<InvitationLayoutSlug, LayoutMusicProf
   },
   "forever-afaris-wedding": {
     trackId: "layout-forever-afaris-wedding",
-    title: "Forever — Strings Romance",
+    title: "Forever. Strings Romance",
     category: "wedding",
     bundledFile: "violin-elegance",
     startSec: 0,
@@ -241,9 +241,9 @@ export const LAYOUT_MUSIC_IDENTITY: Record<InvitationLayoutSlug, LayoutMusicProf
     trackId: "layout-crystal-acrylic-prism",
     title: "Prism Elegance",
     category: "wedding",
-    bundledFile: "soundhelix-ambient-1",
-    startSec: 0,
-    endSec: 85,
+    bundledFile: "violin-elegance",
+    startSec: 88,
+    endSec: 168,
     volume: 0.41,
     fadeInSec: 2,
     fadeOutSec: 1.2,
@@ -374,7 +374,7 @@ export function buildMusicSelectionForLayout(
   };
 }
 
-/** All layout track ids — for uniqueness validation */
+/** All layout track ids, for uniqueness validation */
 export function getAllLayoutTrackIds(): string[] {
   return Object.values(LAYOUT_MUSIC_IDENTITY).map((p) => p.trackId);
 }

@@ -39,12 +39,12 @@ export interface VisionBoardContent {
    */
   sealInitials?: string;
   /**
-   * Memorial emblem on funeral wax seals (e.g. ✝, ✿) — never a wedding-style monogram.
+   * Memorial emblem on funeral wax seals (e.g. ✝, ✿), never a wedding-style monogram.
    */
   sealEmblem?: string;
   /** Designed wax-seal visual style (color/material). Defaults to `classic-peach-pearl`. */
   sealDesign?: SealDesignId;
-  /** Seal text font — "auto" keeps the smart monogram/word default. */
+  /** Seal text font. "auto" keeps the smart monogram/word default. */
   sealFontFamily?: SealFontChoice;
   /** Seal text size. Defaults to "md". */
   sealSize?: SealSizeId;
@@ -108,7 +108,7 @@ export function normalizeSealInitials(raw?: string | null): string {
     return upper.length === 2 ? formatPipeMonogram(upper) : upper;
   }
 
-  // Short words / phrases — keep readable on the seal face
+  // Short words / phrases. Keep readable on the seal face
   return cleaned
     .slice(0, 14)
     .split(" ")
@@ -155,7 +155,7 @@ export function resolveSealInitials(
   }
 
   if (isFuneral) {
-    // Wax seal + emblem path — no couple/honouree letter monogram on the envelope.
+    // Wax seal + emblem path. No couple/honouree letter monogram on the envelope.
     return "";
   }
 
@@ -315,7 +315,7 @@ export const TRADITIONAL_MARRIAGE_ART_URL =
 
 /**
  * Photoreal Traditional Marriage envelope face (IMG_8701 close-up).
- * HD PNG — seal-cleaned (no baked wax text); embroidery retained.
+ * HD PNG. Seal-cleaned (no baked wax text); embroidery retained.
  * Interactive seal is drawn at the V-flap tip over a cream plate.
  * `v=` busts CDN/browser cache when the plate updates.
  */
@@ -355,7 +355,7 @@ export const DEFAULT_VISION_BOARD: Required<
   ],
   hashtag: "#TheForeverAfaris",
   showArtBackdrop: true,
-  /** Exact card art by default — avoids duplicated printed + live copy */
+  /** Exact card art by default. Avoids duplicated printed + live copy */
   liveTypography: false,
   features: {
     guestWelcome: true,
@@ -388,5 +388,5 @@ export function mergeVisionBoard(
   };
 }
 
-/** Theme-native control family — never magenta ribbon cut-corners */
+/** Theme-native control family, never magenta ribbon cut-corners */
 export const VISION_BOARD_BUTTON_STYLE: ButtonStyle = "editorial-underline";

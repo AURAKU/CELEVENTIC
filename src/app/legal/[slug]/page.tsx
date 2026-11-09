@@ -23,7 +23,7 @@ export async function generateMetadata({
         "Celeventic Guide tutorials, Start Here journeys, guest quick actions, search, and frequently asked questions.",
       openGraph: {
         title: "FAQ & Guides · Celeventic Guide",
-        description: "Learn Celeventic — tutorials, journeys, and answers in one place.",
+        description: "Learn Celeventic. Tutorials, journeys, and answers in one place.",
         type: "website",
       },
       alternates: { canonical: "/legal/faq" },

@@ -25,7 +25,7 @@ export const TEMPLATE_HEADERS = [
 
 /**
  * Sample rows double as documentation.
- * Leave cells blank when optional — a name alone is a valid invitation.
+ * Leave cells blank when optional. A name alone is a valid invitation.
  */
 const SAMPLE_ROWS: string[][] = [
   [
@@ -39,7 +39,7 @@ const SAMPLE_ROWS: string[][] = [
     "",
     "",
     "",
-    "Minimum: name only — phone and email optional.",
+    "Minimum: name only. Phone and email optional.",
   ],
   [
     "Kofi Mensah",
@@ -104,7 +104,7 @@ const SAMPLE_ROWS: string[][] = [
     "Choir",
     "10",
     "",
-    "Tags are for organizers only — guests never see them.",
+    "Tags are for organizers only. Guests never see them.",
   ],
 ];
 
@@ -127,7 +127,7 @@ export const TEMPLATE_COLUMN_GUIDE: Array<{ header: string; help: string; requir
   },
   {
     header: "Invitation type",
-    help: "Individual, Couple, Plus guest, Family, or Group — optional.",
+    help: "Individual, Couple, Plus guest, Family, or Group. Optional.",
   },
   {
     header: "Party member names",

@@ -17,7 +17,8 @@ export interface VendorCardData {
   region?: string | null;
   profileImage?: string | null;
   coverImage?: string | null;
-  rating: number | string;
+  rating: number | string | null;
+  reviewCount?: number;
   isVerified: boolean;
   isFeatured: boolean;
   rateCards?: { priceMin: number | string; priceMax?: number | string | null; serviceName: string }[];
@@ -62,8 +63,15 @@ export function VendorCard({ vendor }: { vendor: VendorCardData }) {
           )}
           <div className="flex items-center justify-between mt-3">
             <div className="flex items-center gap-1 text-sm">
-              <Star className="h-3.5 w-3.5 text-[#D4A63A] fill-[#D4A63A]" />
-              <span>{Number(vendor.rating).toFixed(1)}</span>
+              {(vendor.reviewCount ?? 0) > 0 ? (
+                <>
+                  <Star className="h-3.5 w-3.5 text-[#D4A63A] fill-[#D4A63A]" />
+                  <span>{Number(vendor.rating).toFixed(1)}</span>
+                  <span className="text-xs text-slate-400">({vendor.reviewCount})</span>
+                </>
+              ) : (
+                <span className="text-xs text-slate-400">No reviews yet</span>
+              )}
             </div>
             {priceFrom !== undefined && (
               <p className="text-xs font-medium text-[#0B8A83]">From {formatCurrency(Number(priceFrom))}</p>

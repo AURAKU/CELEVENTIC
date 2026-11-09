@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { vendorProfileService } from "@/services/vendor-os/vendor-profile.service";
+import { toPublicVendorCard } from "@/lib/privacy/public-vendor";
 
 const signupSchema = z.object({
   businessName: z.string().min(2),
@@ -30,7 +31,26 @@ export async function GET(req: Request) {
   const vendor = await vendorProfileService.getBySlug(slug);
   if (!vendor) return NextResponse.json({ error: "Not found" }, { status: 404 });
   await vendorProfileService.trackEvent(vendor.id, "PROFILE_VIEW");
-  return NextResponse.json({ success: true, data: vendor });
+  return NextResponse.json({
+    success: true,
+    data: {
+      ...toPublicVendorCard(vendor as unknown as Record<string, unknown>),
+      socialLinks: vendor.socialLinks,
+      media: vendor.media,
+      rateCards: vendor.rateCards,
+      eventReferences: vendor.eventReferences,
+      categoryAssignments: vendor.categoryAssignments,
+      services: vendor.services,
+      reviews: vendor.reviews.map((review) => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt,
+        user: review.user ? { name: review.user.name } : null,
+      })),
+      _count: vendor._count,
+    },
+  });
 }
 
 export async function POST(req: Request) {

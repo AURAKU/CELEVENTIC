@@ -205,7 +205,7 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       ],
       studio: {
         revealMode: "envelope",
-        /** Editorial underline — never magenta ribbon cut-corners on this template */
+        /** Editorial underline, never magenta ribbon cut-corners on this template */
         buttonStyle: "editorial-underline",
         fullScreen: true,
         headingSize: 28,
@@ -263,7 +263,7 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       studio: {
         // The Blush Gate ceremony (envelope → wax seal → gate) runs in the
         // shared reveal pipeline, so the invitation body never repeats it.
-        // Announcement phrase lives once on weddingBoard.eyebrow — not introText.
+        // Announcement phrase lives once on weddingBoard.eyebrow, not introText.
         revealMode: "envelope",
         buttonStyle: "wax-seal",
         fullScreen: true,
@@ -363,10 +363,10 @@ export function getTemplatePreset(slug: string): InvitationTemplatePreset | unde
   );
 }
 
-/** One picker entry per catalogue template — no duplicate layouts or titles */
+/** One picker entry per catalogue template. No duplicate layouts or titles */
 export function getUniqueTemplatePresets(options?: BrowseCatalogOptions): InvitationTemplatePreset[] {
   // Wave 1 paged templates (themeId set) reuse legacy layout slugs as static
-  // fallbacks; keep them out of the legacy preset picker to avoid duplicates —
+  // fallbacks; keep them out of the legacy preset picker to avoid duplicates.
   // they surface through the catalogue gallery + preview flow instead.
   return CATALOG_TEMPLATES.filter(
     (catalog) => !catalog.themeId && isCatalogTemplatePubliclyListed(catalog, options)
@@ -508,12 +508,12 @@ export function mergeDesignConfig(
  * Apply catalog SKU creative identity onto a stored design at render time.
  * Ceremony DNA (intro / reveal / typography pack / etc.) follows the registry
  * unless the host marked experienceCustomized. Colors, fonts, and media stay
- * as stored — no destructive migration.
+ * as stored. No destructive migration.
  */
 /**
  * Experience fields that a catalog SKU owns. While a host has not customized
  * the ceremony DNA these follow the registry, which means any Studio control
- * bound to one of them MUST also flip `experienceCustomized` — otherwise the
+ * bound to one of them MUST also flip `experienceCustomized`. Otherwise the
  * host's choice is silently reverted on the live guest page.
  */
 export const CATALOG_DNA_EXPERIENCE_KEYS = [

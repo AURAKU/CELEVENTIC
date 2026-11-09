@@ -15,6 +15,7 @@ import type {
   SeatingContinuity,
 } from "@/lib/admission/seating-continuity";
 import { shouldDefaultToEventAccess } from "@/lib/invitation/party-isolation";
+import { guestFacingInviteLink } from "@/lib/invitation/public-invite-alias";
 
 export interface CompanionPlace {
   tableNumber: string;
@@ -68,13 +69,14 @@ export function buildEventCompanionHref(
   uniqueLink: string,
   guestQrToken?: string | null
 ): string {
-  const base = `/invite/${encodeURIComponent(uniqueLink)}/event-day`;
+  const path = guestFacingInviteLink(uniqueLink);
+  const base = `/invite/${encodeURIComponent(path)}/event-day`;
   const token = guestQrToken?.trim();
   return token ? `${base}?guest=${encodeURIComponent(token)}` : base;
 }
 
 /**
- * Invitation ceremony URL — used from Event Companion "View invitation".
+ * Invitation ceremony URL. Used from Event Companion "View invitation".
  * `view=invite` prevents the admitted-guest redirect back to companion.
  */
 export function buildInviteCeremonyHref(
@@ -85,7 +87,8 @@ export function buildInviteCeremonyHref(
   params.set("view", "invite");
   const token = guestQrToken?.trim();
   if (token) params.set("guest", token);
-  return `/invite/${encodeURIComponent(uniqueLink)}?${params.toString()}`;
+  const path = guestFacingInviteLink(uniqueLink);
+  return `/invite/${encodeURIComponent(path)}?${params.toString()}`;
 }
 
 /** True when the guest explicitly asked to reopen the invitation ceremony. */
@@ -99,7 +102,7 @@ export function wantsInviteCeremonyView(
 /**
  * True when the bare invite link should skip ceremony and open companion only.
  * Requires real gate admission (`admittedCount > 0` from CHECKED_IN / pass
- * admit) — OPENED / ACCEPTED alone never satisfy this.
+ * admit). OPENED / ACCEPTED alone never satisfy this.
  *
  * Partial admission on a shared party link keeps the invitation available;
  * only fully admitted parties (or an admitted member-specific viewer) jump.

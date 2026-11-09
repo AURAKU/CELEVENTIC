@@ -1,5 +1,5 @@
 /**
- * Platform soft intro — Celeventic-branded cinematic gate before tap-to-begin / reveals.
+ * Platform soft intro. Celeventic-branded cinematic gate before tap-to-begin / reveals.
  *
  * Live sequence (typical):
  *   brand video intro → tap-to-begin → opening reveal → invitation
@@ -16,7 +16,7 @@ import {
   INTRO_VIDEO_SRC,
 } from "@/lib/experience-engine/soft-intro-playback";
 
-/** Canonical Celeventic invitation intro — every template, every guest. */
+/** Canonical Celeventic invitation intro. Every template, every guest. */
 export const CELEVENTIC_INVITATION_INTRO_VIDEO = INTRO_VIDEO_SRC;
 export const CELEVENTIC_INVITATION_INTRO_POSTER = INTRO_POSTER_SRC;
 
@@ -24,17 +24,17 @@ export const CELEVENTIC_INVITATION_INTRO_POSTER = INTRO_POSTER_SRC;
 export const SOFT_INTRO_DURATION_MS = 12_500;
 export const SOFT_INTRO_REDUCED_MOTION_MS = 800;
 export const SOFT_INTRO_EXIT_MS = 720;
-/** Hard ceiling when duration is unknown — guests must never stay blank forever. */
+/** Hard ceiling when duration is unknown. Guests must never stay blank forever. */
 export const SOFT_INTRO_FALLBACK_MS = INTRO_UNKNOWN_DURATION_FALLBACK_MS;
 
 /**
  * Returning guest still watches the full brand clip; Skip appears sooner so
- * they can move on — the ceremony after Tap to Begin is never auto-rushed.
+ * they can move on. The ceremony after Tap to Begin is never auto-rushed.
  */
 export const SOFT_INTRO_RETURN_HOLD_MS = 12_500;
 export const SOFT_INTRO_RETURN_REDUCED_MOTION_MS = 400;
 
-/** Optional shared begin label — live soft intro uses “Open Invitation”. */
+/** Optional shared begin label. Live soft intro uses “Open Invitation”. */
 export const SOFT_INTRO_CTA = "Open Invitation";
 
 export type InvitePipelinePhase =
@@ -48,14 +48,14 @@ export interface SoftIntroGateInput {
   /** Explicit skip; when undefined, falls back to skipIntro (thumbnail / studio previews). */
   skipSoftIntro?: boolean;
   skipIntro?: boolean;
-  /** @deprecated DNA intro variants are retired — brand video is the only intro. */
+  /** @deprecated DNA intro variants are retired. Brand video is the only intro. */
   introEnabled?: boolean;
   needsTapGate?: boolean;
   showReveal?: boolean;
 }
 
 export interface SoftIntroAtmosphereInput {
-  /** Dedicated pre-invite welcome photo (Studio "intro" upload) — Tap to Begin only. */
+  /** Dedicated pre-invite welcome photo (Studio "intro" upload). Tap to Begin only. */
   introImageUrl?: string | null;
   backgroundImageUrl?: string | null;
   coverImageUrl?: string | null;
@@ -67,7 +67,7 @@ export interface SoftIntroAtmosphereInput {
  * Whether the platform brand-video intro should mount.
  *
  * Prefer explicit `skipSoftIntro`. When omitted, fall back to `skipIntro` so
- * tiny catalogue thumbs stay quiet — but callers that set `skipIntro` only to
+ * tiny catalogue thumbs stay quiet, but callers that set `skipIntro` only to
  * retire DNA (while still wanting the brand MP4) must pass
  * `skipSoftIntro={false}`.
  */
@@ -86,7 +86,7 @@ export function resolveInitialInvitePhase(input: SoftIntroGateInput): InvitePipe
 
 /**
  * Phase after the brand video intro completes (or is skipped).
- * Template DNA intros are never shown — the MP4 is the only intro.
+ * Template DNA intros are never shown. The MP4 is the only intro.
  */
 export function phaseAfterSoftIntro(input: SoftIntroGateInput): InvitePipelinePhase {
   if (input.needsTapGate) return "tap-to-begin";
@@ -100,10 +100,10 @@ export function phaseAfterSoftIntro(input: SoftIntroGateInput): InvitePipelinePh
  *
  * Never `"play"`. The brand film owns the audio stage for its whole runtime, so
  * template music must not be audible until a later beat:
- *   - `"prime"`         — buffer only. Used whenever a real gesture still lies
+ *   - `"prime"`. Buffer only. Used whenever a real gesture still lies
  *                         ahead (Tap to Begin, or the envelope/curtain tap when
  *                         that beat owns the opening) and can start the track.
- *   - `"arm-silently"`  — spend this gesture on a muted play/pause so a later
+ *   - `"arm-silently"`. Spend this gesture on a muted play/pause so a later
  *                         programmatic `play()` is not blocked by autoplay
  *                         policy. Only for pipelines that jump straight from the
  *                         film to the portal with no further gesture.
@@ -130,14 +130,14 @@ export function introGestureAudioAction(
 /**
  * Hold duration before auto-advance when video cannot drive timing
  * (reduced motion / missing media). Returning guests still get the full
- * brand beat length — only the Skip control appears sooner in the UI.
+ * brand beat length. Only the Skip control appears sooner in the UI.
  */
 export function softIntroHoldMs(reducedMotion: boolean, _quick = false): number {
   return reducedMotion ? SOFT_INTRO_REDUCED_MOTION_MS : SOFT_INTRO_DURATION_MS;
 }
 
 /**
- * Atmosphere for Tap to Begin / reveal backdrops — not used by the brand video intro.
+ * Atmosphere for Tap to Begin / reveal backdrops, not used by the brand video intro.
  * Prefer the dedicated welcome photo, then live media, then cover, then layout art.
  */
 export function resolveSoftIntroAtmosphere(input: SoftIntroAtmosphereInput): string | null {

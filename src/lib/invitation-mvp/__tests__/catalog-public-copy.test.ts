@@ -42,8 +42,20 @@ describe("catalogue public copy", () => {
       hosts.add(demo.hostName);
 
       assert.equal(catalogDemoLeaksClientIdentity(JSON.stringify(demo)), false);
+      assert.equal(/\b(mr|mrs|professor|deaconess|madam|rev)\b/i.test(JSON.stringify(demo)), false);
       assert.equal(PUNCTUATION_DASH.test(demo.title), false, demo.title);
       assert.equal(PUNCTUATION_DASH.test(demo.message), false, demo.message);
+    }
+  });
+
+  it("every catalogue SKU demo identity stays fictional", () => {
+    for (const template of CATALOG_TEMPLATES) {
+      const demo = CATALOG_DEMO_IDENTITIES[template.slug];
+      assert.equal(
+        catalogDemoLeaksClientIdentity(JSON.stringify(demo)),
+        false,
+        template.slug
+      );
     }
   });
 

@@ -16,19 +16,19 @@ const INFO_PAGE_DEFAULTS: Record<
 > = {
   about: {
     contentEn:
-      `Celeventic is a global Event Operating System — ${BRAND_MOTTO}. We help organizers create luxury digital invitations, manage guests, sell tickets, and preserve memories through InvitationOS, VendorOS, and Celeventic Intelligence.`,
+      `Celeventic is a global Event Operating System: ${BRAND_MOTTO}. We help organizers create luxury digital invitations, manage guests, sell tickets, and preserve memories through InvitationOS, VendorOS, and Celeventic Intelligence.`,
     contentFr:
-      `Celeventic est un Event Operating System mondial — Célébrations | Événements | Billets. Nous aidons les organisateurs à créer des invitations numériques de luxe, gérer les invités, vendre des billets et préserver les souvenirs via InvitationOS, VendorOS et Celeventic Intelligence.`,
+      `Celeventic est un Event Operating System mondial. Célébrations | Événements | Billets. Nous aidons les organisateurs à créer des invitations numériques de luxe, gérer les invités, vendre des billets et préserver les souvenirs via InvitationOS, VendorOS et Celeventic Intelligence.`,
   },
   faq: {
     contentEn:
-      "## How do I create an invitation?\nSign up, choose a template and package, add your event details, and publish your unique guest link.\n\n## How much do invitation packages cost?\nStarter is GHS 450, Classic is GHS 800, Signature is GHS 1,500, and Ultimate Experience starts from GHS 2,950 with a custom quotation.\n\n## Can guests RSVP without an account?\nYes — RSVP works from the public invitation link.\n\n## Which payments are supported?\nPaystack in GHS for Starter, Classic, and Signature. Ultimate Experience is quoted separately.\n\n## Can I get designer help?\nSignature includes interactive production. Ultimate Experience adds full designer-assisted setup and event-day admission support.",
+      "## How do I create an invitation?\nSign up, choose a template and package, add your event details, and publish your unique guest link.\n\n## How much do invitation packages cost?\nStarter is GHS 450, Classic is GHS 800, Signature is GHS 1,500, and Ultimate Experience starts from GHS 2,950 with a custom quotation.\n\n## Can guests RSVP without an account?\nYes. RSVP works from the public invitation link.\n\n## Which payments are supported?\nPaystack in GHS for Starter, Classic, and Signature. Ultimate Experience is quoted separately.\n\n## Can I get designer help?\nSignature includes interactive production. Ultimate Experience adds full designer-assisted setup and event-day admission support.",
     contentFr:
-      "## Comment créer une invitation ?\nInscrivez-vous, choisissez un modèle et un forfait, ajoutez les détails de votre événement et publiez votre lien invité unique.\n\n## Combien coûtent les forfaits d'invitation ?\nStarter : 450 GHS, Classic : 800 GHS, Signature : 1 500 GHS, et Ultimate Experience à partir de 2 950 GHS sur devis.\n\n## Les invités ont-ils besoin d'un compte ?\nNon — le RSVP fonctionne depuis le lien public d'invitation.\n\n## Quels paiements sont acceptés ?\nPaystack en GHS pour Starter, Classic et Signature. Ultimate Experience est facturé sur devis.\n\n## Puis-je obtenir l'aide d'un designer ?\nSignature inclut une production interactive. Ultimate Experience ajoute une mise en place assistée par designer et le soutien d'admission le jour J.",
+      "## Comment créer une invitation ?\nInscrivez-vous, choisissez un modèle et un forfait, ajoutez les détails de votre événement et publiez votre lien invité unique.\n\n## Combien coûtent les forfaits d'invitation ?\nStarter : 450 GHS, Classic : 800 GHS, Signature : 1 500 GHS, et Ultimate Experience à partir de 2 950 GHS sur devis.\n\n## Les invités ont-ils besoin d'un compte ?\nNon. Le RSVP fonctionne depuis le lien public d'invitation.\n\n## Quels paiements sont acceptés ?\nPaystack en GHS pour Starter, Classic et Signature. Ultimate Experience est facturé sur devis.\n\n## Puis-je obtenir l'aide d'un designer ?\nSignature inclut une production interactive. Ultimate Experience ajoute une mise en place assistée par designer et le soutien d'admission le jour J.",
   },
   contact: {
-    contentEn: "Email: Celeventic@gmail.com\nPhone: 020 961 2770\nHours: Mon–Sat, 9am–6pm GMT",
-    contentFr: "E-mail : Celeventic@gmail.com\nTéléphone : 020 961 2770\nHoraires : lun.–sam., 9h–18h GMT",
+    contentEn: "Email: Celeventic@gmail.com\nPhone: 020 961 2770\nHours: Mon to Sat, 9am to 6pm GMT",
+    contentFr: "E-mail : Celeventic@gmail.com\nTéléphone : 020 961 2770\nHoraires : lun. au sam., 9h à 18h GMT",
   },
 };
 

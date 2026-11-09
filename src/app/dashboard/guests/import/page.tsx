@@ -23,7 +23,7 @@ export default function GuestImportPage() {
   const [tab, setTab] = useState("import");
 
   // Keep ?eventId in the address bar. An import writes to whichever event is
-  // selected, so the URL has to say which one — for a reload, a shared link,
+  // selected, so the URL has to say which one, for a reload, a shared link,
   // or a second tab open on a different event.
   useEffect(() => {
     if (!eventId) return;
@@ -65,7 +65,7 @@ export default function GuestImportPage() {
               : error
                 ? error
                 : events.length === 0
-                  ? "Create an event first — guests are always imported into one specific event."
+                  ? "Create an event first. Guests are always imported into one specific event."
                   : "Select an event to import guests."}
           </CardContent>
         </Card>

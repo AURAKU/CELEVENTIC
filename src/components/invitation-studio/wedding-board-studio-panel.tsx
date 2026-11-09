@@ -538,6 +538,14 @@ export function WeddingBoardStudioPanel({
         <Field label="RSVP heading">
           <Input value={board.rsvpHeading} onChange={(e) => patch({ rsvpHeading: e.target.value })} />
         </Field>
+        <Field label="Entry pass note" wide>
+          <Textarea
+            rows={2}
+            value={board.entryPassNote}
+            onChange={(e) => patch({ entryPassNote: e.target.value })}
+            placeholder="Shown on Kindly Respond and the QR pass, when the code is for one celebration only"
+          />
+        </Field>
         <Field label="Memory vault heading">
           <Input value={board.memoryHeading} onChange={(e) => patch({ memoryHeading: e.target.value })} />
         </Field>

@@ -39,7 +39,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   "need-help": HelpCircle,
 };
 
-/** Full Guest help action grid — used on Celeventic Guide / FAQ hub. */
+/** Full Guest help action grid. Used on Celeventic Guide / FAQ hub. */
 export function GuestQuickActions({
   className,
 }: {
@@ -191,7 +191,7 @@ export function InviteGuestHelpFab({
               trackGuideEvent("guide_context_help", { action: "open-guest-guide", surface: "invite-fab" })
             }
             className="relative z-[1] inline-flex h-9 items-center gap-2 rounded-full pl-0.5 pr-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2"
-            aria-label={`${APP_NAME} Guide — learn how to navigate the invitation`}
+            aria-label={`${APP_NAME} Guide. Learn how to navigate the invitation`}
           >
             <GuideLogoMark size={34} />
             <span className="pr-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#0B8A83]/90">

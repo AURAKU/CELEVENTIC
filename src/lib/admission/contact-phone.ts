@@ -10,7 +10,7 @@ export function displayContactPhone(value: unknown): string {
 
 /**
  * Digits (and a leading +) only, suitable for `tel:` hrefs.
- * Returns "" when there is no callable number — callers must not render a link.
+ * Returns "" when there is no callable number. Callers must not render a link.
  */
 export function normalizeCallablePhone(value: unknown): string {
   const contactPhone = displayContactPhone(value);

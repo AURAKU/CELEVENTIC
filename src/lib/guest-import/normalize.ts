@@ -21,8 +21,8 @@ import { sanitizeImportedCell } from "./csv-safety";
 /**
  * Mapping + normalisation: source cells → reviewable rows.
  *
- * Only a missing or unusable name makes a row INVALID. Everything else — a
- * malformed email, an implausible phone, an unconfirmed family allowance —
+ * Only a missing or unusable name makes a row INVALID. Everything else. A
+ * malformed email, an implausible phone, an unconfirmed family allowance.
  * downgrades to NEEDS_REVIEW so the guest is never lost, just questioned.
  */
 
@@ -118,7 +118,7 @@ export function normalizeRow(
       code: RowIssueCode.PARTY_SIZE_INVALID,
       severity: "warning",
       field: ImportField.PARTY_SIZE,
-      message: `"${explicitSizeCell}" is not a whole number — using ${analysis.partySize} instead.`,
+      message: `"${explicitSizeCell}" is not a whole number, using ${analysis.partySize} instead.`,
     });
   }
 
@@ -169,7 +169,7 @@ export function normalizeRow(
       code: RowIssueCode.INVALID_EMAIL,
       severity: "warning",
       field: ImportField.EMAIL,
-      message: "This email address does not look valid — the invitation will not be emailed.",
+      message: "This email address does not look valid. The invitation will not be emailed.",
     });
   }
 
@@ -182,7 +182,7 @@ export function normalizeRow(
       code: RowIssueCode.INVALID_PHONE,
       severity: "warning",
       field: ImportField.PHONE,
-      message: "This phone number does not look valid — SMS and WhatsApp will be skipped.",
+      message: "This phone number does not look valid. SMS and WhatsApp will be skipped.",
     });
   } else if (phoneResult.normalized) {
     issues.push({

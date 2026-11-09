@@ -46,7 +46,7 @@ export function OfflineGatePack({
       setPkg(stored);
       setQueued(queue.length);
     } catch {
-      /* storage unavailable — the online gate still works */
+      /* storage unavailable. The online gate still works */
     }
   }, [eventId]);
 

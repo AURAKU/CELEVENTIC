@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 /**
  * Download a signed Venue Offline Pack.
  *
- * Authenticated and permission-gated — this is never a public URL. The pack is
+ * Authenticated and permission-gated. This is never a public URL. The pack is
  * the credential for the local guide, so the raw token is returned once, in a
  * response header, alongside the file that embeds it.
  */

@@ -22,7 +22,7 @@ export function videoAssetOwnerWrite(input: {
   return { ownerType: "GUEST_TOKEN", ownerId: null };
 }
 
-/** Stable rate-limit / quota namespace — never a bare Event.id mistaken for User.id. */
+/** Stable rate-limit / quota namespace, never a bare Event.id mistaken for User.id. */
 export function userQuotaKey(userId: string): string {
   return `user:${userId}`;
 }

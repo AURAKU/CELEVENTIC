@@ -10,7 +10,7 @@ function steps(...items: Array<[string, string] | GuideStepSeed>): GuideStepSeed
 }
 
 /**
- * §§51–62 completeness additions — only real product surfaces.
+ * §§51 to 62 completeness additions. Only real product surfaces.
  * Merged by slug (later wins) so we don't duplicate parallel agent inventory.
  */
 export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
@@ -40,7 +40,7 @@ export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
     transcript:
       "Create your event. Build a branded invitation. Add or import guests. Generate QR identities. Publish Event Guide.",
     steps: steps(
-      ["Create event", "Pick type — wedding, corporate, birthday, and more."],
+      ["Create event", "Pick type. Wedding, corporate, birthday, and more."],
       ["Build invitation", "Choose a template and personalise."],
       ["Add guests", "Import or add manually, then send links."],
       ["Prepare admission", "Generate QR identities and open QR Hub."]
@@ -275,7 +275,7 @@ export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
   },
   {
     slug: "event-os-wedding",
-    title: "Event OS — Wedding",
+    title: "Event OS. Wedding",
     summary: "Wedding blueprint on shared event routes: invitations, guests, seating, Event Guide.",
     role: "ORGANIZER",
     category: "PLATFORM",
@@ -294,7 +294,7 @@ export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
   },
   {
     slug: "event-os-funeral",
-    title: "Event OS — Funeral / Memorial",
+    title: "Event OS. Funeral / Memorial",
     summary: "FuneralOS: tributes, contributions, livestream, legacy, and memorial pages.",
     role: "ORGANIZER",
     category: "PLATFORM",
@@ -313,7 +313,7 @@ export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
   },
   {
     slug: "event-os-corporate",
-    title: "Event OS — Corporate / Conference",
+    title: "Event OS. Corporate / Conference",
     summary: "Corporate and conference blueprints: registration, ticketing, and communications.",
     role: "ORGANIZER",
     category: "PLATFORM",
@@ -419,7 +419,7 @@ export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
     steps: steps(
       { title: "Wait briefly", body: "Provider confirmations can take a few minutes.", stepType: "checklist" },
       { title: "Do not double-pay", body: "Refresh status instead of starting a second checkout.", stepType: "warning" },
-      { title: "Contact support", body: "Share the order reference only — never card details.", stepType: "tip" }
+      { title: "Contact support", body: "Share the order reference only, never card details.", stepType: "tip" }
     ),
   },
   {

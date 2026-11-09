@@ -32,16 +32,16 @@ const SOURCE_COPY = {
 const SOURCE_HINT = {
   guide: "This guide keeps its own programme. Editing it here does not touch your invitation.",
   invitation:
-    "This is your invitation's programme, written out below. Edit it and save to take it over here — your invitation stays as it is.",
+    "This is your invitation's programme, written out below. Edit it and save to take it over here. Your invitation stays as it is.",
   empty: "Type or paste the running order below. It is a document, not a form.",
 } as const;
 
 const SCRIPT_PLACEHOLDER = [
-  "1:00 PM - Guest arrival",
+  "1:00 PM, Guest arrival",
   "  Welcome drinks are served on the lawn.",
   "",
   "CEREMONY",
-  "2:00 PM - Exchange of vows",
+  "2:00 PM, Exchange of vows",
   "  Officiated by Rev. Mensah.",
   "",
   "  Guests are asked to stay seated until the recessional.",
@@ -51,14 +51,14 @@ const SCRIPT_PLACEHOLDER = [
   "  Captain of Israel's host, and Guide",
   "  Of all who seek the land above,",
   "",
-  "4:30 PM - Reception & dinner",
+  "4:30 PM, Reception & dinner",
 ].join("\n");
 
 /**
  * Programme and menu editors.
  *
- * The programme is written as one script — the way an organizer already has it
- * in a WhatsApp message or a Word file — and arranged for guests as they type.
+ * The programme is written as one script. The way an organizer already has it
+ * in a WhatsApp message or a Word file, and arranged for guests as they type.
  * There is no row-by-row form to fill in: the document is the source of truth,
  * and the preview beside it is the guest's page, not an approximation of it.
  *
@@ -139,7 +139,7 @@ export function GuideContentTab({
               </div>
 
               <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                Type it or paste it — from WhatsApp, Word, anywhere, in any language. One item per
+                Type it or paste it, from WhatsApp, Word, anywhere, in any language. One item per
                 line. Indent a line, or write a sentence, and it becomes detail under the item
                 above it. A line like <span className="font-medium text-slate-600">CEREMONY</span>{" "}
                 becomes a heading, and a hymn keeps its verses. Nothing you paste is left out.

@@ -41,7 +41,7 @@ export function cachesToEvict(existing: string[], keep: string): string[] {
   return existing.filter((name) => isGuideCacheName(name) && name !== keep);
 }
 
-/** Every cache for one token — used when a guide is revoked or unpublished. */
+/** Every cache for one token. Used when a guide is revoked or unpublished. */
 export function cachesForToken(existing: string[], publicToken: string): string[] {
   return existing.filter((name) => parseGuideCacheName(name)?.token === publicToken);
 }
@@ -54,7 +54,7 @@ export function guidePageUrl(publicToken: string): string {
   return `/event-guide/${encodeURIComponent(publicToken)}`;
 }
 
-/** IndexedDB names — mirrors the admission offline store's conventions. */
+/** IndexedDB names. Mirrors the admission offline store's conventions. */
 export const GUIDE_DB_NAME = "celeventic-event-guide";
 export const GUIDE_DB_VERSION = 1;
 export const GUIDE_PAYLOAD_STORE = "payloads";

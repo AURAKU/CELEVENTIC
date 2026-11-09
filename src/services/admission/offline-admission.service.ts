@@ -11,15 +11,15 @@ import { admitVendorTeamPass } from "@/services/vendor-pass/vendor-team-pass.ser
 /**
  * Offline admission: the downloadable gate package and its reconciliation.
  *
- * The package never carries a usable token — only `sha256(token)`. An offline
+ * The package never carries a usable token. Only `sha256(token)`. An offline
  * device hashes what it scans and matches locally, which proves the guest held
  * a real pass without ever putting the signing secret on a phone at the gate.
  */
 
 /**
  * v2 adds per-member seats, the remaining count, and a short admission history
- * so an offline gate can run partial group admission — and explain a party's
- * held seats — with no network. Devices still holding a v1 package keep
+ * so an offline gate can run partial group admission, and explain a party's
+ * held seats, with no network. Devices still holding a v1 package keep
  * working: every v2 field is optional on read and derived when absent.
  */
 export const OFFLINE_PACKAGE_VERSION = 3;
@@ -43,7 +43,7 @@ export interface OfflineHistoryEntry {
 }
 
 export interface OfflinePassRecord {
-  /** sha256 of the signed token — the device's local lookup key. */
+  /** sha256 of the signed token. The device's local lookup key. */
   h: string;
   /** Admission code, for the manual path. */
   c: string;
@@ -91,7 +91,7 @@ export interface OfflinePackage {
     | "showSeatOnPass"
   > & { validFrom: string | null; validUntil: string | null };
   passes: OfflinePassRecord[];
-  /** Shared vendor access — reusable; never increments guest admission. */
+  /** Shared vendor access. Reusable; never increments guest admission. */
   vendorAccess?: {
     id: string;
     h: string;
@@ -133,7 +133,7 @@ export interface OfflinePackage {
   }>;
   /**
    * Why the pack holds what it holds. An empty pack is almost always "passes
-   * were never issued", not a download failure — say so instead of showing a
+   * were never issued", not a download failure. Say so instead of showing a
    * gate operator a silent zero.
    */
   coverage?: {
@@ -196,7 +196,7 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
     },
   });
 
-  // One grouped read rather than a query per pass — a 2,000-guest gate pack
+  // One grouped read rather than a query per pass. A 2,000-guest gate pack
   // must not become 2,000 round trips.
   const history = await prisma.admissionEvent.findMany({
     where: { invitationId: { in: passes.map((p) => p.invitationId) } },
@@ -308,7 +308,7 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
 }
 
 export interface OfflineAdmissionRecord {
-  /** Client-generated id — the idempotency key for this record. */
+  /** Client-generated id. The idempotency key for this record. */
   clientRecordId: string;
   /** sha256 of the scanned token, or null when the operator typed a code. */
   tokenHash?: string | null;
@@ -486,7 +486,7 @@ export async function reconcileOfflineAdmissions(
     );
 
     if (decision.admitQuantity === 0) {
-      // The gate let them in offline but the live state disagrees — surface it
+      // The gate let them in offline but the live state disagrees. Surface it
       // to the organiser rather than pretending nothing happened.
       conflicts++;
       await prisma.guestPass.update({

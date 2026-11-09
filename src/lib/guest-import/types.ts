@@ -5,10 +5,10 @@ import type {
 } from "@prisma/client";
 
 /**
- * Bulk Guest Import — shared vocabulary.
+ * Bulk Guest Import. Shared vocabulary.
  *
  * Everything in `src/lib/guest-import/*` is pure: no Prisma, no network, no
- * clock. That is deliberate — parsing, mapping, suggestion and duplicate rules
+ * clock. That is deliberate. Parsing, mapping, suggestion and duplicate rules
  * are the parts a mis-import would hurt most, so they are unit-testable in
  * isolation and reused verbatim by the API, the background job and the tests.
  */
@@ -112,7 +112,7 @@ export interface NormalizedRow {
   /**
    * Verbatim source cells, positionally indexed. Positional (not header-keyed)
    * so an organiser can change the column mapping and have every row re-derived
-   * without re-uploading — and so duplicate headers cannot collapse two columns.
+   * without re-uploading, and so duplicate headers cannot collapse two columns.
    */
   raw: string[];
   name: string;
@@ -166,7 +166,7 @@ export interface ImportOptions {
   duplicatePolicy: "REVIEW" | "SKIP" | "CREATE_ANYWAY";
   /**
    * Event guest tags applied to every generated primary guest.
-   * Organizer/admin CRM only — never shown on invitations.
+   * Organizer/admin CRM only, never shown on invitations.
    */
   defaultTagIds: string[];
 }
@@ -194,15 +194,15 @@ export const GENERATION_CHUNK_SIZE = 25;
 /** Hard ceiling on a single import so one paste cannot exhaust the worker. */
 export const MAX_IMPORT_ROWS = 5000;
 
-/** Upload ceiling — comfortably above a 5,000-row guest list. */
+/** Upload ceiling. Comfortably above a 5,000-row guest list. */
 export const MAX_IMPORT_FILE_BYTES = 8 * 1024 * 1024;
 
 /**
  * Options that change how a source cell becomes a reviewable row.
  *
  * Changing one of these means every row has to be derived again, which throws
- * away the organiser's review. Everything else — the message, the tags, the
- * publish flag — is applied at generation time and can be saved without
+ * away the organiser's review. Everything else. The message, the tags, the
+ * publish flag. Is applied at generation time and can be saved without
  * touching a single row.
  */
 const ROW_DERIVING_OPTIONS = [

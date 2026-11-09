@@ -1,5 +1,5 @@
 /**
- * Ceremony seating — chairs only (rows, aisles, sections).
+ * Ceremony seating. Chairs only (rows, aisles, sections).
  */
 
 export type CeremonyAisleLayout =
@@ -31,7 +31,7 @@ export interface CeremonyRow {
   y?: number;
   curved?: boolean;
   locked?: boolean;
-  /** Degrees 0–359 for canvas orientation. */
+  /** Degrees 0 to 359 for canvas orientation. */
   rotation?: number;
 }
 

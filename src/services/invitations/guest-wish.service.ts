@@ -78,7 +78,7 @@ const publicSelect = {
   createdAt: true,
 } as const;
 
-/** Moderator/admin select may include ownership for audit — never sent to public guests. */
+/** Moderator/admin select may include ownership for audit, never sent to public guests. */
 const moderatorSelect = {
   ...publicSelect,
   guestId: true,
@@ -146,7 +146,7 @@ export class GuestWishService {
       /**
        * DEPRECATED for public guest feeds.
        * Approved public wishes are event-wide. Do not pass invitationId when
-       * `publicOnly` is true — ownership is for write/moderation only.
+       * `publicOnly` is true. Ownership is for write/moderation only.
        * When `publicOnly` is false (organizer moderation), invitationId may
        * optionally narrow the admin list; prefer omitting it for full event view.
        */

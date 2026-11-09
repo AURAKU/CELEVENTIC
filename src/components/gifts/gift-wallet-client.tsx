@@ -1141,7 +1141,7 @@ function WithdrawalsPanel({
           <p className="text-sm text-slate-600">
             Available funds become eligible for withdrawal after successful payment
             verification and the configured settlement period. Payouts are recorded as{" "}
-            <strong>manual payouts</strong> until a provider transfer is confirmed —
+            <strong>manual payouts</strong> until a provider transfer is confirmed.
             Celeventic never claims an automatic Paystack transfer unless one is verified.
           </p>
           <p className="text-sm">
@@ -1202,7 +1202,7 @@ function WithdrawalsPanel({
                     </p>
                     <p className="text-xs text-slate-500">
                       {row.payoutMethod} · {row.payoutKind} ·{" "}
-                      {row.payoutPhoneMasked || row.bankAccountMasked || "—"}
+                      {row.payoutPhoneMasked || row.bankAccountMasked || "None"}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">

@@ -213,7 +213,7 @@ export class IntegrationService {
     const existing = await prisma.apiSetting.findUnique({ where: { id } });
     if (!existing) throw new Error("Integration not found");
     if (!existing.provider.startsWith("CUSTOM_")) {
-      throw new Error("Built-in integrations cannot be deleted — disable them instead");
+      throw new Error("Built-in integrations cannot be deleted. Disable them instead");
     }
     await prisma.apiSetting.delete({ where: { id } });
     return { provider: existing.provider };
@@ -310,7 +310,7 @@ export class IntegrationService {
             ok: true,
             message: cfg.publicBaseUrl
               ? `S3 ready (${cfg.bucket} / ${cfg.region}) with CDN`
-              : `S3 ready (${cfg.bucket} / ${cfg.region}) — add CloudFront URL for CDN`,
+              : `S3 ready (${cfg.bucket} / ${cfg.region}). Add CloudFront URL for CDN`,
           };
         }
         case "REDIS": {
@@ -327,7 +327,7 @@ export class IntegrationService {
           return { ok: true, message: "Google OAuth credentials present" };
         }
         default: {
-          // Custom APIs — optional live ping when config.endpoint is set
+          // Custom APIs. Optional live ping when config.endpoint is set
           const config = (row.config as Record<string, unknown>) ?? {};
           const endpoint = typeof config.endpoint === "string" ? config.endpoint.trim() : "";
           if (endpoint) {

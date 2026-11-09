@@ -168,7 +168,7 @@ describe("offline seating lookup mirrors the online finder", () => {
     assert.equal(findOfflineSeatingEntry(index, "HASHED_NAME", SALT, "Chidi Okafor").status, "ok");
     // Normalisation still applies, so punctuation and case are forgiven.
     assert.equal(findOfflineSeatingEntry(index, "HASHED_NAME", SALT, "  chidi   okafor ").status, "ok");
-    // A partial name cannot be matched against a hash — by design.
+    // A partial name cannot be matched against a hash. By design.
     assert.equal(findOfflineSeatingEntry(index, "HASHED_NAME", SALT, "Chidi").status, "no_match");
   });
 

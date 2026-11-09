@@ -317,7 +317,7 @@ export class EventGuideOfflinePackService {
     token: string;
   }): string {
     const address = input.venueLocalUrl?.replace(/\/$/, "") || "http://<this-machine-ip>:4173";
-    return `# Event Guide — Venue Offline Pack
+    return `# Event Guide. Venue Offline Pack
 
 **${input.eventTitle}**
 
@@ -333,7 +333,7 @@ Requires Node 18 or newer. Unzip this pack, then from inside the folder:
     node serve.mjs --port 4173
 
 The runner verifies the pack signature before it starts. If verification fails
-it will refuse to run — that means the pack was altered, so download a fresh one.
+it will refuse to run, that means the pack was altered, so download a fresh one.
 
 Guests then open:
 
@@ -349,7 +349,7 @@ Guests then open:
 - ${
       input.seatingMode === "NAME_INDEX"
         ? "This pack uses the readable name index, so it contains guest names. Store it like a guest list and delete it after the event."
-        : "This pack stores only one-way hashes for seating lookups — it contains no readable guest names."
+        : "This pack stores only one-way hashes for seating lookups. It contains no readable guest names."
     }
 - The pack cannot change seating. Seat assignments stay in the Celeventic seating studio.
 

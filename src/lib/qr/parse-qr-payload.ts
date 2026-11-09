@@ -1,6 +1,6 @@
 /**
  * Safely extract a Celeventic QR token from scanned text or URLs.
- * Never parses or returns PII — token only.
+ * Never parses or returns PII. Token only.
  */
 
 import { DEFAULT_PRODUCTION_URL, getAppUrlFromEnv } from "@/lib/app-url";

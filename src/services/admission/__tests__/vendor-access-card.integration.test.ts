@@ -102,7 +102,7 @@ describe("vendor access card admission", () => {
     const second = await admit(pass.id);
     assert.equal(second.ok, true);
 
-    // Capacity is now full — a one-time pass would refuse here.
+    // Capacity is now full. A one-time pass would refuse here.
     const third = await admit(pass.id);
     assert.equal(third.ok, true, "an access card must keep opening the gate");
     if (third.ok) {

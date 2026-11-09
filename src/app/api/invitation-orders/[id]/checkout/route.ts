@@ -11,6 +11,8 @@ import { invitationAnalyticsService } from "@/services/invitation-os/invitation-
 import { addonFulfillmentService } from "@/services/invitation-os/addon-fulfillment.service";
 import { isAdminCommerceBypass } from "@/lib/access/package-access";
 import { isQuoteOnlyInvitationPackage } from "@/lib/invitation-mvp/packages";
+import { getAppUrlFromEnv } from "@/lib/app-url";
+import { unlockPaidInvitationPackage } from "@/services/packages/unlock-paid-package.service";
 
 export async function POST(
   req: Request,
@@ -102,13 +104,15 @@ export async function POST(
         packageSlug: order.packageSlug,
         templateSlug: order.templateSlug,
       });
+      const unlock = await unlockPaidInvitationPackage(order.id);
       return NextResponse.json({
         success: true,
         data: {
           free: true,
           unlockStudio: true,
           adminBypass,
-          next: "studio",
+          next: unlock.nextPath,
+          threadId: unlock.threadId,
         },
       });
     }
@@ -129,7 +133,12 @@ export async function POST(
         amount,
         currency: "GHS",
         purpose: "INVITATION_ORDER",
-        metadata: { invitationOrderId: order.id, templateSlug: order.templateSlug },
+        metadata: {
+          invitationOrderId: order.id,
+          templateSlug: order.templateSlug,
+          packageSlug: order.packageSlug,
+        },
+        callbackUrl: `${getAppUrlFromEnv()}/invitations/create/${order.id}/paid`,
       },
       {
         invitationOrderId: order.id,

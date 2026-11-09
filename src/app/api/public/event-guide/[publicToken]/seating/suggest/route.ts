@@ -16,13 +16,13 @@ function clientKey(req: Request): string {
  *
  * A guest who types `kofi` and is told "we could not find that" gives up,
  * even though the list has them. This answers with the party labels that
- * begin with what they typed — and with nothing else.
+ * begin with what they typed, and with nothing else.
  *
  * Everything that keeps it from being a guest list lives on the server:
  * suggestions are dead in admission-code mode, the query has a minimum length
  * checked before any read, matching is prefix-anchored rather than fuzzy, at
  * most five labels come back, and the endpoint is rate limited per token and
- * client. The response body is a list of strings — there is no field on it
+ * client. The response body is a list of strings. There is no field on it
  * for a seat, a table, a member, a code or a contact detail.
  *
  * A failure is an empty list, never an error: a typeahead that throws while

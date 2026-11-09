@@ -109,9 +109,10 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
   return (
     <aside
       className={cn(
-        "fixed lg:sticky top-0 z-[60] flex w-[min(18rem,88vw)] flex-col sidebar-gradient text-slate-300 border-r border-white/10 transition-transform duration-300 lg:translate-x-0 lg:z-50",
+        "fixed lg:sticky top-0 z-[60] flex w-[min(18rem,88vw)] flex-col sidebar-gradient text-slate-200 border-r border-white/10 transition-transform duration-300 lg:translate-x-0 lg:z-50",
         "h-[100dvh] max-h-[100dvh] pb-[env(safe-area-inset-bottom)]",
-        mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 max-lg:invisible max-lg:pointer-events-none",
+        mobileOpen && "max-lg:visible max-lg:pointer-events-auto"
       )}
       data-tour="nav-browse-desktop"
     >
@@ -183,7 +184,7 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
                 onClick={() => toggleSection(section.id)}
                 className="w-full flex items-center justify-between px-3 mb-1 lg:cursor-default"
               >
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">
+                <p className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.14em]">
                   {t(section.labelKey)}
                 </p>
                 <span className="lg:hidden text-slate-500">
@@ -207,7 +208,7 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all touch-manipulation",
                         active
                           ? "bg-white/15 text-white shadow-sm ring-1 ring-white/10"
-                          : "text-slate-400 hover:text-white hover:bg-white/8"
+                          : "text-slate-200 hover:text-white hover:bg-white/8"
                       )}
                     >
                       <item.icon className={cn("h-4 w-4 shrink-0", active && "text-brand-300")} />

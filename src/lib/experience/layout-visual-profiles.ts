@@ -10,7 +10,7 @@ export interface LayoutVisualProfile {
   overlayGradient: string;
 }
 
-/** Per-layout atmospheric identity — no two layouts share the same visual profile. */
+/** Per-layout atmospheric identity. No two layouts share the same visual profile. */
 const PROFILES: Record<InvitationLayoutSlug, LayoutVisualProfile> = {
   "classic-gold": {
     background: "radial-gradient(ellipse at center, #2a2520 0%, #1a1612 50%, #0a0a0a 100%)",

@@ -10,7 +10,7 @@ export interface ThankYouTemplate {
   id: string;
   name: string;
   description: string;
-  /** Legacy CSS gradient — still used by intro chrome / older consumers */
+  /** Legacy CSS gradient. Still used by intro chrome / older consumers */
   accentColor: string;
   background: string;
   /** Legacy coarse font hint */

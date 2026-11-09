@@ -1,7 +1,7 @@
 /**
  * Best-effort, dependency-free MP4/MOV box walker for pre-processing metadata
  * (duration + dimensions) so the UI/limits can react before MediaConvert runs.
- * This is intentionally lightweight — MediaConvert's own job output (once READY)
+ * This is intentionally lightweight. MediaConvert's own job output (once READY)
  * is the authoritative source and overwrites these values.
  */
 
@@ -29,7 +29,7 @@ function readBoxesAt(buf: Buffer, start: number, end: number): Box[] {
       boxSize = end - offset;
     }
     if (boxSize < 8 || offset + boxSize > end + 8) {
-      // Truncated buffer (we only fetch a header window) — stop walking safely.
+      // Truncated buffer (we only fetch a header window). Stop walking safely.
       boxes.push({ type, start: offset, bodyStart, end: Math.min(offset + boxSize, end) });
       break;
     }
@@ -50,7 +50,7 @@ export interface Mp4Metadata {
 }
 
 /**
- * Parse an MP4/MOV `moov` atom. `buf` must contain the full `moov` box —
+ * Parse an MP4/MOV `moov` atom. `buf` must contain the full `moov` box.
  * for progressive/"fast-start" files this is near the front; for files with
  * `moov` at the end, callers should fetch the tail of the object instead.
  * Returns nulls (never throws) when the structure can't be confidently parsed.
@@ -96,7 +96,7 @@ export function parseMp4Metadata(buf: Buffer): Mp4Metadata {
       const widthOffset = version === 1 ? tkhd.bodyStart + 88 : tkhd.bodyStart + 76;
       const heightOffset = widthOffset + 4;
       if (heightOffset + 4 <= tkhd.end) {
-        // Fixed-point 16.16 — high 16 bits are the integer pixel value.
+        // Fixed-point 16.16. High 16 bits are the integer pixel value.
         width = buf.readUInt16BE(widthOffset);
         height = buf.readUInt16BE(heightOffset);
       }
