@@ -1639,6 +1639,98 @@
   word-break: normal;
 }
 
+.celecard-guest-column {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  max-width: 44rem;
+  margin-left: auto;
+  margin-right: auto;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 2rem 1rem 8rem;
+}
+
+.celecard-hold-frame {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .celecard-guest-column {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 2rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .celecard-guest-column {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .celecard-guest-column {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/*
+ * Rotated phone or tablet: only the ID-1 card, as if you are holding it.
+ * Desktop landscape keeps the full guest page.
+ */
+@media (orientation: landscape) and (pointer: coarse),
+  (orientation: landscape) and (max-height: 560px) {
+  html:has(.celecard-stage),
+  body:has(.celecard-stage) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .celecard-stage {
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .celecard-guest-column {
+    max-width: none;
+    height: 100%;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    gap: 0;
+    padding: max(0.4rem, env(safe-area-inset-top, 0px))
+      max(0.55rem, env(safe-area-inset-right, 0px))
+      max(0.4rem, env(safe-area-inset-bottom, 0px))
+      max(0.55rem, env(safe-area-inset-left, 0px));
+  }
+
+  .celecard-hold-frame {
+    width: min(
+      100%,
+      calc(
+        (100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 0.8rem) * 85.6 /
+          54
+      )
+    );
+  }
+
+  .celecard-guest-rest,
+  .celecard-dock-bar,
+  .celecard-connect-layer,
+  .celecard-sheet {
+    display: none !important;
+  }
+}
+
 /* ID-1 face: one composition, scaled by card width on every viewport. */
 .celecard-face {
   container-type: inline-size;
@@ -1657,17 +1749,22 @@
   min-height: 0;
   align-items: center;
   gap: 3.4cqw;
-  padding: 10.4cqw 4.4cqw 7.2cqw;
+  padding: 10.4cqw 4.4cqw 8.8cqw;
 }
 
 .celecard-face[data-compact="true"] .celecard-face-row {
   gap: 3cqw;
-  padding: 9.2cqw 3.6cqw 6.4cqw;
+  padding: 9.2cqw 3.6cqw 8cqw;
 }
 
 .celecard-face-row.is-portrait {
   gap: 3.2cqw;
   padding: 10.4cqw 3.6cqw 7.2cqw;
+}
+
+.celecard-face-body {
+  position: relative;
+  z-index: 4;
 }
 
 .celecard-face-photo {
@@ -1681,6 +1778,68 @@
   height: 24cqw;
 }
 
+.celecard-face[data-composition="type-first"] .celecard-face-photo {
+  width: 16.4cqw;
+  height: 16.4cqw;
+}
+
+.celecard-face[data-composition="type-first"] .celecard-face-name {
+  font-size: 7.7cqw;
+}
+
+.celecard-face[data-composition="media-first"] .celecard-face-photo {
+  width: 31cqw;
+  height: 31cqw;
+}
+
+.celecard-face[data-composition="media-first"] .celecard-face-qr {
+  width: 22.4cqw;
+  height: 22.4cqw;
+}
+
+.celecard-face-grid {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100%;
+  width: 100%;
+  min-width: 0;
+  padding: 11cqw 4.4cqw 8.6cqw;
+  gap: 2.2cqw;
+}
+
+.celecard-face[data-compact="true"] .celecard-face-grid {
+  padding: 9.6cqw 3.6cqw 7.8cqw;
+}
+
+.celecard-face-grid-media {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 3cqw;
+}
+
+.celecard-face[data-composition="grid"] .celecard-face-photo {
+  width: 20cqw;
+  height: 20cqw;
+}
+
+.celecard-portrait-panel {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.celecard-portrait-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  image-rendering: auto;
+  image-rendering: high-quality;
+  -ms-interpolation-mode: bicubic;
+}
+
 .celecard-face-qr {
   width: 25.2cqw;
   height: 25.2cqw;
@@ -1692,6 +1851,8 @@
   line-height: 1.06;
   overflow-wrap: normal;
   word-break: normal;
+  max-height: 11.2cqw;
+  overflow: hidden;
 }
 
 .celecard-face-title {
@@ -1699,7 +1860,91 @@
 }
 
 .celecard-face-company {
-  font-size: 2.45cqw;
+  font-size: 2.65cqw;
+  line-height: 1.12;
+}
+
+.celecard-company-mark {
+  width: 9.2cqw;
+  height: 9.2cqw;
+  flex-shrink: 0;
+}
+
+.celecard-origin-plate {
+  margin-top: 0.35cqw;
+  height: 13.8cqw;
+  width: 16.2cqw;
+  isolation: isolate;
+  background: radial-gradient(circle at 50% 38%, #ffffff 0%, #f4fbf9 58%, #e7f5f2 100%);
+}
+
+.celecard-origin-mark {
+  height: 12.8cqw;
+  width: 12.8cqw;
+  filter: drop-shadow(0 0.22cqw 0.32cqw rgba(4, 40, 38, 0.22));
+}
+
+.celecard-face[data-compact="true"] .celecard-origin-plate {
+  margin-top: 0.28cqw;
+  height: 11.8cqw;
+  width: 13.8cqw;
+}
+
+.celecard-face[data-compact="true"] .celecard-origin-mark {
+  height: 10.8cqw;
+  width: 10.8cqw;
+}
+
+.celecard-wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 1.15cqw;
+  gap: 0.32cqw;
+}
+
+.celecard-wordmark-name {
+  font-size: 2.5cqw;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.celecard-wordmark-mark {
+  margin-left: 0.14em;
+  font-size: 0.46em;
+  font-weight: 600;
+  line-height: 0;
+  vertical-align: super;
+  opacity: 0.72;
+}
+
+.celecard-wordmark-slogan {
+  max-width: 74cqw;
+  font-size: 1.72cqw;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.145em;
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0.92;
+}
+
+.celecard-face[data-compact="true"] .celecard-wordmark {
+  padding-bottom: 0.85cqw;
+  gap: 0.22cqw;
+}
+
+.celecard-face[data-compact="true"] .celecard-wordmark-name {
+  font-size: 2.3cqw;
+}
+
+.celecard-face[data-compact="true"] .celecard-wordmark-slogan {
+  font-size: 1.48cqw;
+  letter-spacing: 0.08em;
+  max-width: 78cqw;
 }
 
 .celecard-enter {
@@ -2022,6 +2267,59 @@
   }
 }
 
+.celecard-term-ribbon::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 18%,
+    rgba(255, 255, 255, 0.09) 46%,
+    transparent 72%
+  );
+  background-size: 220% 100%;
+  animation: celecard-term-sheen 8.4s ease-in-out infinite;
+}
+
+.celecard-term-flow {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.celecard-term-flow-glint {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 34%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.78), transparent);
+  animation: celecard-term-glint 2.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.celecard-live-pip {
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+  animation: celecard-live-pip 1.9s ease-out infinite;
+}
+
+@keyframes celecard-term-sheen {
+  0%,
+  100% { background-position: 120% 0; }
+  50% { background-position: -20% 0; }
+}
+
+@keyframes celecard-term-glint {
+  0% { transform: translateX(-130%); }
+  100% { transform: translateX(390%); }
+}
+
+@keyframes celecard-live-pip {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  70% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .celecard-enter,
   .celecard-atmo,
@@ -2030,7 +2328,10 @@
   .celecard-dock-item,
   .celecard-stack-item,
   .celecard-dock-bar,
-  .celecard-sheet {
+  .celecard-sheet,
+  .celecard-term-ribbon::after,
+  .celecard-term-flow-glint,
+  .celecard-live-pip {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

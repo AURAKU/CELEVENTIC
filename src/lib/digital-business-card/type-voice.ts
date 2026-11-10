@@ -142,6 +142,30 @@ export function celecardDisplayNameLines(name: string, stack: boolean): string[]
   return [parts.slice(0, -1).join(" "), parts[parts.length - 1]];
 }
 
+/** Container-query font size so a long name sits in the identity column without overflowing. */
+export function celecardNameFitCqw(name: string, stacked: boolean, compact = false): number {
+  const lines = celecardDisplayNameLines(name, stacked);
+  const longest = Math.max(
+    1,
+    ...lines.map((line) => {
+      const letters = line.replace(/\s+/g, "").length;
+      const gaps = Math.max(0, line.trim().split(/\s+/).filter(Boolean).length - 1);
+      return letters + gaps * 0.32;
+    })
+  );
+  const column = compact ? 33 : stacked ? 28.5 : 36;
+  const fitted = column / (longest * 0.62);
+  const cap = lines.length > 1 ? (compact ? 5.35 : 5.55) : compact ? 6.8 : 7;
+  return Math.round(Math.max(3.35, Math.min(cap, fitted)) * 100) / 100;
+}
+
+/** Stack given name and family name only when one line would read too small. */
+export function celecardNameShouldStack(name: string, stackedVoice: boolean, compact = false): boolean {
+  if (!stackedVoice) return false;
+  if (celecardDisplayNameLines(name, true).length < 2) return false;
+  return celecardNameFitCqw(name, false, compact) < 5;
+}
+
 export function celecardTypeVoice(theme: DigitalCardTheme): CeleCardTypeVoice {
   const { category, ornament, atmosphere } = theme;
 

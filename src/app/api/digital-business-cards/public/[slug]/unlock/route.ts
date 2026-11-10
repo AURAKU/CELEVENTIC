@@ -6,6 +6,7 @@ import { grantCookieOptions, unlockCeleCardWithCode } from "@/services/digital-b
 import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
 import { isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
+import { dummyLiveNotFoundJson } from "@/lib/digital-business-card/demo-live-access";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
   }
 
   if (isDemoCardSlug(slug)) {
+    const blocked = await dummyLiveNotFoundJson();
+    if (blocked) return blocked;
     return NextResponse.json({ error: "Demo cards stay public" }, { status: 400 });
   }
 

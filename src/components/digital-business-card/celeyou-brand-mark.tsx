@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import {
   SMARTCARD_BRAND_TAGLINE,
@@ -72,17 +73,18 @@ type CeleYouThemedMarkProps = {
   theme: CeleYouThemeInk;
   className?: string;
   fit?: "contain" | "cover";
+  style?: CSSProperties;
 };
 
 /**
  * Official CeleYou orb, recolored to the template. Shape stays exact.
  * Hue and metal come from the theme. Light and detail stay from the master mark.
  */
-export function CeleYouThemedMark({ theme, className, fit = "contain" }: CeleYouThemedMarkProps) {
+export function CeleYouThemedMark({ theme, className, fit = "contain", style }: CeleYouThemedMarkProps) {
   const wash = celeYouThemeWash(theme);
   const size = fit === "cover" ? "cover" : "contain";
   return (
-    <span className={cn("relative isolate inline-grid shrink-0 overflow-hidden", className)} aria-hidden>
+    <span className={cn("relative isolate inline-grid shrink-0 overflow-hidden", className)} style={style} aria-hidden>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={CELEYOU_MARK_SRC}

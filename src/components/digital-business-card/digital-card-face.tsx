@@ -1,25 +1,27 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useLayoutEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { resolveDigitalCardTheme, type DigitalCardTheme } from "@/lib/digital-business-card/themes";
-import { SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
-import { CELEYOU_MARK_SRC } from "@/components/digital-business-card/celeyou-brand-mark";
-import { isCeleCardPhotoUrl } from "@/lib/digital-business-card/portraits";
+import { applyCeleCardDesign, celeCardPaperStyle, type CeleCardDesign } from "@/lib/digital-business-card/design";
+import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
+import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
+import { CELECARD_PORTRAIT_MAX_EDGE, isCeleCardPhotoUrl } from "@/lib/digital-business-card/portraits";
 import {
   resolveCeleCardPortraitFrame,
   type CeleCardPortraitFrame,
 } from "@/lib/digital-business-card/portrait-frame";
 import {
   celecardDisplayNameLines,
+  celecardNameFitCqw,
+  celecardNameShouldStack,
   celecardTypeVoice,
-  type CeleCardTypeVoice,
 } from "@/lib/digital-business-card/type-voice";
 import { DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
 import { DigitalCardHouseAvatar } from "@/components/digital-business-card/digital-card-house-avatar";
 import { CeleCardQrBadge } from "@/components/digital-business-card/celecard-qr-badge";
-import { DemoCompanyMark } from "@/components/digital-business-card/demo-company-mark";
+import { CeleCardCompanyMark } from "@/components/digital-business-card/demo-company-mark";
 
 export type DigitalCardFaceProps = {
   themeId: string;
@@ -34,10 +36,14 @@ export type DigitalCardFaceProps = {
   qrBadgeHref?: string | null;
   /** Dummy or saved company mark next to the house name. */
   companyLogo?: boolean;
+  /** Cropped owner upload that sits beside the company name. */
+  companyLogoUrl?: string | null;
   className?: string;
   compact?: boolean;
   /** Circle, square, or soft-square. Theme default if omitted. */
   portraitFrame?: CeleCardPortraitFrame | null;
+  /** Owner overrides for layout, atmosphere, ornament, and blended paper. */
+  design?: CeleCardDesign | null;
 };
 
 function initialsOf(name: string) {
@@ -60,7 +66,7 @@ function HouseFrame({
 }) {
   const inset = compact ? "inset-[1.4cqw]" : "inset-[2cqw]";
   const corner = compact ? "h-[3.2cqw] w-[3.2cqw]" : "h-[4.4cqw] w-[4.4cqw]";
-  const gap = compact ? "16cqw" : "19cqw";
+  const gap = compact ? "17cqw" : "19cqw";
   const topMask = `linear-gradient(90deg, #000 0, #000 calc(50% - ${gap}), transparent calc(50% - ${gap} + 2.4cqw), transparent calc(50% + ${gap} - 2.4cqw), #000 calc(50% + ${gap}), #000 100%)`;
   return (
     <div className={cn("pointer-events-none absolute rounded-[14px]", inset)} aria-hidden>
@@ -222,18 +228,15 @@ function PaperFinish({ theme }: { theme: DigitalCardTheme }) {
   );
 }
 
-function originPlate(theme: DigitalCardTheme, edge: "top" | "bottom") {
+function originWell(theme: DigitalCardTheme) {
   return {
-    background: theme.cardBackground,
-    backgroundSize: "100cqw calc(100cqw * 54 / 85.6)",
-    backgroundPosition: edge === "top" ? "center 0" : "center 100%",
-    backgroundRepeat: "no-repeat",
+    background: "radial-gradient(circle at 50% 38%, #ffffff 0%, #f4fbf9 58%, #e7f5f2 100%)",
+    boxShadow: `0 0 0 0.18cqw ${theme.border}, 0 0 0 0.52cqw ${theme.accent}59, 0 0.7cqw 1.6cqw rgba(8,12,24,0.22), inset 0 1px 0 rgba(255,255,255,0.95)`,
   } as const;
 }
 
 function CeleCardOrigin({
   theme,
-  compact,
 }: {
   theme: DigitalCardTheme;
   compact?: boolean;
@@ -244,18 +247,10 @@ function CeleCardOrigin({
       aria-label={SMARTCARD_PRODUCT_SHORT_NAME}
     >
       <span
-        className={cn(
-          "relative inline-flex items-center justify-center rounded-full",
-          compact ? "mt-[0.9cqw] h-[7cqw] w-[14cqw]" : "mt-[1.1cqw] h-[8.2cqw] w-[16.4cqw]"
-        )}
-        style={originPlate(theme, "top")}
+        className="celecard-origin-plate relative inline-flex items-center justify-center overflow-hidden rounded-full"
+        style={originWell(theme)}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={CELEYOU_MARK_SRC}
-          alt=""
-          className={compact ? "h-[5.6cqw] w-[5.6cqw] object-contain" : "h-[6.6cqw] w-[6.6cqw] object-contain"}
-        />
+        <CeleYouMarkIcon className="celecard-origin-mark" />
       </span>
     </div>
   );
@@ -263,24 +258,93 @@ function CeleCardOrigin({
 
 function CeleCardWordmark({
   theme,
-  compact,
 }: {
   theme: DigitalCardTheme;
   compact?: boolean;
 }) {
-  const lightPlate = isDarkInk(theme.text);
+  const lightPaper = isDarkInk(theme.text);
+  const cele = lightPaper ? "#073F3C" : "#F4FFFD";
+  const you = lightPaper ? "#0B8A83" : "#7FF0E4";
+  const slogan = lightPaper ? "#0A5C57" : "rgba(127,240,228,0.88)";
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center" aria-hidden>
-      <span
-        className={cn(
-          "relative inline-flex items-center justify-center whitespace-nowrap rounded-full font-display font-bold tracking-[-0.04em]",
-          compact ? "mb-[0.85cqw] h-[5.2cqw] px-[3.4cqw] text-[2.35cqw]" : "mb-[1cqw] h-[6cqw] px-[4cqw] text-[2.7cqw]"
-        )}
-        style={originPlate(theme, "bottom")}
-      >
-        <span style={{ color: lightPlate ? "#073F3C" : "#FFFFFF" }}>Cele</span><span style={{ color: lightPlate ? "#12B8A8" : "#7FF0E4" }}>You</span>
+    <div className="celecard-wordmark pointer-events-none absolute inset-x-0 bottom-0 z-20" aria-hidden>
+      <span className="celecard-wordmark-name font-display">
+        <span style={{ color: cele }}>Cele</span>
+        <span style={{ color: you }}>You</span>
+        <sup className="celecard-wordmark-mark" style={{ color: cele }}>
+          ®
+        </sup>
+      </span>
+      <span className="celecard-wordmark-slogan" style={{ color: slogan }}>
+        {SMARTCARD_BRAND_TAGLINE}
       </span>
     </div>
+  );
+}
+
+function FaceFitName({
+  lines,
+  className,
+  style,
+}: {
+  lines: string[];
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const stacked = lines.length > 1;
+  const key = lines.join("\n");
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const fit = () => {
+      const width = el.clientWidth;
+      if (width < 8) return;
+      const face = el.closest(".celecard-face") as HTMLElement | null;
+      const cardW = face?.clientWidth || width * 2.6;
+      const maxPx = cardW * 0.07;
+      const minPx = cardW * 0.0335;
+      const maxHeight = cardW * (stacked ? 0.112 : 0.086) + 2;
+      let lo = minPx;
+      let hi = maxPx;
+      let best = minPx;
+      for (let i = 0; i < 14; i += 1) {
+        const mid = (lo + hi) / 2;
+        el.style.fontSize = `${mid}px`;
+        const overflowX = el.scrollWidth - width > 1.25;
+        const overflowY = el.scrollHeight - maxHeight > 1.25;
+        if (overflowX || overflowY) {
+          hi = mid;
+        } else {
+          best = mid;
+          lo = mid;
+        }
+      }
+      el.style.fontSize = `${best}px`;
+    };
+
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    const face = el.closest(".celecard-face");
+    if (face) ro.observe(face);
+    return () => ro.disconnect();
+  }, [key, lines.length]);
+
+  return (
+    <p
+      ref={ref}
+      className={cn("celecard-face-name min-w-0", stacked ? null : "line-clamp-2", className)}
+      style={style}
+    >
+      {lines.map((line, index) => (
+        <span key={`${line}-${index}`} className={cn("block", stacked ? "whitespace-nowrap" : null)}>
+          {line}
+        </span>
+      ))}
+    </p>
   );
 }
 
@@ -290,7 +354,7 @@ function FaceIdentity({
   title,
   company,
   compact,
-  companyLogo,
+  companyLogoUrl,
   nameClassName,
   nameStyle,
 }: {
@@ -300,30 +364,29 @@ function FaceIdentity({
   company?: string | null;
   compact?: boolean;
   companyLogo?: boolean;
+  companyLogoUrl?: string | null;
   mark?: boolean;
   nameClassName?: string;
   nameStyle?: CSSProperties;
 }) {
   const voice = celecardTypeVoice(theme);
-  const nameLines = celecardDisplayNameLines(displayName, voice.stacksDisplayName);
+  const stacked = celecardNameShouldStack(displayName, voice.stacksDisplayName, compact);
+  const nameLines = celecardDisplayNameLines(displayName, stacked);
+  const fitCqw = celecardNameFitCqw(displayName, stacked, compact);
   return (
     <div className="min-w-0 flex-1">
-      <p
-        className={cn("celecard-face-name min-w-0", nameLines.length > 1 ? null : "line-clamp-2", nameClassName)}
+      <FaceFitName
+        lines={nameLines}
+        className={nameClassName}
         style={{
           fontFamily: voice.heading,
           fontWeight: voice.nameWeight,
           letterSpacing: voice.nameTracking,
           color: theme.text,
+          fontSize: `${fitCqw}cqw`,
           ...nameStyle,
         }}
-      >
-        {nameLines.map((line, index) => (
-          <span key={`${line}-${index}`} className="block">
-            {line}
-          </span>
-        ))}
-      </p>
+      />
       {voice.rule === "foil" ? (
         <span className={cn("mt-[2.2cqw] block h-px", compact ? "w-[11cqw]" : "w-[10cqw]")} style={{ background: theme.accent, opacity: 0.7 }} aria-hidden />
       ) : voice.rule === "double" ? (
@@ -357,17 +420,16 @@ function FaceIdentity({
         <span
           className={cn(
             "celecard-face-company flex min-w-0 items-center font-semibold",
-            compact ? "mt-[0.8cqw] gap-[1cqw]" : "mt-[0.4cqw] gap-[1.15cqw]"
+            compact ? "mt-[0.8cqw] gap-[1.4cqw]" : "mt-[0.55cqw] gap-[1.7cqw]"
           )}
         >
-          {companyLogo ? (
-            <DemoCompanyMark
-              name={company}
-              accent={theme.accent}
-              metal={theme.border}
-              className={compact ? "h-[4.4cqw] w-[4.4cqw]" : "h-[5.2cqw] w-[5.2cqw]"}
-            />
-          ) : null}
+          <CeleCardCompanyMark
+            url={companyLogoUrl}
+            name={company}
+            accent={theme.accent}
+            metal={theme.border}
+            className="celecard-company-mark"
+          />
           <span
             className={cn("min-w-0 break-words", compact ? "line-clamp-1" : null, voice.companyTransform === "uppercase" ? "uppercase" : null)}
             style={{ color: theme.accent, fontFamily: voice.origin, letterSpacing: voice.companyTracking }}
@@ -412,6 +474,30 @@ function portraitBox(portrait?: boolean) {
   return portrait ? "celecard-face-photo is-portrait-box" : "celecard-face-photo";
 }
 
+function FacePortraitImg({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      width={CELECARD_PORTRAIT_MAX_EDGE}
+      height={CELECARD_PORTRAIT_MAX_EDGE}
+      decoding="async"
+      fetchPriority="high"
+      draggable={false}
+      className={cn("celecard-portrait-img h-full w-full object-cover object-center", className)}
+    />
+  );
+}
+
 function FacePhoto({
   avatarUrl,
   theme,
@@ -445,12 +531,7 @@ function FacePhoto({
       className={cn("h-full w-full", well)}
     />
   ) : (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={avatarUrl || undefined}
-      alt={`${displayName} portrait`}
-      className={cn("h-full w-full object-cover object-center", well)}
-    />
+    <FacePortraitImg src={avatarUrl || ""} alt={`${displayName} portrait`} className={well} />
   );
   return (
     <span
@@ -474,10 +555,11 @@ function FacePortraitPanel({
   theme: DigitalCardTheme;
   displayName: string;
 }) {
-  if (isCeleCardPhotoUrl(avatarUrl)) {
+  if (isCeleCardPhotoUrl(avatarUrl) && avatarUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={avatarUrl || undefined} alt={`${displayName} portrait`} className="h-full w-full object-cover object-center" />
+      <div className="celecard-portrait-panel h-full w-full overflow-hidden">
+        <FacePortraitImg src={avatarUrl} alt={`${displayName} portrait`} />
+      </div>
     );
   }
   return (
@@ -498,7 +580,7 @@ function CardPlate({
   qrHref,
   compact,
   portraitFrame,
-  companyLogo,
+  companyLogoUrl,
 }: {
   theme: DigitalCardTheme;
   displayName: string;
@@ -510,71 +592,111 @@ function CardPlate({
   qrHref?: string | null;
   compact?: boolean;
   portraitFrame?: CeleCardPortraitFrame | null;
-  companyLogo?: boolean;
+  companyLogoUrl?: string | null;
 }) {
   const darkType = isDarkInk(theme.text);
-  const portrait = theme.composition === "portrait-led";
-  const nameSize = compact
-    ? displayName.length > 22
-      ? "5.4cqw"
-      : displayName.length > 14
-        ? "6.2cqw"
-        : "6.8cqw"
-    : undefined;
+  const composition = theme.composition;
+  const portrait = composition === "portrait-led" || composition === "iconic";
   const emboss = darkType
     ? "0 1px 0 rgba(255,255,255,0.5), 0 -1px 0 rgba(40,24,8,0.16)"
     : "0 1px 0 rgba(255,255,255,0.22), 0 2px 10px rgba(0,0,0,0.28)";
+  const identity = (
+    <FaceIdentity
+      theme={theme}
+      displayName={displayName}
+      title={title}
+      company={company}
+      compact={compact}
+      companyLogoUrl={companyLogoUrl}
+      nameClassName="[overflow-wrap:normal] [word-break:normal]"
+      nameStyle={{
+        textShadow: emboss,
+      }}
+    />
+  );
+  const photo = (
+    <FacePhoto
+      avatarUrl={avatarUrl}
+      initials={initials}
+      theme={theme}
+      compact={compact}
+      displayName={displayName}
+      portraitFrame={portraitFrame}
+    />
+  );
+  const qr = (
+    <QrMark
+      qrSrc={qrSrc}
+      qrHref={qrHref}
+      ownerName={displayName}
+      compact={compact}
+      theme={theme}
+      avatarUrl={avatarUrl}
+    />
+  );
+  const veil = (
+    <div
+      className="pointer-events-none absolute inset-0"
+      style={{
+        background: darkType
+          ? "linear-gradient(180deg, rgba(255,248,235,0.12) 0%, transparent 46%, rgba(120,70,20,0.08) 100%)"
+          : "linear-gradient(165deg, rgba(255,255,255,0.1) 0%, transparent 42%, rgba(0,0,0,0.22) 100%)",
+      }}
+      aria-hidden
+    />
+  );
+
+  if (composition === "grid") {
+    return (
+      <>
+        {veil}
+        <div className="celecard-face-body celecard-face-grid relative h-full min-h-0">
+          {identity}
+          <div className="celecard-face-grid-media">
+            {photo}
+            {qr}
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: darkType
-            ? "linear-gradient(180deg, rgba(255,248,235,0.12) 0%, transparent 46%, rgba(120,70,20,0.08) 100%)"
-            : "linear-gradient(165deg, rgba(255,255,255,0.1) 0%, transparent 42%, rgba(0,0,0,0.22) 100%)",
-        }}
-        aria-hidden
-      />
-      <div className="relative flex h-full min-h-0 items-stretch">
+      {veil}
+      <div className="celecard-face-body relative flex h-full min-h-0 items-stretch">
         {portrait ? (
-          <div className="relative h-full w-[36%] shrink-0 overflow-hidden">
+          <div
+            className={cn(
+              "relative h-full shrink-0 overflow-hidden",
+              composition === "iconic" ? "w-[40%]" : "w-[36%]"
+            )}
+          >
             <FacePortraitPanel avatarUrl={avatarUrl} theme={theme} displayName={displayName} />
           </div>
         ) : null}
 
-        <div className={cn("celecard-face-row min-w-0 flex-1", portrait ? "is-portrait" : null)}>
-          {portrait ? null : (
-            <FacePhoto
-              avatarUrl={avatarUrl}
-              initials={initials}
-              theme={theme}
-              compact={compact}
-              displayName={displayName}
-              portraitFrame={portraitFrame}
-            />
+        <div
+          className={cn(
+            "celecard-face-row min-w-0 flex-1",
+            portrait ? "is-portrait" : null,
+            composition === "type-first" ? "is-type-first" : null,
+            composition === "media-first" ? "is-media-first" : null
           )}
-          <FaceIdentity
-            theme={theme}
-            displayName={displayName}
-            title={title}
-            company={company}
-            compact={compact}
-            companyLogo={companyLogo}
-            nameClassName="[overflow-wrap:normal] [word-break:normal]"
-            nameStyle={{
-              fontSize: nameSize,
-              textShadow: emboss,
-            }}
-          />
-          <QrMark
-            qrSrc={qrSrc}
-            qrHref={qrHref}
-            ownerName={displayName}
-            compact={compact}
-            theme={theme}
-            avatarUrl={avatarUrl}
-          />
+        >
+          {portrait ? null : composition === "type-first" ? (
+            <>
+              {identity}
+              {photo}
+              {qr}
+            </>
+          ) : (
+            <>
+              {photo}
+              {identity}
+              {qr}
+            </>
+          )}
         </div>
       </div>
     </>
@@ -593,17 +715,20 @@ export function DigitalCardFace({
   className,
   compact,
   portraitFrame,
-  companyLogo,
+  companyLogoUrl,
+  design,
 }: DigitalCardFaceProps) {
-  const theme = resolveDigitalCardTheme(themeId);
+  const theme = applyCeleCardDesign(resolveDigitalCardTheme(themeId), design);
   const voice = celecardTypeVoice(theme);
   const initials = initialsOf(displayName);
   const composition = theme.composition;
+  const customPaper = design?.paperUrl ? celeCardPaperStyle(theme, design) : null;
 
   const plate = (
     <div
       className="celecard-face celecard-foil relative overflow-hidden rounded-[1.15rem] border"
       data-compact={compact ? "true" : undefined}
+      data-composition={composition}
       style={{
         background: theme.cardBackground,
         borderColor: theme.border,
@@ -613,7 +738,18 @@ export function DigitalCardFace({
         boxShadow: `0 18px 44px rgba(8,12,24,0.28), 0 1px 0 rgba(255,255,255,0.28), inset 0 1px 0 rgba(255,255,255,0.34), inset 0 -3px 8px rgba(0,0,0,0.14), inset 0 0 0 1px ${theme.border}`,
       }}
     >
-      {theme.textureUrl ? (
+      {customPaper ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={customPaper.src}
+            alt=""
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            style={{ opacity: customPaper.opacity, mixBlendMode: customPaper.mixBlendMode }}
+          />
+          <div className="pointer-events-none absolute inset-0" style={{ background: customPaper.veil }} aria-hidden />
+        </>
+      ) : theme.textureUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={theme.textureUrl}
@@ -640,7 +776,7 @@ export function DigitalCardFace({
         qrHref={qrBadgeHref ?? null}
         compact={compact}
         portraitFrame={portraitFrame}
-        companyLogo={companyLogo}
+        companyLogoUrl={companyLogoUrl}
       />
     </div>
   );

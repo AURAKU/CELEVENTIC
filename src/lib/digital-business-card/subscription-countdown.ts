@@ -13,6 +13,8 @@ export type SubscriptionCountdown = {
   clock: string;
   label: string;
   urgent: boolean;
+  /** 1 is a full paid window still ahead. 0 is ended. */
+  remainingRatio: number;
 };
 
 export function parseSubscriptionEnd(value: Date | string | number | null | undefined): Date | null {
@@ -53,8 +55,9 @@ export function formatCountdownClock(ms: number): string {
   const seconds = Math.floor((abs % MINUTE) / SECOND);
   if (days >= 1) {
     const dayPart = `${days} day${days === 1 ? "" : "s"}`;
-    if (hours < 1) return dayPart;
-    return `${dayPart} ${hours} hour${hours === 1 ? "" : "s"}`;
+    const hourPart = hours < 1 ? "" : ` ${hours} hour${hours === 1 ? "" : "s"}`;
+    const minutePart = minutes < 1 ? "" : ` ${minutes} minute${minutes === 1 ? "" : "s"}`;
+    return `${dayPart}${hourPart}${minutePart}`;
   }
   if (hours >= 1) {
     return `${hours} hour${hours === 1 ? "" : "s"} ${minutes} minute${minutes === 1 ? "" : "s"}`;
@@ -83,6 +86,8 @@ export function subscriptionCountdown(
     : trial
       ? `Studio ends in ${clock}`
       : `Renews in ${clock}`;
+  const windowMs = trial ? 14 * DAY : 365 * DAY;
+  const remainingRatio = ended ? 0 : Math.min(1, Math.max(0, remainingMs / windowMs));
   return {
     kind,
     remainingMs,
@@ -91,5 +96,6 @@ export function subscriptionCountdown(
     clock,
     label,
     urgent: remainingMs > 0 && remainingMs <= 3 * DAY,
+    remainingRatio,
   };
 }

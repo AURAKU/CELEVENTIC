@@ -219,6 +219,7 @@ export function DigitalCardContinuityView({ card }: { card: DigitalCardPublicPay
                 qrHref={null}
                 className="max-w-none"
                 portraitFrame={card.socials.portraitFrame}
+                companyLogoUrl={card.socials.companyLogoUrl}
               />
             </div>
             <div

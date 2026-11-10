@@ -47,6 +47,7 @@ import {
   demoCardPreviewQrSrc,
 } from "@/lib/digital-business-card/demo-card";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
+import { canAccessAdminPanel } from "@/lib/rbac/permissions";
 
 const CAPABILITY_ICONS = {
   "Smart QR": QrCode,
@@ -254,6 +255,7 @@ export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?
     };
   }, []);
   const signedIn = status === "authenticated" && Boolean(session?.user);
+  const showDummyLive = canAccessAdminPanel(session?.user?.role);
   const registerHref = signedIn ? smartCardStudioPath(planId) : smartCardSignupPath(planId);
   const loginHref = smartCardLoginPath(planId);
   const themeHref = (themeId: string) =>
@@ -319,13 +321,15 @@ export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?
               >
                 <a href="#smartcard-themes">{SMARTCARD_CTA_SECONDARY}</a>
               </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="min-h-11 border-amber-200/40 bg-amber-300/10 text-amber-100 hover:bg-amber-300/20 hover:text-white"
-              >
-                <Link href={demoCardHubPath()}>See a live dummy tap</Link>
-              </Button>
+              {showDummyLive ? (
+                <Button
+                  asChild
+                  variant="outline"
+                  className="min-h-11 border-amber-200/40 bg-amber-300/10 text-amber-100 hover:bg-amber-300/20 hover:text-white"
+                >
+                  <Link href={demoCardHubPath()}>See a live dummy tap</Link>
+                </Button>
+              ) : null}
             </div>
             <ul className="mt-7 flex flex-wrap gap-2">
               {(Object.keys(CAPABILITY_ICONS) as (keyof typeof CAPABILITY_ICONS)[]).map((label) => {

@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DigitalCardThemePicker } from "@/components/digital-business-card/digital-card-theme-picker";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
+import { DigitalCardCompanyLogoField } from "@/components/digital-business-card/digital-card-company-logo-field";
 import { SMARTCARD_PLANS } from "@/lib/digital-business-card/plans";
-import type { DigitalCardThemeId } from "@/lib/digital-business-card/themes";
+import { persistCompanyLogoUrl } from "@/lib/digital-business-card/socials";
+import { resolveDigitalCardTheme, type DigitalCardThemeId } from "@/lib/digital-business-card/themes";
 import { demoCardPreviewExplorePath, demoCardPreviewQrSrc } from "@/lib/digital-business-card/demo-card";
 
 type UserHit = { id: string; name: string; email: string | null; phone: string | null };
@@ -45,6 +47,7 @@ export function CeleCardCreateWizard() {
   const [instagram, setInstagram] = useState("");
   const [booking, setBooking] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [momo, setMomo] = useState("");
   const [paypal, setPaypal] = useState("");
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
@@ -79,6 +82,7 @@ export function CeleCardCreateWizard() {
   async function submit() {
     setBusy(true);
     setError(null);
+    const savedLogo = persistCompanyLogoUrl(companyLogoUrl);
     const res = await fetch("/api/admin/celecard/cards", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -93,7 +97,14 @@ export function CeleCardCreateWizard() {
         email: email || unclaimedEmail || null,
         phone: phone || unclaimedPhone || null,
         website,
-        socials: { linkedin, instagram, website: website || booking, momo, paypal },
+        socials: {
+          linkedin,
+          instagram,
+          website: website || booking,
+          momo,
+          paypal,
+          ...(savedLogo ? { companyLogoUrl: savedLogo } : {}),
+        },
         avatarUrl: avatarUrl || null,
         themeId,
         connectBackEnabled,
@@ -211,7 +222,21 @@ export function CeleCardCreateWizard() {
           </div>
           <div>
             <Label>Company</Label>
-            <Input value={company} onChange={(e) => setCompany(e.target.value)} />
+            <div className="mt-1.5 flex items-start gap-3">
+              <DigitalCardCompanyLogoField
+                value={companyLogoUrl}
+                onChange={setCompanyLogoUrl}
+                company={company}
+                theme={resolveDigitalCardTheme(themeId)}
+                compact
+              />
+              <div className="min-w-0 flex-1 space-y-1">
+                <Input value={company} onChange={(e) => setCompany(e.target.value)} />
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  Upload a square mark. It sits beside the company name on the card.
+                </p>
+              </div>
+            </div>
           </div>
           <div className="sm:col-span-2">
             <Label>Biography</Label>
@@ -275,6 +300,7 @@ export function CeleCardCreateWizard() {
               title={title}
               company={company}
               avatarUrl={avatarUrl || null}
+              companyLogoUrl={companyLogoUrl}
               qrSrc={demoCardPreviewQrSrc()}
               qrBadgeHref={demoCardPreviewExplorePath()}
               compact={viewport === "mobile"}

@@ -285,10 +285,29 @@ export function resizeFrameRect(
   return clampFrameRect({ x, y, width, height }, containerW, containerH, aspectRatio);
 }
 
+/** Cap canvas export so a 12MP crop does not allocate a huge bitmap. Never upscale. */
+export const CROP_EXPORT_MAX_EDGE = 4096;
+
+export function cropExportSize(
+  width: number,
+  height: number,
+  maxEdge: number = CROP_EXPORT_MAX_EDGE
+): { width: number; height: number } {
+  const w = Math.max(1, Math.round(width));
+  const h = Math.max(1, Math.round(height));
+  const longest = Math.max(w, h);
+  if (longest <= maxEdge) return { width: w, height: h };
+  const scale = maxEdge / longest;
+  return {
+    width: Math.max(1, Math.round(w * scale)),
+    height: Math.max(1, Math.round(h * scale)),
+  };
+}
+
 export async function cropImageToBlob(
   imageSrc: string,
   crop: PixelCrop,
-  options?: { mimeType?: string; quality?: number; shape?: CropShape }
+  options?: { mimeType?: string; quality?: number; shape?: CropShape; maxEdge?: number }
 ): Promise<Blob> {
   const shape = options?.shape ?? "rect";
   const quality = options?.quality ?? 0.92;
@@ -301,31 +320,34 @@ export async function cropImageToBlob(
   const sourceHasAlpha = canvasHasAlpha(img, img.naturalWidth, img.naturalHeight);
   const needsAlpha = shape !== "rect" || sourceHasAlpha;
   const mimeType = options?.mimeType ?? (needsAlpha ? "image/png" : "image/jpeg");
+  const out = cropExportSize(crop.width, crop.height, options?.maxEdge ?? CROP_EXPORT_MAX_EDGE);
 
   const canvas = document.createElement("canvas");
-  canvas.width = crop.width;
-  canvas.height = crop.height;
-  const ctx = canvas.getContext("2d");
+  canvas.width = out.width;
+  canvas.height = out.height;
+  const ctx = canvas.getContext("2d", { alpha: needsAlpha });
   if (!ctx) throw new Error("Canvas unavailable");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
   if (shape === "circle") {
     ctx.save();
     ctx.beginPath();
-    const r = Math.min(crop.width, crop.height) / 2;
-    ctx.arc(crop.width / 2, crop.height / 2, r, 0, Math.PI * 2);
+    const r = Math.min(out.width, out.height) / 2;
+    ctx.arc(out.width / 2, out.height / 2, r, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
-    ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+    ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, out.width, out.height);
     ctx.restore();
   } else if (shape === "rounded") {
-    const radius = Math.min(crop.width, crop.height) * 0.12;
+    const radius = Math.min(out.width, out.height) * 0.12;
     ctx.save();
-    roundRectPath(ctx, 0, 0, crop.width, crop.height, radius);
+    roundRectPath(ctx, 0, 0, out.width, out.height, radius);
     ctx.clip();
-    ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+    ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, out.width, out.height);
     ctx.restore();
   } else {
-    ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+    ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, out.width, out.height);
   }
 
   return new Promise((resolve, reject) => {

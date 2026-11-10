@@ -28,6 +28,13 @@ export const CELECARD_HOUSE_AVATAR_IDS = [
   "rows",
   "twists",
   "collar",
+  "kohl",
+  "russet",
+  "mesa",
+  "nile",
+  "island",
+  "silk",
+  "pampas",
   "fox",
   "lion",
   "crane",
@@ -52,6 +59,12 @@ export type CeleCardHouseAvatarGroup = "mark" | "people" | "creature" | "studio"
 
 export const CELECARD_HOUSE_AVATAR_PREFIX = "house:";
 export const CELECARD_DEFAULT_AVATAR = `${CELECARD_HOUSE_AVATAR_PREFIX}celecard`;
+
+/** Longest edge kept for a cropped portrait. Covers 3x present and the 36% portrait panel. Never upscale. */
+export const CELECARD_PORTRAIT_MAX_EDGE = 2048;
+export const CELECARD_PORTRAIT_WEBP_QUALITY = 92;
+export const CELECARD_LOGO_MAX_EDGE = 720;
+export const CELECARD_LOGO_WEBP_QUALITY = 92;
 
 export const CELECARD_HOUSE_AVATARS: {
   id: CeleCardHouseAvatarId;
@@ -84,6 +97,13 @@ export const CELECARD_HOUSE_AVATARS: {
   { id: "rows", kind: "avatar", group: "people", label: "Rows", hint: "Cornrows" },
   { id: "twists", kind: "avatar", group: "people", label: "Twists", hint: "Two-strand twists" },
   { id: "collar", kind: "avatar", group: "people", label: "Collar", hint: "Open collar" },
+  { id: "kohl", kind: "avatar", group: "people", label: "Kohl", hint: "Center part" },
+  { id: "russet", kind: "avatar", group: "people", label: "Russet", hint: "Copper waves" },
+  { id: "mesa", kind: "avatar", group: "people", label: "Mesa", hint: "Long braid" },
+  { id: "nile", kind: "avatar", group: "people", label: "Nile", hint: "Short coils" },
+  { id: "island", kind: "avatar", group: "people", label: "Island", hint: "Open waves" },
+  { id: "silk", kind: "avatar", group: "people", label: "Silk", hint: "Clean undercut" },
+  { id: "pampas", kind: "avatar", group: "people", label: "Pampas", hint: "Soft waves" },
   { id: "fox", kind: "avatar", group: "creature", label: "Fox", hint: "Alert ears" },
   { id: "lion", kind: "avatar", group: "creature", label: "Lion", hint: "Warm mane" },
   { id: "crane", kind: "avatar", group: "creature", label: "Crane", hint: "Long wing" },

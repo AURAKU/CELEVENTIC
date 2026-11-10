@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { resolveNfcDeviceTap } from "@/services/digital-business-card/digital-business-card.service";
 import { DIGITAL_CARD_PUBLIC_PATH } from "@/lib/digital-business-card/types";
 import { demoCardGuestPath, isDemoNfcToken } from "@/lib/digital-business-card/demo-card";
+import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export default async function SmartCardNfcTapPage({
 }) {
   const { token } = await params;
   if (isDemoNfcToken(token)) {
+    if (!(await viewerMayOpenDummyLive())) redirect(CELECARD_DUMMY_LIVE_FALLBACK);
     redirect(demoCardGuestPath());
   }
   const card = await resolveNfcDeviceTap(token);

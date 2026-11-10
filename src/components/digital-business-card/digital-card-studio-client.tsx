@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   CreditCard,
@@ -16,8 +16,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
-import { DigitalCardThemePicker } from "@/components/digital-business-card/digital-card-theme-picker";
+import { DigitalCardDesignDesk } from "@/components/digital-business-card/digital-card-design-desk";
 import { DIGITAL_CARD_THEMES, resolveDigitalCardTheme, type DigitalCardThemeId } from "@/lib/digital-business-card/themes";
+import { applyCeleCardDesign, compactCeleCardDesign, type CeleCardDesign } from "@/lib/digital-business-card/design";
+import {
+  compactMeetingDesk,
+  defaultMeetingDesk,
+  persistMeetingDesk,
+  type CeleCardMeetingDesk,
+} from "@/lib/digital-business-card/meetings";
 import { celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import { SMARTCARD_PLANS, type SmartCardPlan, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
 import { smartCardShortUrl } from "@/lib/digital-business-card/product";
@@ -34,7 +41,6 @@ import {
 } from "@/lib/digital-business-card/types";
 import {
   DIGITAL_CARD_SOCIAL_GROUPS,
-  DIGITAL_CARD_SOCIAL_NETWORKS,
   chatKindsForBrand,
   compactAlignedChatKinds,
   compactAlignedTags,
@@ -42,6 +48,7 @@ import {
   collectTaggedPhones,
   emptyDigitalCardSocialForm,
   listDigitalCardReachItems,
+  persistCompanyLogoUrl,
   toPayQrMap,
   usesChatLinkKinds,
   type ChatLinkKind,
@@ -54,10 +61,14 @@ import {
   payQrListForBrand,
   writePayQrBrand,
 } from "@/components/digital-business-card/digital-card-pay-fields";
+import { DigitalCardReachCatalog } from "@/components/digital-business-card/digital-card-reach-catalog";
+import { DigitalCardOtherFields } from "@/components/digital-business-card/digital-card-other-fields";
+import { DigitalCardMeetingDesk } from "@/components/digital-business-card/digital-card-meeting-desk";
 import { DigitalCardBrandMark } from "@/components/digital-business-card/digital-card-brand-mark";
 import { DigitalCardReachOrderEditor } from "@/components/digital-business-card/digital-card-reach-order";
 import { DigitalCardReachGrid } from "@/components/digital-business-card/digital-card-reach-grid";
 import { DigitalCardPortraitField } from "@/components/digital-business-card/digital-card-portrait-field";
+import { DigitalCardCompanyLogoField } from "@/components/digital-business-card/digital-card-company-logo-field";
 import { DigitalCardSlugField } from "@/components/digital-business-card/digital-card-slug-field";
 import { DigitalCardSubscriptionCountdown } from "@/components/digital-business-card/digital-card-subscription-countdown";
 import { DigitalCardPrivacyDesk } from "@/components/digital-business-card/digital-card-privacy-desk";
@@ -101,7 +112,27 @@ type CardRow = {
 };
 
 const studioInputClass =
-  "flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-slate-400";
+  "flex h-11 w-full min-w-0 rounded-md border border-slate-200 bg-white px-3 py-2 text-base outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-slate-400 sm:h-10 sm:text-sm";
+
+function StudioPanel({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="min-w-0 space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+      <div>
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900">{title}</h2>
+        {hint ? <p className="mt-1 text-xs leading-relaxed text-slate-500">{hint}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 const emptyForm = {
   displayName: "",
@@ -125,6 +156,9 @@ const emptyForm = {
   linkKinds: {} as Record<string, Array<ChatLinkKind | "">>,
   reachVisibility: {} as Record<string, ReachVisibility>,
   portraitFrame: "square" as CeleCardPortraitFrame,
+  companyLogoUrl: null as string | null,
+  design: {} as CeleCardDesign,
+  meeting: defaultMeetingDesk() as CeleCardMeetingDesk,
 };
 
 export function DigitalCardStudioClient() {
@@ -292,6 +326,9 @@ export function DigitalCardStudioClient() {
         resolveDigitalCardTheme((card.themeId as DigitalCardThemeId) || "elegant-frost"),
         socials.portraitFrame
       ),
+      companyLogoUrl: socials.companyLogoUrl ?? null,
+      design: compactCeleCardDesign(socials.design) ?? {},
+      meeting: compactMeetingDesk(socials.meeting) ?? defaultMeetingDesk(),
       linkKinds: {
         whatsapp: chatKindsForBrand(socials, "whatsapp"),
         telegram: chatKindsForBrand(socials, "telegram"),
@@ -308,7 +345,7 @@ export function DigitalCardStudioClient() {
         ? publicUrl
         : "";
   const qrSrc = shareUrl.startsWith("http") ? digitalCardQrImageSrc(shareUrl) : null;
-  const previewTheme = resolveDigitalCardTheme(form.themeId);
+  const previewTheme = applyCeleCardDesign(resolveDigitalCardTheme(form.themeId), form.design);
   const previewVoice = celecardTypeVoice(previewTheme);
   const reachPreview = useMemo(
     () =>
@@ -334,6 +371,7 @@ export function DigitalCardStudioClient() {
           },
           stackOrder: form.stackOrder,
           dockOrder: form.dockOrder,
+          meeting: persistMeetingDesk(form.meeting),
         },
       }),
     [form]
@@ -372,6 +410,15 @@ export function DigitalCardStudioClient() {
       ...(form.dockOrder.length ? { dockOrder: form.dockOrder } : {}),
       portraitFrame: form.portraitFrame,
     };
+    const design = compactCeleCardDesign(form.design);
+    if (design) socials.design = design;
+    else delete socials.design;
+    const companyLogoUrl = persistCompanyLogoUrl(form.companyLogoUrl);
+    if (companyLogoUrl) socials.companyLogoUrl = companyLogoUrl;
+    else delete socials.companyLogoUrl;
+    const meeting = persistMeetingDesk(form.meeting);
+    if (meeting) socials.meeting = meeting;
+    else delete socials.meeting;
     if (Object.keys(form.reachVisibility).length) {
       socials.reachVisibility = form.reachVisibility;
     } else {
@@ -495,8 +542,9 @@ export function DigitalCardStudioClient() {
             One link for every contact
           </h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Design a premium identity, then share via QR, NFC, Wallet or link. The public page stays
-            offline until a paid plan is active. Monthly, 3 months, 6 months, or yearly.
+            Use the same design tools as every house template. Layout, atmosphere, ornament, and a
+            background that blends into the plate. Then share via QR, NFC, Wallet or link. The public
+            page stays offline until a paid plan is active.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -556,8 +604,8 @@ export function DigitalCardStudioClient() {
           <Loader2 className="h-4 w-4 animate-spin" /> Loading…
         </div>
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-          <div className="space-y-6">
+        <div className="flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-start xl:gap-8">
+          <div className="order-1 min-w-0 space-y-6">
             {cards.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {cards.map((c) => (
@@ -577,6 +625,10 @@ export function DigitalCardStudioClient() {
               </div>
             ) : null}
 
+            <StudioPanel
+              title="Identity"
+              hint="Portrait, name, and the line that sits on the plate."
+            >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Portrait</Label>
@@ -618,12 +670,30 @@ export function DigitalCardStudioClient() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company">Company</Label>
-                <Input
-                  id="company"
-                  value={form.company}
-                  onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
-                  placeholder="Aura Group"
-                />
+                <div className="flex items-start gap-3">
+                  <DigitalCardCompanyLogoField
+                    value={form.companyLogoUrl}
+                    onChange={(url) => {
+                      setForm((f) => ({ ...f, companyLogoUrl: url }));
+                      setMessage(url ? "Company logo cropped. Save the card to keep it beside the house name." : null);
+                    }}
+                    company={form.company}
+                    theme={resolveDigitalCardTheme(form.themeId)}
+                    onError={setError}
+                    compact
+                  />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <Input
+                      id="company"
+                      value={form.company}
+                      onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
+                      placeholder="Aura Group"
+                    />
+                    <p className="text-[11px] leading-relaxed text-slate-500">
+                      Upload a square PNG or JPEG. It sits beside the company name on the card.
+                    </p>
+                  </div>
+                </div>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="bio">About</Label>
@@ -635,7 +705,37 @@ export function DigitalCardStudioClient() {
                   rows={3}
                 />
               </div>
-              <div className="space-y-2 sm:col-span-2">
+            </div>
+            </StudioPanel>
+          </div>
+
+          <div className="order-3 min-w-0 space-y-6 xl:order-2">
+              <DigitalCardDesignDesk
+                  themeId={form.themeId}
+                  design={form.design}
+                  onThemeChange={(themeId) => {
+                    const next = resolveDigitalCardTheme(themeId);
+                    setForm((f) => ({
+                      ...f,
+                      themeId,
+                      portraitFrame: celecardPortraitFrame(next),
+                      design: {
+                        ...f.design,
+                        composition: next.composition,
+                        atmosphere: next.atmosphere ?? "none",
+                        ornament: next.ornament ?? "foil",
+                      },
+                    }));
+                  }}
+                  onDesignChange={(design) => setForm((f) => ({ ...f, design }))}
+                  onError={setError}
+                />
+            <StudioPanel
+              title="Contact"
+              hint="Mail, number, website, location, meetings, and the public link guests open."
+            >
+              <div className="space-y-4">
+              <div className="space-y-2">
                 <Label className="inline-flex items-center gap-2">
                   <DigitalCardBrandMark id="email" className="h-7 w-7 rounded-[9px]" />
                   Email
@@ -654,7 +754,7 @@ export function DigitalCardStudioClient() {
                   tagAccent="#0B8A83"
                 />
               </div>
-              <div className="space-y-2 sm:col-span-2">
+              <div className="space-y-2">
                 <Label className="inline-flex items-center gap-2">
                   <DigitalCardBrandMark id="phone" className="h-7 w-7 rounded-[9px]" />
                   Phone
@@ -688,6 +788,41 @@ export function DigitalCardStudioClient() {
                   addStyle={{ color: "#0B8A83" }}
                 />
               </div>
+              <div className="space-y-2">
+                <Label className="inline-flex items-center gap-2">
+                  <DigitalCardBrandMark id="location" className="h-7 w-7 rounded-[9px]" />
+                  Location
+                </Label>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Paste a Google Maps, Amap, Apple Maps, or other map link. A street address works too. Guests tap
+                  Location to see the place, then open it in maps.
+                </p>
+                <DigitalCardRepeatFields
+                  brand="location"
+                  values={form.socials.location}
+                  onChange={(location) =>
+                    setForm((f) => ({ ...f, socials: { ...f.socials, location } }))
+                  }
+                  placeholder="Google Maps, Amap, or a street address"
+                  addLabel="Add another place"
+                  inputClassName={studioInputClass}
+                  addStyle={{ color: "#0B8A83" }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="inline-flex items-center gap-2">
+                  <DigitalCardBrandMark id="meeting" className="h-7 w-7 rounded-[9px]" />
+                  Meetings
+                </Label>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Guests pick a date and time on your card. You get a message in this studio, plus a notification.
+                </p>
+                <DigitalCardMeetingDesk
+                  value={form.meeting}
+                  onChange={(meeting) => setForm((f) => ({ ...f, meeting }))}
+                  inputClassName={studioInputClass}
+                />
+              </div>
               <DigitalCardSlugField
                 value={form.slug}
                 onChange={setSlug}
@@ -701,15 +836,14 @@ export function DigitalCardStudioClient() {
                 followIdentity={!slugCustomized}
                 onUserEdit={() => setSlugCustomized(true)}
               />
-            </div>
-
-            <div className="space-y-5">
-              <div>
-                <Label className="mb-1 block">Reach</Label>
-                <p className="text-xs text-slate-500">
-                  Paste a username, @handle, or a share link. Guests open that exact page, with the official mark.
-                </p>
               </div>
+            </StudioPanel>
+
+            <StudioPanel
+              title="Reach"
+              hint="Search or flip through a network, then add it. Missing apps become a page guests can open."
+            >
+            <div className="space-y-5">
               {DIGITAL_CARD_SOCIAL_GROUPS.map((group) => (
                 <div key={group.id}>
                   <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -770,50 +904,102 @@ export function DigitalCardStudioClient() {
                       )}
                     </DigitalCardPayGroup>
                   ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {DIGITAL_CARD_SOCIAL_NETWORKS.filter(
-                      (network) => network.group === group.id && network.key !== "website"
-                    ).map((network) => (
-                      <div key={network.key} className="space-y-2">
+                  <DigitalCardReachCatalog
+                    groupId={group.id}
+                    socials={form.socials}
+                    payQr={form.payQr}
+                    accent="#0B8A83"
+                    intro={
+                      group.id === "chat" ? (
+                        <p className="mb-3 text-xs text-slate-500">
+                          Number, username, share URL, group, or channel. Each one is tagged so guests can choose.
+                        </p>
+                      ) : group.id === "social" ? (
+                        <p className="mb-3 text-xs text-slate-500">
+                          Profiles, posts, and any page that is not in the list. Guests tap the name you give it.
+                        </p>
+                      ) : null
+                    }
+                    onAdd={(key, seed) =>
+                      setForm((f) => {
+                        const current = f.socials[key as keyof typeof f.socials] ?? [];
+                        const filled = current.filter((value) => value.trim());
+                        const next = filled.length
+                          ? seed
+                            ? [...filled, seed]
+                            : current
+                          : [seed ?? ""];
+                        return {
+                          ...f,
+                          socials: { ...f.socials, [key]: next },
+                        };
+                      })
+                    }
+                    onRemove={(key) =>
+                      setForm((f) => ({
+                        ...f,
+                        socials: { ...f.socials, [key]: [] },
+                        payQr: writePayQrBrand(f.payQr, key, []),
+                        linkKinds: { ...f.linkKinds, [key]: [] },
+                      }))
+                    }
+                  >
+                    {(network) => (
+                      <div className="space-y-2 pr-6">
                         <Label className="inline-flex items-center gap-2">
                           <DigitalCardBrandMark id={network.key} className="h-7 w-7 rounded-[9px]" />
                           {network.label}
                         </Label>
-                        <DigitalCardRepeatFields
-                          brand={network.key}
-                          values={form.socials[network.key]}
-                          showChatKinds={usesChatLinkKinds(network.key)}
-                          chatKinds={form.linkKinds[network.key]}
-                          onChatKindsChange={(kinds) =>
-                            setForm((f) => ({ ...f, linkKinds: { ...f.linkKinds, [network.key]: kinds } }))
-                          }
-                          tagAccent="#0B8A83"
-                          onChange={(next) =>
-                            setForm((f) => ({
-                              ...f,
-                              socials: { ...f.socials, [network.key]: next },
-                            }))
-                          }
-                          qrUrls={payQrListForBrand(form.payQr, network.key, form.socials[network.key])}
-                          onQrUrlsChange={(qrUrls) =>
-                            setForm((f) => ({
-                              ...f,
-                              payQr: writePayQrBrand(f.payQr, network.key, qrUrls),
-                            }))
-                          }
-                          onUploadFile={uploadPayQr}
-                          placeholder={network.placeholder}
-                          addLabel={`Add another ${network.label}`}
-                          inputClassName={studioInputClass}
-                          addStyle={{ color: "#0B8A83" }}
-                        />
+                        {network.key === "other" ? (
+                          <DigitalCardOtherFields
+                            values={form.socials[network.key]}
+                            onChange={(next) =>
+                              setForm((f) => ({
+                                ...f,
+                                socials: { ...f.socials, [network.key]: next },
+                              }))
+                            }
+                            inputClassName={studioInputClass}
+                            addStyle={{ color: "#0B8A83" }}
+                          />
+                        ) : (
+                          <DigitalCardRepeatFields
+                            brand={network.key}
+                            values={form.socials[network.key]}
+                            showChatKinds={usesChatLinkKinds(network.key)}
+                            chatKinds={form.linkKinds[network.key]}
+                            onChatKindsChange={(kinds) =>
+                              setForm((f) => ({ ...f, linkKinds: { ...f.linkKinds, [network.key]: kinds } }))
+                            }
+                            tagAccent="#0B8A83"
+                            onChange={(next) =>
+                              setForm((f) => ({
+                                ...f,
+                                socials: { ...f.socials, [network.key]: next },
+                              }))
+                            }
+                            qrUrls={payQrListForBrand(form.payQr, network.key, form.socials[network.key])}
+                            onQrUrlsChange={(qrUrls) =>
+                              setForm((f) => ({
+                                ...f,
+                                payQr: writePayQrBrand(f.payQr, network.key, qrUrls),
+                              }))
+                            }
+                            onUploadFile={uploadPayQr}
+                            placeholder={network.placeholder}
+                            addLabel={`Add another ${network.label}`}
+                            inputClassName={studioInputClass}
+                            addStyle={{ color: "#0B8A83" }}
+                          />
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </DigitalCardReachCatalog>
                   )}
                 </div>
               ))}
             </div>
+            </StudioPanel>
 
             <DigitalCardPrivacyDesk
               items={reachPreview}
@@ -826,35 +1012,15 @@ export function DigitalCardStudioClient() {
 
             <DigitalCardConnectionInbox cardId={activeId} />
 
-            <div className="space-y-2">
-              <Label>Guest page arrangement</Label>
-              <p className="text-xs text-slate-500">
-                Reorder live taps. Empty fields never appear on the public page.
-              </p>
+            <StudioPanel
+              title="Guest page arrangement"
+              hint="Reorder live taps. Empty fields never appear on the public page."
+            >
               <DigitalCardReachOrderEditor
                 items={reachPreview}
                 onChange={({ stackOrder, dockOrder }) => setForm((f) => ({ ...f, stackOrder, dockOrder }))}
               />
-            </div>
-
-            <div id="celecard-theme">
-              <Label className="mb-3 block">Theme</Label>
-              <p className="mb-3 text-xs text-slate-500">
-                Cinema, landmarks, ateliers, and world art. Original compositions, never licensed characters or brand marks.
-              </p>
-              <DigitalCardThemePicker
-                value={form.themeId}
-                onChange={(themeId) =>
-                  setForm((f) => ({
-                    ...f,
-                    themeId,
-                    portraitFrame: celecardPortraitFrame(resolveDigitalCardTheme(themeId)),
-                  }))
-                }
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex flex-wrap items-center gap-4 text-sm">
               <label className="inline-flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -873,9 +1039,10 @@ export function DigitalCardStudioClient() {
                 NFC ready
               </label>
             </div>
+            </StudioPanel>
           </div>
 
-          <aside className="space-y-4">
+          <aside className="order-2 min-w-0 space-y-4 xl:order-3 xl:sticky xl:top-6 xl:col-start-2 xl:row-span-full xl:self-start">
             <div
               className="rounded-2xl p-4"
               style={{
@@ -898,6 +1065,8 @@ export function DigitalCardStudioClient() {
                 qrHref={form.slug ? digitalCardPublicUrl(form.slug) : null}
                 compact
                 portraitFrame={form.portraitFrame}
+                companyLogoUrl={form.companyLogoUrl}
+                design={form.design}
               />
               {guestPreviewReach.length ? (
                 <div className="mt-4">
@@ -906,6 +1075,7 @@ export function DigitalCardStudioClient() {
                     theme={DIGITAL_CARD_THEMES.find((t) => t.id === form.themeId) ?? DIGITAL_CARD_THEMES[0]}
                     compact
                     slug={form.slug || undefined}
+                    ownerName={form.displayName}
                   />
                 </div>
               ) : null}

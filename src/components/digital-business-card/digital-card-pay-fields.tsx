@@ -56,7 +56,7 @@ export function DigitalCardPayGroup({
             <div key={family.id}>
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">{family.label}</p>
               {open.length ? (
-                <div className={cn("grid gap-3", open.length > 1 ? "sm:grid-cols-2" : null, gridClassName)}>
+                <div className={cn("grid grid-cols-1 gap-4", gridClassName)}>
                   {open.map((network) => (
                     <div key={network.key}>{children(network)}</div>
                   ))}

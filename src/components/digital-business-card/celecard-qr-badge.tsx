@@ -66,7 +66,13 @@ export function CeleCardQrBadge({
         >
           {center.kind === "photo" ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={center.src} alt="" className={cn("h-full w-full object-cover object-center", well)} />
+            <img
+              src={center.src}
+              alt=""
+              decoding="async"
+              draggable={false}
+              className={cn("celecard-portrait-img h-full w-full object-cover object-center", well)}
+            />
           ) : (
             <DigitalCardHouseAvatar
               theme={theme}

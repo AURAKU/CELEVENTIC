@@ -1,9 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { resolveDigitalCardTheme, DIGITAL_CARD_THEMES, celecardMotionMood } from "@/lib/digital-business-card/themes";
-import { celecardDisplayNameLines, celecardDockFinish, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
+import { celecardDisplayNameLines, celecardDockFinish, celecardNameFitCqw, celecardNameShouldStack, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import {
   CELECARD_HOUSE_AVATAR_IDS,
+  CELECARD_PORTRAIT_MAX_EDGE,
+  CELECARD_PORTRAIT_WEBP_QUALITY,
   celeCardHouseAvatarId,
   celeCardHouseAvatarMeta,
   celeCardHouseAvatarValue,
@@ -114,9 +116,9 @@ describe("digital business card themes", () => {
     assert.equal(celeCardHouseAvatarId(null), "celecard");
     assert.equal(celeCardHouseAvatarId(celeCardHouseAvatarValue("earth")), "earth");
     assert.equal(celeCardHouseAvatarsByKind("mark").length, 8);
-    assert.equal(celeCardHouseAvatarsByKind("avatar").length, 32);
-    assert.equal(CELECARD_HOUSE_AVATAR_IDS.length, 40);
-    assert.equal(celeCardHouseAvatarsByGroup("people").length, 16);
+    assert.equal(celeCardHouseAvatarsByKind("avatar").length, 39);
+    assert.equal(CELECARD_HOUSE_AVATAR_IDS.length, 47);
+    assert.equal(celeCardHouseAvatarsByGroup("people").length, 23);
     assert.equal(celeCardHouseAvatarsByGroup("creature").length, 6);
     assert.equal(celeCardHouseAvatarsByGroup("studio").length, 10);
     assert.equal(celeCardHouseAvatarMeta("braids").kind, "avatar");
@@ -134,6 +136,11 @@ describe("digital business card themes", () => {
     }
   });
 
+  it("keeps portrait masters large enough for retina present and portrait-led plates", () => {
+    assert.equal(CELECARD_PORTRAIT_MAX_EDGE >= 2048, true);
+    assert.equal(CELECARD_PORTRAIT_WEBP_QUALITY >= 92, true);
+  });
+
   it("gives each template family a matching type voice", () => {
     assert.equal(celecardTypeVoice(resolveDigitalCardTheme("gold-folio")).originStyle, "letterhead");
     assert.equal(celecardTypeVoice(resolveDigitalCardTheme("velvet-credits")).originStyle, "credit");
@@ -149,6 +156,10 @@ describe("digital business card themes", () => {
     assert.deepEqual(celecardDisplayNameLines("Ama Serwaa Boateng", true), ["Ama Serwaa", "Boateng"]);
     assert.deepEqual(celecardDisplayNameLines("Ama Serwaa", false), ["Ama Serwaa"]);
     assert.deepEqual(celecardDisplayNameLines("Madonna", true), ["Madonna"]);
+    assert.equal(celecardNameFitCqw("Madonna", true) > celecardNameFitCqw("Alexandrina Worthington", true), true);
+    assert.equal(celecardNameShouldStack("Nhyira Addo", true), false);
+    assert.equal(celecardNameShouldStack("Alexandrina Worthington-Mensah", true), true);
+    assert.equal(celecardNameFitCqw("Alexandria Boateng Mensah", false) < celecardNameFitCqw("Ama Serwaa", false), true);
     const voices = new Set(["letterhead", "credit", "stamp", "neon", "masthead", "carved"]);
     for (const theme of DIGITAL_CARD_THEMES) {
       assert.equal(voices.has(celecardTypeVoice(theme).originStyle), true, theme.id);
@@ -197,6 +208,7 @@ describe("subscription countdown", () => {
     assert.equal(renew?.kind, "renewal");
     assert.equal(renew?.paidThrough, formatPaidThrough(DEMO_CARD_PAID_THROUGH));
     assert.match(renew?.label ?? "", /^Renews in 365 days/);
+    assert.equal((renew?.remainingRatio ?? 0) > 0.9, true);
     const trialEnd = new Date(now.getTime() + 5 * 60 * 60 * 1000 + 12 * 60 * 1000);
     const trial = subscriptionCountdown(trialEnd, "TRIAL", now);
     assert.equal(trial?.kind, "expiry");
@@ -305,8 +317,16 @@ describe("vcard export", () => {
       isLive: true,
     });
     assert.match(vcf, /BEGIN:VCARD/);
+    assert.match(vcf, /VERSION:3.0/);
     assert.match(vcf, /FN:Ama Mensah/);
-    assert.match(vcf, /EMAIL:ama@example.com/);
+    assert.match(vcf, /N:Mensah;Ama;;;/);
+    assert.match(vcf, /ORG:Celeventic/);
+    assert.match(vcf, /TITLE:Founder/);
+    assert.match(vcf, /TEL;TYPE=CELL,VOICE:\+233000/);
+    assert.match(vcf, /EMAIL;TYPE=INTERNET:ama@example.com/);
+    assert.match(vcf, /URL;TYPE=WORK:https:\/\/celeventic.com/);
+    assert.match(vcf, /X-ABLabel:LinkedIn/);
+    assert.match(vcf, /NOTE:Hello/);
     assert.match(vcf, /END:VCARD/);
   });
 });
@@ -324,6 +344,7 @@ describe("celecard social catalog", () => {
     assert.equal(digitalCardSocialHref("instagram", "amaserwaa"), "https://www.instagram.com/amaserwaa");
     assert.equal(digitalCardSocialHref("wechat", "https://u.wechat.com/ama"), "https://u.wechat.com/ama");
     assert.ok(DIGITAL_CARD_SOCIAL_NETWORKS.some((n) => n.key === "trendshub"));
+    assert.ok(DIGITAL_CARD_SOCIAL_NETWORKS.some((n) => n.key === "location"));
     assert.ok(DIGITAL_CARD_SOCIAL_NETWORKS.length >= 20);
     const { hasOfficialBrandMark } = await import(
       "@/components/digital-business-card/digital-card-brand-mark"
@@ -368,6 +389,7 @@ describe("celecard social catalog", () => {
     const {
       DIGITAL_CARD_PAY_KEYS,
       isPayWalletOpenOnDesk,
+      isReachChannelOpenOnDesk,
       listDigitalCardReachItems,
       payWalletHasGuestEntry,
       toDigitalCardSocialForm,
@@ -380,6 +402,14 @@ describe("celecard social catalog", () => {
     assert.deepEqual(form.cashapp, []);
     assert.equal(isPayWalletOpenOnDesk(form.momo, {}, "momo"), true);
     assert.equal(isPayWalletOpenOnDesk(form.zelle, {}, "zelle"), false);
+    assert.deepEqual(form.whatsapp, [
+      "233240000000",
+      "https://chat.whatsapp.com/FolioMaisonHouse",
+      "https://www.whatsapp.com/channel/0029AmaFolio",
+    ]);
+    assert.deepEqual(form.telegram, []);
+    assert.equal(isReachChannelOpenOnDesk(form.whatsapp, {}, "whatsapp"), true);
+    assert.equal(isReachChannelOpenOnDesk(form.telegram, {}, "telegram"), false);
     assert.equal(payWalletHasGuestEntry([""], {}, "momo"), false);
     assert.equal(payWalletHasGuestEntry(["0240000000"], {}, "momo"), true);
     assert.equal(payWalletHasGuestEntry([""], { "momo-0": "data:image/png;base64,qq" }, "momo"), true);
@@ -638,6 +668,22 @@ describe("celecard dummy portrait", () => {
   });
 });
 
+describe("celecard company logo", () => {
+  it("keeps a company mark url beside the house name and rejects unsafe urls", async () => {
+    const { normalizeSocials, persistCompanyLogoUrl } = await import("@/lib/digital-business-card/socials");
+    const socials = normalizeSocials({
+      companyLogoUrl: "/uploads/u/logo.webp",
+      portraitFrame: "circle",
+    });
+    assert.equal(socials.companyLogoUrl, "/uploads/u/logo.webp");
+    assert.equal(socials.portraitFrame, "circle");
+    assert.equal(persistCompanyLogoUrl("blob:http://localhost/x"), undefined);
+    assert.equal(persistCompanyLogoUrl("javascript:alert(1)"), undefined);
+    assert.equal(persistCompanyLogoUrl("/uploads/../secret"), undefined);
+    assert.equal(persistCompanyLogoUrl("https://cdn.example.com/mark.png"), "https://cdn.example.com/mark.png");
+  });
+});
+
 describe("celecard multiple reach", () => {
   it("keeps several mails, numbers, sites, and socials", async () => {
     const { DEMO_CARD } = await import("@/lib/digital-business-card/demo-card");
@@ -756,10 +802,13 @@ describe("celecard multiple reach", () => {
     assert.equal(hasOfficialBrandMark("phone-personal"), true);
     assert.equal(hasOfficialBrandMark("phone-business"), true);
     const vcf = buildVCard(DEMO_CARD);
-    assert.match(vcf, /EMAIL;TYPE=WORK:ama@foliomaison\.demo/);
-    assert.match(vcf, /EMAIL;TYPE=HOME:studio@foliomaison\.demo/);
-    assert.match(vcf, /TEL;TYPE=CELL:\+233 24 000 0000/);
-    assert.match(vcf, /TEL;TYPE=WORK:\+233 30 211 4400/);
+    assert.match(vcf, /EMAIL;TYPE=INTERNET,WORK:ama@foliomaison\.demo/);
+    assert.match(vcf, /EMAIL;TYPE=INTERNET,HOME:studio@foliomaison\.demo/);
+    assert.match(vcf, /TEL;TYPE=CELL,VOICE:\+233 24 000 0000/);
+    assert.match(vcf, /TEL;TYPE=WORK,VOICE:\+233 30 211 4400/);
+    assert.match(vcf, /X-ABLabel:WhatsApp/);
+    assert.match(vcf, /X-ABLabel:Instagram/);
+    assert.match(vcf, /X-ABLabel:LinkedIn/);
   });
 
   it("drops empty or unfinished tap URLs", async () => {

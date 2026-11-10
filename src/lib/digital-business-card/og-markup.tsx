@@ -1,5 +1,5 @@
-import { CELECARD_OG_HEIGHT, CELECARD_OG_WIDTH } from "@/lib/digital-business-card/share";
-import { SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
+import { CELECARD_CARD_ASPECT, CELECARD_OG_HEIGHT, CELECARD_OG_WIDTH } from "@/lib/digital-business-card/share";
+import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
 import {
   celecardPortraitFrameRadius,
@@ -17,6 +17,7 @@ export type CeleCardOgMarkupProps = {
   qrSrc?: string | null;
   qrLabel?: string | null;
   portraitFrame?: CeleCardPortraitFrame | null;
+  markSrc?: string | null;
 };
 
 function initialsOf(name: string) {
@@ -28,7 +29,12 @@ function initialsOf(name: string) {
     .join("");
 }
 
-/** Server-safe 1200×630 preview. Theme tokens, public identity, optional scannable QR. */
+const CARD_HEIGHT = 558;
+const CARD_WIDTH = Math.round(CARD_HEIGHT * CELECARD_CARD_ASPECT);
+const PHOTO = 188;
+const QR = 204;
+
+/** 1200×630 share tile: the ID-1 card on the house stage. Nothing else. */
 export function CeleCardOgMarkup({
   displayName,
   title,
@@ -36,11 +42,12 @@ export function CeleCardOgMarkup({
   theme,
   photoSrc,
   qrSrc,
-  qrLabel,
   portraitFrame,
+  markSrc,
 }: CeleCardOgMarkupProps) {
   const initials = initialsOf(displayName) || "CC";
-  const photoRadius = celecardPortraitFrameRadius(resolveCeleCardPortraitFrame(theme, portraitFrame), 168);
+  const photoRadius = celecardPortraitFrameRadius(resolveCeleCardPortraitFrame(theme, portraitFrame), PHOTO);
+  const nameSize = displayName.length > 18 ? 40 : displayName.length > 12 ? 48 : 56;
   return (
     <div
       style={{
@@ -55,134 +62,188 @@ export function CeleCardOgMarkup({
     >
       <div
         style={{
-          position: "absolute",
-          inset: 0,
-          background: `linear-gradient(160deg, ${theme.accentSoft} 0%, transparent 46%, rgba(0,0,0,0.18) 100%)`,
-        }}
-      />
-      <div
-        style={{
-          width: 1080,
-          height: 520,
+          width: CARD_WIDTH,
+          height: CARD_HEIGHT,
           display: "flex",
-          alignItems: "center",
+          flexDirection: "column",
           borderRadius: 28,
           border: `1px solid ${theme.border}`,
           background: theme.cardBackground,
           color: theme.text,
-          boxShadow: "0 28px 64px rgba(8,12,24,0.32)",
-          padding: "36px 36px",
+          boxShadow: "0 28px 80px rgba(8,12,24,0.38)",
+          overflow: "hidden",
           position: "relative",
         }}
       >
         <div
           style={{
             position: "absolute",
-            top: 18,
-            left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
-            fontSize: 13,
-            letterSpacing: 0.4,
-            color: theme.accent,
-            fontWeight: 700,
+            inset: 14,
+            borderRadius: 20,
+            border: `1px solid ${theme.border}`,
+            opacity: 0.7,
           }}
-        >
-          {SMARTCARD_PRODUCT_SHORT_NAME}
-        </div>
+        />
         <div
           style={{
-            width: 168,
-            height: 168,
-            borderRadius: photoRadius,
-            overflow: "hidden",
+            position: "absolute",
+            inset: 22,
+            borderRadius: 16,
+            border: `1px solid ${theme.accent}`,
+            opacity: 0.45,
+          }}
+        />
+        <div
+          style={{
+            height: 72,
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end",
             justifyContent: "center",
-            background: theme.accentSoft,
-            border: `3px solid ${theme.accent}`,
             flexShrink: 0,
           }}
         >
-          {photoSrc ? (
+          {markSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={photoSrc} alt="" width={168} height={168} style={{ objectFit: "cover" }} />
+            <img src={markSrc} alt="" width={58} height={58} style={{ objectFit: "contain" }} />
           ) : (
-            <div style={{ fontSize: 48, fontWeight: 700, color: theme.accent }}>{initials}</div>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 700,
+                letterSpacing: -0.4,
+                color: theme.accent,
+              }}
+            >
+              {SMARTCARD_PRODUCT_SHORT_NAME}
+            </div>
           )}
         </div>
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            marginLeft: 28,
-            minWidth: 0,
             flex: 1,
+            display: "flex",
+            alignItems: "center",
+            padding: "8px 36px 12px",
           }}
         >
           <div
             style={{
-              fontSize: displayName.length > 22 ? 36 : 46,
-              fontWeight: 700,
-              lineHeight: 1.1,
-              letterSpacing: -1,
+              width: PHOTO,
+              height: PHOTO,
+              borderRadius: photoRadius,
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: theme.accentSoft,
+              border: `3px solid ${theme.accent}`,
+              flexShrink: 0,
             }}
           >
-            {displayName}
+            {photoSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photoSrc} alt="" width={PHOTO} height={PHOTO} style={{ objectFit: "cover" }} />
+            ) : (
+              <div style={{ fontSize: 52, fontWeight: 700, color: theme.accent }}>{initials}</div>
+            )}
           </div>
-          {title ? (
-            <div style={{ marginTop: 8, fontSize: 22, fontStyle: "italic", color: theme.muted }}>{title}</div>
-          ) : null}
-          {company ? (
-            <div
-              style={{
-                marginTop: 8,
-                fontSize: 18,
-                letterSpacing: 3,
-                textTransform: "uppercase",
-                color: theme.accent,
-                fontWeight: 600,
-              }}
-            >
-              {company}
-            </div>
-          ) : null}
-          {qrLabel ? (
-            <div style={{ marginTop: 16, fontSize: 16, color: theme.muted, letterSpacing: 0.2 }}>{qrLabel}</div>
-          ) : null}
-        </div>
-        {qrSrc ? (
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
-              marginLeft: 20,
-              flexShrink: 0,
+              justifyContent: "center",
+              marginLeft: 28,
+              marginRight: 24,
+              minWidth: 0,
+              flex: 1,
             }}
           >
             <div
               style={{
-                width: 220,
-                height: 220,
+                fontSize: nameSize,
+                fontWeight: 700,
+                lineHeight: 1.05,
+                letterSpacing: -1.2,
+              }}
+            >
+              {displayName}
+            </div>
+            {title ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 22,
+                  fontStyle: "italic",
+                  color: theme.muted,
+                }}
+              >
+                {title}
+              </div>
+            ) : null}
+            {company ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 18,
+                  letterSpacing: 3.2,
+                  textTransform: "uppercase",
+                  color: theme.accent,
+                  fontWeight: 600,
+                }}
+              >
+                {company}
+              </div>
+            ) : null}
+          </div>
+          {qrSrc ? (
+            <div
+              style={{
+                width: QR,
+                height: QR,
                 background: "#ffffff",
                 borderRadius: 22,
                 padding: 10,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                flexShrink: 0,
                 position: "relative",
               }}
             >
-              <div style={{ width: 200, height: 200, display: "flex", position: "relative" }}>
+              <div style={{ width: QR - 20, height: QR - 20, display: "flex", position: "relative" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrSrc} alt="" width={200} height={200} />
-                <CeleCardQrCenterOverlay photoSrc={photoSrc} qrSize={200} />
+                <img src={qrSrc} alt="" width={QR - 20} height={QR - 20} />
+                <CeleCardQrCenterOverlay photoSrc={photoSrc} qrSize={QR - 20} />
               </div>
             </div>
+          ) : null}
+        </div>
+        <div
+          style={{
+            height: 58,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: -0.4, color: theme.accent }}>
+            {SMARTCARD_PRODUCT_SHORT_NAME}
           </div>
-        ) : null}
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 1.4,
+              color: theme.accent,
+              opacity: 0.88,
+            }}
+          >
+            {SMARTCARD_BRAND_TAGLINE}
+          </div>
+        </div>
       </div>
     </div>
   );

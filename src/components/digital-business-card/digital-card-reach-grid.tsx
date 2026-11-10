@@ -8,6 +8,8 @@ import {
   DigitalCardSmartLink,
   openInstalledReachApp,
 } from "@/components/digital-business-card/digital-card-smart-link";
+import { DigitalCardLocationDrop } from "@/components/digital-business-card/digital-card-location-drop";
+import { DigitalCardMeetingDrop } from "@/components/digital-business-card/digital-card-meeting-drop";
 import {
   arrangeChatChoices,
   bankAccountDisplayRows,
@@ -25,6 +27,14 @@ import {
   type DigitalCardReachItem,
 } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
+
+function isLocationGroup(group: DigitalCardReachGroup) {
+  return group.brand === "location";
+}
+
+function isMeetingGroup(group: DigitalCardReachGroup) {
+  return group.brand === "meeting";
+}
 
 function HiddenReachGlyph({
   item,
@@ -60,11 +70,13 @@ export function DigitalCardReachGrid({
   theme,
   compact,
   slug,
+  ownerName,
 }: {
   items: DigitalCardReachItem[];
   theme: DigitalCardTheme;
   compact?: boolean;
   slug?: string;
+  ownerName?: string;
 }) {
   const groups = groupReachByBrand(items);
   const dock = groups.filter((group) => group.surface === "dock");
@@ -146,11 +158,30 @@ export function DigitalCardReachGrid({
                   {reachGroupCopy(openDock).title}
                 </p>
                 <p className={cn("mt-0.5 font-medium opacity-70", compact ? "text-[11px]" : "text-[12px]")}>
-                  {usesChatLinkKinds(openDock.brand)
-                    ? `Choose which ${reachGroupCopy(openDock).title} to open`
-                    : "Choose which profile to open"}
+                  {isLocationGroup(openDock)
+                    ? "See the place, then open it in maps"
+                    : usesChatLinkKinds(openDock.brand)
+                      ? `Choose which ${reachGroupCopy(openDock).title} to open`
+                      : "Choose which profile to open"}
                 </p>
               </div>
+              {isLocationGroup(openDock) ? (
+                <DigitalCardLocationDrop
+                  items={openDock.items}
+                  theme={theme}
+                  compact={compact}
+                  preview={compact}
+                />
+              ) : isMeetingGroup(openDock) ? (
+                <DigitalCardMeetingDrop
+                  items={openDock.items}
+                  theme={theme}
+                  compact={compact}
+                  preview={compact}
+                  slug={slug}
+                  ownerName={ownerName}
+                />
+              ) : (
               <ChoiceList
                 group={openDock}
                 compact={compact}
@@ -159,6 +190,7 @@ export function DigitalCardReachGrid({
                 onOpenAccess={setAccessItem}
                 accent={theme.accent}
               />
+              )}
             </div>
           ) : null}
         </div>
@@ -177,6 +209,8 @@ export function DigitalCardReachGrid({
                 onToggle={() => toggle(group.id)}
                 onOpenQr={setQrItem}
                 onOpenAccess={setAccessItem}
+                slug={slug}
+                ownerName={ownerName}
               />
             </div>
           ))}
@@ -307,7 +341,9 @@ function DockTap({
   onOpenQr?: (item: DigitalCardReachItem) => void;
   onOpenAccess?: (item: DigitalCardReachItem) => void;
 }) {
-  const single = group.items.length === 1;
+  const one = group.items.length === 1;
+  const placeLocked = isLocationGroup(group) && group.items.every((item) => item.locked);
+  const expands = !one || (isLocationGroup(group) && !placeLocked);
   const mark = (
     <span className="relative inline-flex">
       <DigitalCardBrandMark
@@ -315,7 +351,7 @@ function DockTap({
         className={compact ? "h-10 w-10 rounded-[12px]" : "h-11 w-11 rounded-[13px] sm:h-12 sm:w-12 sm:rounded-[14px]"}
         color={group.brand === "phone" ? theme.accent : undefined}
       />
-      {single && group.items[0]?.locked ? (
+      {one && group.items[0]?.locked ? (
         <span
           className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-white text-stone-700 shadow ring-1 ring-black/10"
           aria-hidden
@@ -323,7 +359,7 @@ function DockTap({
           <HiddenReachGlyph item={group.items[0]} className="h-2.5 w-2.5" />
         </span>
       ) : null}
-      {single ? null : (
+      {one ? null : (
         <span
           className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-bold leading-none text-white shadow"
           style={{ background: theme.accent }}
@@ -332,18 +368,18 @@ function DockTap({
           {group.items.length}
         </span>
       )}
-      {single ? null : (
+      {expands ? (
         <span
           className="pointer-events-none absolute inset-x-0 -bottom-1 mx-auto grid h-3 w-3 place-items-center rounded-full bg-white text-stone-700 shadow ring-1 ring-black/10"
           aria-hidden
         >
           <ChevronDown className="h-2.5 w-2.5" />
         </span>
-      )}
+      ) : null}
     </span>
   );
 
-  if (single) {
+  if (!expands) {
     const item = group.items[0];
     return (
       <ReachTarget
@@ -387,6 +423,8 @@ function StackTap({
   onToggle,
   onOpenQr,
   onOpenAccess,
+  slug,
+  ownerName,
 }: {
   group: DigitalCardReachGroup;
   theme: DigitalCardTheme;
@@ -396,10 +434,16 @@ function StackTap({
   onToggle: () => void;
   onOpenQr?: (item: DigitalCardReachItem) => void;
   onOpenAccess?: (item: DigitalCardReachItem) => void;
+  slug?: string;
+  ownerName?: string;
 }) {
   const menuId = useId();
   const copy = reachGroupCopy(group);
-  const single = group.items.length === 1;
+  const placeLocked = isLocationGroup(group) && group.items.every((item) => item.locked);
+  const single =
+    group.items.length === 1 &&
+    (!isLocationGroup(group) || placeLocked) &&
+    !isMeetingGroup(group);
   const rowClass = cn(
     "group relative flex items-center overflow-hidden border shadow-[0_16px_36px_rgba(0,0,0,0.16)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.22)]",
     compact ? "min-h-12 gap-2.5 rounded-2xl px-2.5 py-2" : "min-h-[4.35rem] gap-3.5 rounded-[1.7rem] px-3.5 py-3"
@@ -483,6 +527,23 @@ function StackTap({
           className="overflow-hidden rounded-[1.35rem] border shadow-[0_12px_28px_rgba(0,0,0,0.12)]"
           style={plate}
         >
+              {isLocationGroup(group) ? (
+                <DigitalCardLocationDrop
+                  items={group.items}
+                  theme={theme}
+                  compact={compact}
+                  preview={compact}
+                />
+              ) : isMeetingGroup(group) ? (
+                <DigitalCardMeetingDrop
+                  items={group.items}
+                  theme={theme}
+                  compact={compact}
+                  preview={compact}
+                  slug={slug}
+                  ownerName={ownerName}
+                />
+              ) : (
               <ChoiceList
                 group={group}
                 compact={compact}
@@ -491,6 +552,7 @@ function StackTap({
                 onOpenAccess={onOpenAccess}
                 accent={theme.accent}
               />
+              )}
         </div>
       ) : null}
     </div>

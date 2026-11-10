@@ -25,6 +25,7 @@ import {
   isDigitalCardLive,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
+import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
 
 export const dynamic = "force-dynamic";
 
@@ -33,13 +34,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const origin = await getServerAppUrl();
   const demo = getDemoCardBySlug(slug);
   if (demo) {
+    if (!(await viewerMayOpenDummyLive())) return withheldCeleCardMetadata();
     if (demo.presentationMode === "courtesy" || !demo.isLive) {
       return courtesyCeleCardMetadata(demo.displayName);
     }
     return buildCeleCardShareMetadata({
       card: demo,
       origin,
-      imagePath: digitalCardOgImagePath(demo.slug, "demo"),
+      imagePath: digitalCardOgImagePath(demo.slug, "card-tile"),
     });
   }
   const card = await getDigitalCardBySlug(slug);
@@ -69,6 +71,7 @@ export default async function DigitalBusinessCardPage({
 
   const demo = getDemoCardBySlug(slug);
   if (demo) {
+    if (!(await viewerMayOpenDummyLive())) redirect(CELECARD_DUMMY_LIVE_FALLBACK);
     return <DigitalCardPublicView card={demo} origin={await getServerAppUrl()} />;
   }
 

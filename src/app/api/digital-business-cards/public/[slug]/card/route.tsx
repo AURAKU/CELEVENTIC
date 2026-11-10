@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getDemoCardBySlug, isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
+import { dummyLiveNotFoundResponse } from "@/lib/digital-business-card/demo-live-access";
 import { CeleCardExportMarkup } from "@/lib/digital-business-card/card-export-markup";
 import { celeCardGuideQrDataUrl, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
 import {
@@ -71,6 +72,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
   const filename = `celecard-${slug.replace(/[^a-z0-9-]+/gi, "") || "card"}.png`;
 
   if (isDemoCardSlug(slug)) {
+    const blocked = await dummyLiveNotFoundResponse();
+    if (blocked) return blocked;
     const demo = getDemoCardBySlug(slug);
     if (!demo) return new Response("Not found", { status: 404 });
     const theme = resolveDigitalCardTheme(demo.themeId);

@@ -27,8 +27,8 @@ export function DemoCompanyMark({
   const initials = companyInitials(name);
   return (
     <svg viewBox="0 0 48 48" className={cn("shrink-0", className)} aria-hidden>
-      <rect width="48" height="48" rx="11" fill={metal} opacity="0.22" />
-      <rect x="1.2" y="1.2" width="45.6" height="45.6" rx="10" fill="none" stroke={accent} strokeWidth="1.4" opacity="0.85" />
+      <rect width="48" height="48" rx="12" fill={metal} opacity="0.22" />
+      <rect x="1.1" y="1.1" width="45.8" height="45.8" rx="10.6" fill="none" stroke={accent} strokeWidth="1.5" opacity="0.88" />
       {motif === 0 ? (
         <path d="M8 30c8-14 24-14 32 0" fill="none" stroke={accent} strokeWidth="2.4" strokeLinecap="round" />
       ) : null}
@@ -65,19 +65,48 @@ export function DemoCompanyMark({
           <circle cx="30" cy="30" r="3.2" fill={accent} />
         </>
       ) : null}
-      <circle cx="24" cy="24" r="10.2" fill="#fff" opacity="0.92" />
+      <circle cx="24" cy="24" r="11" fill="#fff" opacity="0.94" />
       <text
         x="24"
-        y="28.2"
+        y="28.6"
         textAnchor="middle"
         fill={accent}
-        fontSize="12"
+        fontSize="13"
         fontWeight="700"
         fontFamily="ui-sans-serif, system-ui, sans-serif"
-        letterSpacing="0.06em"
+        letterSpacing="0.04em"
       >
         {initials}
       </text>
     </svg>
   );
+}
+
+/** Uploaded house mark, or the generated badge when no file is set. */
+export function CeleCardCompanyMark({
+  url,
+  name,
+  accent,
+  metal,
+  className,
+}: {
+  url?: string | null;
+  name: string;
+  accent: string;
+  metal: string;
+  className?: string;
+}) {
+  if (url) {
+    return (
+      <span
+        className={cn("relative shrink-0 overflow-hidden rounded-[20%] bg-white", className)}
+        style={{ boxShadow: `inset 0 0 0 1px ${metal}` }}
+        aria-hidden
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt="" className="h-full w-full object-contain p-[10%]" />
+      </span>
+    );
+  }
+  return <DemoCompanyMark name={name} accent={accent} metal={metal} className={className} />;
 }

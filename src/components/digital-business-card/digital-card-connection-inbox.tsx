@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  downloadMeetingIcs,
+  formatMeetingWhen,
+  meetingIcs,
+  parseMeetingBooking,
+} from "@/lib/digital-business-card/meetings";
 
 type ConnectionRow = {
   id: string;
@@ -9,6 +16,7 @@ type ConnectionRow = {
   visitorEmail: string | null;
   visitorPhone: string | null;
   source: string;
+  note: string | null;
   createdAt: string;
 };
 
@@ -49,24 +57,51 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-sm font-semibold text-slate-900">Connection requests</p>
+      <p className="text-sm font-semibold text-slate-900">Requests</p>
       <p className="text-xs text-slate-500">
-        Courtesy reconnects and Connect Back. Contact details appear only when the visitor chose to share them.
+        Connect Back, courtesy reconnects, and meeting times. Contact details appear only when the visitor chose to share them.
       </p>
       {loading && items.length === 0 ? <p className="mt-3 text-xs text-slate-500">Loading…</p> : null}
       <ul className="mt-3 space-y-2">
         {items.map((item) => {
+          const meeting = item.source === "meeting" ? parseMeetingBooking(item.note) : null;
           const contact = [item.visitorEmail, item.visitorPhone].filter(Boolean).join(" · ");
           return (
             <li key={item.id} className="rounded-lg border border-slate-100 px-3 py-2 text-sm">
               <p className="font-medium text-slate-800">{item.visitorName}</p>
+              {meeting ? (
+                <p className="text-[11px] text-slate-700">
+                  {meeting.title} · {formatMeetingWhen(meeting.start, meeting.timezone)}
+                  {meeting.place ? ` · ${meeting.place}` : ""}
+                </p>
+              ) : null}
               {contact ? <p className="text-[11px] text-slate-600">{contact}</p> : (
                 <p className="text-[11px] text-slate-500">Anonymous request</p>
               )}
+              {meeting?.note ? <p className="text-[11px] text-slate-500">{meeting.note}</p> : null}
               <p className="text-[11px] text-slate-500">
-                {item.source === "courtesy_reconnect" ? "Courtesy reconnect" : "Connect Back"} ·{" "}
-                {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                {item.source === "courtesy_reconnect"
+                  ? "Courtesy reconnect"
+                  : item.source === "meeting"
+                    ? "Meeting request"
+                    : "Connect Back"}{" "}
+                · {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
               </p>
+              {meeting ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadMeetingIcs(
+                      "celeyou-meeting.ics",
+                      meetingIcs(meeting, "CeleYou", item.visitorName)
+                    )
+                  }
+                  className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                >
+                  <CalendarPlus className="h-3.5 w-3.5" />
+                  Add to calendar
+                </button>
+              ) : null}
             </li>
           );
         })}

@@ -16,13 +16,17 @@ import { Button } from "@/components/ui/button";
 import { Nfc, QrCode, Share2 } from "lucide-react";
 import { CeleYouBrandMark, CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 import { getServerAppUrl } from "@/lib/app-url";
+import { redirect } from "next/navigation";
+import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
 
 export const metadata = {
   title: "CeleYou live dummy | Celeventic",
   description: "See the guest tap and the subscriber live studio for a dummy CeleYou.",
+  robots: { index: false, follow: false },
 };
 
 export default async function CeleCardDemoHubPage() {
+  if (!(await viewerMayOpenDummyLive())) redirect(CELECARD_DUMMY_LIVE_FALLBACK);
   const origin = await getServerAppUrl();
   const guestUrl = `${origin}${demoCardGuestPath()}`;
   const qrUrl = `${origin}${demoCardQrPath()}`;

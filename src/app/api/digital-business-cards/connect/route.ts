@@ -6,6 +6,7 @@ import {
   getDigitalCardBySlug,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { DEMO_CARD, isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
+import { dummyLiveNotFoundJson } from "@/lib/digital-business-card/demo-live-access";
 import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
 
@@ -49,6 +50,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (isDemoCardSlug(parsed.data.slug)) {
+    const blocked = await dummyLiveNotFoundJson();
+    if (blocked) return blocked;
     return NextResponse.json({
       ok: true,
       connectionId: "demo",

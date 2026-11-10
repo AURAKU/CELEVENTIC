@@ -16,11 +16,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capability";
 import { writeCeleCardNfcUrl } from "@/lib/digital-business-card/nfc-write";
-import { buildVCard } from "@/lib/digital-business-card/vcard";
+import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
 import { digitalCardQrImageSrc, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { CeleCardQrBadge } from "@/components/digital-business-card/celecard-qr-badge";
-import { SMARTCARD_PRODUCT_NAME } from "@/lib/digital-business-card/product";
+import { celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
 import { digitalCardExportImagePath } from "@/lib/digital-business-card/share";
 import { getClientAppUrl, sanitizePublicUrl } from "@/lib/app-url";
 
@@ -72,8 +72,8 @@ export function DigitalCardShareDesk({
     try {
       if (navigator.share) {
         await navigator.share({
-          title: displayName,
-          text: `${displayName} · ${SMARTCARD_PRODUCT_NAME}`,
+          title: celeCardShareTitle(vcard),
+          text: celeCardShareMessage(vcard),
           url: publicShare,
         });
         return;
@@ -85,13 +85,7 @@ export function DigitalCardShareDesk({
   }
 
   function saveContact() {
-    const blob = new Blob([buildVCard(vcard)], { type: "text/vcard;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${vcard.slug || "celecard"}.vcf`;
-    a.click();
-    URL.revokeObjectURL(url);
+    void saveDigitalCardContact(vcard, { origin: getClientAppUrl(), source: "owner" });
   }
 
   async function writeTag() {
@@ -110,7 +104,7 @@ export function DigitalCardShareDesk({
       <p className="text-xs text-slate-600">
         Fill the phone with your card, or send the same link, QR, and NFC destination.
       </p>
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-1">
         <Button asChild variant="outline" size="sm" disabled={!ready}>
           <Link href={presentUrl}>
             <CreditCard className="mr-2 h-4 w-4" />

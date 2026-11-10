@@ -145,4 +145,15 @@ describe("CeleYou public access policy", () => {
     assert.equal(isCeleCardProductIntent("smartcard"), true);
     assert.equal(isCeleCardProductIntent("host"), false);
   });
+
+  it("keeps dummy live walkthroughs to platform admins only", async () => {
+    const { roleMayOpenDummyLive } = await import("@/lib/digital-business-card/demo-live-access");
+    assert.equal(roleMayOpenDummyLive("ADMIN"), true);
+    assert.equal(roleMayOpenDummyLive("SUPER_ADMIN"), true);
+    assert.equal(roleMayOpenDummyLive("ORGANIZER"), false);
+    assert.equal(roleMayOpenDummyLive("VENDOR"), false);
+    assert.equal(roleMayOpenDummyLive("GUEST"), false);
+    assert.equal(roleMayOpenDummyLive(null), false);
+    assert.equal(roleMayOpenDummyLive(undefined), false);
+  });
 });

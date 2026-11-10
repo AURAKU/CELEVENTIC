@@ -4,6 +4,7 @@ import {
   buildCeleCardShareMetadata,
   celeCardShareCacheVersion,
   celeCardShareDescription,
+  celeCardShareMessage,
   celeCardShareTextLeaksPrivate,
   celeCardShareTitle,
   celeCardQrTapPath,
@@ -21,13 +22,20 @@ import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capabilit
 
 describe("CeleYou share metadata", () => {
   it("builds a personalized title and public description", () => {
-    assert.equal(celeCardShareTitle(DEMO_CARD), "Ama Serwaa · Creative Director");
+    assert.equal(celeCardShareTitle(DEMO_CARD), "Ama Serwaa");
     const description = celeCardShareDescription(DEMO_CARD);
     assert.match(description, /Creative Director/);
     assert.match(description, /Folio Maison/);
+    assert.match(description, /My CeleYou/);
+    assert.match(description, /One identity/);
+    assert.equal(description.includes(" · "), false);
     assert.equal(celeCardShareTextLeaksPrivate(description, DEMO_CARD), false);
     assert.equal(digitalCardPresentPath("ama-serwaa"), "/card/ama-serwaa/present");
-    assert.match(digitalCardOgImagePath("ama-serwaa", "demo"), /\/og\?v=demo$/);
+    assert.match(digitalCardOgImagePath("ama-serwaa", "card-tile"), /\/og\?v=card-tile$/);
+    assert.equal(
+      celeCardShareMessage(DEMO_CARD),
+      "Ama Serwaa. My CeleYou. One identity. Every way to reach me."
+    );
     assert.equal(celeCardQrTapPath("ama-serwaa"), "/card/ama-serwaa");
     assert.equal(celeCardStableQrUrl("demo-ama-serwaa", "https://www.celeventic.com"), "https://www.celeventic.com/c/demo-ama-serwaa");
     assert.equal(celeCardReadableQrLabel("https://www.celeventic.com/c/demo-ama-serwaa"), "celeventic.com/c/demo-ama-serwaa");

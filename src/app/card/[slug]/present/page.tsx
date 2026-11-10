@@ -25,6 +25,7 @@ import {
   isDigitalCardLive,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
+import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const origin = await getServerAppUrl();
   const demo = getDemoCardBySlug(slug);
   if (demo) {
+    if (!(await viewerMayOpenDummyLive())) return withheldCeleCardMetadata();
     if (demo.presentationMode === "courtesy" || !demo.isLive) {
       return courtesyCeleCardMetadata(demo.displayName);
     }
@@ -40,7 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       ...buildCeleCardShareMetadata({
         card: demo,
         origin,
-        imagePath: digitalCardOgImagePath(demo.slug, "demo"),
+        imagePath: digitalCardOgImagePath(demo.slug, "card-tile"),
       }),
       robots: { index: false, follow: true },
       appleWebApp: { capable: true, title: SMARTCARD_PRODUCT_SHORT_NAME, statusBarStyle: "black-translucent" },
@@ -95,6 +97,7 @@ export default async function CeleCardPresentPage({
   const wantImmersive = query.immersive === "1";
   const demo = getDemoCardBySlug(slug);
   if (demo) {
+    if (!(await viewerMayOpenDummyLive())) redirect(CELECARD_DUMMY_LIVE_FALLBACK);
     return <DigitalCardPresentView card={demo} origin={origin} wantImmersive={wantImmersive} />;
   }
 

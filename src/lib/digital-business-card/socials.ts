@@ -1,4 +1,8 @@
 import { z } from "zod";
+import { compactCeleCardDesign, type CeleCardDesign } from "@/lib/digital-business-card/design";
+import { celeCardPlaceHref, parseCeleCardPlace } from "@/lib/digital-business-card/maps";
+import { otherLinkHref, otherLinkHost, parseOtherLink } from "@/lib/digital-business-card/other-links";
+import { compactMeetingDesk, meetingSubtitle, persistMeetingDesk } from "@/lib/digital-business-card/meetings";
 
 export const DIGITAL_CARD_SOCIAL_ICON_IDS = [
   "linkedin",
@@ -26,7 +30,7 @@ export const DIGITAL_CARD_SOCIAL_ICON_IDS = [
 export type DigitalCardSocialIconId = (typeof DIGITAL_CARD_SOCIAL_ICON_IDS)[number];
 export type DigitalCardSocialGroup = "chat" | "social" | "create" | "pay";
 
-export type DigitalCardSocialNetwork = {
+type DigitalCardSocialNetworkBase = {
   key: string;
   label: string;
   group: DigitalCardSocialGroup;
@@ -575,6 +579,22 @@ export const DIGITAL_CARD_SOCIAL_NETWORKS = [
     href: (v) => websiteHrefFromValue(v),
   },
   {
+    key: "location",
+    label: "Location",
+    group: "social",
+    icon: "globe",
+    placeholder: "Google Maps, Amap, or a street address",
+    href: (v) => celeCardPlaceHref(v),
+  },
+  {
+    key: "other",
+    label: "Other page",
+    group: "social",
+    icon: "globe",
+    placeholder: "Any page or app link",
+    href: (v) => otherLinkHref(v),
+  },
+  {
     key: "github",
     label: "GitHub",
     group: "create",
@@ -792,9 +812,13 @@ export const DIGITAL_CARD_SOCIAL_NETWORKS = [
     acceptsQr: true,
     href: (v) => asUrlOr(v, (clean) => `https://chippercash.com/${clean}`),
   },
-] as const satisfies readonly DigitalCardSocialNetwork[];
+] as const satisfies readonly DigitalCardSocialNetworkBase[];
 
 export type DigitalCardSocialKey = (typeof DIGITAL_CARD_SOCIAL_NETWORKS)[number]["key"];
+
+export type DigitalCardSocialNetwork = Omit<DigitalCardSocialNetworkBase, "key"> & {
+  key: DigitalCardSocialKey;
+};
 
 export type DigitalCardFieldValue = string | string[];
 
@@ -864,11 +888,17 @@ export type DigitalCardSocials = Partial<Record<DigitalCardSocialKey, DigitalCar
   reachVisibility?: Record<string, "PUBLIC" | "CODE_PROTECTED" | "REQUEST_ACCESS">;
   /** Circle, square, or soft-square portrait plate. Missing key uses the theme default. */
   portraitFrame?: "circle" | "square" | "rounded";
+  /** Cropped company mark that sits beside the house name. */
+  companyLogoUrl?: string;
+  /** Owner layout, atmosphere, ornament, and blended paper. Missing keys keep the template. */
+  design?: CeleCardDesign;
+  /** Guest book-a-time desk. Missing or disabled stays off the card. */
+  meeting?: import("@/lib/digital-business-card/meetings").CeleCardMeetingDesk;
 };
 
 export type DigitalCardReachSurface = "stack" | "dock";
 
-const FEATURED_BRANDS = new Set(["email", "phone", "website", "whatsapp"]);
+const FEATURED_BRANDS = new Set(["email", "phone", "website", "whatsapp", "location", "other", "meeting"]);
 
 export type DigitalCardSocialForm = Record<DigitalCardSocialKey, string[]>;
 
@@ -1311,6 +1341,22 @@ export function nativeOpenFor(
   value: string,
   webHref: string
 ): { appHref?: string; androidIntent?: string } {
+  if (brand === "location") {
+    const place = parseCeleCardPlace(value);
+    if (!place) return {};
+    if (place.lat != null && place.lng != null && place.geoHref) {
+      return {
+        appHref: place.geoHref,
+        androidIntent: androidIntentUrl(
+          `${place.lat},${place.lng}?q=${encodeURIComponent(place.label)}`,
+          "com.google.android.apps.maps",
+          place.href,
+          "geo"
+        ),
+      };
+    }
+    return {};
+  }
   const spec = NATIVE_APPS[brand];
   if (!spec) return {};
   if (isExactPageShare(brand, value, webHref)) {
@@ -1355,9 +1401,7 @@ export function uniqueStrings(values: Array<string | null | undefined>): string[
 }
 
 export function emptyDigitalCardSocialForm(): DigitalCardSocialForm {
-  return Object.fromEntries(
-    DIGITAL_CARD_SOCIAL_KEYS.map((key) => [key, isPayNetwork(key) ? [] : [""]])
-  ) as DigitalCardSocialForm;
+  return Object.fromEntries(DIGITAL_CARD_SOCIAL_KEYS.map((key) => [key, [] as string[]])) as DigitalCardSocialForm;
 }
 
 /** True when the wallet already has a number, link, or receive QR for guests. */
@@ -1399,6 +1443,15 @@ export function isPayWalletOpenOnDesk(
   return Object.entries(payQr ?? {}).some(([id, qr]) => id.startsWith(`${key}-`) && Boolean(qr?.trim()));
 }
 
+/** Chat, social, and create channels use the same open-on-desk rule as wallets. */
+export function isReachChannelOpenOnDesk(
+  values: string[] | undefined,
+  payQr: Record<string, string> | undefined,
+  key: string
+): boolean {
+  return isPayWalletOpenOnDesk(values, payQr, key);
+}
+
 export function toDigitalCardSocialForm(raw?: DigitalCardSocials | null): DigitalCardSocialForm {
   const form = emptyDigitalCardSocialForm();
   if (!raw) return form;
@@ -1413,11 +1466,11 @@ export function toDigitalCardSocialForm(raw?: DigitalCardSocials | null): Digita
         if (!value && !qr) continue;
         list.push(value);
       }
-      form[key] = list.length ? list : isPayNetwork(key) ? [] : [""];
+      form[key] = list.length ? list : [];
       continue;
     }
     const list = socialValueList(raw[key]);
-    form[key] = list.length ? list : [""];
+    form[key] = list.length ? list : [];
   }
   return form;
 }
@@ -1545,7 +1598,42 @@ export function normalizeSocials(raw: unknown): DigitalCardSocials {
   if (portraitFrame === "circle" || portraitFrame === "square" || portraitFrame === "rounded") {
     out.portraitFrame = portraitFrame;
   }
+  const companyLogoUrl = persistCompanyLogoUrl(record.companyLogoUrl);
+  if (companyLogoUrl) out.companyLogoUrl = companyLogoUrl;
+  const design = compactCeleCardDesign(record.design);
+  if (design) out.design = design;
+  const meeting = persistMeetingDesk(record.meeting);
+  if (meeting) out.meeting = meeting;
   return out;
+}
+
+const COMPANY_LOGO_MAX = 2000;
+
+/** Keep a stored or live-preview company mark. Rejects script and data URLs. */
+export function sanitizeCompanyLogoUrl(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const url = raw.trim();
+  if (!url || url.length > COMPANY_LOGO_MAX) return null;
+  if (url.startsWith("blob:")) return url;
+  if (url.startsWith("/") && !url.startsWith("//")) {
+    if (url.includes("..") || url.includes("\\") || url.includes("%")) return null;
+    if (url.startsWith("/uploads/") || url.startsWith("/digital-cards/")) return url;
+    return null;
+  }
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Persistable company mark. Drops blob and data previews. */
+export function persistCompanyLogoUrl(raw: unknown): string | undefined {
+  const url = sanitizeCompanyLogoUrl(raw);
+  if (!url || url.startsWith("blob:") || url.startsWith("data:")) return undefined;
+  return url;
 }
 
 export function defaultReachSurface(brand: string): DigitalCardReachSurface {
@@ -1684,6 +1772,8 @@ export function isCompleteReachValue(brand: string, value: string): boolean {
     return digits(v).length >= 7;
   }
   if (brand === "website") return isLiveReachHref(websiteHref(v));
+  if (brand === "location") return Boolean(parseCeleCardPlace(v)?.href);
+  if (brand === "other") return isLiveReachHref(parseOtherLink(v).href);
   const href = digitalCardSocialHref(brand, v);
   if (!isLiveReachHref(href)) return false;
   if (isExactPageShare(brand, v, href) || looksLikeShareUrl(v)) return true;
@@ -1754,6 +1844,11 @@ function isDraftReachValue(brand: string, value: string): boolean {
     const account = parseBankAccount(v);
     return !account.bankName && !account.accountName && !account.accountNumber && !account.notes;
   }
+  if (brand === "location") return v.length < 5;
+  if (brand === "other") {
+    const link = parseOtherLink(v);
+    return !link.href && link.label.length < 2;
+  }
   if (v.length < 2 || v === "@") return true;
   if (/^https?:\/{0,2}$/i.test(v) || /^www\.?$/i.test(v)) return true;
   if (/^https?:\/\/[^\s/]+$/i.test(v) && !/\.[a-z]{2,}$/i.test(v.replace(/\/$/, ""))) return true;
@@ -1814,9 +1909,24 @@ export function reviewReachInput(
         : `This ${label} link could not be read. Check it, then paste the full address.`,
     };
   }
+  if (brand === "location") {
+    if (parseCeleCardPlace(v)) return { status: "ok", message: null };
+    return {
+      status: "review",
+      message:
+        "Paste a Google Maps, Amap, Apple Maps, or other map link. A street address works too.",
+    };
+  }
+  if (brand === "other") {
+    if (isLiveReachHref(parseOtherLink(v).href)) return { status: "ok", message: null };
+    return {
+      status: "review",
+      message: "Paste the full page address. Add a short name so guests know what they are opening.",
+    };
+  }
   const host = reachHostOf(v);
   const owner = host ? brandOwningHost(host) : null;
-  if (owner && owner !== brand && brand !== "website") {
+  if (owner && owner !== brand && brand !== "website" && brand !== "other") {
     if (brand === "email") {
       return {
         status: "review",
@@ -2003,6 +2113,11 @@ function reachHint(key: DigitalCardSocialKey, value: string): string {
     return v;
   }
   if (key === "website") return v.replace(/^https?:\/\//i, "").replace(/^www\./, "");
+  if (key === "location") return parseCeleCardPlace(v)?.label ?? v;
+  if (key === "other") {
+    const link = parseOtherLink(v);
+    return link.label || otherLinkHost(link.href) || v;
+  }
   if (key === "bank") {
     const account = parseBankAccount(v);
     return account.accountName || account.accountNumber || account.bankName || "Bank account";
@@ -2039,6 +2154,7 @@ export function isLiveReachItem(
 ): boolean {
   if (item.locked) return true;
   if (item.brand === "bank") return isCompleteReachValue("bank", item.copyValue || "");
+  if (item.brand === "meeting") return true;
   return Boolean(item.qrUrl?.trim()) || isLiveReachHref(item.href);
 }
 
@@ -2053,6 +2169,9 @@ const GROUP_NOUN: Record<string, { title: string; unit: string }> = {
   email: { title: "Mail", unit: "addresses" },
   phone: { title: "Call", unit: "numbers" },
   website: { title: "Website", unit: "sites" },
+  location: { title: "Location", unit: "places" },
+  other: { title: "Pages", unit: "pages" },
+  meeting: { title: "Meet", unit: "times" },
   whatsapp: { title: "WhatsApp", unit: "chats" },
   bank: { title: "Bank", unit: "accounts" },
 };
@@ -2126,7 +2245,9 @@ export function arrangeChatChoices(items: DigitalCardReachItem[]): Array<{
 }
 
 export function reachChoiceLabel(item: DigitalCardReachItem): string {
-  if (item.brand === "email" || item.brand === "phone" || item.brand === "website") return item.title;
+  if (item.brand === "email" || item.brand === "phone" || item.brand === "website" || item.brand === "other") {
+    return item.title;
+  }
   return item.subtitle?.replace(/^@/, "") ? item.subtitle : item.title;
 }
 
@@ -2311,6 +2432,18 @@ export function listDigitalCardReachItems(card: {
       surface: "stack",
     });
   });
+  const meeting = persistMeetingDesk(card.socials.meeting) ?? compactMeetingDesk(card.socials.meeting);
+  if (meeting?.enabled) {
+    items.push({
+      id: "meeting-0",
+      brand: "meeting",
+      title: meeting.title,
+      subtitle: meetingSubtitle(meeting),
+      href: "",
+      copyValue: JSON.stringify(meeting),
+      surface: "stack",
+    });
+  }
   for (const network of DIGITAL_CARD_SOCIAL_NETWORKS) {
     if (network.key === "website") continue;
     const pay = isPayNetwork(network.key);
@@ -2329,15 +2462,21 @@ export function listDigitalCardReachItems(card: {
         ? Boolean(bank && isBankAccountComplete(bank))
         : Boolean(value) && isCompleteReachValue(network.key, value) && isLiveReachHref(href);
       if (!complete && !qrUrl) continue;
+      const place = network.key === "location" ? parseCeleCardPlace(value) : null;
+      const other = network.key === "other" ? parseOtherLink(value) : null;
       const linkKind = usesChatLinkKinds(network.key)
         ? normalizeChatLinkKind(card.socials.linkKinds?.[network.key]?.[index]) || detectChatLinkKind(network.key, value)
         : null;
       items.push({
         id: `${network.key}-${liveIndex}`,
         brand: network.key,
-        title: bank ? bank.bankName : network.label,
+        title: bank ? bank.bankName : place ? place.label : other?.label || network.label,
         subtitle: bank
           ? [bank.accountName, bankAccountTypeLabel(bank.accountType)].filter(Boolean).join(" · ") || "Bank account"
+          : place
+            ? place.provider
+          : other
+            ? otherLinkHost(other.href) || "Page"
           : value
             ? reachHint(network.key, value)
             : qrUrl
@@ -2377,7 +2516,9 @@ export const digitalCardSocialsSchema = z
     ...(Object.fromEntries(
       DIGITAL_CARD_SOCIAL_KEYS.map((key) => [
         key,
-        fieldValueSchema(PHONE_LIKE.has(key) && !usesChatLinkKinds(key) ? 80 : 500).optional(),
+        fieldValueSchema(
+          key === "other" ? 800 : PHONE_LIKE.has(key) && !usesChatLinkKinds(key) ? 80 : 500
+        ).optional(),
       ])
     ) as Record<DigitalCardSocialKey, z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString>]>>>),
     emails: z.array(z.string().max(120)).max(DIGITAL_CARD_REACH_MAX).optional(),
@@ -2394,6 +2535,33 @@ export const digitalCardSocialsSchema = z
       .record(z.enum(["PUBLIC", "CODE_PROTECTED", "REQUEST_ACCESS"]))
       .optional(),
     portraitFrame: z.enum(["circle", "square", "rounded"]).optional(),
+    companyLogoUrl: z.string().max(2000).optional(),
+    meeting: z
+      .object({
+        enabled: z.boolean().optional(),
+        title: z.string().max(80).optional(),
+        durationMin: z.number().int().optional(),
+        timezone: z.string().max(60).optional(),
+        weekdays: z.array(z.number().int()).max(7).optional(),
+        startHour: z.number().int().optional(),
+        endHour: z.number().int().optional(),
+        bufferMin: z.number().int().optional(),
+        noticeHours: z.number().int().optional(),
+        horizonDays: z.number().int().optional(),
+        place: z.string().max(40).optional(),
+        note: z.string().max(160).optional(),
+      })
+      .optional(),
+    design: z
+      .object({
+        composition: z.enum(["classic", "portrait-led", "type-first", "media-first", "grid", "iconic"]).optional(),
+        atmosphere: z.string().max(40).optional(),
+        ornament: z.enum(["none", "foil", "halftone", "wave", "grid", "marquee", "cel", "crest", "kente", "sunburst", "neon"]).optional(),
+        paperUrl: z.string().max(2000).optional(),
+        paperWeight: z.enum(["subtle", "balanced", "rich"]).optional(),
+        paperTone: z.enum(["light", "dark"]).optional(),
+      })
+      .optional(),
   })
   .partial()
   .optional();

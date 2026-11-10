@@ -336,7 +336,7 @@ export function DigitalCardRepeatFields({
         <button
           type="button"
           onClick={add}
-          className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em]"
+          className="inline-flex max-w-full flex-wrap items-center gap-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em]"
           style={addStyle}
         >
           <Plus className="h-3.5 w-3.5" />

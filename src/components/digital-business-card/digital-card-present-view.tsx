@@ -8,6 +8,7 @@ import { DigitalCardFace } from "@/components/digital-business-card/digital-card
 import { CeleCardQrBadge } from "@/components/digital-business-card/celecard-qr-badge";
 import { DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
 import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
+import { applyCeleCardDesign } from "@/lib/digital-business-card/design";
 import { digitalCardPublicUrl, digitalCardQrImageSrc, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import { smartCardShortUrl } from "@/lib/digital-business-card/product";
 import {
@@ -62,7 +63,7 @@ export function DigitalCardPresentView({
   origin: string;
   wantImmersive?: boolean;
 }) {
-  const theme = resolveDigitalCardTheme(card.themeId);
+  const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), card.socials.design);
   const motionMood = celecardMotionMood(theme);
   const router = useRouter();
   const rootRef = useRef<HTMLElement>(null);
@@ -224,6 +225,8 @@ export function DigitalCardPresentView({
               qrHref={profileUrl}
               className="max-w-none shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
               portraitFrame={card.socials.portraitFrame}
+              companyLogoUrl={card.socials.companyLogoUrl}
+              design={card.socials.design}
             />
           </div>
         </div>

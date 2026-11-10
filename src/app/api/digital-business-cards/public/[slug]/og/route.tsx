@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 import { getDemoCardBySlug } from "@/lib/digital-business-card/demo-card";
+import { dummyLiveNotFoundResponse } from "@/lib/digital-business-card/demo-live-access";
 import { CeleCardOgMarkup } from "@/lib/digital-business-card/og-markup";
-import { celeCardGuideQrDataUrl, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
+import { celeCardGuideQrDataUrl, localCeleCardPhotoDataUrl, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
 import {
   CELECARD_OG_HEIGHT,
   CELECARD_OG_WIDTH,
@@ -27,6 +28,7 @@ function renderOg(props: {
   qrSrc?: string | null;
   qrLabel?: string | null;
   portraitFrame?: "circle" | "square" | "rounded" | null;
+  markSrc?: string | null;
   cacheControl: string;
 }) {
   const png = new ImageResponse(
@@ -40,6 +42,7 @@ function renderOg(props: {
         qrSrc={props.qrSrc}
         qrLabel={props.qrLabel}
         portraitFrame={props.portraitFrame}
+        markSrc={props.markSrc}
       />
     ),
     { width: CELECARD_OG_WIDTH, height: CELECARD_OG_HEIGHT }
@@ -59,14 +62,20 @@ async function previewAssets(publicToken: string) {
   };
 }
 
+function celeYouMark() {
+  return localCeleCardPhotoDataUrl("/digital-cards/brands/celeyou-mark.png");
+}
+
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
 
   const demo = getDemoCardBySlug(slug);
   if (demo) {
+    const blocked = await dummyLiveNotFoundResponse();
+    if (blocked) return blocked;
     const theme = resolveDigitalCardTheme(demo.themeId);
     if (!demo.isLive || demo.presentationMode === "courtesy") {
-      const photoSrc = await safeCeleCardPhotoSrc(demo.avatarUrl);
+      const [photoSrc, markSrc] = await Promise.all([safeCeleCardPhotoSrc(demo.avatarUrl), celeYouMark()]);
       return renderOg({
         displayName: demo.displayName,
         title: demo.title,
@@ -76,10 +85,15 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
         qrSrc: null,
         qrLabel: null,
         portraitFrame: demo.socials.portraitFrame,
+        markSrc,
         cacheControl: "private, no-store",
       });
     }
-    const [photoSrc, qr] = await Promise.all([safeCeleCardPhotoSrc(demo.avatarUrl), previewAssets(demo.publicToken)]);
+    const [photoSrc, qr, markSrc] = await Promise.all([
+      safeCeleCardPhotoSrc(demo.avatarUrl),
+      previewAssets(demo.publicToken),
+      celeYouMark(),
+    ]);
     return renderOg({
       displayName: demo.displayName,
       title: demo.title,
@@ -89,6 +103,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
       qrSrc: qr.qrSrc,
       qrLabel: qr.qrLabel,
       portraitFrame: demo.socials.portraitFrame,
+      markSrc,
       cacheControl: "public, max-age=3600, stale-while-revalidate=86400",
     });
   }
@@ -97,7 +112,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   if (!card || card.deletedAt) return new Response("Not found", { status: 404 });
   if (isCeleCardCourtesyReachable(card)) {
     const theme = resolveDigitalCardTheme(card.themeId);
-    const photoSrc = await safeCeleCardPhotoSrc(card.avatarUrl);
+    const [photoSrc, markSrc] = await Promise.all([safeCeleCardPhotoSrc(card.avatarUrl), celeYouMark()]);
     return renderOg({
       displayName: card.displayName,
       title: card.title,
@@ -107,6 +122,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
       qrSrc: null,
       qrLabel: null,
       portraitFrame: normalizeSocials(card.socials).portraitFrame,
+      markSrc,
       cacheControl: "private, no-store",
     });
   }
@@ -115,7 +131,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   }
 
   const theme = resolveDigitalCardTheme(card.themeId);
-  const [photoSrc, qr] = await Promise.all([safeCeleCardPhotoSrc(card.avatarUrl), previewAssets(card.publicToken)]);
+  const [photoSrc, qr, markSrc] = await Promise.all([
+    safeCeleCardPhotoSrc(card.avatarUrl),
+    previewAssets(card.publicToken),
+    celeYouMark(),
+  ]);
   return renderOg({
     displayName: card.displayName,
     title: card.title,
@@ -125,6 +145,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     qrSrc: qr.qrSrc,
     qrLabel: qr.qrLabel,
     portraitFrame: normalizeSocials(card.socials).portraitFrame,
+    markSrc,
     cacheControl: "public, max-age=300, stale-while-revalidate=86400",
   });
 }

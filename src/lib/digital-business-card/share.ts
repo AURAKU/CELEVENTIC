@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { APP_NAME } from "@/lib/constants";
 import { isLocalHost } from "@/lib/app-url";
-import { SMARTCARD_PRODUCT_NAME, SMARTCARD_PRODUCT_SHORT_NAME, smartCardShortUrl } from "@/lib/digital-business-card/product";
+import { SMARTCARD_PRODUCT_SHORT_NAME, smartCardShortUrl } from "@/lib/digital-business-card/product";
 import { DIGITAL_CARD_PUBLIC_PATH } from "@/lib/digital-business-card/types";
 
 export const CELECARD_OG_WIDTH = 1200;
@@ -72,35 +72,24 @@ export function celeCardShareCacheVersion(updatedAt?: Date | string | null, fall
 }
 
 export function celeCardShareTitle(card: Pick<CeleCardShareFields, "displayName" | "title">): string {
-  const name = card.displayName.trim() || SMARTCARD_PRODUCT_SHORT_NAME;
-  const role = card.title?.trim();
-  if (role) return `${name} · ${role}`;
-  return `${name} · ${SMARTCARD_PRODUCT_SHORT_NAME}`;
+  return card.displayName.trim() || SMARTCARD_PRODUCT_SHORT_NAME;
 }
 
+/** Link preview subtitle on WhatsApp, iMessage, X, LinkedIn. */
 export function celeCardShareDescription(
   card: Pick<CeleCardShareFields, "title" | "company" | "bio" | "displayName" | "email" | "phone">
 ): string {
-  const role = [card.title?.trim(), card.company?.trim()].filter(Boolean).join(" · ");
-  const bio = stripPrivateShareText(card.bio?.replace(/\s+/g, " ").trim() ?? "", card);
-  if (role && bio) return `${role}. ${truncateShareText(bio, 140)}`;
-  if (role) return `${role}. ${SMARTCARD_PRODUCT_SHORT_NAME}. One tap. Every connection.`;
-  if (bio) return truncateShareText(bio, 180);
-  return `${SMARTCARD_PRODUCT_NAME}. One tap. Every way to reach ${card.displayName.trim() || "you"}.`;
+  const role = [card.title?.trim(), card.company?.trim()].filter(Boolean).join(", ");
+  const line = "My CeleYou. One identity. Every way to reach me.";
+  if (role) return `${role}. ${line}`;
+  return line;
 }
 
-function stripPrivateShareText(
-  text: string,
-  card: Pick<CeleCardShareFields, "email" | "phone">
-): string {
-  let next = text;
-  for (const secret of [card.email, card.phone]) {
-    const value = secret?.trim();
-    if (value && value.length > 3) next = next.split(value).join(" ");
-  }
-  next = next.replace(/\+?\d[\d\s().-]{6,}\d/g, " ");
-  next = next.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, " ");
-  return next.replace(/\s+/g, " ").trim();
+/** Native share body. Short enough for WhatsApp. Calm enough for a boardroom. */
+export function celeCardShareMessage(card: Pick<CeleCardShareFields, "displayName">): string {
+  const name = card.displayName.trim();
+  if (!name) return "My CeleYou. One identity. Every way to reach me.";
+  return `${name}. My CeleYou. One identity. Every way to reach me.`;
 }
 
 export function celeCardShareTextLeaksPrivate(
@@ -169,9 +158,4 @@ export function buildCeleCardShareMetadata(input: {
       images: [image],
     },
   };
-}
-
-function truncateShareText(value: string, max: number): string {
-  if (value.length <= max) return value;
-  return `${value.slice(0, max - 1).trimEnd()}…`;
 }

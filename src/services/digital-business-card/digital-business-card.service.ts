@@ -196,6 +196,8 @@ export async function createSmartCardConnection(input: {
   visitorTitle?: string | null;
   note?: string | null;
   formMode?: string;
+  source?: string;
+  tags?: string[];
   campaignId?: string | null;
   eventId?: string | null;
 }) {
@@ -218,7 +220,8 @@ export async function createSmartCardConnection(input: {
       campaignId: input.campaignId || null,
       eventId: input.eventId || null,
       status: "NEW",
-      source: "connect_back",
+      source: input.source || "connect_back",
+      tags: input.tags ?? [],
       consentAt: new Date(),
     },
   });
