@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { canAccessAdminPanel } from "@/lib/rbac";
+import { canAccessAdminPanel, hasPermission } from "@/lib/rbac";
+import type { Permission } from "@/lib/rbac/types";
 import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@prisma/client";
 
@@ -25,5 +26,13 @@ export async function requireAdminSession() {
 export async function requireSuperAdminSession() {
   const session = await requireAdminSession();
   if (!session || session.user.role !== "SUPER_ADMIN") return null;
+  return session;
+}
+
+/** Admin panel plus a specific CeleYou permission. Enforced on APIs, not buttons. */
+export async function requireCeleCardPermission(permission: Permission) {
+  const session = await requireAdminSession();
+  if (!session) return null;
+  if (!hasPermission({ role: session.user.role }, permission)) return null;
   return session;
 }

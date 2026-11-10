@@ -11,6 +11,7 @@ import { OnboardingIntentGrid } from "@/components/auth/onboarding-intent-grid";
 import {
   clearSignupIntent,
   findOnboardingIntent,
+  intentFromQuery,
   ONBOARDING_INTENT_OPTIONS,
   readSignupIntent,
   VENDOR_SERVICE_CATEGORIES,
@@ -47,6 +48,8 @@ export default function OnboardingIntentPage() {
         body: JSON.stringify({
           accountType: option.id,
           joinIntent: option.joinIntent,
+          queryKey: option.queryKey,
+          productIntent: option.queryKey === "smartcard" ? "celecard" : undefined,
           organizationName:
             option.id === "ORGANIZATION"
               ? (extras?.organizationName ?? organizationName).trim()
@@ -100,7 +103,9 @@ export default function OnboardingIntentPage() {
       setBooting(false);
       return;
     }
-    const option = findOnboardingIntent(stored.id, stored.joinIntent);
+    const option =
+      (stored.queryKey ? intentFromQuery(stored.queryKey) : undefined) ||
+      findOnboardingIntent(stored.id, stored.joinIntent);
     if (!option) {
       setBooting(false);
       return;

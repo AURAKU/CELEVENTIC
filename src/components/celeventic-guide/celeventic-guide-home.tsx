@@ -7,6 +7,7 @@ import { StartHereJourneys } from "@/components/celeventic-guide/start-here-jour
 import { GuideFaqAccordion } from "@/components/celeventic-guide/guide-faq-accordion";
 import { GuideAssistantChat } from "@/components/celeventic-guide/guide-assistant-chat";
 import { listPublicGuides, seedCeleventicGuides } from "@/services/celeventic-guide/guide.service";
+import { CELEVENTIC_GUIDE_CATALOG } from "@/lib/celeventic-guide/catalog";
 import { roleFromUserRole } from "@/lib/celeventic-guide/visibility";
 import {
   GUIDE_SUPPORT_CONTACT,
@@ -28,7 +29,10 @@ export async function CeleventicGuideHome({
     console.warn("[celeventic-guide] listPublicGuides unavailable", error);
     return [];
   });
-  if (existing.length === 0) {
+  const publishedCatalog = CELEVENTIC_GUIDE_CATALOG.filter(
+    (g) => (g.status ?? "PUBLISHED") === "PUBLISHED" && !g.adminOnly
+  ).length;
+  if (existing.length < publishedCatalog) {
     await seedCeleventicGuides().catch((error) => {
       console.warn("[celeventic-guide] seed skipped", error);
     });

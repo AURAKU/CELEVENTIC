@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img">
+  <title>Bank</title>
+  <rect width="48" height="48" rx="10" fill="#0B2545"/>
+  <path fill="#F8FAFC" d="M24 11.2 37 18.1v1.7H11v-1.7L24 11.2Zm-11.2 10.4h3.15V31.4H12.8V21.6Zm7.15 0h3.15V31.4h-3.15V21.6Zm7.1 0H30.2V31.4h-3.15V21.6Zm7.15 0H37.4V31.4h-3.15V21.6ZM10.6 32.7h26.8v2.15H10.6V32.7Zm-1.4 3.35h29.6V38H9.2v-1.95Z"/>
+</svg>

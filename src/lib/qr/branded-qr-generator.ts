@@ -113,12 +113,13 @@ async function renderCrispQrPng(
 
   if (rawSize < size) {
     const pad = Math.floor((size - rawSize) / 2);
+    const fill = parseQrFill(opts.light);
     return sharp({
       create: {
         width: size,
         height: size,
-        channels: 3,
-        background: hexToRgb(opts.light),
+        channels: fill.alpha < 1 ? 4 : 3,
+        background: fill,
       },
     })
       .composite([{ input: raw, top: pad, left: pad }])
@@ -135,10 +136,25 @@ async function renderCrispQrPng(
     .toBuffer();
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
+function parseQrFill(hex: string): { r: number; g: number; b: number; alpha: number } {
   const h = hex.replace("#", "");
-  const n = Number.parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  if (h.length === 4) {
+    const expanded = h
+      .split("")
+      .map((c) => c + c)
+      .join("");
+    return parseQrFill(`#${expanded}`);
+  }
+  if (h.length === 8) {
+    return {
+      r: Number.parseInt(h.slice(0, 2), 16),
+      g: Number.parseInt(h.slice(2, 4), 16),
+      b: Number.parseInt(h.slice(4, 6), 16),
+      alpha: Number.parseInt(h.slice(6, 8), 16) / 255,
+    };
+  }
+  const n = Number.parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h.slice(0, 6), 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255, alpha: 1 };
 }
 
 /** Geometry for the white inset + center mark (shared by PNG + SVG). */
@@ -347,10 +363,12 @@ export async function generateBrandedQrPng(
   centerImageUrl?: string | null,
   size: QrExportSize = QR_DEFAULT_SIZE,
   mode: QrDisplayMode = "brand",
-  logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE
+  logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE,
+  extras?: { transparent?: boolean }
 ): Promise<Buffer> {
   const { dark, light, margin } = colorsForMode(mode, logoSize);
-  const qrBuffer = await renderCrispQrPng(targetUrl, size, { dark, light, margin });
+  const fill = extras?.transparent ? "#00000000" : light;
+  const qrBuffer = await renderCrispQrPng(targetUrl, size, { dark, light: fill, margin });
 
   // Guide mode: never overlay a logo. Guest phone cameras need every module.
   if (mode === "guide") {
@@ -371,15 +389,17 @@ export async function generateBrandedQrSvg(
   centerImageUrl?: string | null,
   size: QrExportSize = QR_DEFAULT_SIZE,
   mode: QrDisplayMode = "brand",
-  logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE
+  logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE,
+  extras?: { transparent?: boolean }
 ): Promise<string> {
   const { dark, light, margin, logoRatio } = colorsForMode(mode, logoSize);
+  const fill = extras?.transparent ? "#00000000" : light;
   const qrSvg = await QRCode.toString(targetUrl, {
     type: "svg",
     width: size,
     margin,
     errorCorrectionLevel: ERROR_LEVEL,
-    color: { dark, light },
+    color: { dark, light: fill },
   });
 
   if (mode === "guide" || logoRatio <= 0) {

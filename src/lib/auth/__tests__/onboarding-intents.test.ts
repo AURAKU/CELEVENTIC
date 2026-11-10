@@ -26,6 +26,8 @@ describe("signup intents", () => {
     assert.equal(intentFromQuery("organisation")?.id, "ORGANIZATION");
     assert.equal(intentFromQuery("church")?.id, "ORGANIZATION");
     assert.equal(intentFromQuery("smartcard")?.queryKey, "smartcard");
+    assert.equal(intentFromQuery("celecard")?.queryKey, "smartcard");
+    assert.equal(intentFromQuery("celecard")?.primaryHref, "/dashboard/business-card");
     assert.equal(intentFromQuery("card")?.primaryHref, "/dashboard/business-card");
     assert.equal(intentFromQuery("unknown"), undefined);
   });

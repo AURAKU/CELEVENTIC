@@ -130,6 +130,21 @@ export const CONTEXT_HELP_MAP: ContextHelpMapping[] = [
     label: "Design Studio help",
   },
   {
+    routePrefix: "/dashboard/business-card",
+    guideSlugs: ["celeyou", "open-a-celeyou"],
+    label: "CeleYou help",
+  },
+  {
+    routePrefix: "/digital-cards",
+    guideSlugs: ["celeyou", "open-a-celeyou"],
+    label: "CeleYou help",
+  },
+  {
+    routePrefix: "/card",
+    guideSlugs: ["open-a-celeyou", "celeyou"],
+    label: "CeleYou help",
+  },
+  {
     routePrefix: "/admission",
     guideSlugs: ["your-qr-admission-pass", "troubleshoot-qr-wont-scan"],
     label: "Admission pass help",

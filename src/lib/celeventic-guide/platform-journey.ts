@@ -33,6 +33,10 @@ export type PlatformCapability = {
   guideHref: string;
 };
 
+/** Shared service list for landing, teaser, and walkthrough metadata. */
+export const GUIDE_SERVICE_LINE =
+  "Invitations, RSVP, QR admission, Event Guide, CeleYou, gifts, vendors, and Memory Vault.";
+
 /** Guest celebration path. Invite → Remember */
 export const GUEST_JOURNEY_STAGES: JourneyStage[] = [
   {
@@ -151,6 +155,10 @@ export const PLATFORM_LANES: PlatformLane[] = [
         body: "Start an event, pick a template or Design Studio look, set venue, date, and dress code.",
       },
       {
+        title: "CeleYou identity",
+        body: "Design a living card with photo, socials, and WhatsApp. Pay a plan so QR, NFC, and the public page stay live.",
+      },
+      {
         title: "Guests & invites",
         body: "Add or import guests, send invitations, track RSVPs, and manage plus-ones.",
       },
@@ -224,6 +232,12 @@ export const PLATFORM_CAPABILITIES: PlatformCapability[] = [
     label: "Invitations & templates",
     body: "Cinematic digital invites, catalogue templates, and live studio editing.",
     guideHref: "/guide/build-an-invitation",
+  },
+  {
+    id: "celeyou",
+    label: "CeleYou",
+    body: "Your living identity card. Share with QR, NFC, Wallet, or a link. Stays current while the plan is paid.",
+    guideHref: "/guide/celeyou",
   },
   {
     id: "rsvp",

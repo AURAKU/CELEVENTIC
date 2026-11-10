@@ -6,7 +6,7 @@ import { CeleventicGuideHome } from "@/components/celeventic-guide/celeventic-gu
 export const metadata: Metadata = {
   title: "Celeventic Guide · Learn Celeventic",
   description:
-    "Interactive tutorials, Start Here journeys, and FAQ for guests, organizers, vendors, and scanners. See How Celeventic Works.",
+    "Interactive tutorials, Start Here journeys, and FAQ for guests, organizers, vendors, and scanners. Invitations, CeleYou, RSVP, QR admission, and Memory Vault. See How Celeventic Works.",
   openGraph: {
     title: "Celeventic Guide",
     description: "Learn Celeventic with motion walkthroughs, quick actions, and step-by-step guides.",

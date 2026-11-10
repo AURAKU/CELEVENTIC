@@ -13,7 +13,9 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SMARTCARD_CURRENCY, SMARTCARD_PLANS, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
+import { SMARTCARD_CURRENCY, SMARTCARD_PLANS, type SmartCardPlan, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
+import { celeCardCheckoutUi } from "@/lib/digital-business-card/checkout-outcome";
+import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
 
 type BillingCard = {
   id: string;
@@ -24,6 +26,7 @@ type BillingCard = {
   subscriptionExpiresAt: string | null;
   isLive: boolean;
   hoursLeft: number | null;
+  lifecycleState?: string;
 };
 
 type BillingPayment = {
@@ -39,15 +42,19 @@ type BillingPayment = {
 };
 
 function statusBadge(card: BillingCard) {
+  if (card.lifecycleState === "COURTESY") return { label: "Ready to reactivate", variant: "warning" as const };
+  if (card.lifecycleState === "GRACE_PERIOD") return { label: "Grace period", variant: "warning" as const };
+  if (card.lifecycleState === "EXPIRING") return { label: "Renew soon", variant: "warning" as const };
+  if (card.lifecycleState === "SUSPENDED") return { label: "Unavailable", variant: "destructive" as const };
   if (card.isLive) return { label: "Live", variant: "success" as const };
-  if (card.subscriptionStatus === "EXPIRED") return { label: "Expired", variant: "destructive" as const };
+  if (card.subscriptionStatus === "EXPIRED") return { label: "Ready to reactivate", variant: "warning" as const };
   if (card.subscriptionStatus === "TRIAL") return { label: "Studio only", variant: "warning" as const };
   return { label: card.subscriptionStatus, variant: "outline" as const };
 }
 
 function remainingCopy(hoursLeft: number | null, expiresAt: string | null) {
   if (hoursLeft == null) return "No paid window yet. Activate a plan to go live.";
-  if (hoursLeft <= 0) return "Public card is off. Renew to turn QR, NFC, and Wallet back on.";
+  if (hoursLeft <= 0) return "Your identity, designs, and sharing link are preserved.";
   const hours = Math.max(1, Math.round(hoursLeft));
   const when = expiresAt
     ? new Date(expiresAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
@@ -62,22 +69,38 @@ export function SmartCardBillingClient() {
   const [payments, setPayments] = useState<BillingPayment[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [planId, setPlanId] = useState<SmartCardPlanId>("yearly");
+  const [plans, setPlans] = useState<SmartCardPlan[]>(SMARTCARD_PLANS);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [designChoices, setDesignChoices] = useState(false);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentTotal, setPaymentTotal] = useState(0);
+  const [paymentLimit, setPaymentLimit] = useState(20);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/digital-business-cards/billing");
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Could not load billing");
+      const [billingRes, plansRes] = await Promise.all([
+        fetch(`/api/digital-business-cards/billing?page=${paymentPage}`),
+        fetch("/api/digital-business-cards/plans"),
+      ]);
+      const json = await billingRes.json().catch(() => ({}));
+      if (!billingRes.ok) throw new Error((json as { error?: string }).error || "Could not load billing");
+      if (plansRes.ok) {
+        const catalog = await plansRes.json();
+        if (Array.isArray(catalog.data?.plans) && catalog.data.plans.length) {
+          setPlans(catalog.data.plans as SmartCardPlan[]);
+        }
+      }
       const nextCards = (json.data?.cards ?? []) as BillingCard[];
       const nextPayments = (json.data?.payments ?? []) as BillingPayment[];
       setCards(nextCards);
       setPayments(nextPayments);
+      setPaymentTotal(Number(json.data?.paymentTotal ?? nextPayments.length));
+      setPaymentLimit(Number(json.data?.paymentLimit ?? 20));
       setActiveId((current) => {
         if (current && nextCards.some((card) => card.id === current)) return current;
         const wanted = new URLSearchParams(window.location.search).get("card");
@@ -89,7 +112,7 @@ export function SmartCardBillingClient() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [paymentPage]);
 
   useEffect(() => {
     void load();
@@ -101,35 +124,50 @@ export function SmartCardBillingClient() {
     if (params.get("payment") !== "callback" || !reference) return;
 
     void (async () => {
+      let keepReference = false;
       try {
         const res = await fetch(
           `/api/digital-business-cards/subscribe/confirm?reference=${encodeURIComponent(reference)}`
         );
         const json = await res.json();
-        if (res.ok && json.data?.status === "SUCCESSFUL") {
-          setMessage("Payment received. Your CeleCard is live while this plan lasts.");
-          await load();
-        } else if (!res.ok) {
+        if (!res.ok) {
           setError(json.error || "Payment could not be confirmed yet.");
+        } else {
+          const outcome = celeCardCheckoutUi(
+            json.data?.status as string | undefined,
+            json.data?.live as boolean | undefined
+          );
+          if (outcome.kind === "success") {
+            setMessage(outcome.text);
+            setDesignChoices(true);
+            await load();
+          } else if (outcome.kind === "error") {
+            setError(outcome.text);
+          } else {
+            setMessage(outcome.text);
+            keepReference = true;
+          }
         }
       } catch {
         setError("Payment confirmation failed.");
       } finally {
-        const url = new URL(window.location.href);
-        url.searchParams.delete("payment");
-        url.searchParams.delete("reference");
-        url.searchParams.delete("trxref");
-        window.history.replaceState({}, "", url.pathname + url.search);
+        if (!keepReference) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("payment");
+          url.searchParams.delete("reference");
+          url.searchParams.delete("trxref");
+          window.history.replaceState({}, "", url.pathname + url.search);
+        }
       }
     })();
   }, [load]);
 
   const active = useMemo(() => cards.find((card) => card.id === activeId) ?? null, [cards, activeId]);
-  const selectedPlan = SMARTCARD_PLANS.find((plan) => plan.id === planId) ?? SMARTCARD_PLANS[3];
+  const selectedPlan = plans.find((plan) => plan.id === planId) ?? plans[plans.length - 1] ?? SMARTCARD_PLANS[3];
 
   async function renew() {
     if (!active) {
-      setError("Save a CeleCard in the studio first, then come back here to pay.");
+      setError("Save a CeleYou in the studio first, then come back here to pay.");
       return;
     }
     setPaying(true);
@@ -144,7 +182,8 @@ export function SmartCardBillingClient() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Checkout failed");
       if (json.data?.free) {
-        setMessage("Plan activated. Your CeleCard is live.");
+        setMessage("Plan activated. Your CeleYou is live.");
+        setDesignChoices(true);
         await load();
         return;
       }
@@ -164,16 +203,16 @@ export function SmartCardBillingClient() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          <div className="mb-2 inline-flex items-center gap-2 text-[#0B8A83]">
-            <CreditCard className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]">CeleCard billing</span>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <CeleYouBrandMark variant="chip" tone="light" markClassName="h-8 w-8" />
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0B8A83]">Billing</span>
           </div>
           <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">
             Keep the public card live
           </h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Paid activation turns on QR, NFC, Wallet, and the public page. We remind you at 72, 48, and
-            24 hours, then again when the plan lapses, by email, WhatsApp, and SMS.
+            Paid activation turns on QR, NFC, and the public page. We remind you 14, 7, 3, and 1 days
+            before the term ends, then again after, by email and in-app notification.
           </p>
         </div>
         <Button asChild variant="outline">
@@ -211,18 +250,41 @@ export function SmartCardBillingClient() {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {message ? <p className="text-sm text-[#0B8A83]">{message}</p> : null}
 
+      {designChoices ? (
+        <section className="rounded-2xl border border-[#0B8A83]/20 bg-[#0B8A83]/5 p-5">
+          <p className="font-display text-lg font-semibold text-slate-900">Your CeleYou is live again.</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Identity, contacts, and your sharing link are unchanged. Redesign only if you want a new look.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <Button type="button" className="bg-[#0B8A83] hover:bg-[#097a74]" onClick={() => setDesignChoices(false)}>
+              Keep my current design
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/business-card#celecard-theme">Choose a new design</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/business-card#celecard-design-vault">Duplicate a saved design</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/business-card#celecard-design-vault">Restore a previous design</Link>
+            </Button>
+          </div>
+        </section>
+      ) : null}
+
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading billing…
         </div>
       ) : cards.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
-          <p className="font-display text-lg font-semibold text-slate-900">No CeleCard yet</p>
+          <p className="font-display text-lg font-semibold text-slate-900">No CeleYou yet</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
             Design the identity first. Billing and Paystack checkout unlock after the card is saved.
           </p>
           <Button asChild className="mt-5 bg-[#0B8A83] hover:bg-[#097a74]">
-            <Link href="/dashboard/business-card">Design my CeleCard</Link>
+            <Link href="/dashboard/business-card">Design my CeleYou</Link>
           </Button>
         </div>
       ) : (
@@ -254,11 +316,24 @@ export function SmartCardBillingClient() {
                   </div>
                   <Badge variant={statusBadge(active).variant}>{statusBadge(active).label}</Badge>
                 </div>
-                <p className="mt-3 text-sm text-slate-600">
-                  {remainingCopy(active.hoursLeft, active.subscriptionExpiresAt)}
-                </p>
+                {active.lifecycleState === "COURTESY" || (!active.isLive && active.subscriptionStatus === "EXPIRED") ? (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                    <p className="font-semibold">Your CeleYou is ready when you are.</p>
+                    <p className="mt-1 text-amber-900/80">
+                      Your identity, designs, and sharing link are preserved. Reactivate to restore your complete digital profile.
+                    </p>
+                  </div>
+                ) : active.lifecycleState === "DRAFT" || active.subscriptionStatus === "TRIAL" ? (
+                  <p className="mt-3 text-sm text-slate-600">
+                    Studio is open. The public card stays unavailable until a verified payment activates it.
+                  </p>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-600">
+                    {remainingCopy(active.hoursLeft, active.subscriptionExpiresAt)}
+                  </p>
+                )}
                 <div className="mt-5 grid grid-cols-2 gap-2">
-                  {SMARTCARD_PLANS.map((plan) => (
+                  {plans.map((plan) => (
                     <button
                       key={plan.id}
                       type="button"
@@ -288,7 +363,7 @@ export function SmartCardBillingClient() {
                   ) : (
                     <ShieldCheck className="mr-2 h-4 w-4" />
                   )}
-                  {active.isLive ? "Extend" : "Activate"} {selectedPlan.label} · {SMARTCARD_CURRENCY}{" "}
+                  {active.isLive ? "Extend" : "Reactivate CeleYou"} · {selectedPlan.label} · {SMARTCARD_CURRENCY}{" "}
                   {selectedPlan.priceGhs}
                 </Button>
                 <p className="mt-2 text-[11px] text-slate-500">
@@ -300,9 +375,9 @@ export function SmartCardBillingClient() {
 
           <aside className="rounded-2xl border border-slate-200 bg-white p-5">
             <p className="text-sm font-semibold text-slate-900">Paystack charges</p>
-            <p className="mt-1 text-xs text-slate-500">CeleCard subscriptions only. Event packages stay in account billing.</p>
+            <p className="mt-1 text-xs text-slate-500">CeleYou subscriptions only. Event packages stay in account billing.</p>
             {payments.length === 0 ? (
-              <p className="mt-6 text-sm text-slate-500">No CeleCard payments yet.</p>
+              <p className="mt-6 text-sm text-slate-500">No CeleYou payments yet.</p>
             ) : (
               <ul className="mt-4 divide-y divide-slate-100">
                 {payments.map((payment) => (
@@ -310,7 +385,7 @@ export function SmartCardBillingClient() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-medium text-slate-900">
-                          {payment.planLabel || "CeleCard"} · {payment.currency} {payment.amount}
+                          {payment.planLabel || "CeleYou"} · {payment.currency} {payment.amount}
                         </p>
                         <p className="mt-0.5 text-[11px] text-slate-500">
                           {new Date(payment.createdAt).toLocaleString(undefined, {
@@ -336,6 +411,33 @@ export function SmartCardBillingClient() {
                 ))}
               </ul>
             )}
+            {paymentTotal > paymentLimit ? (
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <p className="text-[11px] text-slate-500">
+                  Page {paymentPage} of {Math.max(1, Math.ceil(paymentTotal / paymentLimit))} · {paymentTotal} total
+                </p>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={paymentPage <= 1 || loading}
+                    onClick={() => setPaymentPage((page) => Math.max(1, page - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={paymentPage * paymentLimit >= paymentTotal || loading}
+                    onClick={() => setPaymentPage((page) => page + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </aside>
         </div>
       )}

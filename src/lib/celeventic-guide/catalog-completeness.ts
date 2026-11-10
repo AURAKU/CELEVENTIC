@@ -458,4 +458,60 @@ export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
       { title: "Ask organizer", body: "They can reissue from QR Hub.", stepType: "warning" }
     ),
   },
+  {
+    slug: "celeyou",
+    title: "CeleYou",
+    summary: "Design a living identity card, pay a plan, and share it with QR, NFC, Wallet, or a link.",
+    body: "CeleYou is Celeventic’s identity card. Design it in studio, keep the public page live while a plan is paid, and share one link that stays current. Guests open it without an account.",
+    role: "ORGANIZER",
+    category: "PLATFORM",
+    status: "PUBLISHED",
+    sortOrder: 70,
+    featured: true,
+    featureKey: "celeyou",
+    videoProductionRequired: true,
+    synonyms: [
+      "celecard",
+      "digital business card",
+      "smart card",
+      "identity card",
+      "nfc card",
+      "digital card",
+    ],
+    contextRoutes: ["/dashboard/business-card", "/digital-cards"],
+    relatedSlugs: ["open-a-celeyou", "design-studio", "organizer-quick-start"],
+    posterUrl: "/guides/posters/admission.svg",
+    a11yDescription: "CeleYou studio, paid activation, and sharing with QR, NFC, Wallet, or a link.",
+    narrationScript:
+      "Open CeleYou studio. Design your identity. Pay a plan so the public page stays live. Share with QR, NFC, Wallet, or a link.",
+    transcript:
+      "Open CeleYou studio. Design your identity. Pay a plan so the public page stays live. Share with QR, NFC, Wallet, or a link. Guests open it without creating an account.",
+    steps: steps(
+      ["Open studio", "From Design, open CeleYou. One link for every contact."],
+      ["Design your identity", "Add a photo or house mark, theme, socials, number, WhatsApp, and website."],
+      ["Pay a plan to go live", "The public page, QR, and NFC stay offline until a plan is paid."],
+      ["Share everywhere", "QR, NFC, Wallet, or a short link. Update once. Every tap stays current."]
+    ),
+  },
+  {
+    slug: "open-a-celeyou",
+    title: "Open a CeleYou",
+    summary: "Scan a QR, tap NFC, or open a share link to meet someone and save their contact.",
+    body: "No Celeventic account is required. A live CeleYou shows the person’s identity, socials, and ways to connect. You can save a vCard or Connect Back so they keep your intro.",
+    role: "GUEST",
+    category: "PLATFORM",
+    status: "PUBLISHED",
+    sortOrder: 71,
+    featured: true,
+    featureKey: "celeyou",
+    synonyms: ["scan identity", "nfc tap", "digital card guest", "save contact", "connect back"],
+    contextRoutes: ["/card", "/c", "/n"],
+    relatedSlugs: ["celeyou", "your-qr-admission-pass"],
+    posterUrl: "/guides/posters/qr-pass.svg",
+    steps: steps(
+      ["Scan, tap, or open the link", "Use the camera for QR, tap an NFC card, or follow a share URL."],
+      ["Meet the person", "Name, role, socials, number, WhatsApp, and website on one page."],
+      ["Save or Connect Back", "Download a vCard, or leave your contact so they remember the intro."]
+    ),
+  },
 ];

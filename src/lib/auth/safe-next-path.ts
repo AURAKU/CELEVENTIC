@@ -15,6 +15,11 @@ export function safeNextPath(raw?: string | null): string | null {
   return value;
 }
 
+/** Onboarding and login historically used either `next` or NextAuth `callbackUrl`. */
+export function safeReturnPath(search: { get(name: string): string | null }): string | null {
+  return safeNextPath(search.get("next")) || safeNextPath(search.get("callbackUrl"));
+}
+
 export function smartCardStudioPath(plan?: string | null, theme?: string | null): string {
   const params = new URLSearchParams();
   if (plan) params.set("plan", plan);
@@ -32,4 +37,10 @@ export function smartCardSignupPath(plan?: string | null, theme?: string | null)
   if (plan) params.set("plan", plan);
   if (theme) params.set("theme", theme);
   return `/auth/register?${params.toString()}`;
+}
+
+/** Existing Celeventic accounts open CeleYou studio. No second registration. */
+export function smartCardLoginPath(plan?: string | null, theme?: string | null): string {
+  const next = smartCardStudioPath(plan, theme);
+  return `/auth/login?callbackUrl=${encodeURIComponent(next)}`;
 }

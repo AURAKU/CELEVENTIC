@@ -4,6 +4,10 @@ import { generateToken, slugify } from "@/lib/utils";
 import type { AccountType, EventCollaboratorRole, UserRole } from "@prisma/client";
 import { createAuditLog } from "@/lib/audit";
 import { complianceService } from "@/services/legal/compliance.service";
+import {
+  celeCardOwnerStudioPath,
+  isCeleCardProductIntent,
+} from "@/lib/digital-business-card/access";
 
 const ACCOUNT_ROLE_MAP: Record<AccountType, UserRole> = {
   ORGANIZER: "ORGANIZER",
@@ -26,6 +30,8 @@ export interface OnboardingInput {
   vendorCategory?: string;
   organizationName?: string;
   joinIntent?: boolean;
+  /** CeleYou-first signup. Same User row, skips event getting-started. */
+  productIntent?: string | null;
 }
 
 export class OnboardingService {
@@ -37,8 +43,11 @@ export class OnboardingService {
     accountType: AccountType,
     onboardingCompletedAt?: Date | null,
     joinIntent?: boolean,
-    options?: { vendorCategory?: string }
+    options?: { vendorCategory?: string; productIntent?: string | null }
   ) {
+    if (isCeleCardProductIntent(options?.productIntent)) {
+      return celeCardOwnerStudioPath();
+    }
     if (accountType === "VENDOR") {
       const category = options?.vendorCategory?.trim();
       if (category) {
@@ -88,6 +97,7 @@ export class OnboardingService {
       organizationId = org.id;
     }
 
+    const celeCardFirst = isCeleCardProductIntent(input.productIntent);
     const user = await prisma.user.create({
       data: {
         name: input.name,
@@ -99,7 +109,7 @@ export class OnboardingService {
         username,
         companyName: input.companyName,
         organizationId,
-        onboardingCompletedAt: null,
+        onboardingCompletedAt: celeCardFirst ? new Date() : null,
       },
       select: {
         id: true,
@@ -156,7 +166,7 @@ export class OnboardingService {
         input.accountType,
         user.onboardingCompletedAt,
         input.joinIntent,
-        { vendorCategory: input.vendorCategory }
+        { vendorCategory: input.vendorCategory, productIntent: input.productIntent }
       ),
     };
   }

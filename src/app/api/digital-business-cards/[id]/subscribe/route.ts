@@ -7,12 +7,15 @@ import { isAdminCommerceBypass } from "@/lib/access/package-access";
 import {
   SMARTCARD_CURRENCY,
   SMARTCARD_PAYMENT_KIND,
-  getSmartCardPlan,
+  getSmartCardPlanFromCatalog,
 } from "@/lib/digital-business-card/plans";
+import { getCeleCardCatalog } from "@/services/digital-business-card/catalog.service";
+import { resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
 import {
   activateDigitalCardPlan,
   getDigitalCardForUser,
   isDigitalCardLive,
+  recordCeleCardLifecycleEvent,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { paymentService, PaymentProviderError } from "@/services/payments/payment.service";
 
@@ -30,11 +33,22 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: "Choose a plan" }, { status: 400 });
   }
 
-  const plan = getSmartCardPlan(parsed.data.planId);
+  const catalog = await getCeleCardCatalog();
+  const plan = getSmartCardPlanFromCatalog(parsed.data.planId, catalog.plans);
   if (!plan) return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
 
   const card = await getDigitalCardForUser(session.user.id, id);
   if (!card) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const lifecycle = resolveCeleCardLifecycle(card);
+  if (lifecycle === "SUSPENDED" || lifecycle === "DELETED") {
+    return NextResponse.json({ error: "This CeleYou cannot be reactivated from billing." }, { status: 403 });
+  }
+
+  await recordCeleCardLifecycleEvent({
+    cardId: card.id,
+    kind: isDigitalCardLive(card) ? "ReactivationStarted" : "CheckoutStarted",
+    meta: { planId: plan.id },
+  }).catch(() => undefined);
 
   if (isAdminCommerceBypass(session.user.role)) {
     const activated = await activateDigitalCardPlan(session.user.id, id, plan.id);
@@ -71,6 +85,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
           planId: plan.id,
           userId: session.user.id,
           months: plan.months,
+          priceGhs: plan.priceGhs,
+          pricePesewas: plan.pricePesewas,
+          currency: SMARTCARD_CURRENCY,
         },
       },
       {

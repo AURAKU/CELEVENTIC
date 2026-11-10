@@ -10,6 +10,7 @@ import {
   type DigitalCardThemeId,
 } from "@/lib/digital-business-card/themes";
 import { DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
+import { celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 
 function isDarkInk(color: string) {
   const hex = color.replace("#", "");
@@ -30,6 +31,7 @@ function ThemeArtTile({
   onSelect: (id: DigitalCardThemeId) => void;
 }) {
   const light = isDarkInk(theme.text);
+  const voice = celecardTypeVoice(theme);
   return (
     <button
       type="button"
@@ -55,13 +57,17 @@ function ThemeArtTile({
         <div className="absolute inset-x-0 bottom-0 px-2.5 pb-2 pt-6">
           <p
             className="truncate text-[10px] font-semibold uppercase tracking-[0.14em]"
-            style={{ color: light ? "#0f172a" : "#f8fafc", fontFamily: theme.fontHeading, opacity: 0.86 }}
+            style={{ color: light ? "#0f172a" : "#f8fafc", fontFamily: voice.origin, opacity: 0.86 }}
           >
             {theme.artLabel || theme.previewLabel}
           </p>
           <p
             className="truncate text-[13px] font-semibold leading-tight"
-            style={{ color: light ? "#0f172a" : "#ffffff", fontFamily: theme.fontHeading }}
+            style={{
+              color: light ? "#0f172a" : "#ffffff",
+              fontFamily: voice.heading,
+              letterSpacing: voice.nameTracking,
+            }}
           >
             {theme.previewLabel}
           </p>

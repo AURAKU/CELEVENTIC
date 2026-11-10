@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img">
+  <title>Venmo</title>
+  <rect width="48" height="48" rx="10" fill="#008CFF"/>
+  <g transform="translate(24 24) scale(0.82) translate(-12 -12)">
+    <path fill="#FFFFFF" d="M2.2 2.4h6.35L12 13.55 15.45 2.4H21.8L13.55 22.2h-3.1L2.2 2.4Z"/>
+  </g>
+</svg>

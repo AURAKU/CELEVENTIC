@@ -5,27 +5,32 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
-  CreditCard,
   Mail,
   Store,
   Ticket,
 } from "lucide-react";
+import type { ComponentType } from "react";
 import { Button } from "@/components/ui/button";
 import { BrandMotto } from "@/components/brand/brand-motto";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
+import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 
 const HeroScene = dynamic(() => import("@/components/landing/hero-scene").then((m) => m.HeroScene), {
   ssr: false,
   loading: () => null,
 });
 
-const HERO_SERVICES = [
+const HERO_SERVICES: Array<{
+  href: string;
+  labelKey: string;
+  icon: ComponentType<{ className?: string }>;
+}> = [
   { href: "/invitations/catalogue", labelKey: "landing.pill_invitations", icon: Mail },
   { href: "/discover", labelKey: "landing.pill_tickets", icon: Ticket },
   { href: "/marketplace", labelKey: "landing.pill_marketplace", icon: Store },
-  { href: "/digital-cards", labelKey: "landing.pill_cards", icon: CreditCard },
-] as const;
+  { href: "/digital-cards", labelKey: "landing.pill_cards", icon: CeleYouMarkIcon },
+];
 
 export function Hero() {
   const { t } = useLocale();
@@ -103,7 +108,10 @@ export function Hero() {
                   href={item.href}
                   className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-base font-semibold text-white backdrop-blur-sm transition hover:border-gold-400/50 hover:bg-white/15"
                 >
-                  <item.icon className="h-4 w-4 text-gold-300" aria-hidden />
+                  <item.icon
+                    className={item.labelKey === "landing.pill_cards" ? "h-5 w-5" : "h-4 w-4 text-gold-300"}
+                    aria-hidden
+                  />
                   {t(item.labelKey)}
                 </Link>
               ))}
@@ -127,7 +135,10 @@ export function Hero() {
                       className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/8 p-4 transition hover:border-brand-300/40 hover:bg-white/12"
                     >
                       <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/20 text-gold-300">
-                        <item.icon className="h-5 w-5" aria-hidden />
+                        <item.icon
+                          className={item.labelKey === "landing.pill_cards" ? "h-8 w-8" : "h-5 w-5"}
+                          aria-hidden
+                        />
                       </span>
                       <span className="text-base font-semibold text-white">{t(item.labelKey)}</span>
                     </Link>

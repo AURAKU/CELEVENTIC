@@ -184,7 +184,50 @@ export type DigitalCardTheme = {
   atmosphere?: DigitalCardAtmosphere;
 };
 
-const display = "var(--font-display), Georgia, serif";
+/** Guest-page motion family. Every template maps to one so motion complements the room. */
+export type CeleCardMotionMood = "atelier" | "cinema" | "pulse" | "earth" | "linen";
+
+export function celecardMotionMood(theme: DigitalCardTheme): CeleCardMotionMood {
+  const atmo = theme.atmosphere;
+  if (
+    theme.category === "cinematic" ||
+    theme.category === "iconic" ||
+    atmo === "film-credits" ||
+    atmo === "silver-screen" ||
+    atmo === "spotlight" ||
+    atmo === "starfield"
+  ) {
+    return "cinema";
+  }
+  if (
+    theme.category === "creator" ||
+    theme.category === "personal" ||
+    theme.category === "public-figure" ||
+    theme.ornament === "neon" ||
+    atmo === "pop-burst" ||
+    atmo === "comic-panel" ||
+    atmo === "cel-speed"
+  ) {
+    return "pulse";
+  }
+  if (
+    theme.category === "landmark" ||
+    theme.ornament === "kente" ||
+    atmo === "dunes" ||
+    atmo === "canopy" ||
+    atmo === "mesa" ||
+    atmo === "desert-road" ||
+    atmo === "dawn-peak"
+  ) {
+    return "earth";
+  }
+  if (theme.category === "luxury" || theme.category === "atelier" || theme.category === "executive") {
+    return "atelier";
+  }
+  return "linen";
+}
+
+const display = "var(--font-card-display), Georgia, 'Times New Roman', serif";
 const sans = "var(--font-sans), system-ui, sans-serif";
 
 export const DIGITAL_CARD_THEMES: DigitalCardTheme[] = [
@@ -236,7 +279,8 @@ export const DIGITAL_CARD_THEMES: DigitalCardTheme[] = [
     previewLabel: "Gold Folio",
     category: "luxury",
     stageBackground: "linear-gradient(160deg, #1a1410 0%, #2a2118 45%, #1c1612 100%)",
-    cardBackground: "linear-gradient(145deg, #f7f0e4 0%, #efe2cc 100%)",
+    cardBackground:
+      "linear-gradient(155deg, #fffaf1 0%, #f6ead0 36%, #ead4a6 68%, #f4e6c4 100%)",
     accent: "#b45309",
     accentSoft: "rgba(180,83,9,0.12)",
     text: "#1c1917",
@@ -1565,8 +1609,12 @@ export const DIGITAL_CARD_THEME_FILTERS: { id: "all" | DigitalCardThemeCategory;
 ];
 
 export function resolveDigitalCardTheme(id: string | null | undefined): DigitalCardTheme {
-  if (id && id in DIGITAL_CARD_THEME_BY_ID) {
-    return DIGITAL_CARD_THEME_BY_ID[id as DigitalCardThemeId];
-  }
-  return DIGITAL_CARD_THEME_BY_ID["elegant-frost"];
+  const theme =
+    id && id in DIGITAL_CARD_THEME_BY_ID
+      ? DIGITAL_CARD_THEME_BY_ID[id as DigitalCardThemeId]
+      : DIGITAL_CARD_THEME_BY_ID["elegant-frost"];
+  return {
+    ...theme,
+    ornament: theme.ornament && theme.ornament !== "none" ? theme.ornament : "foil",
+  };
 }

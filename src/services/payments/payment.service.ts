@@ -603,6 +603,7 @@ export class PaymentService {
     if (next === "SUCCESSFUL") {
       await this.onPaymentSuccess({
         id: payment.id,
+        reference: payment.reference,
         purpose: payment.purpose,
         amount: payment.amount,
         currency: payment.currency,
@@ -632,8 +633,38 @@ export class PaymentService {
     return payment;
   }
 
+  /**
+   * Owner-return checkout. Success still activates only through updatePaymentStatus.
+   * Terminal provider failure is stored as FAILED and never activates.
+   * In-flight provider states stay PENDING.
+   */
+  async confirmCheckoutReference(reference: string) {
+    const payment = await prisma.payment.findUnique({ where: { reference } });
+    if (!payment) throw new Error("Payment not found");
+    if (payment.status === "SUCCESSFUL" || payment.status === "FAILED") return payment;
+
+    const adapter = this.adapters[payment.provider];
+    if (adapter.verifyTransactionDetailed) {
+      const detailed = await adapter.verifyTransactionDetailed(reference);
+      if (detailed.status === "success") {
+        return this.updatePaymentStatus(reference, "SUCCESSFUL");
+      }
+      if (detailed.status === "failed") {
+        return this.updatePaymentStatus(reference, "FAILED");
+      }
+      return payment;
+    }
+
+    const result = await adapter.verifyTransaction(reference);
+    if (result.status === "SUCCESSFUL") {
+      return this.updatePaymentStatus(reference, "SUCCESSFUL");
+    }
+    return payment;
+  }
+
   private async onPaymentSuccess(payment: {
     id: string;
+    reference: string;
     purpose: PaymentPurpose;
     amount: unknown;
     currency: string;
@@ -663,20 +694,49 @@ export class PaymentService {
     }
 
     const metaEarly = payment.metadata as Record<string, unknown> | null;
+    if (metaEarly?.kind === "celecard-concierge") {
+      const orderId = typeof metaEarly.orderId === "string" ? metaEarly.orderId : "";
+      if (orderId) {
+        const { markConciergePaid } = await import(
+          "@/services/digital-business-card/concierge.service"
+        );
+        await markConciergePaid({
+          orderId,
+          paymentId: payment.id,
+          paymentReference: payment.reference,
+          amountGhs: Number(payment.amount),
+        });
+      }
+      return;
+    }
     if (metaEarly?.kind === "smartcard-subscription") {
       const cardId = typeof metaEarly.cardId === "string" ? metaEarly.cardId : "";
       const planId = typeof metaEarly.planId === "string" ? metaEarly.planId : "";
       const userId = typeof metaEarly.userId === "string" ? metaEarly.userId : "";
       if (cardId && planId && userId) {
-        const { activateDigitalCardFromPayment } = await import(
+        const { activateDigitalCardFromPayment, recordCeleCardLifecycleEvent } = await import(
           "@/services/digital-business-card/digital-business-card.service"
         );
-        await activateDigitalCardFromPayment({
+        const chargedPriceGhs =
+          typeof metaEarly.priceGhs === "number" ? metaEarly.priceGhs : Number(payment.amount);
+        const months = typeof metaEarly.months === "number" ? metaEarly.months : null;
+        const activated = await activateDigitalCardFromPayment({
           userId,
           cardId,
           planId,
           amountGhs: Number(payment.amount),
+          paymentId: payment.id,
+          chargedPriceGhs,
+          months,
         });
+        if (!activated) {
+          console.error("[smartcard.activate] payment succeeded but card stayed offline", payment.id, cardId);
+          await recordCeleCardLifecycleEvent({
+            cardId,
+            kind: "ActivationFailed",
+            meta: { paymentId: payment.id, planId, amountGhs: Number(payment.amount) },
+          });
+        }
       }
       return;
     }

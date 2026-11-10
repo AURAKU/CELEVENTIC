@@ -1,0 +1,95 @@
+const SECOND = 1000;
+const MINUTE = 60 * SECOND;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+export type SubscriptionCountdownKind = "renewal" | "expiry" | "ended";
+
+export type SubscriptionCountdown = {
+  kind: SubscriptionCountdownKind;
+  remainingMs: number;
+  endsAt: Date;
+  paidThrough: string;
+  clock: string;
+  label: string;
+  urgent: boolean;
+};
+
+export function parseSubscriptionEnd(value: Date | string | number | null | undefined): Date | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  return null;
+}
+
+export function formatPaidThrough(date: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+export function countdownTickMs(remainingMs: number): number {
+  const abs = Math.abs(remainingMs);
+  if (abs < HOUR) return SECOND;
+  if (abs < DAY) return 15 * SECOND;
+  return MINUTE;
+}
+
+export function formatCountdownClock(ms: number): string {
+  const abs = Math.max(0, Math.abs(ms));
+  const days = Math.floor(abs / DAY);
+  const hours = Math.floor((abs % DAY) / HOUR);
+  const minutes = Math.floor((abs % HOUR) / MINUTE);
+  const seconds = Math.floor((abs % MINUTE) / SECOND);
+  if (days >= 1) {
+    const dayPart = `${days} day${days === 1 ? "" : "s"}`;
+    if (hours < 1) return dayPart;
+    return `${dayPart} ${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+  if (hours >= 1) {
+    return `${hours} hour${hours === 1 ? "" : "s"} ${minutes} minute${minutes === 1 ? "" : "s"}`;
+  }
+  if (minutes >= 1) {
+    return `${minutes} minute${minutes === 1 ? "" : "s"} ${seconds} second${seconds === 1 ? "" : "s"}`;
+  }
+  return `${seconds} second${seconds === 1 ? "" : "s"}`;
+}
+
+export function subscriptionCountdown(
+  expiresAt: Date | string | number | null | undefined,
+  status?: string | null,
+  now: Date | number = Date.now()
+): SubscriptionCountdown | null {
+  const endsAt = parseSubscriptionEnd(expiresAt);
+  if (!endsAt) return null;
+  const nowMs = typeof now === "number" ? now : now.getTime();
+  const remainingMs = endsAt.getTime() - nowMs;
+  const clock = formatCountdownClock(remainingMs);
+  const ended = remainingMs <= 0;
+  const trial = (status ?? "").toUpperCase() === "TRIAL";
+  const kind: SubscriptionCountdownKind = ended ? "ended" : trial ? "expiry" : "renewal";
+  const label = ended
+    ? `Ended ${clock} ago`
+    : trial
+      ? `Studio ends in ${clock}`
+      : `Renews in ${clock}`;
+  return {
+    kind,
+    remainingMs,
+    endsAt,
+    paidThrough: formatPaidThrough(endsAt),
+    clock,
+    label,
+    urgent: remainingMs > 0 && remainingMs <= 3 * DAY,
+  };
+}

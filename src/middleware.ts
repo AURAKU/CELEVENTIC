@@ -1,6 +1,7 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import { canAccessAdminPanel } from "@/lib/rbac";
+import { safeNextPath } from "@/lib/auth/safe-next-path";
 import type { UserRole } from "@prisma/client";
 
 export default withAuth(
@@ -17,6 +18,7 @@ export default withAuth(
       const isVendorIncomplete =
         (token.accountType === "VENDOR" || role === "VENDOR") && !token.onboardingCompletedAt;
       const needsAccountIntent = !token.accountType && role !== "VENDOR";
+      const callback = safeNextPath(req.nextUrl.searchParams.get("callbackUrl"));
       const dest = needsAccountIntent
         ? "/auth/onboarding/intent"
         : isVendorIncomplete
@@ -25,7 +27,7 @@ export default withAuth(
             ? "/dashboard/getting-started"
             : role && canAccessAdminPanel(role) && adminViewMode !== "user"
               ? "/admin"
-              : "/dashboard";
+              : callback || "/dashboard";
       return NextResponse.redirect(new URL(dest, req.url));
     }
 

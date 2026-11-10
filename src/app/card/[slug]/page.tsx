@@ -1,25 +1,60 @@
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { DigitalCardPublicView } from "@/components/digital-business-card/digital-card-public-view";
+import {
+  DEMO_CARD_SLUG,
+  getDemoCardBySlug,
+  isDemoCardSlug,
+} from "@/lib/digital-business-card/demo-card";
+import { toGuestPublicPayload } from "@/lib/digital-business-card/access";
+import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
+import {
+  buildCeleCardShareMetadata,
+  celeCardShareCacheVersion,
+  courtesyCeleCardMetadata,
+  digitalCardOgImagePath,
+  withheldCeleCardMetadata,
+} from "@/lib/digital-business-card/share";
+import { celeCardPublicPresentation } from "@/lib/digital-business-card/lifecycle";
+import { recordCeleCardLifecycleEvent } from "@/services/digital-business-card/digital-business-card.service";
+import { getServerAppUrl } from "@/lib/app-url";
 import {
   getDigitalCardBySlug,
   incrementDigitalCardView,
-  toPublicPayload,
+  isDigitalCardLive,
 } from "@/services/digital-business-card/digital-business-card.service";
+import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
+  const origin = await getServerAppUrl();
+  const demo = getDemoCardBySlug(slug);
+  if (demo) {
+    if (demo.presentationMode === "courtesy" || !demo.isLive) {
+      return courtesyCeleCardMetadata(demo.displayName);
+    }
+    return buildCeleCardShareMetadata({
+      card: demo,
+      origin,
+      imagePath: digitalCardOgImagePath(demo.slug, "demo"),
+    });
+  }
   const card = await getDigitalCardBySlug(slug);
-  if (!card) return { title: "CeleCard" };
-  return {
-    title: `${card.displayName} · Celeventic CeleCard`,
-    description:
-      card.bio ||
-      [card.title, card.company].filter(Boolean).join(" · ") ||
-      "Celeventic CeleCard. Your living card, one tap away",
-  };
+  if (!card || card.deletedAt) return withheldCeleCardMetadata();
+  if (isDigitalCardLive(card)) {
+    return buildCeleCardShareMetadata({
+      card,
+      origin,
+      imagePath: digitalCardOgImagePath(card.slug, celeCardShareCacheVersion(card.updatedAt)),
+    });
+  }
+  if (celeCardPublicPresentation(card) === "courtesy") {
+    return courtesyCeleCardMetadata(card.displayName);
+  }
+  return withheldCeleCardMetadata();
 }
 
 export default async function DigitalBusinessCardPage({
@@ -28,15 +63,31 @@ export default async function DigitalBusinessCardPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  if (isDemoCardSlug(slug) && slug !== DEMO_CARD_SLUG) {
+    redirect(`/card/${DEMO_CARD_SLUG}`);
+  }
+
+  const demo = getDemoCardBySlug(slug);
+  if (demo) {
+    return <DigitalCardPublicView card={demo} origin={await getServerAppUrl()} />;
+  }
+
   const card = await getDigitalCardBySlug(slug);
-  if (!card) notFound();
+  if (!card || card.deletedAt) notFound();
 
-  void incrementDigitalCardView(card.id).catch(() => undefined);
+  if (isDigitalCardLive(card)) {
+    void incrementDigitalCardView(card.id).catch(() => undefined);
+  } else if (celeCardPublicPresentation(card) === "courtesy") {
+    void recordCeleCardLifecycleEvent({ cardId: card.id, kind: "CourtesyPageViewed" }).catch(() => undefined);
+  }
 
-  const h = await headers();
-  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
-  const proto = h.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-  const origin = `${proto}://${host}`;
+  const jar = await cookies();
+  const grant = await resolveCeleCardGrant(card.id, jar.get(celeCardGrantCookieName(card.id))?.value);
 
-  return <DigitalCardPublicView card={toPublicPayload(card)} origin={origin} />;
+  return (
+    <DigitalCardPublicView
+      card={toGuestPublicPayload(card, grant?.itemKeys ?? [])}
+      origin={await getServerAppUrl()}
+    />
+  );
 }

@@ -55,13 +55,16 @@ Key URLs:
 - /dashboard/wallet. Event Wallet / billing money flows
 - /dashboard/settings. Account, branding, billing
 - /marketplace. Vendor marketplace
+- /digital-cards. CeleYou marketing and themes
+- /dashboard/business-card. CeleYou studio
+- /card/[slug]. Public CeleYou a guest opens from QR, NFC, or a link
 - /auth/login and /auth/register. Sign in / create account
 - /vendor/onboarding. Vendor signup flow
 `.trim();
 
   return `
 PRODUCT
-Celeventic is the Intelligent Event Operating System for celebrations (weddings, funerals, birthdays, corporate, church, private). Guests never need an app. Everything runs from secure web links. Hosts run invitations, guests, seating, QR admission, Event Guide, gifts, tickets, marketplace vendors, communications, and Memory Vault from one dashboard.
+Celeventic is the Intelligent Event Operating System for celebrations (weddings, funerals, birthdays, corporate, church, private). Guests never need an app. Everything runs from secure web links. Hosts run invitations, guests, seating, QR admission, Event Guide, CeleYou, gifts, tickets, marketplace vendors, communications, and Memory Vault from one dashboard. CeleYou is the living identity card: design it, pay a plan, share with QR, NFC, Wallet, or a link. Guests open it without an account.
 
 GUEST JOURNEY (Invite → Remember)
 ${journey}
@@ -92,7 +95,7 @@ const OFF_TOPIC_PATTERNS =
   /\b(weather|homework|recipe|crypto|bitcoin|stock|dating|politics|election|joke|poem|code this|write (me )?a (python|javascript|essay)|medical advice|diagnose|lottery)\b/i;
 
 const PLATFORM_HINT =
-  /\b(celeventic|invite|invitation|rsvp|guest|qr|scan|admission|event|organizer|vendor|seating|memory|vault|gift|ticket|marketplace|dashboard|guide|whatsapp|pass|check[- ]?in|template|design studio|onboarding|billing|wallet|host|door staff)\b/i;
+  /\b(celeventic|invite|invitation|rsvp|guest|qr|scan|admission|event|organizer|vendor|seating|memory|vault|gift|ticket|marketplace|dashboard|guide|whatsapp|pass|check[- ]?in|template|design studio|onboarding|billing|wallet|host|door staff|celeyou|celecard|nfc|identity card|digital card)\b/i;
 
 export function looksOffTopic(message: string): boolean {
   const q = message.trim();

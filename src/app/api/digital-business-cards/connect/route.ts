@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { guestMayUsePublicAction, isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
 import {
   createSmartCardConnection,
   getDigitalCardBySlug,
-  isDigitalCardLive,
 } from "@/services/digital-business-card/digital-business-card.service";
+import { DEMO_CARD, isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
+import { rateLimit } from "@/lib/rate-limit";
+import { requestClientIp } from "@/lib/http/client-ip";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +41,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  const ip = requestClientIp(req);
+  const perCard = await rateLimit(`celecard-connect:${parsed.data.slug}:${ip}`, 5, 300);
+  const perIp = await rateLimit(`celecard-connect-ip:${ip}`, 30, 300);
+  if (!perCard.success || !perIp.success) {
+    return NextResponse.json({ error: "Too many connection attempts. Try again later." }, { status: 429 });
+  }
+
+  if (isDemoCardSlug(parsed.data.slug)) {
+    return NextResponse.json({
+      ok: true,
+      connectionId: "demo",
+      ownerName: DEMO_CARD.displayName,
+    });
+  }
+
   const card = await getDigitalCardBySlug(parsed.data.slug);
-  if (!card || !isDigitalCardLive(card)) {
+  if (!card || !isCeleCardPubliclyReachable(card)) {
     return NextResponse.json({ error: "Card unavailable" }, { status: 404 });
   }
-  if (card.connectBackEnabled === false) {
+  if (!guestMayUsePublicAction(card, "connect")) {
     return NextResponse.json({ error: "Connect Back is disabled" }, { status: 403 });
   }
 

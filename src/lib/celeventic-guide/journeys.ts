@@ -20,7 +20,7 @@ export const START_HERE_JOURNEYS: StartHereJourney[] = [
     id: "organizer",
     role: "ORGANIZER",
     title: "Organizer Start Here",
-    summary: "Create the event, invite guests, seat them, then go live.",
+    summary: "Create the event, invite guests, seat them, then go live. Add a CeleYou when you need a living identity.",
     slugs: [
       "create-an-event",
       "build-an-invitation",
@@ -28,6 +28,7 @@ export const START_HERE_JOURNEYS: StartHereJourney[] = [
       "seating-organizer",
       "event-guide-organizer",
       "qr-admission-organizer",
+      "celeyou",
     ],
   },
   {

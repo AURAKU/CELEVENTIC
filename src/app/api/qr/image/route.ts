@@ -84,17 +84,29 @@ export async function GET(req: Request) {
         logoSize = isPinnedQrCenterAllowed(center) && center !== CELEVENTIC_OFFICIAL_LOGO ? "hero" : "balanced";
       }
 
+      const extras = { transparent: searchParams.get("bg") === "transparent" };
+
       if (format === "svg") {
         const { generateBrandedQrSvg } = await import("@/lib/qr/branded-qr-generator");
-        const svg = await generateBrandedQrSvg(url, center, size, mode, logoSize);
+        const svg = await generateBrandedQrSvg(url, center, size, mode, logoSize, extras);
+        filename = extras.transparent ? "celecard-transparent.svg" : "celecard.svg";
         return new NextResponse(svg, {
-          headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=300" },
+          headers: {
+            "Content-Type": "image/svg+xml",
+            "Cache-Control": "public, max-age=300",
+            ...(download ? { "Content-Disposition": `attachment; filename="${filename}"` } : {}),
+          },
         });
       }
 
-      const png = await generateBrandedQrPng(url, center, size, mode, logoSize);
+      const png = await generateBrandedQrPng(url, center, size, mode, logoSize, extras);
+      filename = extras.transparent ? `celecard-${size}-transparent.png` : `celecard-${size}.png`;
       return new NextResponse(new Uint8Array(png), {
-        headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=300" },
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "public, max-age=300",
+          ...(download ? { "Content-Disposition": `attachment; filename="${filename}"` } : {}),
+        },
       });
     }
 

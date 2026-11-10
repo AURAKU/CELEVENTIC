@@ -3,26 +3,16 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { DIGITAL_CARD_THEMES } from "@/lib/digital-business-card/themes";
+import { digitalCardSocialsSchema } from "@/lib/digital-business-card/socials";
+import { resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
 import { isDigitalCardLive } from "@/services/digital-business-card/digital-business-card.service";
 import {
   createDigitalCard,
   listDigitalCardsForUser,
 } from "@/services/digital-business-card/digital-business-card.service";
+import type { DigitalCardSocials } from "@/lib/digital-business-card/types";
 
-const socialsSchema = z
-  .object({
-    linkedin: z.string().max(200).optional(),
-    website: z.string().max(300).optional(),
-    instagram: z.string().max(200).optional(),
-    x: z.string().max(200).optional(),
-    facebook: z.string().max(200).optional(),
-    whatsapp: z.string().max(40).optional(),
-    youtube: z.string().max(200).optional(),
-    tiktok: z.string().max(200).optional(),
-    github: z.string().max(200).optional(),
-  })
-  .partial()
-  .optional();
+const socialsSchema = digitalCardSocialsSchema;
 
 const createSchema = z.object({
   displayName: z.string().min(2).max(80),
@@ -34,7 +24,7 @@ const createSchema = z.object({
   website: z.string().max(300).nullable().optional(),
   socials: socialsSchema,
   themeId: z.string().optional(),
-  avatarUrl: z.string().max(500).nullable().optional(),
+  avatarUrl: z.string().max(800).nullable().optional(),
   slug: z.string().min(2).max(48).optional(),
   isPublished: z.boolean().optional(),
   nfcEnabled: z.boolean().optional(),
@@ -46,14 +36,20 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const cards = await listDigitalCardsForUser(session.user.id);
-  return NextResponse.json({
-    success: true,
-    data: cards.map((c) => ({
-      ...c,
-      isLive: isDigitalCardLive(c),
-    })),
-  });
+  try {
+    const cards = await listDigitalCardsForUser(session.user.id);
+    return NextResponse.json({
+      success: true,
+      data: cards.map((c) => ({
+        ...c,
+        isLive: isDigitalCardLive(c),
+        lifecycleState: resolveCeleCardLifecycle(c),
+      })),
+    });
+  } catch (error) {
+    console.error("[celecard.list]", error);
+    return NextResponse.json({ error: "Could not load CeleYou cards" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
@@ -76,6 +72,7 @@ export async function POST(req: Request) {
   const card = await createDigitalCard(session.user.id, {
     ...parsed.data,
     email,
+    socials: parsed.data.socials as DigitalCardSocials,
   });
 
   return NextResponse.json({ success: true, data: { ...card, isLive: isDigitalCardLive(card) } }, { status: 201 });

@@ -1,8 +1,8 @@
 import { DigitalCardStudioClient } from "@/components/digital-business-card/digital-card-studio-client";
 
 export const metadata = {
-  title: "CeleCard · Celeventic",
-  description: "Design your living CeleCard. Share with QR, NFC, Wallet, or link.",
+  title: "CeleYou · Celeventic",
+  description: "Design your living CeleYou. Share with QR, NFC, Wallet, or link.",
 };
 
 export default function DigitalBusinessCardDashboardPage() {

@@ -114,6 +114,8 @@ describe("expanded inventory §52/§59", () => {
       "event-os-funeral",
       "event-os-corporate",
       "organizer-quick-start",
+      "celeyou",
+      "open-a-celeyou",
       "troubleshoot-invitation-wont-open",
       "troubleshoot-qr-wont-scan",
       "troubleshoot-vendor-pass",
@@ -137,6 +139,8 @@ describe("contextual help expansion §58/§62", () => {
     assert.ok(resolveContextHelp("/dashboard/tickets"));
     assert.ok(resolveContextHelp("/dashboard/qr-hub"));
     assert.ok(resolveContextHelp("/dashboard/wallet"));
+    assert.ok(resolveContextHelp("/dashboard/business-card"));
+    assert.ok(resolveContextHelp("/digital-cards"));
     assert.equal(resolveContextHelp("/invite/abc"), null);
     assert.ok(MINI_TOURS.length >= 2);
   });

@@ -3,9 +3,9 @@ import { Footer } from "@/components/layout/footer";
 import { PublicDigitalCardsShowcase } from "@/components/digital-business-card/public-digital-cards-showcase";
 
 export const metadata = {
-  title: "CeleCard templates | Celeventic",
+  title: "CeleYou templates | Celeventic",
   description:
-    "Browse CeleCard themes and see how QR, NFC, and Wallet share one living identity. Original art for every celebration.",
+    "Browse CeleYou themes and see how QR, NFC, and Wallet share one living identity. Original art for every celebration.",
 };
 
 export default function DigitalCardsPage() {

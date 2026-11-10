@@ -1,13 +1,13 @@
 import type { AccountType } from "@prisma/client";
-import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
 import {
   Briefcase,
   Building2,
   CalendarHeart,
-  CreditCard,
   MailOpen,
   Store,
 } from "lucide-react";
+import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 
 export type OnboardingIntentId = AccountType;
 
@@ -19,7 +19,7 @@ export type OnboardingIntentOption = {
   description: string;
   example: string;
   next: string;
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string }>;
   joinIntent: boolean;
   requiresConfirmFields: boolean;
   confirmHint: string;
@@ -76,15 +76,15 @@ export const ONBOARDING_INTENT_OPTIONS: OnboardingIntentOption[] = [
   {
     id: "EVENT_OWNER",
     queryKey: "smartcard",
-    title: "I need a CeleCard",
+    title: "I need a CeleYou",
     description: "QR, NFC, and Wallet identity you share when you meet people.",
-    example: "Design your CeleCard, pay a plan, and stay live while the subscription is active.",
-    next: "After signup we'll open CeleCard studio so you can design and activate.",
-    icon: CreditCard,
+    example: "Design your CeleYou, pay a plan, and stay live while the subscription is active.",
+    next: "After signup we'll open CeleYou studio so you can design and activate.",
+    icon: CeleYouMarkIcon,
     joinIntent: false,
     requiresConfirmFields: false,
-    confirmHint: "We'll take you to CeleCard studio right after signup.",
-    primaryCta: "Design my CeleCard",
+    confirmHint: "We'll take you to CeleYou studio right after signup.",
+    primaryCta: "Design my CeleYou",
     primaryHref: "/dashboard/business-card",
   },
   {
@@ -154,6 +154,7 @@ export function intentFromQuery(raw?: string | null): OnboardingIntentOption | u
     planner: "organizer",
     vendor: "vendor",
     smartcard: "smartcard",
+    celecard: "smartcard",
     card: "smartcard",
     identity: "smartcard",
     "digital-card": "smartcard",
@@ -172,6 +173,8 @@ export type StoredSignupIntent = {
   joinIntent: boolean;
   organizationName?: string;
   vendorCategory?: string;
+  queryKey?: string;
+  productIntent?: string;
 };
 
 export function persistSignupIntent(intent: StoredSignupIntent) {

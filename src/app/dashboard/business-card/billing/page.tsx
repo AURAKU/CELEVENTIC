@@ -1,8 +1,8 @@
 import { SmartCardBillingClient } from "@/components/digital-business-card/smartcard-billing-client";
 
 export const metadata = {
-  title: "CeleCard billing · Celeventic",
-  description: "See CeleCard activation, renew a paid plan, and review Paystack charges.",
+  title: "CeleYou billing · Celeventic",
+  description: "See CeleYou activation, renew a paid plan, and review Paystack charges.",
 };
 
 export default function SmartCardBillingPage() {

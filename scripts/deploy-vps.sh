@@ -124,6 +124,9 @@ npx prisma generate
 log "Stopping only ${APP_NAME} before migrate (Spark & Drive untouched)"
 pm2 stop "$APP_NAME"
 
+log "Additive CeleYou SQLite columns (duplicate-safe, no overwrite)"
+npx tsx scripts/sql/apply-celeyou-sqlite.ts "$DB_PATH"
+
 npx prisma migrate deploy
 npx prisma migrate status
 

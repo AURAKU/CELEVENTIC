@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { performLogout } from "@/lib/auth/logout";
+import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 import { useLocale } from "@/components/i18n/locale-provider";
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
@@ -54,6 +55,7 @@ const adminSections: NavSection[] = [
       { href: "/admin/commerce", label: "Packages & Add-ons", icon: Settings },
       { href: "/admin/packages", label: "Event Packages", icon: Layers },
       { href: "/admin/payments", label: "Payments", icon: CreditCard },
+      { href: "/admin/celecard", label: "CeleYou Command Center", icon: CeleYouMarkIcon },
       { href: "/admin/music", label: "Music Library", icon: Music },
       { href: "/admin/revisions", label: "Revisions", icon: RefreshCw },
       { href: "/admin/reviews", label: "Reviews", icon: Star },

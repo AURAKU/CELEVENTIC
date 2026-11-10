@@ -31,7 +31,7 @@ export function detectNfcWriteSupport(
     return {
       canWrite: false,
       guidance:
-        "iPhone browsers cannot write NFC tags. Use a pre-programmed Celeventic NFC card, QR, Wallet QR, or AirDrop/share link.",
+        "This iPhone can read a physical CeleYou tag. Safari cannot turn the phone into a tag for phone to phone NFC. Show the QR or share the link instead.",
       platformHint: "ios",
     };
   }
@@ -39,7 +39,8 @@ export function detectNfcWriteSupport(
   if (hasNfc && isAndroid) {
     return {
       canWrite: true,
-      guidance: "Hold a blank NFC tag to the back of your phone, then tap Write.",
+      guidance:
+        "Hold a blank NFC tag to the back of this phone, then tap Write. Phone to phone NFC is still device specific. QR and share stay universal.",
       platformHint: "android-chrome",
     };
   }
@@ -48,7 +49,7 @@ export function detectNfcWriteSupport(
     return {
       canWrite: false,
       guidance:
-        "This browser does not support Web NFC. Use Chrome on Android, or copy the short link into an NFC writer app.",
+        "This browser cannot write NFC tags. Use Chrome on Android, a pre-programmed tag, or show the QR.",
       platformHint: "android-chrome",
     };
   }
@@ -56,7 +57,7 @@ export function detectNfcWriteSupport(
   return {
     canWrite: false,
     guidance:
-      "Web NFC writing works in Chrome on Android. On this device, copy the short NFC link or use a pre-programmed tag.",
+      "Physical NFC cards open this same public link. Browser NFC writing works in Chrome on Android only. On this device, copy the link or show the QR.",
     platformHint: "desktop",
   };
 }

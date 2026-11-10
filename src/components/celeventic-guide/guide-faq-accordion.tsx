@@ -41,6 +41,23 @@ const FAQ = [
     ),
   },
   {
+    q: "What is CeleYou?",
+    a: (
+      <>
+        CeleYou is your living identity card. Design it in studio, pay a plan so the public page
+        stays live, and share with QR, NFC, Wallet, or a link. Start with{" "}
+        <Link href="/guide/celeyou" className="text-brand-700 hover:underline">
+          CeleYou
+        </Link>
+        , or{" "}
+        <Link href="/guide/open-a-celeyou" className="text-brand-700 hover:underline">
+          Open a CeleYou
+        </Link>{" "}
+        if someone shared theirs with you.
+      </>
+    ),
+  },
+  {
     q: "How do I scan QR codes at my event?",
     a: (
       <>

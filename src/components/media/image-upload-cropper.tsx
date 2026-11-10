@@ -47,6 +47,8 @@ interface ImageUploadCropperProps {
    * Uses separate file inputs (`capture`) so mobile OSes open Photos vs Camera cleanly.
    */
   enableCamera?: boolean;
+  /** Front camera for portraits, rear camera for documents. */
+  cameraFacing?: "user" | "environment";
 }
 
 export function ImageUploadCropper({
@@ -67,6 +69,7 @@ export function ImageUploadCropper({
   maxFileBytes,
   dropzoneNote = "or drag & drop · JPEG, PNG, WebP · max 10MB",
   enableCamera = false,
+  cameraFacing = "environment",
 }: ImageUploadCropperProps) {
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -249,7 +252,7 @@ export function ImageUploadCropper({
           {actionButtons}
           <p className="text-[11px] text-slate-400 mt-2">
             {enableCamera
-              ? "Gallery or live camera · then crop · JPEG, PNG, WebP"
+              ? "Gallery or live camera · then crop · JPEG, HEIC, PNG, WebP, GIF, AVIF"
               : dropzoneNote}
           </p>
           {uploading && (
@@ -264,7 +267,7 @@ export function ImageUploadCropper({
       <input
         ref={galleryRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif,.jfif,image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/avif,image/bmp,.jfif,.heic,.heif,image/*"
         className="hidden"
         onChange={onFileInputChange}
       />
@@ -275,7 +278,7 @@ export function ImageUploadCropper({
           ref={cameraRef}
           type="file"
           accept="image/*"
-          capture="environment"
+          capture={cameraFacing}
           className="hidden"
           onChange={onFileInputChange}
         />

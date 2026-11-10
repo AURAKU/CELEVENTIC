@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   DIGITAL_CARD_TRIAL_DAYS,
@@ -6,41 +7,69 @@ import {
   type DigitalCardSocials,
 } from "@/lib/digital-business-card/types";
 import { resolveDigitalCardTheme, type DigitalCardThemeId } from "@/lib/digital-business-card/themes";
+import {
+  isCeleCardFullyPublic,
+  renewalBaseDate,
+  resolveCeleCardLifecycle,
+  type CeleCardLifecycleInput,
+} from "@/lib/digital-business-card/lifecycle";
+import { pesewasMatch } from "@/lib/digital-business-card/plans";
+import {
+  digitalCardSlugCandidates,
+  isProtectedDigitalCardSlug,
+  pickAvailableDigitalCardSlug,
+  slugifyDigitalCardBase,
+  type DigitalCardSlugSeed,
+} from "@/lib/digital-business-card/slug";
 
-function slugifyBase(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
+export type AllocateDigitalCardSlugOptions = DigitalCardSlugSeed & {
+  excludeId?: string;
+};
+
+function isSlugConflict(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
-export async function allocateDigitalCardSlug(preferred: string, excludeId?: string): Promise<string> {
-  const base = slugifyBase(preferred) || "card";
-  let candidate = base;
-  let n = 0;
-  while (true) {
-    const existing = await prisma.digitalBusinessCard.findUnique({
-      where: { slug: candidate },
-      select: { id: true },
-    });
-    if (!existing || existing.id === excludeId) return candidate;
-    n += 1;
-    candidate = `${base}-${n}`;
-  }
+export async function allocateDigitalCardSlug(
+  preferred: string,
+  excludeIdOrOptions?: string | AllocateDigitalCardSlugOptions
+): Promise<string> {
+  const options =
+    typeof excludeIdOrOptions === "string"
+      ? { excludeId: excludeIdOrOptions, preferred }
+      : { preferred, ...(excludeIdOrOptions ?? {}) };
+  const candidates = digitalCardSlugCandidates({
+    preferred: options.preferred || preferred,
+    displayName: options.displayName || preferred,
+    company: options.company,
+    title: options.title,
+  });
+  const base = slugifyDigitalCardBase(candidates[0] || preferred) || "card";
+  const rows = await prisma.digitalBusinessCard.findMany({
+    where: {
+      OR: [{ slug: { in: candidates } }, { slug: { startsWith: `${base}-` } }],
+    },
+    select: { id: true, slug: true },
+  });
+  const taken = new Set(
+    rows.filter((row) => row.id !== options.excludeId).map((row) => row.slug)
+  );
+  return pickAvailableDigitalCardSlug(candidates, (slug) => taken.has(slug) || isProtectedDigitalCardSlug(slug));
 }
 
-export function isDigitalCardLive(card: {
-  isPublished: boolean;
-  subscriptionStatus: string;
-  subscriptionExpiresAt: Date | null;
-}): boolean {
-  if (!card.isPublished) return false;
-  if (card.subscriptionStatus !== "ACTIVE") return false;
-  if (card.subscriptionExpiresAt && card.subscriptionExpiresAt.getTime() < Date.now()) return false;
-  return true;
+export async function proposeDigitalCardSlug(input: AllocateDigitalCardSlugOptions) {
+  const requested = slugifyDigitalCardBase(input.preferred || input.displayName || "") || "card";
+  const slug = await allocateDigitalCardSlug(requested, input);
+  return {
+    requested,
+    slug,
+    available: slug === requested && !isProtectedDigitalCardSlug(requested),
+    adjusted: slug !== requested,
+  };
+}
+
+export function isDigitalCardLive(card: CeleCardLifecycleInput, now = new Date()): boolean {
+  return isCeleCardFullyPublic(resolveCeleCardLifecycle(card, now));
 }
 
 export function toPublicPayload(card: {
@@ -63,6 +92,10 @@ export function toPublicPayload(card: {
   isPublished: boolean;
   subscriptionStatus: string;
   subscriptionExpiresAt: Date | null;
+  adminSuspendedAt?: Date | null;
+  adminDeactivatedAt?: Date | null;
+  deletedAt?: Date | null;
+  lastActivatedAt?: Date | null;
 }): DigitalCardPublicPayload {
   const theme = resolveDigitalCardTheme(card.themeId);
   return {
@@ -79,10 +112,12 @@ export function toPublicPayload(card: {
     socials: normalizeSocials(card.socials),
     themeId: theme.id,
     avatarUrl: card.avatarUrl,
+    pronouns: null,
     nfcEnabled: card.nfcEnabled,
     connectBackEnabled: card.connectBackEnabled !== false,
     defaultMode: card.defaultMode || "professional",
     isLive: isDigitalCardLive(card),
+    presentationMode: isDigitalCardLive(card) ? "live" : "unavailable",
   };
 }
 
@@ -108,11 +143,16 @@ export type UpsertDigitalCardInput = {
   nfcEnabled?: boolean;
 };
 
+function isRetainedCard<T extends { deletedAt?: Date | null }>(card: T) {
+  return !card.deletedAt;
+}
+
 export async function listDigitalCardsForUser(userId: string) {
-  return prisma.digitalBusinessCard.findMany({
+  const cards = await prisma.digitalBusinessCard.findMany({
     where: { userId },
     orderBy: { updatedAt: "desc" },
   });
+  return cards.filter(isRetainedCard);
 }
 
 export async function getDigitalCardBySlug(slug: string) {
@@ -129,6 +169,7 @@ export async function resolveNfcDeviceTap(publicToken: string) {
     include: { card: true },
   });
   if (!device || device.status !== "ACTIVE") return null;
+  if (!isDigitalCardLive(device.card)) return device.card;
   await prisma.smartCardNfcDevice.update({
     where: { id: device.id },
     data: { tapCount: { increment: 1 }, lastTapAt: new Date() },
@@ -197,7 +238,9 @@ export async function createSmartCardConnection(input: {
 }
 
 export async function getDigitalCardForUser(userId: string, id: string) {
-  return prisma.digitalBusinessCard.findFirst({ where: { id, userId } });
+  const card = await prisma.digitalBusinessCard.findFirst({ where: { id, userId } });
+  if (!card || !isRetainedCard(card)) return null;
+  return card;
 }
 
 export async function createDigitalCard(userId: string, input: UpsertDigitalCardInput) {
@@ -206,27 +249,54 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
     throw new Error("displayName required");
   }
   const theme = resolveDigitalCardTheme(input.themeId);
-  const slug = await allocateDigitalCardSlug(input.slug || displayName);
-  return prisma.digitalBusinessCard.create({
-    data: {
-      userId,
-      slug,
-      displayName,
-      title: input.title?.trim() || null,
-      company: input.company?.trim() || null,
-      bio: input.bio?.trim() || null,
-      email: input.email?.trim() || null,
-      phone: input.phone?.trim() || null,
-      website: input.website?.trim() || null,
-      socials: (input.socials ?? {}) as object,
-      themeId: theme.id,
-      avatarUrl: input.avatarUrl || null,
-      isPublished: input.isPublished ?? true,
-      nfcEnabled: input.nfcEnabled ?? true,
-      subscriptionStatus: "TRIAL",
-      subscriptionExpiresAt: trialExpiryFromNow(),
-    },
-  });
+  const slugSeed = {
+    displayName,
+    company: input.company?.trim() || null,
+    title: input.title?.trim() || null,
+  };
+  let created: Awaited<ReturnType<typeof prisma.digitalBusinessCard.create>> | null = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const slug = await allocateDigitalCardSlug(input.slug || displayName, slugSeed);
+    try {
+      created = await prisma.digitalBusinessCard.create({
+        data: {
+          userId,
+          slug,
+          displayName,
+          title: slugSeed.title,
+          company: slugSeed.company,
+          bio: input.bio?.trim() || null,
+          email: input.email?.trim() || null,
+          phone: input.phone?.trim() || null,
+          website: input.website?.trim() || null,
+          socials: (input.socials ?? {}) as object,
+          themeId: theme.id,
+          avatarUrl: input.avatarUrl || null,
+          isPublished: input.isPublished ?? true,
+          nfcEnabled: input.nfcEnabled ?? true,
+          subscriptionStatus: "TRIAL",
+          subscriptionExpiresAt: trialExpiryFromNow(),
+        },
+      });
+      break;
+    } catch (error) {
+      if (!isSlugConflict(error) || attempt === 3) throw error;
+    }
+  }
+  if (!created) throw new Error("Could not allocate a unique public link");
+  await recordCeleCardLifecycleEvent({ cardId: created.id, kind: "CardCreated" });
+  await prisma.smartCardDesignVersion
+    .create({
+      data: {
+        cardId: created.id,
+        label: "Original design",
+        themeId: created.themeId,
+        config: { themeId: created.themeId, layout: "id-1" },
+        status: "SAVED",
+      },
+    })
+    .catch(() => undefined);
+  return created;
 }
 
 export async function updateDigitalCard(userId: string, id: string, input: UpsertDigitalCardInput) {
@@ -235,7 +305,26 @@ export async function updateDigitalCard(userId: string, id: string, input: Upser
   const theme = resolveDigitalCardTheme(input.themeId ?? existing.themeId);
   let slug = existing.slug;
   if (input.slug && input.slug !== existing.slug) {
-    slug = await allocateDigitalCardSlug(input.slug, existing.id);
+    slug = await allocateDigitalCardSlug(input.slug, {
+      excludeId: existing.id,
+      displayName: input.displayName ?? existing.displayName,
+      company: input.company !== undefined ? input.company : existing.company,
+      title: input.title !== undefined ? input.title : existing.title,
+    });
+  }
+  const nextTheme = theme.id;
+  if (nextTheme !== existing.themeId) {
+    await prisma.smartCardDesignVersion
+      .create({
+        data: {
+          cardId: existing.id,
+          label: `Saved ${existing.themeId}`,
+          themeId: existing.themeId,
+          config: { themeId: existing.themeId, layout: "id-1" },
+          status: "SAVED",
+        },
+      })
+      .catch(() => undefined);
   }
   return prisma.digitalBusinessCard.update({
     where: { id: existing.id },
@@ -250,7 +339,7 @@ export async function updateDigitalCard(userId: string, id: string, input: Upser
       phone: input.phone !== undefined ? input.phone?.trim() || null : undefined,
       website: input.website !== undefined ? input.website?.trim() || null : undefined,
       socials: input.socials !== undefined ? (input.socials as object) : undefined,
-      themeId: theme.id,
+      themeId: nextTheme,
       avatarUrl: input.avatarUrl !== undefined ? input.avatarUrl || null : undefined,
       isPublished: input.isPublished !== undefined ? input.isPublished : undefined,
       nfcEnabled: input.nfcEnabled !== undefined ? input.nfcEnabled : undefined,
@@ -264,31 +353,61 @@ export async function activateDigitalCardFromPayment(input: {
   cardId: string;
   planId: string;
   amountGhs: number;
+  paymentId?: string | null;
+  /** Price quoted at checkout. Prefer this over today's catalog so a later price change cannot withhold a paid card. */
+  chargedPriceGhs?: number | null;
+  months?: number | null;
 }) {
-  const { getSmartCardPlan, smartCardExpiryFromNow } = await import("@/lib/digital-business-card/plans");
-  const plan = getSmartCardPlan(input.planId);
-  if (!plan) return null;
-  if (Math.abs(plan.priceGhs - Number(input.amountGhs)) > 0.51) {
-    console.error("[smartcard.activate] amount mismatch", plan.id, input.amountGhs);
+  const { smartCardExpiryFromNow, getSmartCardPlanFromCatalog, getSmartCardPlan } = await import(
+    "@/lib/digital-business-card/plans"
+  );
+  const { getCeleCardCatalog } = await import("@/services/digital-business-card/catalog.service");
+  const catalog = await getCeleCardCatalog().catch(() => null);
+  const plan = getSmartCardPlanFromCatalog(input.planId, catalog?.plans) ?? getSmartCardPlan(input.planId);
+  const months = Number(input.months) > 0 ? Number(input.months) : plan?.months;
+  if (!months) return null;
+  const expectedCharge =
+    input.chargedPriceGhs != null && Number.isFinite(Number(input.chargedPriceGhs))
+      ? Number(input.chargedPriceGhs)
+      : plan?.priceGhs;
+  if (expectedCharge == null || !pesewasMatch(expectedCharge, Number(input.amountGhs))) {
+    console.error("[smartcard.activate] amount mismatch", input.planId, input.amountGhs, expectedCharge);
     return null;
   }
   const existing = await getDigitalCardForUser(input.userId, input.cardId);
   if (!existing) return null;
-  const base =
-    existing.subscriptionStatus === "ACTIVE" &&
-    existing.subscriptionExpiresAt &&
-    existing.subscriptionExpiresAt.getTime() > Date.now()
-      ? existing.subscriptionExpiresAt
-      : new Date();
-  const expires = smartCardExpiryFromNow(plan.months, base);
-  return prisma.digitalBusinessCard.update({
+  if (existing.deletedAt || existing.adminSuspendedAt) {
+    console.error("[smartcard.activate] blocked restricted card", existing.id);
+    return null;
+  }
+  if (input.paymentId && existing.lastActivationPaymentId === input.paymentId) {
+    return existing;
+  }
+  const wasLive = isDigitalCardLive(existing);
+  const base = renewalBaseDate(existing);
+  const expires = smartCardExpiryFromNow(months, base);
+  const updated = await prisma.digitalBusinessCard.update({
     where: { id: existing.id },
     data: {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: expires,
       isPublished: true,
+      lastActivatedAt: new Date(),
+      lastActivationPaymentId: input.paymentId || existing.lastActivationPaymentId,
+      lastCourtesyAt: null,
     },
   });
+  await recordCeleCardLifecycleEvent({
+    cardId: existing.id,
+    kind: wasLive ? "SubscriptionRenewed" : "SubscriptionActivated",
+    meta: {
+      planId: plan?.id ?? input.planId,
+      paymentId: input.paymentId ?? null,
+      months,
+      amountGhs: input.amountGhs,
+    },
+  });
+  return updated;
 }
 
 /** Admin / test bypass. Still requires an authenticated platform admin at the route. */
@@ -298,20 +417,54 @@ export async function activateDigitalCardPlan(userId: string, id: string, planId
   if (!plan) return null;
   const existing = await getDigitalCardForUser(userId, id);
   if (!existing) return null;
-  const base =
-    existing.subscriptionStatus === "ACTIVE" &&
-    existing.subscriptionExpiresAt &&
-    existing.subscriptionExpiresAt.getTime() > Date.now()
-      ? existing.subscriptionExpiresAt
-      : new Date();
-  return prisma.digitalBusinessCard.update({
+  if (existing.deletedAt || existing.adminSuspendedAt) return null;
+  const wasLive = isDigitalCardLive(existing);
+  const base = renewalBaseDate(existing);
+  const updated = await prisma.digitalBusinessCard.update({
     where: { id: existing.id },
     data: {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: smartCardExpiryFromNow(plan.months, base),
       isPublished: true,
+      lastActivatedAt: new Date(),
+      lastCourtesyAt: null,
     },
   });
+  await recordCeleCardLifecycleEvent({
+    cardId: existing.id,
+    kind: wasLive ? "SubscriptionRenewed" : "SubscriptionActivated",
+    meta: { planId: plan.id, adminBypass: true, months: plan.months },
+  });
+  return updated;
+}
+
+export async function recordCeleCardLifecycleEvent(input: {
+  cardId: string;
+  kind: string;
+  meta?: Record<string, unknown>;
+}) {
+  try {
+    await prisma.smartCardLifecycleEvent?.create({
+      data: {
+        cardId: input.cardId,
+        kind: input.kind,
+        meta: (input.meta ?? {}) as object,
+      },
+    });
+  } catch {
+    /* Analytics must never block checkout or card saves. */
+  }
+}
+
+export async function softDeleteDigitalCard(userId: string, id: string) {
+  const existing = await getDigitalCardForUser(userId, id);
+  if (!existing) return null;
+  const updated = await prisma.digitalBusinessCard.update({
+    where: { id: existing.id },
+    data: { deletedAt: new Date(), isPublished: false },
+  });
+  await recordCeleCardLifecycleEvent({ cardId: existing.id, kind: "CardDeleted" });
+  return updated;
 }
 
 export async function incrementDigitalCardView(id: string) {
@@ -319,4 +472,34 @@ export async function incrementDigitalCardView(id: string) {
     where: { id },
     data: { viewCount: { increment: 1 } },
   });
+}
+
+export async function recordSmartCardInteraction(cardId: string, kind: string, meta?: Record<string, unknown>) {
+  await prisma.smartCardInteraction
+    .create({
+      data: { cardId, kind, meta: (meta ?? {}) as object },
+    })
+    .catch(() => undefined);
+}
+
+export async function getDigitalCardAnalyticsForUser(userId: string, cardId: string) {
+  const card = await getDigitalCardForUser(userId, cardId);
+  if (!card) return null;
+  const grouped = await prisma.smartCardInteraction.groupBy({
+    by: ["kind"],
+    where: { cardId },
+    _count: { _all: true },
+  });
+  const byKind: Record<string, number> = {};
+  for (const row of grouped) {
+    byKind[row.kind] = row._count._all;
+  }
+  return {
+    viewCount: card.viewCount,
+    qrOpens: byKind.qr_open ?? 0,
+    nfcTaps: byKind.nfc_tap ?? 0,
+    connects: byKind.connect ?? 0,
+    reconnects: byKind.courtesy_reconnect ?? 0,
+    byKind,
+  };
 }

@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
 import {
   LayoutDashboard,
   Calendar,
@@ -27,7 +27,6 @@ import {
   BookOpen,
   Video,
   Flame,
-  CreditCard,
   Star,
   Clock,
   Package,
@@ -41,14 +40,16 @@ import {
   Lock,
   Plus,
   Gift,
+  CreditCard,
 } from "lucide-react";
+import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 
 export type WorkspaceId = "organizer" | "vendor" | "funeral" | "admin";
 
 export interface NavItem {
   href: string;
   labelKey: string;
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string }>;
   exact?: boolean;
   /** Platform admin only. Hidden from organizer/staff/vendor UIs */
   adminOnly?: boolean;
@@ -96,7 +97,7 @@ export const ORGANIZER_NAV: NavSection[] = [
     labelKey: "dashboard.nav_section_design",
     items: [
       { href: "/dashboard/design-studio", labelKey: "dashboard.nav_design_studio", icon: Palette },
-      { href: "/dashboard/business-card", labelKey: "dashboard.nav_business_card", icon: CreditCard },
+      { href: "/dashboard/business-card", labelKey: "dashboard.nav_business_card", icon: CeleYouMarkIcon },
       { href: "/dashboard/business-card/billing", labelKey: "dashboard.nav_smartcard_billing", icon: Receipt },
       { href: "/dashboard/invitations?tab=studio", labelKey: "dashboard.nav_invitation_studio", icon: Mail },
       { href: "/dashboard/flyers", labelKey: "dashboard.nav_flyer_studio", icon: Image },

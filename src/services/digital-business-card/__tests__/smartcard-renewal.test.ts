@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { dueRenewalWindow } from "../smartcard-renewal.service";
+import { dueReminderOffsetDays } from "@/lib/digital-business-card/lifecycle";
 
 function hoursFromNow(hours: number, now: Date) {
   return new Date(now.getTime() + hours * 3_600_000);
@@ -22,5 +23,10 @@ describe("dueRenewalWindow", () => {
     assert.equal(dueRenewalWindow(hoursFromNow(1, now), now), 24);
     assert.equal(dueRenewalWindow(hoursFromNow(0, now), now), 0);
     assert.equal(dueRenewalWindow(hoursFromNow(-2, now), now), 0);
+  });
+
+  it("uses day offsets for the Continuity reminder engine", () => {
+    assert.equal(dueReminderOffsetDays(hoursFromNow(24 * 14, now), now), 14);
+    assert.equal(dueReminderOffsetDays(hoursFromNow(-24 * 3, now), now), -3);
   });
 });

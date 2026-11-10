@@ -36,11 +36,20 @@ export const CLIENT_MAX_VIDEO_BYTES = 50 * 1024 * 1024;
  * @param maxBytes Pass `Infinity` when the caller compresses client-side before
  *   upload. The raw file size is then irrelevant to what actually gets sent.
  */
+const IMAGE_NAME =
+  /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tif{1,2}|jfif|dng)$/i;
+
 export function validateClientImage(
   file: File,
   maxBytes: number = CLIENT_MAX_IMAGE_BYTES
 ): string | null {
-  if (!file.type.startsWith("image/")) return "Please choose an image file (JPEG, PNG, WebP).";
+  const named = IMAGE_NAME.test(file.name);
+  if (file.type && !file.type.startsWith("image/") && !named) {
+    return "Please choose a photo. JPEG, HEIC, PNG, WebP, GIF, or AVIF.";
+  }
+  if (!file.type && !named) {
+    return "Please choose a photo. JPEG, HEIC, PNG, WebP, GIF, or AVIF.";
+  }
   if (Number.isFinite(maxBytes) && file.size > maxBytes) {
     return `Image too large. Max ${Math.round(maxBytes / (1024 * 1024))}MB.`;
   }

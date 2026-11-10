@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GUIDE_SERVICE_LINE } from "@/lib/celeventic-guide/platform-journey";
 
 /**
  * Compact CTA for landing + /guide. Links to the full interactive walkthrough page.
@@ -25,8 +26,7 @@ export function JourneyWalkthroughTeaser({ className }: { className?: string }) 
             See How Celeventic Works
           </h2>
           <p className="text-sm text-white/75 leading-relaxed">
-            Invitations, RSVP, QR admission, Event Guide, gifts, vendors, and Memory Vault. Explore
-            the full journey in an interactive walkthrough.
+            {GUIDE_SERVICE_LINE} Explore the full journey in an interactive walkthrough.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">

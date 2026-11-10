@@ -12,12 +12,15 @@ import {
 
 export const playfair = Playfair_Display({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
   variable: "--font-playfair",
   display: "swap",
 });
 
 export const cinzel = Cinzel({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-cinzel",
   display: "swap",
 });
@@ -31,6 +34,7 @@ export const greatVibes = Great_Vibes({
 
 export const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-cormorant",
   display: "swap",

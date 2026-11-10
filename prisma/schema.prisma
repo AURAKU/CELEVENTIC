@@ -2230,20 +2230,93 @@ model DigitalBusinessCard {
   subscriptionExpiresAt  DateTime?
   viewCount              Int      @default(0)
   offlineSnapshotVersion Int      @default(0)
+  /// Administrative restriction. Payment cannot clear this.
+  adminSuspendedAt       DateTime?
+  /// Temporary public withhold. Distinct from suspension and expiry.
+  adminDeactivatedAt     DateTime?
+  /// COMPLIMENTARY | PROMOTIONAL | MANUAL | PAID | null
+  entitlementKind        String?
+  /// Soft delete. Public identity returns unavailable.
+  deletedAt              DateTime?
+  lastActivatedAt        DateTime?
+  lastActivationPaymentId String?
+  publishedDesignVersionId String?
+  lastCourtesyAt         DateTime?
+  /// Invited owner contact while the card is unclaimed. Never a login password.
+  unclaimedEmail         String?
+  unclaimedPhone         String?
+  claimedAt              DateTime?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  variants     SmartCardVariant[]
-  nfcDevices   SmartCardNfcDevice[]
-  connections  SmartCardConnection[]
-  campaigns    SmartCardCampaign[]
-  interactions SmartCardInteraction[]
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variants        SmartCardVariant[]
+  nfcDevices      SmartCardNfcDevice[]
+  connections     SmartCardConnection[]
+  campaigns       SmartCardCampaign[]
+  interactions    SmartCardInteraction[]
+  accessCodes     SmartCardAccessCode[]
+  accessGrants    SmartCardAccessGrant[]
+  accessRequests  SmartCardAccessRequest[]
+  designVersions  SmartCardDesignVersion[]
+  lifecycleEvents SmartCardLifecycleEvent[]
+  claimInvites    SmartCardClaimInvite[]
+  entitlementGrants SmartCardEntitlementGrant[]
 
   @@index([userId])
   @@index([subscriptionStatus])
+  @@index([subscriptionStatus, subscriptionExpiresAt])
+  @@index([deletedAt])
   @@index([publicToken])
+  @@index([createdAt])
+  @@index([adminSuspendedAt])
+  @@index([adminDeactivatedAt])
+  @@index([claimedAt])
+  @@index([unclaimedEmail])
   @@map("digital_business_cards")
+}
+
+/// Single-use hashed claim invite. Raw token is never stored.
+model SmartCardClaimInvite {
+  id                String    @id @default(cuid())
+  cardId            String
+  tokenHash         String    @unique
+  email             String
+  phone             String?
+  expiresAt         DateTime
+  consumedAt        DateTime?
+  consumedByUserId  String?
+  createdByUserId   String
+  createdAt         DateTime  @default(now())
+
+  card DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+  @@index([email])
+  @@index([expiresAt])
+  @@map("smartcard_claim_invites")
+}
+
+/// Manual / complimentary / promotional entitlement ledger. Not a Payment row.
+model SmartCardEntitlementGrant {
+  id              String   @id @default(cuid())
+  cardId          String
+  /// COMPLIMENTARY | PROMOTIONAL | MANUAL | EXTENSION
+  kind            String
+  planId          String?
+  months          Int?
+  startsAt        DateTime
+  expiresAt       DateTime
+  reason          String
+  grantedByUserId String
+  approvalRef     String?
+  createdAt       DateTime @default(now())
+
+  card DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, createdAt])
+  @@index([grantedByUserId])
+  @@map("smartcard_entitlement_grants")
 }
 
 /// Contextual face of one SmartCard (Share As: Professional, Creator, …).
@@ -2362,6 +2435,160 @@ model SmartCardInteraction {
   @@index([cardId, createdAt])
   @@index([kind])
   @@map("smartcard_interactions")
+}
+
+/// Hashed four-character guest codes. Never store plaintext.
+model SmartCardAccessCode {
+  id              String    @id @default(cuid())
+  cardId          String
+  label           String
+  codeHash        String
+  /// DIGITS | LETTERS
+  codeKind        String
+  /// Reach item ids this code unlocks
+  itemKeys        Json      @default("[]")
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  maxRedemptions  Int?
+  redemptionCount Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  card DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+  @@index([cardId, codeHash])
+  @@map("smartcard_access_codes")
+}
+
+/// Short-lived guest grant. Cookie holds the raw token; this row holds the hash.
+model SmartCardAccessGrant {
+  id        String    @id @default(cuid())
+  cardId    String
+  tokenHash String    @unique
+  itemKeys  Json      @default("[]")
+  /// CODE | REQUEST
+  source    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  card     DigitalBusinessCard     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  requests SmartCardAccessRequest[]
+
+  @@index([cardId, expiresAt])
+  @@map("smartcard_access_grants")
+}
+
+/// Anonymous request to see a protected reach item.
+model SmartCardAccessRequest {
+  id             String   @id @default(cuid())
+  cardId         String
+  itemKeys       Json     @default("[]")
+  visitorName    String
+  visitorContact String
+  message        String?
+  /// PENDING | APPROVED | DECLINED | REVOKED
+  status         String   @default("PENDING")
+  grantId        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  card  DigitalBusinessCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  grant SmartCardAccessGrant? @relation(fields: [grantId], references: [id], onDelete: SetNull)
+
+  @@index([cardId, status])
+  @@map("smartcard_access_requests")
+}
+
+/// Design-only snapshot. Canonical identity stays on DigitalBusinessCard.
+model SmartCardDesignVersion {
+  id         String    @id @default(cuid())
+  cardId     String
+  label      String
+  themeId    String
+  /// Template, layout, placements. Never store contacts here.
+  config     Json      @default("{}")
+  /// SAVED | PUBLISHED | ARCHIVED
+  status     String    @default("SAVED")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+
+  card DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, createdAt])
+  @@map("smartcard_design_versions")
+}
+
+/// Lifecycle analytics. Paginate raw records. Aggregate for dashboards.
+model SmartCardLifecycleEvent {
+  id        String   @id @default(cuid())
+  cardId    String
+  kind      String
+  meta      Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  card DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, createdAt])
+  @@index([kind])
+  @@map("smartcard_lifecycle_events")
+}
+
+/// Singleton configurable lifecycle policy. id = "default".
+model CeleCardLifecyclePolicy {
+  id                  String   @id @default("default")
+  gracePeriodDays     Int      @default(3)
+  expiringSoonDays    Int      @default(14)
+  reminderOffsetsDays Json     @default("[14,7,3,1,0,-3,-14,-30]")
+  timezone            String   @default("Africa/Accra")
+  reconnectBatchHours Int      @default(6)
+  reconnectPerCardPerHour Int  @default(3)
+  reconnectPerIpPerHour   Int  @default(10)
+  designVaultMax      Int      @default(40)
+  /// Overlay on SMARTCARD_PLANS. { monthly, quarter, half, yearly } GHS integers.
+  planPrices          Json?
+  conciergePriceGhs   Int      @default(199)
+  conciergeBundledPlanId String?
+  updatedAt           DateTime @updatedAt
+  updatedByUserId     String?
+
+  @@map("celecard_lifecycle_policy")
+}
+
+/// Staff-designed CeleCard sold as a concierge service. Payment rows stay separate.
+model SmartCardConciergeOrder {
+  id                   String    @id @default(cuid())
+  /// INTAKE | AWAITING_PAYMENT | PAID | IN_PROGRESS | READY | DELIVERED | CANCELLED
+  status               String    @default("INTAKE")
+  customerUserId       String?
+  customerEmail        String
+  customerName         String
+  customerPhone        String?
+  brief                String
+  displayName          String
+  title                String?
+  company              String?
+  themePreference      String?
+  planId               String?
+  includeSubscription  Boolean   @default(true)
+  designFeeGhs         Int
+  subscriptionFeeGhs   Int       @default(0)
+  totalGhs             Int
+  paymentId            String?
+  paymentReference     String?
+  cardId               String?
+  assignedAdminId      String?
+  deliveredAt          DateTime?
+  notes                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([customerEmail])
+  @@index([customerUserId])
+  @@map("smartcard_concierge_orders")
 }
 
 // ─── Inspiration Upload Engine ──────────────────────────────────

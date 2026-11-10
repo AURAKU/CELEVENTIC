@@ -22,9 +22,9 @@ export function HowItWorks() {
             {t("landing.how_works_suffix")}
           </h2>
           <p className="section-subheading mx-auto">
-            From the first invitation tap to Memory Vault. Guests, hosts, door staff, and vendors
-            each have a clear path. Open the full walkthrough for the interactive journey, or browse
-            guides for step-by-step detail.
+            From the first invitation tap to Memory Vault, including CeleYou. Guests, hosts, door
+            staff, and vendors each have a clear path. Open the full walkthrough for the interactive
+            journey, or browse guides for step-by-step detail.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link

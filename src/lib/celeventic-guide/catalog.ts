@@ -18,8 +18,8 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
   {
     slug: "how-celeventic-works",
     title: "How Celeventic Works",
-    summary: "Invite → RSVP → Admit → Guide → Celebrate → Remember. The full guest journey in one cinematic walkthrough.",
-    body: "Celeventic is the operating system for celebrations: hosts design invitations and run the floor; guests RSVP and enter with QR; scanners admit online or offline; Event Guide keeps programme, seating, and menu close; gifts and Memory Vault complete the day.",
+    summary: "Invite → RSVP → Admit → Guide → Celebrate → Remember. The full guest journey in one cinematic walkthrough, plus CeleYou identity.",
+    body: "Celeventic is the operating system for celebrations: hosts design invitations and run the floor; guests RSVP and enter with QR; scanners admit online or offline; Event Guide keeps programme, seating, and menu close; CeleYou is the living identity card you share with QR, NFC, or a link; gifts and Memory Vault complete the day.",
     role: "GUEST",
     category: "PLATFORM",
     status: "PUBLISHED",
@@ -27,12 +27,12 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     featured: true,
     storyboardKey: "how-celeventic-works",
     synonyms: ["see how it works", "how it works", "learn celeventic", "overview", "platform tour"],
-    relatedSlugs: ["welcome-to-celeventic", "open-your-invitation", "rsvp", "organizer-quick-start", "scan-guest"],
+    relatedSlugs: ["welcome-to-celeventic", "open-your-invitation", "rsvp", "organizer-quick-start", "celeyou", "scan-guest"],
     posterUrl: "/guides/posters/how-celeventic-works.svg",
     captionsEnUrl: "/guides/captions/how-celeventic-works.en.vtt",
     isNew: true,
     transcript:
-      "Welcome to Celeventic. Guests open a cinematic invitation, RSVP, and receive a personal QR pass. On event day scanners admit guests, groups, and vendors. Event Guide shows programme, seating, and menu. Guests can send gifts and upload memories. Hosts run invitations, guests, seating, admission, gifts, tickets, marketplace, and Memory Vault from one dashboard.",
+      "Welcome to Celeventic. Guests open a cinematic invitation, RSVP, and receive a personal QR pass. On event day scanners admit guests, groups, and vendors. Event Guide shows programme, seating, and menu. Guests can send gifts and upload memories. CeleYou is the living identity you share with QR, NFC, Wallet, or a link. Hosts run invitations, guests, seating, admission, gifts, tickets, marketplace, CeleYou, and Memory Vault from one dashboard.",
     steps: steps(
       ["Invite", "Open a branded digital invitation. Envelope, seal, and media, from a link. No app required."],
       ["RSVP", "Confirm attendance for yourself and plus guests; hosts see live counts."],

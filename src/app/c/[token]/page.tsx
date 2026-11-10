@@ -1,15 +1,17 @@
 import { redirect, notFound } from "next/navigation";
 import {
   getDigitalCardByPublicToken,
-  isDigitalCardLive,
+  recordSmartCardInteraction,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { DIGITAL_CARD_PUBLIC_PATH } from "@/lib/digital-business-card/types";
+import { demoCardGuestPath, isDemoQrToken } from "@/lib/digital-business-card/demo-card";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Smart QR redirect identity: /c/{publicToken} → live /card/{slug}.
- * Profile can change without reprinting the QR.
+ * Smart QR redirect: /c/{publicToken} → /card/{slug}.
+ * Token stays stable when the slug or profile details change.
+ * Unpublished cards still land on the public page, which withholds private fields.
  */
 export default async function SmartCardShortRedirectPage({
   params,
@@ -17,9 +19,11 @@ export default async function SmartCardShortRedirectPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  if (isDemoQrToken(token)) {
+    redirect(demoCardGuestPath());
+  }
   const card = await getDigitalCardByPublicToken(token);
-  if (!card) notFound();
-  // Always land on the public card surface (handles offline/expired UI there).
-  void isDigitalCardLive(card);
+  if (!card || card.deletedAt) notFound();
+  void recordSmartCardInteraction(card.id, "qr_open").catch(() => undefined);
   redirect(`${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(card.slug)}`);
 }

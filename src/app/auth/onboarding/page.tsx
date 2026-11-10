@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { SignupProgress } from "@/components/auth/signup-progress";
 import { OnboardingIntentGrid } from "@/components/auth/onboarding-intent-grid";
 import { resolveAuthCallbackUrl } from "@/lib/auth/logout";
-import { safeNextPath, smartCardStudioPath } from "@/lib/auth/safe-next-path";
+import { safeReturnPath, smartCardStudioPath } from "@/lib/auth/safe-next-path";
 import {
   findOnboardingIntent,
   intentFromQuery,
@@ -100,6 +100,8 @@ function OnboardingPageInner() {
     persistSignupIntent({
       id: option.id,
       joinIntent: option.joinIntent,
+      queryKey: option.queryKey,
+      productIntent: option.queryKey === "smartcard" ? "celecard" : undefined,
       organizationName: option.id === "ORGANIZATION" ? form.organizationName : undefined,
       vendorCategory: option.id === "VENDOR" ? form.vendorCategory : undefined,
     });
@@ -111,6 +113,8 @@ function OnboardingPageInner() {
     persistSignupIntent({
       id: accountType,
       joinIntent,
+      queryKey: selectedIntent?.queryKey,
+      productIntent: selectedIntent?.queryKey === "smartcard" ? "celecard" : undefined,
       organizationName: form.organizationName.trim() || undefined,
       vendorCategory: form.vendorCategory || undefined,
     });
@@ -127,6 +131,9 @@ function OnboardingPageInner() {
       joinIntent,
       country: form.country || "GH",
     };
+    if (selectedIntent?.queryKey === "smartcard") {
+      payload.productIntent = "celecard";
+    }
 
     if (accountType === "ORGANIZER" || accountType === "ORGANIZATION") {
       const handle = form.username.trim().toLowerCase();
@@ -187,26 +194,28 @@ function OnboardingPageInner() {
       }
 
       const identifier = contactMode === "phone" ? form.phone.trim() : form.email.trim();
+      const next = safeReturnPath(searchParams);
+      const studio =
+        selectedIntent.queryKey === "smartcard"
+          ? smartCardStudioPath(searchParams.get("plan"), searchParams.get("theme"))
+          : null;
+      const dest =
+        next || studio || selectedIntent.primaryHref || data.redirect || "/dashboard/getting-started";
       const result = await signIn("credentials", {
         identifier,
         password: form.password,
         redirect: false,
+        callbackUrl: dest,
       });
 
       if (result?.error) {
         setError("Account created. Sign in with the same email or phone.");
         setLoading(false);
-        router.push("/auth/login");
+        router.push(`/auth/login?callbackUrl=${encodeURIComponent(dest)}`);
         return;
       }
 
-      const next = safeNextPath(searchParams.get("next"));
-      const studio =
-        selectedIntent.queryKey === "smartcard"
-          ? smartCardStudioPath(searchParams.get("plan"), searchParams.get("theme"))
-          : null;
-      router.push(next || studio || selectedIntent.primaryHref || data.redirect || "/dashboard/getting-started");
-      router.refresh();
+      window.location.assign(dest);
     } catch {
       setError("Something went wrong. Check your connection and try again.");
       setLoading(false);
@@ -214,7 +223,7 @@ function OnboardingPageInner() {
   }
 
   const loginHref = `/auth/login?callbackUrl=${encodeURIComponent(
-    safeNextPath(searchParams.get("next")) ||
+    safeReturnPath(searchParams) ||
       (selectedIntent?.queryKey === "smartcard"
         ? smartCardStudioPath(searchParams.get("plan"), searchParams.get("theme"))
         : "/dashboard")
@@ -446,7 +455,7 @@ function OnboardingPageInner() {
             type="button"
             onClick={() => {
               rememberIntent();
-              const next = safeNextPath(searchParams.get("next"));
+              const next = safeReturnPath(searchParams);
               const studio =
                 selectedIntent?.queryKey === "smartcard"
                   ? smartCardStudioPath(searchParams.get("plan"), searchParams.get("theme"))

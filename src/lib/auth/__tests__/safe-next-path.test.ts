@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { safeNextPath, smartCardSignupPath, smartCardStudioPath } from "../safe-next-path";
+import {
+  safeNextPath,
+  smartCardLoginPath,
+  smartCardSignupPath,
+  smartCardStudioPath,
+} from "../safe-next-path";
 
 describe("safeNextPath", () => {
   it("allows same-app dashboard paths", () => {
@@ -34,5 +39,12 @@ describe("SmartCard signup destinations", () => {
   it("opens studio with plan and theme for signed-in users", () => {
     assert.equal(smartCardStudioPath(), "/dashboard/business-card");
     assert.equal(smartCardStudioPath("monthly"), "/dashboard/business-card?plan=monthly");
+  });
+
+  it("signs existing Celeventic users into studio without a second registration", () => {
+    const href = smartCardLoginPath("yearly");
+    assert.equal(href.startsWith("/auth/login?"), true);
+    const params = new URLSearchParams(href.split("?")[1]);
+    assert.equal(params.get("callbackUrl"), "/dashboard/business-card?plan=yearly");
   });
 });

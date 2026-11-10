@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   GUEST_JOURNEY_STAGES,
+  GUIDE_SERVICE_LINE,
   PLATFORM_CAPABILITIES,
   PLATFORM_LANES,
   type PlatformLaneId,
@@ -151,9 +152,8 @@ export function JourneyPreviewStrip({
               See How Celeventic Works
             </h2>
             <p className="text-sm text-white/75 leading-relaxed">
-              One operating system for celebrations: invitations, RSVP, QR admission, Event Guide,
-              gifts, vendors, and Memory Vault. Explained in motion for guests, hosts, door staff,
-              and vendors.
+              One operating system for celebrations. {GUIDE_SERVICE_LINE} Explained in motion for
+              guests, hosts, door staff, and vendors.
             </p>
             {showWalkthroughLink ? (
               <div className="flex flex-wrap gap-2">
@@ -392,8 +392,8 @@ export function JourneyPreviewStrip({
           <div>
             <h3 className="font-display text-lg font-semibold">Everything in the system</h3>
             <p className="mt-1 text-sm text-white/65 max-w-2xl">
-              From first invite to Memory Vault. Every major Celeventic surface, with a deep-dive
-              guide for each.
+              From first invite to Memory Vault, including CeleYou. Every major Celeventic surface,
+              with a deep-dive guide for each.
             </p>
           </div>
           <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">

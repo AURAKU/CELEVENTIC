@@ -12,6 +12,7 @@ import {
 import { sanitizeGuideText, sanitizeGuideSlug, parseJsonStringArray } from "../sanitize";
 import { getStoryboard, HOW_CELEVENTIC_WORKS_STORYBOARD, listStoryboards } from "../storyboards";
 import { START_HERE_JOURNEYS } from "../journeys";
+import { GUIDE_SERVICE_LINE, PLATFORM_CAPABILITIES, PLATFORM_LANES } from "../platform-journey";
 import { isGuideMarkedNew } from "../guide-new";
 import { getMiniTour, MINI_TOURS } from "../tours";
 import { guideStorageKey } from "../tour-storage";
@@ -20,6 +21,8 @@ describe("celeventic-guide catalog", () => {
   it("ships the initial catalog including flagship + guest/organizer/vendor/scanner", () => {
     assert.ok(CELEVENTIC_GUIDE_CATALOG.length >= 37);
     assert.ok(CELEVENTIC_GUIDE_CATALOG.some((g) => g.slug === "how-celeventic-works"));
+    assert.ok(CELEVENTIC_GUIDE_CATALOG.some((g) => g.slug === "celeyou"));
+    assert.ok(CELEVENTIC_GUIDE_CATALOG.some((g) => g.slug === "open-a-celeyou"));
     assert.ok(CELEVENTIC_GUIDE_CATALOG.filter((g) => g.role === "GUEST").length >= 13);
     assert.ok(CELEVENTIC_GUIDE_CATALOG.filter((g) => g.role === "ORGANIZER").length >= 18);
     assert.ok(CELEVENTIC_GUIDE_CATALOG.filter((g) => g.role === "VENDOR").length >= 2);
@@ -77,6 +80,11 @@ describe("celeventic-guide search", () => {
   it("matches synonyms and intent phrases", () => {
     const hits = searchGuides("where do i sit");
     assert.ok(hits.some((h) => h.slug === "find-your-seat" || h.category === "SEATING"));
+  });
+
+  it("finds CeleYou from identity and card queries", () => {
+    const hits = searchGuides("celeyou digital business card");
+    assert.ok(hits.some((h) => h.slug === "celeyou" || h.slug === "open-a-celeyou"));
   });
 
   it("returns no-result empty for nonsense", () => {
@@ -141,6 +149,14 @@ describe("celeventic-guide storyboards + tours", () => {
 });
 
 describe("celeventic-guide journeys + storyboards coverage", () => {
+  it("includes CeleYou beside the other platform services", () => {
+    assert.match(GUIDE_SERVICE_LINE, /CeleYou/);
+    assert.ok(PLATFORM_CAPABILITIES.some((c) => c.id === "celeyou" && c.guideHref === "/guide/celeyou"));
+    assert.ok(
+      PLATFORM_LANES.some((lane) => lane.steps.some((step) => /CeleYou/i.test(step.title) || /CeleYou/i.test(step.body)))
+    );
+  });
+
   it("ships Start Here journeys for four public roles", () => {
     assert.equal(START_HERE_JOURNEYS.length, 4);
     assert.deepEqual(

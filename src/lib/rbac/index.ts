@@ -2,6 +2,7 @@ export {
   Permission,
   RBAC_ROLES,
   toRbacRole,
+  type Permission as PermissionName,
   type RbacContext,
   type RbacRole,
 } from "./types";

@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Calendar,
   Compass,
-  CreditCard,
   Mail,
   QrCode,
   Store,
@@ -14,17 +13,19 @@ import {
   Heart,
   Gem,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { CeleYouBrandMark, CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 
 const SERVICES: Array<{
   href: string;
   startHref: string;
   startKey: string;
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string }>;
   title: string;
   desc: string;
   popular?: boolean;
+  brand?: "celeyou";
 }> = [
   {
     href: "/invitations/catalogue",
@@ -55,9 +56,10 @@ const SERVICES: Array<{
     href: "/digital-cards",
     startHref: "/auth/register?intent=smartcard&next=/dashboard/business-card",
     startKey: "landing.svc_start_card",
-    icon: CreditCard,
+    icon: CeleYouMarkIcon,
     title: "landing.svc_cards_title",
     desc: "landing.svc_cards_desc",
+    brand: "celeyou",
   },
   {
     href: "/guide/how-celeventic-works",
@@ -77,7 +79,7 @@ const SERVICES: Array<{
   },
 ];
 
-const ALSO: Array<{ href: string; icon: LucideIcon; title: string }> = [
+const ALSO: Array<{ href: string; icon: ComponentType<{ className?: string }>; title: string }> = [
   { href: "/guide/how-celeventic-works", icon: QrCode, title: "landing.also_qr" },
   { href: "/guide", icon: Archive, title: "landing.also_vault" },
   { href: "/invitations/catalogue?eventType=WEDDING", icon: Gem, title: "landing.also_wedding" },
@@ -103,20 +105,44 @@ export function Features() {
           {SERVICES.map((item) => (
             <article
               key={item.title}
-              className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]"
+              className={
+                item.brand === "celeyou"
+                  ? "relative flex h-full flex-col overflow-hidden rounded-2xl border border-[#12B8A8]/35 bg-white p-5 shadow-[0_16px_36px_rgba(11,138,131,0.12)]"
+                  : "flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]"
+              }
             >
-              <div className="flex items-start justify-between gap-3">
-                <span className="icon-box">
-                  <item.icon className="h-6 w-6" aria-hidden />
-                </span>
-                {item.popular ? (
-                  <span className="rounded-full bg-[#0B8A83] px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">
-                    {t("landing.svc_popular")}
-                  </span>
-                ) : null}
-              </div>
-              <h3 className="mt-4 font-display text-lg font-semibold text-slate-900">{t(item.title)}</h3>
-              <p className="mt-2 flex-1 text-base leading-relaxed text-slate-600">{t(item.desc)}</p>
+              {item.brand === "celeyou" ? (
+                <h3 className="relative">
+                  <span
+                    className="pointer-events-none absolute -left-3 -top-3 h-24 w-24 rounded-full bg-[#2AD4C4]/20 blur-2xl"
+                    aria-hidden
+                  />
+                  <CeleYouBrandMark
+                    variant="lockup"
+                    tone="light"
+                    showTagline
+                    markClassName="h-[8.5rem] w-auto sm:h-[9.5rem]"
+                    className="relative"
+                  />
+                </h3>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="icon-box">
+                      <item.icon className="h-6 w-6" aria-hidden />
+                    </span>
+                    {item.popular ? (
+                      <span className="rounded-full bg-[#0B8A83] px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">
+                        {t("landing.svc_popular")}
+                      </span>
+                    ) : null}
+                  </div>
+                  <h3 className="mt-4 font-display text-lg font-semibold text-slate-900">{t(item.title)}</h3>
+                </>
+              )}
+              <p className={`flex-1 text-base leading-relaxed text-slate-600 ${item.brand === "celeyou" ? "mt-4" : "mt-2"}`}>
+                {t(item.desc)}
+              </p>
               <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Link
                   href={item.href}

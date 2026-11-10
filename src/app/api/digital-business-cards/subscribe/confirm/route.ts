@@ -3,7 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { paymentService } from "@/services/payments/payment.service";
 import { SMARTCARD_PAYMENT_KIND } from "@/lib/digital-business-card/plans";
-import { isDigitalCardLive } from "@/services/digital-business-card/digital-business-card.service";
+import {
+  isDigitalCardLive,
+  recordCeleCardLifecycleEvent,
+} from "@/services/digital-business-card/digital-business-card.service";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
@@ -15,13 +18,13 @@ export async function GET(req: Request) {
   if (!reference) return NextResponse.json({ error: "Missing reference" }, { status: 400 });
 
   try {
-    const payment = await paymentService.confirmReference(reference);
+    const payment = await paymentService.confirmCheckoutReference(reference);
     if (payment.userId && payment.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const meta = payment.metadata as Record<string, unknown> | null;
     if (meta?.kind !== SMARTCARD_PAYMENT_KIND) {
-      return NextResponse.json({ error: "Not a CeleCard payment" }, { status: 400 });
+      return NextResponse.json({ error: "Not a CeleYou payment" }, { status: 400 });
     }
     const cardId = typeof meta.cardId === "string" ? meta.cardId : null;
     const card = cardId
@@ -29,6 +32,14 @@ export async function GET(req: Request) {
           where: { id: cardId, userId: session.user.id },
         })
       : null;
+
+    if (payment.status === "FAILED" && cardId) {
+      await recordCeleCardLifecycleEvent({
+        cardId,
+        kind: "CheckoutFailed",
+        meta: { reference, planId: typeof meta.planId === "string" ? meta.planId : null },
+      });
+    }
 
     return NextResponse.json({
       success: true,

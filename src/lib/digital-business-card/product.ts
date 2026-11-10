@@ -2,9 +2,15 @@
  * Celeventic SmartCard / Identity OS. Product naming & architecture map.
  *
  * Routes stay on existing URLs (`/card/[slug]`, `/dashboard/business-card`).
- * Customer-facing name is CeleCard. Keep SmartCard only in code and routes.
+ * Customer-facing name is CeleYou. Keep SmartCard only in code and routes.
  *
- * ── Architecture map (Phase A) ──────────────────────────────────────────
+ * ── Architecture map ────────────────────────────────────────────────────
+ * ACCESS
+ *   Anonymous guests: live /card/[slug], /c/{token}, /n/{token}, public GET,
+ *   Connect POST, QR image, Save/Share. No Celeventic account required.
+ *   Owners: shared NextAuth User. CeleYou signup skips event getting-started.
+ *   Unpublished/unpaid payloads withhold contacts. NFC respects device APIs.
+ *
  * CURRENT
  *   DigitalBusinessCard Prisma model, studio, /card/[slug], 8 themes,
  *   QR via /api/qr/image, vCard, soft Web NFC write, trial/renew gate, viewCount.
@@ -15,7 +21,8 @@
  *
  * MISSING → CREATE (phased)
  *   Profile variants, Connect Back / connections CRM-lite, NFC device registry,
- *   /c + /n redirect tokens, Wallet passes, offline snapshot, payment hub,
+ *   /c + /n redirect tokens, Wallet passes (Apple/Google, after web Card Mode),
+ *   offline snapshot, payment hub,
  *   campaigns attribution, block system, team templates.
  *
  * EXTEND
@@ -27,17 +34,18 @@
  *   Apple Wallet NFC entitlements are separate from physical NFC tags.
  */
 
-export const SMARTCARD_PRODUCT_SHORT_NAME = "CeleCard";
-export const SMARTCARD_PRODUCT_NAME = "Celeventic CeleCard";
-export const SMARTCARD_PRODUCT_TAGLINE = "Your living card. One tap away.";
+export const SMARTCARD_PRODUCT_SHORT_NAME = "CeleYou";
+export const SMARTCARD_PRODUCT_NAME = "Celeventic CeleYou";
+export const SMARTCARD_BRAND_TAGLINE = "One Identity. Infinite Connections.";
+export const SMARTCARD_PRODUCT_TAGLINE = "Your phone. Your identity. Every connection.";
 export const SMARTCARD_PRODUCT_SUPPORT = "Meet. Share. Connect. Remember.";
-export const SMARTCARD_EYEBROW = "CeleCard";
-export const SMARTCARD_HERO_LINE = "The card they tap stays the current you.";
+export const SMARTCARD_EYEBROW = "CeleYou";
+export const SMARTCARD_HERO_LINE = "Your phone. Your identity. Every connection.";
 export const SMARTCARD_HERO_SUPPORT =
-  "Share through QR, NFC, Wallet, link or contact exchange. Update once. Every tap stays current. The public card goes live only while your subscription is paid.";
+  "QR, NFC, Wallet, or a share link. One page for your socials, number, WhatsApp, and website. Update once. Every tap stays current. The public card goes live only while your subscription is paid.";
 
-export const SMARTCARD_CTA_PRIMARY = "Design my CeleCard";
-export const SMARTCARD_CTA_SECONDARY = "Browse world art themes";
+export const SMARTCARD_CTA_PRIMARY = "Design my CeleYou";
+export const SMARTCARD_CTA_SECONDARY = "View templates";
 
 /** Short redirect path for Smart QR / share links (resolves to live /card/[slug]). */
 export const SMARTCARD_SHORT_PATH = "/c";

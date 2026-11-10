@@ -8,6 +8,7 @@ import {
   FileText, Phone, TrendingUp, Clock, Music, Key, Store, Sparkles,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 
 export default async function AdminDashboardPage() {
   const session = await getSession();
@@ -23,6 +24,7 @@ export default async function AdminDashboardPage() {
     { href: "/admin/security", label: "Workspace & Roles", icon: Shield, desc: "Collaboration permissions and role templates" },
     { href: "/admin/experience", label: "Event Blueprints", icon: Sparkles, desc: "Event-type modules, entitlements, and navigation" },
     { href: "/admin/payments", label: "Payments", icon: CreditCard, desc: "Logs, webhooks, export reports" },
+    { href: "/admin/celecard", label: "CeleYou Command Center", icon: CeleYouMarkIcon, desc: "Cards, activations, invitations, entitlements" },
     { href: "/admin/integrations", label: "Integrations & API", icon: Key, desc: "Paystack, email, SMS, WhatsApp, AWS storage, and custom APIs" },
     { href: "/admin/analytics", label: "Analytics", icon: BarChart3, desc: "Revenue, funnel, best sellers" },
     { href: "/admin/revisions", label: "Revisions", icon: RefreshCw, desc: "Track and approve revisions" },

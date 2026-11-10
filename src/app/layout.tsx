@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
+import { cinzel, cormorant, playfair } from "@/lib/invitation-fonts";
 import { Providers } from "@/components/providers";
 import { APP_NAME, APP_TAGLINE, BRAND, BRAND_MOTTO } from "@/lib/constants";
 import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
@@ -55,7 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           />
         ) : null}
       </head>
-      <body className={`${poppins.variable} font-sans`} suppressHydrationWarning>
+      <body className={`${poppins.variable} ${playfair.variable} ${cinzel.variable} ${cormorant.variable} font-sans`} suppressHydrationWarning>
         <Providers initialLocale={locale} initialMessages={messages}>
           {children}
         </Providers>

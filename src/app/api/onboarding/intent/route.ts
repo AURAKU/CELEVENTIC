@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { onboardingService } from "@/services/workspace/onboarding.service";
+import { isCeleCardProductIntent } from "@/lib/digital-business-card/access";
 import { generateToken, slugify } from "@/lib/utils";
 import { complianceService } from "@/services/legal/compliance.service";
 import type { AccountType, UserRole } from "@prisma/client";
@@ -21,6 +22,8 @@ const schema = z
     joinIntent: z.boolean().optional(),
     organizationName: z.string().trim().min(2).optional(),
     vendorCategory: z.string().trim().optional(),
+    productIntent: z.string().max(40).optional(),
+    queryKey: z.string().max(40).optional(),
   })
   .refine(
     (data) => data.accountType !== "ORGANIZATION" || Boolean(data.organizationName),
@@ -43,6 +46,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
+  const celeCardFirst = isCeleCardProductIntent(body.productIntent || body.queryKey);
   const role = ACCOUNT_ROLE_MAP[body.accountType];
   let organizationId: string | undefined;
 
@@ -82,6 +86,7 @@ export async function POST(req: Request) {
       accountType: body.accountType,
       role,
       ...(organizationId ? { organizationId } : {}),
+      ...(celeCardFirst ? { onboardingCompletedAt: new Date() } : {}),
     },
   });
 
@@ -118,11 +123,15 @@ export async function POST(req: Request) {
     }
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { onboardingCompletedAt: true },
+  });
   const redirect = onboardingService.getPostSignupRedirect(
     body.accountType,
-    null,
+    user?.onboardingCompletedAt ?? null,
     body.joinIntent,
-    { vendorCategory: body.vendorCategory }
+    { vendorCategory: body.vendorCategory, productIntent: celeCardFirst ? "celecard" : undefined }
   );
 
   return NextResponse.json({ success: true, redirect });

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img">
+  <title>Flutterwave</title>
+  <rect width="48" height="48" rx="10" fill="#FB8E20"/>
+  <g transform="translate(24 24) scale(0.86) translate(-12 -12)">
+    <path fill="#FFFFFF" d="M3.6 4.2h8.15L8.9 12.05H3.6V4.2Zm9.05 0H20.4L13.2 20.8h-5.3L12.65 4.2Z"/>
+  </g>
+</svg>

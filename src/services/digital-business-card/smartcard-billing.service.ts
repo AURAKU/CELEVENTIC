@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { SMARTCARD_PAYMENT_KIND, getSmartCardPlan } from "@/lib/digital-business-card/plans";
+import { resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
 import { isDigitalCardLive } from "@/services/digital-business-card/digital-business-card.service";
+import { parsePaginationInput } from "@/lib/pagination";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -16,7 +18,11 @@ function asAmount(value: unknown): number {
   return Number(value ?? 0);
 }
 
-export async function getSmartCardBilling(userId: string) {
+export async function getSmartCardBilling(
+  userId: string,
+  paging?: { page?: number | string | null; limit?: number | string | null }
+) {
+  const { page, limit, skip } = parsePaginationInput(paging, { limit: 20 });
   const [cards, payments] = await Promise.all([
     prisma.digitalBusinessCard.findMany({
       where: { userId },
@@ -25,7 +31,7 @@ export async function getSmartCardBilling(userId: string) {
     prisma.payment.findMany({
       where: { userId, purpose: "ADVERTISING" },
       orderBy: { createdAt: "desc" },
-      take: 40,
+      take: 200,
     }),
   ]);
 
@@ -50,7 +56,7 @@ export async function getSmartCardBilling(userId: string) {
     .filter(Boolean);
 
   return {
-    cards: cards.map((card) => ({
+    cards: cards.filter((card) => !card.deletedAt).map((card) => ({
       id: card.id,
       slug: card.slug,
       displayName: card.displayName,
@@ -58,10 +64,14 @@ export async function getSmartCardBilling(userId: string) {
       subscriptionStatus: card.subscriptionStatus,
       subscriptionExpiresAt: card.subscriptionExpiresAt?.toISOString() ?? null,
       isLive: isDigitalCardLive(card),
+      lifecycleState: resolveCeleCardLifecycle(card),
       hoursLeft: card.subscriptionExpiresAt
         ? (card.subscriptionExpiresAt.getTime() - Date.now()) / 3_600_000
         : null,
     })),
-    payments: history,
+    payments: history.slice(skip, skip + limit),
+    paymentTotal: history.length,
+    paymentPage: page,
+    paymentLimit: limit,
   };
 }

@@ -253,11 +253,11 @@ test.describe("isolated Phase 1 lifecycle (mocked payments)", () => {
 });
 
 test.describe("isolated Phase 1 public marketing", () => {
-  test("CeleCard marketing and signup intent", async ({ page }) => {
+  test("CeleYou marketing and signup intent", async ({ page }) => {
     await page.goto("/digital-cards");
     await dismissCookies(page);
-    await expect(page.getByText("CeleCard").first()).toBeVisible();
-    const design = page.getByRole("link", { name: /Design my CeleCard/i }).first();
+    await expect(page.getByText("CeleYou").first()).toBeVisible();
+    const design = page.getByRole("link", { name: /Design my CeleYou/i }).first();
     await expect(design).toHaveAttribute("href", /intent=smartcard/);
     await shot(page, "digital-cards");
   });

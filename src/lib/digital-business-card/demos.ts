@@ -1,13 +1,47 @@
 import type { DigitalCardThemeId } from "./themes";
+import { DEMO_CARD_AVATAR_PATH } from "./demo-card";
+import { celeCardHouseAvatarValue, celeCardHouseAvatarsByKind } from "./portraits";
 
 export type SmartCardDemoPersona = {
   displayName: string;
   title: string;
   company: string;
+  avatarUrl?: string | null;
+  companyLogo?: boolean;
 };
 
+const DEMO_PHOTOS: Partial<Record<DigitalCardThemeId, string>> = {
+  "elegant-frost": "/digital-cards/demo/nhyira-addo.jpg",
+  "midnight-executive": "/digital-cards/demo/kwesi-boateng.jpg",
+  "gold-folio": DEMO_CARD_AVATAR_PATH,
+  "teal-pulse": "/digital-cards/demo/yaw-mensah.jpg",
+  "savannah-warm": "/digital-cards/demo/efua-darko.jpg",
+  "coral-studio": "/digital-cards/demo/akosua-biney.jpg",
+  "velvet-credits": "/digital-cards/demo/imani-reel.jpg",
+  "accra-horizon": "/digital-cards/demo/kojo-horizon.jpg",
+  "saddle-atelier": "/digital-cards/demo/henri-saddle.jpg",
+};
+
+/** Chosen illustrated faces for the selling stack and matching gallery cards. */
+const DEMO_ILLUSTRATED: Partial<Record<DigitalCardThemeId, string>> = {
+  "afro-future": celeCardHouseAvatarValue("afro"),
+  "anime-cel": celeCardHouseAvatarValue("puff"),
+  "street-king": celeCardHouseAvatarValue("fade"),
+  "deco-gilded": celeCardHouseAvatarValue("wrap"),
+  "cyber-neon": celeCardHouseAvatarValue("spark"),
+  "pop-art-burst": celeCardHouseAvatarValue("rocket"),
+  "ukiyo-wave": celeCardHouseAvatarValue("koi"),
+  "artist-canvas": celeCardHouseAvatarValue("prism"),
+  "star-opera": celeCardHouseAvatarValue("kite"),
+  "spy-night": celeCardHouseAvatarValue("fox"),
+  "canopy-green": celeCardHouseAvatarValue("beetle"),
+  "night-skyline": celeCardHouseAvatarValue("orbit"),
+};
+
+const DEMO_AVATAR_CYCLE = celeCardHouseAvatarsByKind("avatar").map((item) => celeCardHouseAvatarValue(item.id));
+
 /** Unique dummy identities for public theme previews, never reuse one name across the gallery. */
-export const SMARTCARD_THEME_DEMOS: Record<DigitalCardThemeId, SmartCardDemoPersona> = {
+const RAW_THEME_DEMOS: Record<DigitalCardThemeId, SmartCardDemoPersona> = {
   "elegant-frost": { displayName: "Nhyira Addo", title: "Principal", company: "Frost & Co" },
   "midnight-executive": { displayName: "Kwesi Boateng", title: "Managing Partner", company: "Northline" },
   "gold-folio": { displayName: "Ama Serwaa", title: "Creative Director", company: "Folio Maison" },
@@ -74,8 +108,24 @@ export const SMARTCARD_THEME_DEMOS: Record<DigitalCardThemeId, SmartCardDemoPers
   "linen-loom": { displayName: "Freya Weave", title: "Cloth Director", company: "Sun Loom" },
 };
 
+export const SMARTCARD_THEME_DEMOS: Record<DigitalCardThemeId, SmartCardDemoPersona> = Object.fromEntries(
+  (Object.entries(RAW_THEME_DEMOS) as [DigitalCardThemeId, SmartCardDemoPersona][]).map(([id, persona], index) => [
+    id,
+    {
+      ...persona,
+      avatarUrl:
+        DEMO_PHOTOS[id] ??
+        DEMO_ILLUSTRATED[id] ??
+        persona.avatarUrl ??
+        DEMO_AVATAR_CYCLE[index % DEMO_AVATAR_CYCLE.length],
+      companyLogo: true,
+    },
+  ])
+) as Record<DigitalCardThemeId, SmartCardDemoPersona>;
+
 export function demoForTheme(id: DigitalCardThemeId | string): SmartCardDemoPersona {
   return SMARTCARD_THEME_DEMOS[id as DigitalCardThemeId] ?? SMARTCARD_THEME_DEMOS["elegant-frost"];
 }
 
-export const SMARTCARD_HERO_FAN: DigitalCardThemeId[] = ["velvet-credits", "accra-horizon", "saddle-atelier"];
+/** Selling stack: cinema photo, afrofuture avatar, cel bitmoji. */
+export const SMARTCARD_HERO_FAN: DigitalCardThemeId[] = ["velvet-credits", "afro-future", "anime-cel"];

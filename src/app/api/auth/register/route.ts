@@ -37,6 +37,7 @@ const registerSchema = z
     organizationName: z.preprocess(emptyToUndefined, z.string().optional()),
     vendorCategory: z.preprocess(emptyToUndefined, z.string().optional()),
     joinIntent: z.boolean().optional(),
+    productIntent: z.string().max(40).optional(),
   })
   .superRefine((data, ctx) => {
     if (!data.email && !data.phone) {
@@ -109,6 +110,7 @@ export async function POST(req: Request) {
       vendorCategory:
         data.accountType === "VENDOR" ? data.vendorCategory : undefined,
       joinIntent: data.joinIntent,
+      productIntent: data.productIntent,
     });
 
     return NextResponse.json(
