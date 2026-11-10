@@ -58,8 +58,6 @@ const CAPABILITY_ICONS = {
   "Paid activation": Banknote,
 } as const;
 
-const PREVIEW_QR_SRC = demoCardPreviewQrSrc();
-
 const HERO_FAN_SLOTS = [
   { rotate: -17, x: "-24%", y: 18, z: 1, scale: 0.9 },
   { rotate: 0, x: "0%", y: 0, z: 4, scale: 1.06 },
@@ -204,7 +202,7 @@ function HeroFan() {
                   title={demo.title}
                   company={demo.company}
                   avatarUrl={demo.avatarUrl}
-                  qrSrc={PREVIEW_QR_SRC}
+                  qrSrc={demoCardPreviewQrSrc(id)}
                   qrBadgeHref={demoCardPreviewExplorePath()}
                   companyLogo={demo.companyLogo}
                   className={
@@ -502,7 +500,7 @@ export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?
                       title={demo.title}
                       company={demo.company}
                       avatarUrl={demo.avatarUrl}
-                      qrSrc={PREVIEW_QR_SRC}
+                      qrSrc={demoCardPreviewQrSrc(theme.id)}
                       qrBadgeHref={demoCardPreviewExplorePath()}
                       companyLogo={demo.companyLogo}
                       compact

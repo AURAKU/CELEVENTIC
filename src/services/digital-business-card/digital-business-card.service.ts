@@ -9,10 +9,12 @@ import {
 import { resolveDigitalCardTheme, type DigitalCardThemeId } from "@/lib/digital-business-card/themes";
 import {
   isCeleCardFullyPublic,
+  isCeleCardGuestShareable,
   renewalBaseDate,
   resolveCeleCardLifecycle,
   type CeleCardLifecycleInput,
 } from "@/lib/digital-business-card/lifecycle";
+import { isReservedCeleYouShareToken } from "@/lib/digital-business-card/share-identity";
 import { pesewasMatch } from "@/lib/digital-business-card/plans";
 import {
   digitalCardSlugCandidates,
@@ -141,6 +143,7 @@ export type UpsertDigitalCardInput = {
   slug?: string;
   isPublished?: boolean;
   nfcEnabled?: boolean;
+  proximityDiscoverable?: boolean;
 };
 
 function isRetainedCard<T extends { deletedAt?: Date | null }>(card: T) {
@@ -163,13 +166,62 @@ export async function getDigitalCardByPublicToken(publicToken: string) {
   return prisma.digitalBusinessCard.findUnique({ where: { publicToken } });
 }
 
+export async function ensureDefaultNfcDevice(card: { id: string; publicToken: string }) {
+  const existing = await prisma.smartCardNfcDevice.findFirst({
+    where: { cardId: card.id, status: "ACTIVE" },
+    orderBy: { createdAt: "asc" },
+  });
+  if (
+    existing &&
+    existing.publicToken !== card.publicToken &&
+    !isReservedCeleYouShareToken(existing.publicToken)
+  ) {
+    return existing;
+  }
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const created = await prisma.smartCardNfcDevice.create({
+      data: {
+        cardId: card.id,
+        name: "CeleYou card",
+        deviceType: "card",
+      },
+    });
+    if (created.publicToken !== card.publicToken && !isReservedCeleYouShareToken(created.publicToken)) {
+      return created;
+    }
+    await prisma.smartCardNfcDevice.delete({ where: { id: created.id } }).catch(() => undefined);
+  }
+  throw new Error("Could not allocate a unique NFC tap token");
+}
+
+export async function nfcTokensByCardId(cards: { id: string; publicToken: string }[]) {
+  const tokens = new Map<string, string>();
+  if (!cards.length) return tokens;
+  const existing = await prisma.smartCardNfcDevice.findMany({
+    where: { cardId: { in: cards.map((card) => card.id) }, status: "ACTIVE" },
+    orderBy: { createdAt: "asc" },
+  });
+  for (const row of existing) {
+    if (tokens.has(row.cardId)) continue;
+    if (row.publicToken && !isReservedCeleYouShareToken(row.publicToken)) {
+      tokens.set(row.cardId, row.publicToken);
+    }
+  }
+  for (const card of cards) {
+    if (tokens.has(card.id)) continue;
+    const device = await ensureDefaultNfcDevice(card);
+    tokens.set(card.id, device.publicToken);
+  }
+  return tokens;
+}
+
 export async function resolveNfcDeviceTap(publicToken: string) {
   const device = await prisma.smartCardNfcDevice.findUnique({
     where: { publicToken },
     include: { card: true },
   });
   if (!device || device.status !== "ACTIVE") return null;
-  if (!isDigitalCardLive(device.card)) return device.card;
+  if (!isCeleCardGuestShareable(device.card)) return device.card;
   await prisma.smartCardNfcDevice.update({
     where: { id: device.id },
     data: { tapCount: { increment: 1 }, lastTapAt: new Date() },
@@ -287,6 +339,7 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
     }
   }
   if (!created) throw new Error("Could not allocate a unique public link");
+  await ensureDefaultNfcDevice(created);
   await recordCeleCardLifecycleEvent({ cardId: created.id, kind: "CardCreated" });
   await prisma.smartCardDesignVersion
     .create({
@@ -346,6 +399,8 @@ export async function updateDigitalCard(userId: string, id: string, input: Upser
       avatarUrl: input.avatarUrl !== undefined ? input.avatarUrl || null : undefined,
       isPublished: input.isPublished !== undefined ? input.isPublished : undefined,
       nfcEnabled: input.nfcEnabled !== undefined ? input.nfcEnabled : undefined,
+      proximityDiscoverable:
+        input.proximityDiscoverable !== undefined ? input.proximityDiscoverable : undefined,
     },
   });
 }
@@ -501,6 +556,12 @@ export async function getDigitalCardAnalyticsForUser(userId: string, cardId: str
     viewCount: card.viewCount,
     qrOpens: byKind.qr_open ?? 0,
     nfcTaps: byKind.nfc_tap ?? 0,
+    vcardSaves: byKind.vcard_save ?? 0,
+    callTaps: byKind.call_tap ?? 0,
+    whatsappTaps: byKind.whatsapp_tap ?? 0,
+    emailTaps: byKind.email_tap ?? 0,
+    websiteTaps: byKind.website_tap ?? 0,
+    shares: byKind.share_tap ?? 0,
     connects: byKind.connect ?? 0,
     reconnects: byKind.courtesy_reconnect ?? 0,
     byKind,

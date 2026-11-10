@@ -6,10 +6,12 @@
  *
  * ── Architecture map ────────────────────────────────────────────────────
  * ACCESS
- *   Anonymous guests: live /card/[slug], /c/{token}, /n/{token}, public GET,
- *   Connect POST, QR image, Save/Share. No Celeventic account required.
+ *   Anonymous guests: published /card/[slug], /u/{slug}, /c/{qrToken}, /n/{nfcToken},
+ *   public GET, Connect POST, QR image, Save/Share. No Celeventic account required.
+ *   Each cardholder keeps a unique slug, Smart QR token, NFC token, and tap session.
  *   Owners: shared NextAuth User. CeleYou signup skips event getting-started.
- *   Unpublished/unpaid payloads withhold contacts. NFC respects device APIs.
+ *   Unpublished, suspended, and expired courtesy payloads withhold contacts.
+ *   NFC respects device APIs. Phone to phone NFC is not used.
  *
  * CURRENT
  *   DigitalBusinessCard Prisma model, studio, /card/[slug], 8 themes,
@@ -32,6 +34,9 @@
  * Honest platform limits
  *   Web NFC = Chrome Android primarily. Wallet QR is universal share surface.
  *   Apple Wallet NFC entitlements are separate from physical NFC tags.
+ *      Phone to phone NFC is not supported. Tap-to-Connect uses session QR now,
+   *   with a documented BLE contract for a future native app. Recipients open
+   *   /card/{slug}, /c/{token}, /n/{token}, or /u/{slug} with no account.
  */
 
 export const SMARTCARD_PRODUCT_SHORT_NAME = "CeleYou";
@@ -42,7 +47,7 @@ export const SMARTCARD_PRODUCT_SUPPORT = "Meet. Share. Connect. Remember.";
 export const SMARTCARD_EYEBROW = "CeleYou";
 export const SMARTCARD_HERO_LINE = "Your phone. Your identity. Every connection.";
 export const SMARTCARD_HERO_SUPPORT =
-  "QR, NFC, Wallet, or a share link. One page for your socials, number, WhatsApp, and website. Update once. Every tap stays current. The public card goes live only while your subscription is paid.";
+  "QR, NFC card, Nearby Share, or a link. One page for your socials, number, WhatsApp, and website. Update once. Every share stays current. Recipients open it with no app and no account.";
 
 export const SMARTCARD_CTA_PRIMARY = "Design my CeleYou";
 export const SMARTCARD_CTA_SECONDARY = "View templates";
@@ -54,7 +59,9 @@ export const SMARTCARD_NFC_PATH = "/n";
 
 export const SMARTCARD_CAPABILITIES = [
   { id: "smart-qr", label: "Smart QR" },
-  { id: "nfc-tap", label: "NFC Tap" },
+  { id: "nfc-tap", label: "NFC card tap to open" },
+  { id: "tap-to-connect", label: "Tap to Connect" },
+  { id: "zero-install", label: "Zero-install recipient" },
   { id: "offline-ready", label: "Offline snapshot" },
   { id: "wallet-ready", label: "Wallet Ready" },
   { id: "contact-exchange", label: "Connect Back" },
@@ -79,8 +86,8 @@ export const SMARTCARD_AUTOMATIONS = [
   },
   {
     id: "gate",
-    title: "Works only while subscribed.",
-    body: "When a plan lapses the public page goes offline. Renew monthly, quarterly, half-year or yearly.",
+    title: "Stays current after you share.",
+    body: "A paid plan keeps the public page live after the studio window. Courtesy mode preserves identity when a plan lapses.",
   },
   {
     id: "vcard",

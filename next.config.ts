@@ -34,6 +34,19 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "media.celeventic.com", pathname: "/**" },
     ],
   },
+  async rewrites() {
+    return [
+      { source: "/api/v1/proximity/sessions/join", destination: "/api/digital-business-cards/proximity/sessions/join" },
+      { source: "/api/v1/proximity/sessions/:id/exchange", destination: "/api/digital-business-cards/proximity/exchange" },
+      { source: "/api/v1/proximity/sessions/:id/:action", destination: "/api/digital-business-cards/proximity/sessions/:id?action=:action" },
+      { source: "/api/v1/proximity/sessions/:id", destination: "/api/digital-business-cards/proximity/sessions/:id" },
+      { source: "/api/v1/proximity/sessions", destination: "/api/digital-business-cards/proximity/sessions" },
+      { source: "/api/v1/proximity/exchange", destination: "/api/digital-business-cards/proximity/exchange" },
+      { source: "/api/v1/proximity/history", destination: "/api/digital-business-cards/proximity/history" },
+      { source: "/u/:slug/contact.vcf", destination: "/card/:slug/contact.vcf" },
+      { source: "/u/:slug", destination: "/card/:slug" },
+    ];
+  },
   async redirects() {
     return [
       { source: "/login", destination: "/auth/login", permanent: false },

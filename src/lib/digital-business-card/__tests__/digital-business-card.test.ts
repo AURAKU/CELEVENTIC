@@ -650,10 +650,11 @@ describe("celecard smart QR", () => {
     const { demoCardPreviewExplorePath, demoCardPreviewQrSrc } = await import(
       "@/lib/digital-business-card/demo-card"
     );
-    const src = demoCardPreviewQrSrc();
+    const src = demoCardPreviewQrSrc("gold-folio");
     assert.match(src, /mode=guide/);
     assert.match(src, /digital-cards/);
     assert.match(src, /smartcard-themes/);
+    assert.match(src, /look%3Dgold-folio/);
     assert.equal(src.includes("demo-ama-serwaa"), false);
     assert.match(src, /\/api\/qr\/image\?/);
     assert.equal(demoCardPreviewExplorePath(), "/digital-cards#smartcard-themes");
@@ -669,6 +670,16 @@ describe("celecard dummy portrait", () => {
 });
 
 describe("celecard company logo", () => {
+  it("hides the company mark when no logo was uploaded", async () => {
+    const { hasCeleCardCompanyLogo } = await import(
+      "@/components/digital-business-card/demo-company-mark"
+    );
+    assert.equal(hasCeleCardCompanyLogo(null), false);
+    assert.equal(hasCeleCardCompanyLogo(""), false);
+    assert.equal(hasCeleCardCompanyLogo("   "), false);
+    assert.equal(hasCeleCardCompanyLogo("/uploads/u/logo.webp"), true);
+  });
+
   it("keeps a company mark url beside the house name and rejects unsafe urls", async () => {
     const { normalizeSocials, persistCompanyLogoUrl } = await import("@/lib/digital-business-card/socials");
     const socials = normalizeSocials({

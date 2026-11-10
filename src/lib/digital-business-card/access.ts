@@ -4,7 +4,7 @@
  * Shared Celeventic authentication. No second user database.
  * Product records stay on DigitalBusinessCard / SmartCard* tables, not Event rows.
  *
- * Anonymous guests may open a live published card and use Save, Connect, Share,
+ * Anonymous guests may open a published guest-shareable card and use Save, Connect, Share,
  * public contacts, socials, portfolios, booking links, payment links, and payment QRs.
  * Creating, publishing, customizing, or owning a card requires a signed-in account.
  */
@@ -15,6 +15,8 @@ import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types
 import { smartCardStudioPath } from "@/lib/auth/safe-next-path";
 import {
   celeCardPublicPresentation,
+  isCeleCardGuestShareable,
+  resolveCeleCardLifecycle,
   type CeleCardLifecycleInput,
 } from "@/lib/digital-business-card/lifecycle";
 import { courtesyGuestPayload, unavailableGuestPayload } from "@/lib/digital-business-card/courtesy";
@@ -68,7 +70,15 @@ export function celeCardOwnerStudioPath(plan?: string | null, theme?: string | n
 }
 
 export function isCeleCardPubliclyReachable(card: LiveGateCard): boolean {
-  return isDigitalCardLive(card);
+  return isCeleCardGuestShareable(card);
+}
+
+export function celeCardOwnerShareFlags(card: LiveGateCard) {
+  return {
+    isLive: isDigitalCardLive(card),
+    guestShareable: isCeleCardGuestShareable(card),
+    lifecycleState: resolveCeleCardLifecycle(card),
+  };
 }
 
 export function guestMayUsePublicAction(
@@ -92,7 +102,7 @@ export function isCeleCardCourtesyReachable(card: LiveGateCard): boolean {
   return celeCardPublicPresentation(card) === "courtesy";
 }
 
-/** Guest-safe payload. Contact and socials exist only while the card is live. */
+/** Guest-safe payload. Contact and socials exist only while the identity is guest-shareable. */
 export function toGuestPublicPayload(
   card: GuestSourceCard,
   grantedItemKeys: Iterable<string> = []
@@ -108,6 +118,7 @@ export function toGuestPublicPayload(
       website: guest.website,
       socials: guest.socials,
       guestReach: guest.guestReach,
+      isLive: true,
       presentationMode: "live",
     };
   }

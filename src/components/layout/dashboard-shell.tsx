@@ -22,6 +22,16 @@ export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
     setMobileOpen(false);
   }, [pathname]);
 
+  const tapMode = pathname.startsWith("/dashboard/business-card/tap");
+  if (tapMode) {
+    return (
+      <>
+        <TermsAcceptanceGate />
+        {children}
+      </>
+    );
+  }
+
   return (
     <div className="flex min-h-app-viewport bg-mesh overflow-x-hidden">
       <TermsAcceptanceGate />

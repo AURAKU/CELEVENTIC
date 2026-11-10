@@ -47,13 +47,21 @@ export type DigitalCardPublicPayload = {
 };
 
 export { DIGITAL_CARD_MONTHLY_PRICE_GHS } from "./plans";
-/** Studio design window. The public card stays offline until a paid plan is active. */
+/** Studio design window. Published profiles stay guest-shareable during this window. */
 export const DIGITAL_CARD_TRIAL_DAYS = 14;
 
 export const DIGITAL_CARD_PUBLIC_PATH = "/card";
+export const DIGITAL_CARD_IDENTITY_PATH = "/u";
 
 export function digitalCardPublicUrl(slug: string, origin?: string): string {
   const path = `${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(slug)}`;
+  if (!origin) return path;
+  return `${origin.replace(/\/$/, "")}${path}`;
+}
+
+/** Canonical zero-install identity URL. Rewrites to /card/{slug}. */
+export function digitalCardIdentityUrl(slug: string, origin?: string): string {
+  const path = `${DIGITAL_CARD_IDENTITY_PATH}/${encodeURIComponent(slug)}`;
   if (!origin) return path;
   return `${origin.replace(/\/$/, "")}${path}`;
 }

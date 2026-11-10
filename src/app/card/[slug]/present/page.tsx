@@ -20,10 +20,7 @@ import { celeCardPublicPresentation } from "@/lib/digital-business-card/lifecycl
 import { SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { getServerAppUrl } from "@/lib/app-url";
-import {
-  getDigitalCardBySlug,
-  isDigitalCardLive,
-} from "@/services/digital-business-card/digital-business-card.service";
+import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-business-card.service";
 import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
 import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
 
@@ -50,8 +47,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
   const card = await getDigitalCardBySlug(slug);
   if (!card || card.deletedAt) return withheldCeleCardMetadata();
-  if (!isDigitalCardLive(card)) {
-    return celeCardPublicPresentation(card) === "courtesy"
+  const presentation = celeCardPublicPresentation(card);
+  if (presentation !== "live") {
+    return presentation === "courtesy"
       ? courtesyCeleCardMetadata(card.displayName)
       : withheldCeleCardMetadata();
   }

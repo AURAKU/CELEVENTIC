@@ -141,8 +141,13 @@ export function demoCardPreviewExplorePath(): string {
 /** Camera-safe dummy QR. A scan opens the public template gallery, not a fake profile. */
 export const DEMO_CARD_PREVIEW_QR_URL = "https://celeventic.com/digital-cards#smartcard-themes";
 
-export function demoCardPreviewQrSrc(): string {
-  return digitalCardQrImageSrc(DEMO_CARD_PREVIEW_QR_URL, { size: 640 });
+export function demoCardPreviewQrUrl(seed?: string): string {
+  if (!seed) return DEMO_CARD_PREVIEW_QR_URL;
+  return `https://celeventic.com/digital-cards?look=${encodeURIComponent(seed)}#smartcard-themes`;
+}
+
+export function demoCardPreviewQrSrc(seed?: string): string {
+  return digitalCardQrImageSrc(demoCardPreviewQrUrl(seed), { size: 640 });
 }
 
 export function demoCardNfcPath(): string {

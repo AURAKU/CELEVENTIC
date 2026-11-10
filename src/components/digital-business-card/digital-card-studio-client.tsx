@@ -8,6 +8,7 @@ import {
   Nfc,
   Plus,
   Save,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +28,10 @@ import {
 } from "@/lib/digital-business-card/meetings";
 import { celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import { SMARTCARD_PLANS, type SmartCardPlan, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
-import { smartCardShortUrl } from "@/lib/digital-business-card/product";
+import { smartCardNfcUrl, smartCardShortUrl } from "@/lib/digital-business-card/product";
 import {
   DIGITAL_CARD_TRIAL_DAYS,
-  digitalCardPublicUrl,
+  digitalCardIdentityUrl,
   digitalCardQrImageSrc,
   normalizeSocials,
   compactDigitalCardSocials,
@@ -84,6 +85,7 @@ import {
   type CeleCardPortraitFrame,
 } from "@/lib/digital-business-card/portrait-frame";
 import { digitalCardPresentPath } from "@/lib/digital-business-card/share";
+import { TAP_TO_CONNECT_CTA, tapStudioPath } from "@/lib/celeyou-proximity/product";
 import { getClientAppUrl } from "@/lib/app-url";
 import { celeCardHouseAvatarId, celeCardHouseAvatarMeta } from "@/lib/digital-business-card/portraits";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
@@ -103,11 +105,14 @@ type CardRow = {
   avatarUrl: string | null;
   isPublished: boolean;
   nfcEnabled: boolean;
+  proximityDiscoverable?: boolean;
   subscriptionStatus: string;
   subscriptionExpiresAt: string | null;
   viewCount: number;
   isLive: boolean;
+  guestShareable?: boolean;
   publicToken?: string;
+  nfcPublicToken?: string | null;
   lifecycleState?: string;
 };
 
@@ -149,6 +154,7 @@ const emptyForm = {
   slug: "",
   isPublished: true,
   nfcEnabled: true,
+  proximityDiscoverable: true,
   avatarUrl: null as string | null,
   stackOrder: [] as string[],
   dockOrder: [] as string[],
@@ -317,6 +323,7 @@ export function DigitalCardStudioClient() {
       slug: card.slug,
       isPublished: card.isPublished,
       nfcEnabled: card.nfcEnabled,
+      proximityDiscoverable: card.proximityDiscoverable !== false,
       avatarUrl: card.avatarUrl,
       stackOrder: socials.stackOrder ?? [],
       dockOrder: socials.dockOrder ?? [],
@@ -337,13 +344,17 @@ export function DigitalCardStudioClient() {
   }
 
   const active = useMemo(() => cards.find((c) => c.id === activeId) ?? null, [cards, activeId]);
-  const publicUrl = form.slug ? digitalCardPublicUrl(form.slug, origin) : "";
+  const publicUrl = form.slug ? digitalCardIdentityUrl(form.slug, origin) : "";
   const shareUrl =
     active?.publicToken && origin
       ? smartCardShortUrl(active.publicToken, origin)
       : publicUrl.startsWith("http")
         ? publicUrl
         : "";
+  const nfcShareUrl =
+    active?.nfcPublicToken && origin
+      ? smartCardNfcUrl(active.nfcPublicToken, origin)
+      : shareUrl;
   const qrSrc = shareUrl.startsWith("http") ? digitalCardQrImageSrc(shareUrl) : null;
   const previewTheme = applyCeleCardDesign(resolveDigitalCardTheme(form.themeId), form.design);
   const previewVoice = celecardTypeVoice(previewTheme);
@@ -438,6 +449,7 @@ export function DigitalCardStudioClient() {
       slug: form.slug.trim() || undefined,
       isPublished: form.isPublished,
       nfcEnabled: form.nfcEnabled,
+      proximityDiscoverable: form.proximityDiscoverable,
       avatarUrl: form.avatarUrl,
     };
 
@@ -543,11 +555,17 @@ export function DigitalCardStudioClient() {
           </h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
             Use the same design tools as every house template. Layout, atmosphere, ornament, and a
-            background that blends into the plate. Then share via QR, NFC, Wallet or link. The public
-            page stays offline until a paid plan is active.
+            background that blends into the plate. Then share via QR, NFC card, Nearby Share, or link.
+            Recipients open your profile in any browser with no app and no account.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild>
+            <Link href={tapStudioPath(activeId || undefined)}>
+              <Smartphone className="mr-2 h-4 w-4" />
+              {TAP_TO_CONNECT_CTA}
+            </Link>
+          </Button>
           <Button type="button" variant="outline" onClick={startNew}>
             <Plus className="mr-2 h-4 w-4" />
             New card
@@ -560,14 +578,15 @@ export function DigitalCardStudioClient() {
       </div>
 
       <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
-        Studio design is open for {DIGITAL_CARD_TRIAL_DAYS} days. <strong>QR, NFC and the public
-        link work only while a subscription is paid.</strong>
+        Studio design is open for {DIGITAL_CARD_TRIAL_DAYS} days.{" "}
+        <strong>Publish to share. Recipients do not need CeleYou or an account.</strong> A paid plan
+        keeps the page live after the studio window and unlocks NFC hardware.
         {active ? (
           <span className="ml-2 inline-flex flex-wrap items-center gap-2">
             Status:{" "}
             <Badge variant="secondary" className="align-middle">
               {active.subscriptionStatus}
-              {active.isLive ? " · live" : " · offline"}
+              {active.isLive ? " · live" : active.guestShareable ? " · shareable" : " · offline"}
             </Badge>
             <DigitalCardSubscriptionCountdown
               endsAt={active.subscriptionExpiresAt}
@@ -1038,6 +1057,15 @@ export function DigitalCardStudioClient() {
                 <Nfc className="h-4 w-4 text-slate-500" />
                 NFC ready
               </label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.proximityDiscoverable}
+                  onChange={(e) => setForm((f) => ({ ...f, proximityDiscoverable: e.target.checked }))}
+                />
+                <Smartphone className="h-4 w-4 text-slate-500" />
+                Tap-to-Connect
+              </label>
             </div>
             </StudioPanel>
           </div>
@@ -1062,7 +1090,7 @@ export function DigitalCardStudioClient() {
                 company={form.company || "Company"}
                 avatarUrl={form.avatarUrl}
                 qrSrc={qrSrc}
-                qrHref={form.slug ? digitalCardPublicUrl(form.slug) : null}
+                qrHref={form.slug ? digitalCardIdentityUrl(form.slug) : null}
                 compact
                 portraitFrame={form.portraitFrame}
                 companyLogoUrl={form.companyLogoUrl}
@@ -1084,10 +1112,13 @@ export function DigitalCardStudioClient() {
             <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
               {form.slug ? (
                 <DigitalCardShareDesk
-                  profileUrl={digitalCardPublicUrl(form.slug)}
+                  profileUrl={publicUrl || digitalCardIdentityUrl(form.slug)}
                   presentUrl={digitalCardPresentPath(form.slug)}
                   shareUrl={shareUrl || publicUrl}
-                  nfcUrl={shareUrl || publicUrl}
+                  nfcUrl={nfcShareUrl || publicUrl}
+                  cardId={activeId || undefined}
+                  proximityDiscoverable={form.proximityDiscoverable}
+                  onProximityChange={(value) => setForm((f) => ({ ...f, proximityDiscoverable: value }))}
                   displayName={form.displayName || "CeleYou"}
                   vcard={
                     {

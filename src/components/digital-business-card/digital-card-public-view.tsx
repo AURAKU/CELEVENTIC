@@ -5,9 +5,13 @@ import Link from "next/link";
 import {
   Check,
   Download,
+  Globe,
+  Handshake,
+  Mail,
+  MessageCircle,
+  Phone,
   QrCode,
   Share2,
-  Handshake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
@@ -32,6 +36,9 @@ import {
 } from "@/lib/digital-business-card/product";
 import { celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
+import { guestPrimaryActions } from "@/lib/celeyou-share/guest-actions";
+import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
+import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
 
 export function DigitalCardPublicView({
   card,
@@ -74,6 +81,9 @@ export function DigitalCardPublicView({
     () => (Array.isArray(card.guestReach) ? card.guestReach : listDigitalCardReachItems(card)),
     [card]
   );
+  const primaryActions = useMemo(() => guestPrimaryActions(card), [card]);
+  const contactActions = primaryActions.filter((action) => action.href);
+  const sections = useMemo(() => guestIdentitySections(card, reach), [card, reach]);
 
   const downloadVCard = useCallback(async () => {
     if (saveState === "saving") return;
@@ -84,6 +94,7 @@ export function DigitalCardPublicView({
         setSaveState("idle");
         return;
       }
+      if (result !== "opened") trackCeleYouGuestEvent(card.slug, "vcard_save");
       setSaveState("saved");
       window.setTimeout(() => setSaveState("idle"), 2200);
     } catch {
@@ -94,6 +105,7 @@ export function DigitalCardPublicView({
   const shareCard = useCallback(async () => {
     const title = celeCardShareTitle(card);
     const text = celeCardShareMessage(card);
+    trackCeleYouGuestEvent(card.slug, "share_tap");
     try {
       if (navigator.share) {
         await navigator.share({ title, text, url: shortUrl });
@@ -171,7 +183,7 @@ export function DigitalCardPublicView({
 
   return (
     <main
-      className="celecard-stage relative min-h-app-viewport overflow-hidden pb-32"
+      className="celecard-stage relative min-h-app-viewport overflow-hidden pb-40"
       data-celecard-mood={motionMood}
       style={{
         background: theme.stageBackground,
@@ -209,19 +221,33 @@ export function DigitalCardPublicView({
           </Link>
         </div>
 
-        <div className="celecard-enter celecard-d3 text-center">
-          {card.bio ? (
-            <p
-              className="mx-auto mt-2 max-w-sm text-[15px] font-medium leading-relaxed"
-              style={{ color: copyInk, fontFamily: typeVoice.meta }}
-            >
-              {card.bio}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="celecard-enter celecard-d4">
-          <DigitalCardReachGrid items={reach} theme={theme} slug={card.slug} ownerName={card.displayName} />
+        <div className="celecard-enter celecard-d3 flex flex-col gap-6">
+          {sections.map((section) => (
+            <section key={section.id} className="mx-auto w-full max-w-sm">
+              <h2
+                className="mb-2 text-center text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: theme.accent, fontFamily: typeVoice.meta }}
+              >
+                {section.label}
+              </h2>
+              {section.body ? (
+                <p
+                  className="text-center text-[15px] font-medium leading-relaxed"
+                  style={{ color: copyInk, fontFamily: typeVoice.meta }}
+                >
+                  {section.body}
+                </p>
+              ) : null}
+              {section.items.length ? (
+                <DigitalCardReachGrid
+                  items={section.items}
+                  theme={theme}
+                  slug={card.slug}
+                  ownerName={card.displayName}
+                />
+              ) : null}
+            </section>
+          ))}
         </div>
 
         <div className="celecard-enter celecard-d5 mb-8 flex items-center justify-center gap-4">
@@ -321,6 +347,29 @@ export function DigitalCardPublicView({
         className="celecard-dock-bar pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 sm:px-6 lg:px-8 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-10"
         style={{ background: dock.veil }}
       >
+        {contactActions.length ? (
+          <div className="celecard-dock-row pointer-events-auto mx-auto mb-2 flex w-full max-w-[44rem] gap-2 overflow-x-auto px-1">
+            {contactActions.map((action) => (
+              <a
+                key={action.id}
+                href={action.href}
+                className="celecard-dock-item inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                style={{
+                  backgroundColor: dock.ghostBg,
+                  color: dock.ghostFg,
+                  fontFamily: dock.font,
+                }}
+                onClick={() => trackCeleYouGuestEvent(card.slug, action.event)}
+              >
+                {action.id === "call" ? <Phone className="h-3.5 w-3.5" /> : null}
+                {action.id === "whatsapp" ? <MessageCircle className="h-3.5 w-3.5" /> : null}
+                {action.id === "email" ? <Mail className="h-3.5 w-3.5" /> : null}
+                {action.id === "website" ? <Globe className="h-3.5 w-3.5" /> : null}
+                {action.label}
+              </a>
+            ))}
+          </div>
+        ) : null}
         <div
           className="celecard-dock-tray pointer-events-auto"
           data-celecard-origin={dock.originStyle}
@@ -351,7 +400,7 @@ export function DigitalCardPublicView({
             <span className="celecard-action-mark" aria-hidden>
               {saveState === "saved" ? <Check /> : <Download />}
             </span>
-            {saveState === "saved" ? "Saved" : "Save"}
+            {saveState === "saved" ? "Saved" : "Save Contact"}
           </button>
           {card.connectBackEnabled && !connectDone ? (
             <button

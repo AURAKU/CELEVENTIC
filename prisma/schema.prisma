@@ -2246,6 +2246,8 @@ model DigitalBusinessCard {
   unclaimedEmail         String?
   unclaimedPhone         String?
   claimedAt              DateTime?
+  /// Owner allows Tap-to-Connect discovery. Default on. Never silent.
+  proximityDiscoverable  Boolean  @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
@@ -2262,6 +2264,8 @@ model DigitalBusinessCard {
   lifecycleEvents SmartCardLifecycleEvent[]
   claimInvites    SmartCardClaimInvite[]
   entitlementGrants SmartCardEntitlementGrant[]
+  proximitySessionsHost CeleYouProximitySession[] @relation("ProximityHostCard")
+  proximitySessionsPeer CeleYouProximitySession[] @relation("ProximityPeerCard")
 
   @@index([userId])
   @@index([subscriptionStatus])
@@ -2499,6 +2503,92 @@ model SmartCardAccessRequest {
 
   @@index([cardId, status])
   @@map("smartcard_access_requests")
+}
+
+/// Tap-to-Connect session. BLE advertisements never store this row's user ids.
+model CeleYouProximitySession {
+  id             String    @id @default(cuid())
+  hostUserId     String
+  hostCardId     String
+  peerUserId     String?
+  peerCardId     String?
+  joinCode       String
+  joinCodeHash   String    @unique
+  verifyCode     String?
+  discoveryId    String    @unique
+  /// DISCOVERING | PEER_FOUND | REQUEST_PENDING | APPROVED | COMPLETED | DECLINED | CANCELLED | EXPIRED | FAILED
+  status         String    @default("DISCOVERING")
+  /// qr | code | ble | nfc-card
+  transport      String    @default("qr")
+  expiresAt      DateTime
+  capabilityJson Json      @default("{}")
+  cancelledAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  hostCard DigitalBusinessCard @relation("ProximityHostCard", fields: [hostCardId], references: [id], onDelete: Cascade)
+  peerCard DigitalBusinessCard? @relation("ProximityPeerCard", fields: [peerCardId], references: [id], onDelete: SetNull)
+  tokens   CeleYouProximityShareToken[]
+  history  CeleYouProximityHistory[]
+
+  @@index([hostUserId, status])
+  @@index([peerUserId, status])
+  @@index([hostCardId])
+  @@index([expiresAt])
+  @@index([status, expiresAt])
+  @@map("celeyou_proximity_sessions")
+}
+
+/// One-time profile share. Raw token is never stored.
+model CeleYouProximityShareToken {
+  id         String    @id @default(cuid())
+  sessionId  String
+  fromCardId String
+  toUserId   String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  redeemedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  session CeleYouProximitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([toUserId])
+  @@index([expiresAt])
+  @@map("celeyou_proximity_share_tokens")
+}
+
+model CeleYouProximityHistory {
+  id         String   @id @default(cuid())
+  sessionId  String
+  hostUserId String
+  peerUserId String?
+  hostCardId String
+  peerCardId String?
+  outcome    String
+  createdAt  DateTime @default(now())
+
+  session CeleYouProximitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([hostUserId, createdAt])
+  @@index([peerUserId, createdAt])
+  @@index([sessionId])
+  @@map("celeyou_proximity_history")
+}
+
+model CeleYouProximitySecurityEvent {
+  id        String   @id @default(cuid())
+  sessionId String?
+  userId    String?
+  kind      String
+  meta      Json     @default("{}")
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([kind, createdAt])
+  @@index([userId, createdAt])
+  @@index([sessionId])
+  @@map("celeyou_proximity_security_events")
 }
 
 /// Design-only snapshot. Canonical identity stays on DigitalBusinessCard.

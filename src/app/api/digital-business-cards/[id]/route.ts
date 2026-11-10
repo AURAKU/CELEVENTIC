@@ -4,10 +4,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { DIGITAL_CARD_THEMES } from "@/lib/digital-business-card/themes";
 import { digitalCardSocialsSchema } from "@/lib/digital-business-card/socials";
-import { resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
+import { celeCardOwnerShareFlags } from "@/lib/digital-business-card/access";
 import {
   getDigitalCardForUser,
-  isDigitalCardLive,
+  nfcTokensByCardId,
   softDeleteDigitalCard,
   updateDigitalCard,
 } from "@/services/digital-business-card/digital-business-card.service";
@@ -23,12 +23,13 @@ const updateSchema = z.object({
   email: z.string().email().nullable().optional().or(z.literal("")),
   phone: z.string().max(40).nullable().optional(),
   website: z.string().max(300).nullable().optional(),
-  socials: socialsSchema,
+  socials: socialsSchema.optional(),
   themeId: z.string().optional(),
   avatarUrl: z.string().max(800).nullable().optional(),
   slug: z.string().min(2).max(48).optional(),
   isPublished: z.boolean().optional(),
   nfcEnabled: z.boolean().optional(),
+  proximityDiscoverable: z.boolean().optional(),
 });
 
 const themeIds = new Set(DIGITAL_CARD_THEMES.map((t) => t.id));
@@ -41,7 +42,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!card) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({
     success: true,
-    data: { ...card, isLive: isDigitalCardLive(card), lifecycleState: resolveCeleCardLifecycle(card) },
+    data: {
+      ...card,
+      ...celeCardOwnerShareFlags(card),
+      nfcPublicToken: (await nfcTokensByCardId([card])).get(card.id) || null,
+    },
   });
 }
 
@@ -66,12 +71,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const updated = await updateDigitalCard(session.user.id, id, {
     ...rest,
     email: emailNorm,
-    socials: rest.socials as DigitalCardSocials,
+    socials: rest.socials as DigitalCardSocials | undefined,
   });
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({
     success: true,
-    data: { ...updated, isLive: isDigitalCardLive(updated), lifecycleState: resolveCeleCardLifecycle(updated) },
+    data: {
+      ...updated,
+      ...celeCardOwnerShareFlags(updated),
+      nfcPublicToken: (await nfcTokensByCardId([updated])).get(updated.id) || null,
+    },
   });
 }
 

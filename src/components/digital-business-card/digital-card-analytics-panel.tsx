@@ -6,6 +6,12 @@ type Analytics = {
   viewCount: number;
   qrOpens: number;
   nfcTaps: number;
+  vcardSaves: number;
+  callTaps: number;
+  whatsappTaps: number;
+  emailTaps?: number;
+  websiteTaps: number;
+  shares: number;
   connects: number;
   reconnects: number;
 };
@@ -41,7 +47,9 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-sm font-semibold text-slate-900">Activity</p>
-      <p className="text-xs text-slate-500">Public opens and visitor requests for this CeleYou.</p>
+      <p className="text-xs text-slate-500">
+        Public opens and published actions. These counts are not the recipient’s identity.
+      </p>
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {!data && !error ? <p className="mt-3 text-xs text-slate-500">Loading activity…</p> : null}
       {data ? (
@@ -57,6 +65,30 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
           <div className="rounded-lg bg-slate-50 px-3 py-2">
             <dt className="text-[11px] text-slate-500">NFC taps</dt>
             <dd className="font-semibold text-slate-900">{data.nfcTaps}</dd>
+          </div>
+          <div className="rounded-lg bg-slate-50 px-3 py-2">
+            <dt className="text-[11px] text-slate-500">Save contact</dt>
+            <dd className="font-semibold text-slate-900">{data.vcardSaves}</dd>
+          </div>
+          <div className="rounded-lg bg-slate-50 px-3 py-2">
+            <dt className="text-[11px] text-slate-500">Calls</dt>
+            <dd className="font-semibold text-slate-900">{data.callTaps}</dd>
+          </div>
+          <div className="rounded-lg bg-slate-50 px-3 py-2">
+            <dt className="text-[11px] text-slate-500">WhatsApp</dt>
+            <dd className="font-semibold text-slate-900">{data.whatsappTaps}</dd>
+          </div>
+          <div className="rounded-lg bg-slate-50 px-3 py-2">
+            <dt className="text-[11px] text-slate-500">Email</dt>
+            <dd className="font-semibold text-slate-900">{data.emailTaps ?? 0}</dd>
+          </div>
+          <div className="rounded-lg bg-slate-50 px-3 py-2">
+            <dt className="text-[11px] text-slate-500">Website</dt>
+            <dd className="font-semibold text-slate-900">{data.websiteTaps}</dd>
+          </div>
+          <div className="rounded-lg bg-slate-50 px-3 py-2">
+            <dt className="text-[11px] text-slate-500">Shares</dt>
+            <dd className="font-semibold text-slate-900">{data.shares}</dd>
           </div>
           <div className="rounded-lg bg-slate-50 px-3 py-2">
             <dt className="text-[11px] text-slate-500">Connections</dt>

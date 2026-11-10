@@ -119,18 +119,19 @@ export function DigitalCardCompanyLogoField({
         )}
         style={{ boxShadow: `0 0 0 1px ${theme.border}` }}
       >
-        <CeleCardCompanyMark
-          url={value}
-          name={company || "Logo"}
-          accent={theme.accent}
-          metal={theme.border}
-          className="h-full w-full"
-        />
-        {!value ? (
-          <span className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/35 to-transparent pb-1">
-            <Upload className="h-3.5 w-3.5 text-white" />
+        {value ? (
+          <CeleCardCompanyMark
+            url={value}
+            name={company || "Logo"}
+            accent={theme.accent}
+            metal={theme.border}
+            className="h-full w-full"
+          />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center bg-white/70">
+            {uploading ? null : <Upload className="h-4 w-4" style={{ color: theme.accent }} />}
           </span>
-        ) : null}
+        )}
         {uploading ? (
           <span className="absolute inset-0 flex items-center justify-center bg-black/35">
             <Loader2 className="h-4 w-4 animate-spin text-white" />

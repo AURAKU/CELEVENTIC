@@ -435,7 +435,7 @@ export function DigitalCardLiveDemoStudio({
                   className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em]"
                   style={{ color: theme.accent, fontFamily: typeVoice.origin }}
                 >
-                  Live preview
+                  Dummy look. Your CeleYou keeps its own QR, link, and NFC token.
                 </p>
               ) : null}
               <div className="relative mx-auto w-full max-w-full">

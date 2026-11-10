@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * Anonymous public profile API. No Celeventic account required.
- * Unpublished, unpaid, or expired cards return a withheld payload with isLive false.
+ * Unpublished, suspended, or expired cards return a withheld payload with isLive false.
+ * Published trial cards inside the studio window are guest-shareable.
  */
 export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;

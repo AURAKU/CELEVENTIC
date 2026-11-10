@@ -21,7 +21,7 @@ import {
 import { DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
 import { DigitalCardHouseAvatar } from "@/components/digital-business-card/digital-card-house-avatar";
 import { CeleCardQrBadge } from "@/components/digital-business-card/celecard-qr-badge";
-import { CeleCardCompanyMark } from "@/components/digital-business-card/demo-company-mark";
+import { CeleCardCompanyMark, hasCeleCardCompanyLogo } from "@/components/digital-business-card/demo-company-mark";
 
 export type DigitalCardFaceProps = {
   themeId: string;
@@ -420,16 +420,19 @@ function FaceIdentity({
         <span
           className={cn(
             "celecard-face-company flex min-w-0 items-center font-semibold",
-            compact ? "mt-[0.8cqw] gap-[1.4cqw]" : "mt-[0.55cqw] gap-[1.7cqw]"
+            compact ? "mt-[0.8cqw]" : "mt-[0.55cqw]",
+            hasCeleCardCompanyLogo(companyLogoUrl) ? (compact ? "gap-[1.4cqw]" : "gap-[1.7cqw]") : null
           )}
         >
-          <CeleCardCompanyMark
-            url={companyLogoUrl}
-            name={company}
-            accent={theme.accent}
-            metal={theme.border}
-            className="celecard-company-mark"
-          />
+          {hasCeleCardCompanyLogo(companyLogoUrl) ? (
+            <CeleCardCompanyMark
+              url={companyLogoUrl}
+              name={company}
+              accent={theme.accent}
+              metal={theme.border}
+              className="celecard-company-mark"
+            />
+          ) : null}
           <span
             className={cn("min-w-0 break-words", compact ? "line-clamp-1" : null, voice.companyTransform === "uppercase" ? "uppercase" : null)}
             style={{ color: theme.accent, fontFamily: voice.origin, letterSpacing: voice.companyTracking }}

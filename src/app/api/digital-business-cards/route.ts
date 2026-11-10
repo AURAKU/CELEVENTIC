@@ -4,11 +4,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { DIGITAL_CARD_THEMES } from "@/lib/digital-business-card/themes";
 import { digitalCardSocialsSchema } from "@/lib/digital-business-card/socials";
-import { resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
-import { isDigitalCardLive } from "@/services/digital-business-card/digital-business-card.service";
+import { celeCardOwnerShareFlags } from "@/lib/digital-business-card/access";
 import {
   createDigitalCard,
   listDigitalCardsForUser,
+  nfcTokensByCardId,
 } from "@/services/digital-business-card/digital-business-card.service";
 import type { DigitalCardSocials } from "@/lib/digital-business-card/types";
 
@@ -38,12 +38,13 @@ export async function GET() {
 
   try {
     const cards = await listDigitalCardsForUser(session.user.id);
+    const nfcTokens = await nfcTokensByCardId(cards);
     return NextResponse.json({
       success: true,
       data: cards.map((c) => ({
         ...c,
-        isLive: isDigitalCardLive(c),
-        lifecycleState: resolveCeleCardLifecycle(c),
+        ...celeCardOwnerShareFlags(c),
+        nfcPublicToken: nfcTokens.get(c.id) || null,
       })),
     });
   } catch (error) {
@@ -75,5 +76,12 @@ export async function POST(req: Request) {
     socials: parsed.data.socials as DigitalCardSocials,
   });
 
-  return NextResponse.json({ success: true, data: { ...card, isLive: isDigitalCardLive(card) } }, { status: 201 });
+  const nfcTokens = await nfcTokensByCardId([card]);
+  return NextResponse.json(
+    {
+      success: true,
+      data: { ...card, ...celeCardOwnerShareFlags(card), nfcPublicToken: nfcTokens.get(card.id) || null },
+    },
+    { status: 201 }
+  );
 }

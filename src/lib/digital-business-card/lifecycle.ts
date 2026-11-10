@@ -151,6 +151,26 @@ export function isCeleCardCourtesyState(state: CeleCardLifecycleState): boolean 
   return state === "COURTESY";
 }
 
+/**
+ * Recipients may open a published identity without installing CeleYou.
+ * Paid ACTIVE / EXPIRING / GRACE stay guest-shareable.
+ * Published TRIAL cards stay guest-shareable until the studio window ends.
+ * Billing `isDigitalCardLive` remains paid-only.
+ */
+export function isCeleCardGuestShareable(
+  card: CeleCardLifecycleInput,
+  now = new Date(),
+  policy: CeleCardLifecyclePolicy = DEFAULT_CELECARD_LIFECYCLE_POLICY
+): boolean {
+  if (card.deletedAt || card.adminSuspendedAt || card.adminDeactivatedAt) return false;
+  if (!card.isPublished) return false;
+  const state = resolveCeleCardLifecycle(card, now, policy);
+  if (isCeleCardFullyPublic(state)) return true;
+  if (card.subscriptionStatus !== "TRIAL") return false;
+  if (!card.subscriptionExpiresAt) return true;
+  return card.subscriptionExpiresAt.getTime() > now.getTime();
+}
+
 export function celeCardPublicPresentation(
   card: CeleCardLifecycleInput,
   now = new Date(),
@@ -160,7 +180,7 @@ export function celeCardPublicPresentation(
   if (state === "DELETED") return "unavailable";
   if (state === "SUSPENDED") return "suspended";
   if (card.adminDeactivatedAt) return "unavailable";
-  if (isCeleCardFullyPublic(state)) return "live";
+  if (isCeleCardGuestShareable(card, now, policy)) return "live";
   if (isCeleCardCourtesyState(state)) return "courtesy";
   return "unavailable";
 }

@@ -82,7 +82,11 @@ export function DemoCompanyMark({
   );
 }
 
-/** Uploaded house mark, or the generated badge when no file is set. */
+export function hasCeleCardCompanyLogo(url?: string | null): boolean {
+  return Boolean(url?.trim());
+}
+
+/** Uploaded house mark only. No file means the slot does not exist. */
 export function CeleCardCompanyMark({
   url,
   name,
@@ -96,17 +100,15 @@ export function CeleCardCompanyMark({
   metal: string;
   className?: string;
 }) {
-  if (url) {
-    return (
-      <span
-        className={cn("relative shrink-0 overflow-hidden rounded-[20%] bg-white", className)}
-        style={{ boxShadow: `inset 0 0 0 1px ${metal}` }}
-        aria-hidden
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt="" className="h-full w-full object-contain p-[10%]" />
-      </span>
-    );
-  }
-  return <DemoCompanyMark name={name} accent={accent} metal={metal} className={className} />;
+  if (!hasCeleCardCompanyLogo(url)) return null;
+  return (
+    <span
+      className={cn("relative shrink-0 overflow-hidden rounded-[20%] bg-white", className)}
+      style={{ boxShadow: `inset 0 0 0 1px ${metal}` }}
+      aria-hidden
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url!} alt="" className="h-full w-full object-contain p-[10%]" />
+    </span>
+  );
 }

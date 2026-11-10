@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   celeCardPublicPresentation,
   dueReminderOffsetDays,
+  isCeleCardGuestShareable,
   renewalBaseDate,
   resolveCeleCardLifecycle,
   skipReminderForShortTerm,
@@ -72,6 +73,29 @@ describe("CeleYou lifecycle", () => {
     assert.equal(resolveCeleCardLifecycle(card({ adminDeactivatedAt: now }), now), "DRAFT");
     assert.equal(celeCardPublicPresentation(card({ adminDeactivatedAt: now }), now), "unavailable");
     assert.equal(celeCardPublicPresentation(card({ adminSuspendedAt: now }), now), "suspended");
+  });
+
+  it("lets a published trial identity stay guest-shareable without flipping paid live", () => {
+    const trial = card({
+      subscriptionStatus: "TRIAL",
+      lastActivatedAt: null,
+      subscriptionExpiresAt: new Date(now.getTime() + 10 * 86_400_000),
+    });
+    assert.equal(resolveCeleCardLifecycle(trial, now), "DRAFT");
+    assert.equal(isCeleCardGuestShareable(trial, now), true);
+    assert.equal(celeCardPublicPresentation(trial, now), "live");
+    assert.equal(isCeleCardGuestShareable(card({ isPublished: false, subscriptionStatus: "TRIAL" }), now), false);
+    assert.equal(
+      isCeleCardGuestShareable(
+        card({
+          subscriptionStatus: "TRIAL",
+          lastActivatedAt: null,
+          subscriptionExpiresAt: new Date(now.getTime() - 86_400_000),
+        }),
+        now
+      ),
+      false
+    );
   });
 
   it("extends early renewal from the current paid end", () => {
