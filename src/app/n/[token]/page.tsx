@@ -1,10 +1,16 @@
-import { redirect, notFound } from "next/navigation";
-import { resolveNfcDeviceTap } from "@/services/digital-business-card/digital-business-card.service";
+import { redirect } from "next/navigation";
+import { DigitalCardNfcTapView } from "@/components/digital-business-card/digital-card-nfc-tap-view";
+import { resolveNfcDeviceTap } from "@/services/digital-business-card/nfc-device.service";
 import { DIGITAL_CARD_PUBLIC_PATH } from "@/lib/digital-business-card/types";
 import { demoCardGuestPath, isDemoNfcToken } from "@/lib/digital-business-card/demo-card";
 import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  robots: { index: false, follow: false },
+  title: "CeleYou NFC",
+};
 
 /**
  * NFC tap redirect: /n/{token} → paired SmartCard.
@@ -20,7 +26,9 @@ export default async function SmartCardNfcTapPage({
     if (!(await viewerMayOpenDummyLive())) redirect(CELECARD_DUMMY_LIVE_FALLBACK);
     redirect(demoCardGuestPath());
   }
-  const card = await resolveNfcDeviceTap(token);
-  if (!card) notFound();
-  redirect(`${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(card.slug)}`);
+  const resolved = await resolveNfcDeviceTap(token);
+  if (resolved.outcome === "open" || resolved.outcome === "profile") {
+    redirect(`${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(resolved.slug)}`);
+  }
+  return <DigitalCardNfcTapView outcome={resolved.outcome} />;
 }

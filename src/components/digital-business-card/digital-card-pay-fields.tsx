@@ -93,16 +93,16 @@ export function DigitalCardPayWalletPicker({
   if (!networks.length) return null;
   return (
     <div className={className}>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-3 gap-2 sm:grid-cols-4">
         {networks.map((network) => (
           <button
             key={network.key}
             type="button"
             onClick={() => onAdd(network.key)}
-            className="flex flex-col items-center gap-1.5 rounded-2xl border border-black/10 bg-white/80 px-2 py-3 text-center shadow-[0_4px_12px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-black/20 hover:shadow-[0_8px_18px_rgba(15,23,42,0.1)]"
+            className="flex min-w-0 flex-col items-center gap-1.5 rounded-2xl border border-black/10 bg-white/80 px-1.5 py-3 text-center shadow-[0_4px_12px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-black/20 hover:shadow-[0_8px_18px_rgba(15,23,42,0.1)] sm:px-2"
           >
             <DigitalCardBrandMark id={network.key} className="h-11 w-11 rounded-[13px]" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] leading-tight" style={{ color: accent }}>
+            <span className="w-full break-words text-[10px] font-semibold uppercase leading-tight tracking-[0.08em]" style={{ color: accent }}>
               {network.label}
             </span>
           </button>

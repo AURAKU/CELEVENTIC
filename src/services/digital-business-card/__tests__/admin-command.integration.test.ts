@@ -103,12 +103,12 @@ describe("CeleYou Admin Command Center", () => {
     const admin = await makeUser({
       email: `celecard.grant.${stamp}@local.test`,
       name: "Grant Admin",
-      role: "SUPER_ADMIN",
+      role: "ADMIN",
     });
     const limited = await makeUser({
       email: `celecard.limited.${stamp}@local.test`,
-      name: "Limited Admin",
-      role: "ADMIN",
+      name: "Limited Organizer",
+      role: "ORGANIZER",
     });
     const customer = await makeUser({
       email: `celecard.pay.${stamp}@local.test`,
@@ -119,10 +119,17 @@ describe("CeleYou Admin Command Center", () => {
       {
         ownerUserId: customer.id,
         displayName: "Paid Customer",
-        activation: { kind: "draft" },
+        activation: {
+          kind: "complimentary",
+          planId: "monthly",
+          reason: "authorized complimentary launch window",
+        },
       }
     );
     const cardId = created.card.id;
+    const complimentaryCard = await prisma.digitalBusinessCard.findUnique({ where: { id: cardId } });
+    assert.equal(complimentaryCard?.subscriptionStatus, "ACTIVE");
+    assert.equal(isDigitalCardLive(complimentaryCard!), true);
 
     await assert.rejects(
       () =>

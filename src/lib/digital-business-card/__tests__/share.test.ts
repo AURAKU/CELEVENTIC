@@ -31,6 +31,7 @@ describe("CeleYou share metadata", () => {
     assert.equal(description.includes(" · "), false);
     assert.equal(celeCardShareTextLeaksPrivate(description, DEMO_CARD), false);
     assert.equal(digitalCardPresentPath("ama-serwaa"), "/card/ama-serwaa/present");
+    assert.equal(digitalCardPresentPath("ama-serwaa", { immersive: true }), "/card/ama-serwaa/present?immersive=1");
     assert.match(digitalCardOgImagePath("ama-serwaa", "card-tile"), /\/og\?v=card-tile$/);
     assert.equal(
       celeCardShareMessage(DEMO_CARD),

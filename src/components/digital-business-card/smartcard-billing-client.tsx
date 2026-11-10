@@ -27,6 +27,7 @@ type BillingCard = {
   isLive: boolean;
   hoursLeft: number | null;
   lifecycleState?: string;
+  canRenew?: boolean;
 };
 
 type BillingPayment = {
@@ -59,9 +60,11 @@ function remainingCopy(hoursLeft: number | null, expiresAt: string | null) {
   const when = expiresAt
     ? new Date(expiresAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
     : null;
-  if (hours <= 24) return `Live for about ${hours} hours${when ? `. Ends ${when}` : ""}.`;
-  if (hours <= 72) return `Renewal window is open. About ${hours} hours left${when ? `, until ${when}` : ""}.`;
-  return when ? `Paid through ${when}.` : `About ${hours} hours remaining.`;
+  if (hours <= 24) return `Live for about ${hours} hours${when ? `. Ends ${when}` : ""}. This term cannot be cancelled.`;
+  if (hours <= 72) return `Renewal window is open. About ${hours} hours left${when ? `, until ${when}` : ""}. This term cannot be cancelled.`;
+  return when
+    ? `Paid through ${when}. This term cannot be cancelled.`
+    : `About ${hours} hours remaining. This term cannot be cancelled.`;
 }
 
 export function SmartCardBillingClient() {
@@ -181,6 +184,11 @@ export function SmartCardBillingClient() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Checkout failed");
+      if (json.data?.inherited) {
+        setMessage("This card now uses your current subscription.");
+        await load();
+        return;
+      }
       if (json.data?.free) {
         setMessage("Plan activated. Your CeleYou is live.");
         setDesignChoices(true);
@@ -211,8 +219,10 @@ export function SmartCardBillingClient() {
             Keep the public card live
           </h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Paid activation turns on QR, NFC, and the public page. We remind you 14, 7, 3, and 1 days
-            before the term ends, then again after, by email and in-app notification.
+            Paid activation turns on QR, NFC, and the public page through Paystack. A paid term cannot
+            be cancelled or renewed early. Extra cards you create stay on this same subscription, each
+            with its own QR, link, and NFC. We remind you 14, 7, 3, and 1 days before it ends, then
+            again after, by email and in-app notification.
           </p>
         </div>
         <Button asChild variant="outline">
@@ -356,18 +366,21 @@ export function SmartCardBillingClient() {
                   type="button"
                   className="mt-4 w-full bg-[#0B8A83] hover:bg-[#097a74]"
                   onClick={() => void renew()}
-                  disabled={paying}
+                  disabled={paying || active.canRenew === false}
                 >
                   {paying ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <ShieldCheck className="mr-2 h-4 w-4" />
                   )}
-                  {active.isLive ? "Extend" : "Reactivate CeleYou"} · {selectedPlan.label} · {SMARTCARD_CURRENCY}{" "}
-                  {selectedPlan.priceGhs}
+                  {active.canRenew === false
+                    ? "Renewal opens after this term ends"
+                    : `Activate ${selectedPlan.label} · ${SMARTCARD_CURRENCY} ${selectedPlan.priceGhs}`}
                 </Button>
                 <p className="mt-2 text-[11px] text-slate-500">
-                  Checkout opens Paystack. The card stays live only after payment succeeds.
+                  {active.canRenew === false
+                    ? "Your paid term is still running. Extra cards you create stay on this same subscription."
+                    : "Checkout opens Paystack. The card stays live only after payment succeeds. Paid terms cannot be ended early."}
                 </p>
               </div>
             ) : null}

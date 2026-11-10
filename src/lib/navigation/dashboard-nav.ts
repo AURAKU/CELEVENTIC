@@ -99,6 +99,12 @@ export const ORGANIZER_NAV: NavSection[] = [
       { href: "/dashboard/design-studio", labelKey: "dashboard.nav_design_studio", icon: Palette },
       { href: "/dashboard/business-card", labelKey: "dashboard.nav_business_card", icon: CeleYouMarkIcon },
       { href: "/dashboard/business-card/billing", labelKey: "dashboard.nav_smartcard_billing", icon: Receipt },
+      {
+        href: "/dashboard/business-card/services",
+        labelKey: "dashboard.nav_celeyou_services",
+        icon: Shield,
+        adminOnly: true,
+      },
       { href: "/dashboard/invitations?tab=studio", labelKey: "dashboard.nav_invitation_studio", icon: Mail },
       { href: "/dashboard/flyers", labelKey: "dashboard.nav_flyer_studio", icon: Image },
       { href: "/dashboard/design-studio/assets", labelKey: "dashboard.nav_asset_library", icon: Layers },

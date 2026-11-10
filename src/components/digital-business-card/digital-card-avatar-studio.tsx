@@ -92,6 +92,221 @@ function KoiMark({ accent }: { accent: string }) {
   );
 }
 
+function OwlMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <path d="M28 28 L36 12 L42 30 Z" fill={accent} />
+      <path d="M72 28 L64 12 L58 30 Z" fill={accent} />
+      <ellipse cx="50" cy="56" rx="30" ry="32" fill={accent} />
+      <circle cx="40" cy="52" r="11" fill="#f4ece0" />
+      <circle cx="60" cy="52" r="11" fill="#f4ece0" />
+      <circle cx="40" cy="52" r="4.2" fill="#1c1917" />
+      <circle cx="60" cy="52" r="4.2" fill="#1c1917" />
+      <path d="M46 66 L50 72 L54 66 Z" fill="#1c1917" />
+    </>
+  );
+}
+
+function BearMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <circle cx="28" cy="32" r="12" fill={accent} />
+      <circle cx="72" cy="32" r="12" fill={accent} />
+      <circle cx="28" cy="32" r="6" fill="#f4d7b8" />
+      <circle cx="72" cy="32" r="6" fill="#f4d7b8" />
+      <ellipse cx="50" cy="56" rx="30" ry="28" fill={accent} />
+      <ellipse cx="50" cy="62" rx="16" ry="12" fill="#f4d7b8" />
+      <circle cx="42" cy="50" r="2.4" fill="#1c1917" />
+      <circle cx="58" cy="50" r="2.4" fill="#1c1917" />
+      <ellipse cx="50" cy="60" rx="3.4" ry="2.4" fill="#1c1917" />
+    </>
+  );
+}
+
+function DeerMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <path d="M38 36 L28 12 L34 10 L40 28 L46 8 L52 10 L44 36 Z" fill={accent} />
+      <path d="M62 36 L72 12 L66 10 L60 28 L54 8 L48 10 L56 36 Z" fill={accent} />
+      <ellipse cx="50" cy="62" rx="22" ry="26" fill={accent} />
+      <ellipse cx="50" cy="68" rx="12" ry="10" fill="#f4d7b8" />
+      <circle cx="43" cy="56" r="2.2" fill="#1c1917" />
+      <circle cx="57" cy="56" r="2.2" fill="#1c1917" />
+      <ellipse cx="50" cy="66" rx="2.2" ry="3.4" fill="#1c1917" />
+    </>
+  );
+}
+
+function HareMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <ellipse cx="36" cy="22" rx="8" ry="22" fill={accent} transform="rotate(-18 36 22)" />
+      <ellipse cx="64" cy="22" rx="8" ry="22" fill={accent} transform="rotate(18 64 22)" />
+      <ellipse cx="36" cy="22" rx="3.4" ry="12" fill="#f4d7b8" transform="rotate(-18 36 22)" />
+      <ellipse cx="64" cy="22" rx="3.4" ry="12" fill="#f4d7b8" transform="rotate(18 64 22)" />
+      <ellipse cx="50" cy="62" rx="24" ry="26" fill={accent} />
+      <ellipse cx="50" cy="68" rx="12" ry="10" fill="#f4d7b8" />
+      <circle cx="42" cy="58" r="2.3" fill="#1c1917" />
+      <circle cx="58" cy="58" r="2.3" fill="#1c1917" />
+      <ellipse cx="50" cy="68" rx="2.4" ry="2" fill="#1c1917" />
+    </>
+  );
+}
+
+function RamMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <path d="M22 42 C8 28 18 10 34 22 C28 30 24 38 22 42 Z" fill={accent} />
+      <path d="M78 42 C92 28 82 10 66 22 C72 30 76 38 78 42 Z" fill={accent} />
+      <path d="M24 40 C16 48 20 60 30 54" fill="none" stroke={accent} strokeWidth="6" strokeLinecap="round" />
+      <path d="M76 40 C84 48 80 60 70 54" fill="none" stroke={accent} strokeWidth="6" strokeLinecap="round" />
+      <ellipse cx="50" cy="58" rx="24" ry="26" fill={accent} />
+      <ellipse cx="50" cy="64" rx="13" ry="11" fill="#f4d7b8" />
+      <circle cx="42" cy="54" r="2.2" fill="#1c1917" />
+      <circle cx="58" cy="54" r="2.2" fill="#1c1917" />
+    </>
+  );
+}
+
+function PandaMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <circle cx="26" cy="30" r="11" fill={accent} />
+      <circle cx="74" cy="30" r="11" fill={accent} />
+      <ellipse cx="50" cy="56" rx="30" ry="28" fill={accent} />
+      <ellipse cx="50" cy="58" rx="18" ry="16" fill="#f4ece0" />
+      <ellipse cx="38" cy="52" rx="9" ry="8" fill={accent} />
+      <ellipse cx="62" cy="52" rx="9" ry="8" fill={accent} />
+      <circle cx="38" cy="52" r="3.2" fill="#1c1917" />
+      <circle cx="62" cy="52" r="3.2" fill="#1c1917" />
+      <ellipse cx="50" cy="68" rx="5" ry="3.4" fill={accent} />
+    </>
+  );
+}
+
+function TurtleMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <ellipse cx="50" cy="54" rx="30" ry="24" fill={accent} />
+      <path d="M32 48 L50 30 L68 48 L50 66 Z" fill="#0f172a" opacity="0.18" />
+      <path d="M32 48 L68 48" stroke="#0f172a" strokeWidth="1.4" opacity="0.25" />
+      <path d="M50 30 L50 66" stroke="#0f172a" strokeWidth="1.4" opacity="0.25" />
+      <circle cx="50" cy="22" r="10" fill={accent} />
+      <circle cx="47" cy="20" r="1.6" fill="#1c1917" />
+      <circle cx="53" cy="20" r="1.6" fill="#1c1917" />
+      <ellipse cx="22" cy="58" rx="8" ry="4" fill={accent} />
+      <ellipse cx="78" cy="58" rx="8" ry="4" fill={accent} />
+      <ellipse cx="32" cy="76" rx="7" ry="4" fill={accent} />
+      <ellipse cx="68" cy="76" rx="7" ry="4" fill={accent} />
+    </>
+  );
+}
+
+function FrogMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <ellipse cx="50" cy="62" rx="32" ry="22" fill={accent} />
+      <circle cx="34" cy="38" r="12" fill={accent} />
+      <circle cx="66" cy="38" r="12" fill={accent} />
+      <circle cx="34" cy="38" r="6.5" fill="#f4ece0" />
+      <circle cx="66" cy="38" r="6.5" fill="#f4ece0" />
+      <circle cx="34" cy="38" r="2.6" fill="#1c1917" />
+      <circle cx="66" cy="38" r="2.6" fill="#1c1917" />
+      <path d="M42 64 C50 70 58 70 58 64" fill="none" stroke="#1c1917" strokeWidth="1.8" strokeLinecap="round" />
+      <ellipse cx="22" cy="74" rx="10" ry="6" fill={accent} />
+      <ellipse cx="78" cy="74" rx="10" ry="6" fill={accent} />
+    </>
+  );
+}
+
+function BeeMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <ellipse cx="32" cy="42" rx="16" ry="10" fill="#f4ece0" opacity="0.85" />
+      <ellipse cx="68" cy="42" rx="16" ry="10" fill="#f4ece0" opacity="0.85" />
+      <ellipse cx="50" cy="56" rx="22" ry="16" fill={accent} />
+      <path d="M32 50 H68" stroke="#0f172a" strokeWidth="4" opacity="0.28" />
+      <path d="M32 58 H68" stroke="#0f172a" strokeWidth="4" opacity="0.28" />
+      <circle cx="50" cy="30" r="8" fill={accent} />
+      <circle cx="47" cy="28" r="1.5" fill="#1c1917" />
+      <circle cx="53" cy="28" r="1.5" fill="#1c1917" />
+    </>
+  );
+}
+
+function MothMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <ellipse cx="28" cy="50" rx="22" ry="30" fill={accent} />
+      <ellipse cx="72" cy="50" rx="22" ry="30" fill={accent} />
+      <ellipse cx="28" cy="50" rx="8" ry="12" fill="#f4ece0" opacity="0.4" />
+      <ellipse cx="72" cy="50" rx="8" ry="12" fill="#f4ece0" opacity="0.4" />
+      <ellipse cx="50" cy="54" rx="8" ry="18" fill={accent} />
+      <circle cx="50" cy="32" r="7" fill={accent} />
+      <circle cx="47" cy="30" r="1.4" fill="#1c1917" />
+      <circle cx="53" cy="30" r="1.4" fill="#1c1917" />
+    </>
+  );
+}
+
+function HawkMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <path d="M14 58 C28 40 42 36 50 36 C58 36 72 40 86 58 L72 54 C64 70 36 70 28 54 Z" fill={accent} />
+      <path d="M42 36 C46 18 54 18 58 36 Z" fill={accent} />
+      <path d="M48 20 L50 8 L52 20 Z" fill="#1c1917" />
+      <circle cx="47" cy="28" r="1.6" fill="#1c1917" />
+      <path d="M50 36 L50 52" stroke="#0f172a" strokeWidth="1.4" opacity="0.3" />
+    </>
+  );
+}
+
+function OtterMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <path d="M16 64 C22 40 46 28 72 40 C88 48 90 62 78 68 C58 78 30 76 16 64 Z" fill={accent} />
+      <ellipse cx="32" cy="48" rx="14" ry="12" fill={accent} />
+      <ellipse cx="32" cy="50" rx="8" ry="6" fill="#f4d7b8" />
+      <circle cx="28" cy="46" r="1.8" fill="#1c1917" />
+      <path d="M22 52 C26 56 32 56 36 52" fill="none" stroke="#1c1917" strokeWidth="1.3" />
+      <path d="M78 58 C86 50 94 62 86 70" fill="none" stroke={accent} strokeWidth="7" strokeLinecap="round" />
+    </>
+  );
+}
+
+function GeckoMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <path d="M22 58 C28 36 52 30 70 42 C82 50 78 64 64 68 C46 74 28 70 22 58 Z" fill={accent} />
+      <circle cx="28" cy="44" r="10" fill={accent} />
+      <circle cx="25" cy="41" r="1.7" fill="#1c1917" />
+      <path d="M70 52 C86 40 94 62 80 74" fill="none" stroke={accent} strokeWidth="7" strokeLinecap="round" />
+      <circle cx="24" cy="62" r="5" fill={accent} />
+      <circle cx="40" cy="74" r="5" fill={accent} />
+      <circle cx="58" cy="74" r="5" fill={accent} />
+      <circle cx="72" cy="62" r="5" fill={accent} />
+    </>
+  );
+}
+
+function CrabMark({ accent }: { accent: string }) {
+  return (
+    <>
+      <ellipse cx="50" cy="58" rx="24" ry="16" fill={accent} />
+      <path d="M26 50 C12 34 8 54 22 58" fill="none" stroke={accent} strokeWidth="7" strokeLinecap="round" />
+      <path d="M74 50 C88 34 92 54 78 58" fill="none" stroke={accent} strokeWidth="7" strokeLinecap="round" />
+      <path d="M18 42 L8 28 L24 36" fill={accent} />
+      <path d="M82 42 L92 28 L76 36" fill={accent} />
+      <circle cx="42" cy="54" r="2.2" fill="#1c1917" />
+      <circle cx="58" cy="54" r="2.2" fill="#1c1917" />
+      <path d="M38 72 L34 84" stroke={accent} strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M46 74 L44 86" stroke={accent} strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M54 74 L56 86" stroke={accent} strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M62 72 L66 84" stroke={accent} strokeWidth="3.2" strokeLinecap="round" />
+    </>
+  );
+}
+
 function CometMark({ accent }: { accent: string }) {
   return (
     <>
@@ -235,6 +450,34 @@ export function DigitalCardStudioAvatarFace({
       return <BeetleMark accent={accent} />;
     case "koi":
       return <KoiMark accent={accent} />;
+    case "owl":
+      return <OwlMark accent={accent} />;
+    case "bear":
+      return <BearMark accent={accent} />;
+    case "deer":
+      return <DeerMark accent={accent} />;
+    case "hare":
+      return <HareMark accent={accent} />;
+    case "ram":
+      return <RamMark accent={accent} />;
+    case "panda":
+      return <PandaMark accent={accent} />;
+    case "turtle":
+      return <TurtleMark accent={accent} />;
+    case "frog":
+      return <FrogMark accent={accent} />;
+    case "bee":
+      return <BeeMark accent={accent} />;
+    case "moth":
+      return <MothMark accent={accent} />;
+    case "hawk":
+      return <HawkMark accent={accent} />;
+    case "otter":
+      return <OtterMark accent={accent} />;
+    case "gecko":
+      return <GeckoMark accent={accent} />;
+    case "crab":
+      return <CrabMark accent={accent} />;
     case "comet":
       return <CometMark accent={accent} />;
     case "prism":

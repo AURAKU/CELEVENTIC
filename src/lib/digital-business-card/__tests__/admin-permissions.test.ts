@@ -16,14 +16,19 @@ describe("CeleYou admin permissions", () => {
     assert.equal(canPerformCeleCardAction({ role: "ADMIN" }, "deactivate"), true);
   });
 
-  it("reserves complimentary grants and price changes for super admins", () => {
-    assert.equal(canGrantComplimentary({ role: "ADMIN" }), false);
+  it("lets platform admins grant complimentary cards without payment", () => {
+    assert.equal(canGrantComplimentary({ role: "ADMIN" }), true);
     assert.equal(canGrantComplimentary({ role: "SUPER_ADMIN" }), true);
-    assert.equal(hasPermission({ role: "ADMIN" }, Permission.CELECARD_GRANT_COMPLIMENTARY), false);
+    assert.equal(hasPermission({ role: "ADMIN" }, Permission.CELECARD_GRANT_COMPLIMENTARY), true);
+    assert.equal(canPerformCeleCardAction({ role: "ADMIN" }, "complimentary"), true);
+    assert.equal(canPerformCeleCardAction({ role: "SUPER_ADMIN" }, "complimentary"), true);
+    assert.equal(canGrantComplimentary({ role: "ORGANIZER" }), false);
+    assert.equal(canGrantComplimentary({ role: "USER" }), false);
+  });
+
+  it("reserves price changes for super admins", () => {
     assert.equal(hasPermission({ role: "ADMIN" }, Permission.CELECARD_PRICING_MANAGE), false);
     assert.equal(hasPermission({ role: "SUPER_ADMIN" }, Permission.CELECARD_PRICING_MANAGE), true);
-    assert.equal(canPerformCeleCardAction({ role: "ADMIN" }, "complimentary"), false);
-    assert.equal(canPerformCeleCardAction({ role: "SUPER_ADMIN" }, "complimentary"), true);
   });
 
   it("denies organizers and guests", () => {

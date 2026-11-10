@@ -6,6 +6,7 @@ import {
   resolveCeleCardPortraitFrame,
   type CeleCardPortraitFrame,
 } from "@/lib/digital-business-card/portrait-frame";
+import { CELEYOU_MARK_SRC } from "@/components/digital-business-card/celeyou-brand-mark";
 import { CeleCardQrCenterOverlay } from "@/lib/digital-business-card/qr-center-overlay";
 
 export type CeleCardExportMarkupProps = {
@@ -167,7 +168,7 @@ export function CeleCardExportMarkup({
             <div style={{ width: 328, height: 328, display: "flex", position: "relative" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qrSrc} alt="" width={328} height={328} />
-              <CeleCardQrCenterOverlay photoSrc={photoSrc} qrSize={328} />
+              <CeleCardQrCenterOverlay photoSrc={photoSrc} markSrc={CELEYOU_MARK_SRC} qrSize={328} />
             </div>
           </div>
         ) : null}

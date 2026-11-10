@@ -1,3 +1,4 @@
+import { celeYouGuestOrigin } from "@/lib/app-url";
 import { DEMO_CARD_NFC_TOKEN, DEMO_CARD_PUBLIC_TOKEN } from "@/lib/digital-business-card/demo-card";
 import { smartCardNfcUrl, smartCardShortUrl } from "@/lib/digital-business-card/product";
 import { digitalCardIdentityUrl } from "@/lib/digital-business-card/types";
@@ -36,13 +37,14 @@ export type CeleYouShareIdentity = {
  * Tap-to-Connect sessions add a fourth, ephemeral join code.
  */
 export function celeYouShareIdentity(input: CeleYouShareIdentityInput): CeleYouShareIdentity {
+  const origin = celeYouGuestOrigin(input.origin);
   return {
     slug: input.slug,
     publicToken: input.publicToken,
     nfcToken: input.nfcToken,
-    profileUrl: digitalCardIdentityUrl(input.slug, input.origin),
-    qrUrl: smartCardShortUrl(input.publicToken, input.origin),
-    nfcUrl: smartCardNfcUrl(input.nfcToken, input.origin),
+    profileUrl: digitalCardIdentityUrl(input.slug, origin),
+    qrUrl: smartCardShortUrl(input.publicToken, origin),
+    nfcUrl: smartCardNfcUrl(input.nfcToken, origin),
   };
 }
 

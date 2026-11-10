@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  DEFAULT_CELECARD_LIFECYCLE_POLICY,
   celeCardPublicPresentation,
   dueReminderOffsetDays,
+  celeYouPaidTermIsRunning,
+  pickAccountPaidEntitlement,
+  isCeleCardFullyPublic,
   isCeleCardGuestShareable,
   renewalBaseDate,
   resolveCeleCardLifecycle,
@@ -18,6 +22,8 @@ import { pesewasMatch } from "@/lib/digital-business-card/plans";
 import {
   CELECARD_CHECKOUT_IS_RECURRING_MANDATE,
   classifyCeleCardRenewal,
+  ownerMayRenewSubscription,
+  paidTermCannotBeCancelled,
   paymentFailureShouldActivate,
   refundShouldDeleteIdentity,
   renewalMustNotShorten,
@@ -73,6 +79,53 @@ describe("CeleYou lifecycle", () => {
     assert.equal(resolveCeleCardLifecycle(card({ adminDeactivatedAt: now }), now), "DRAFT");
     assert.equal(celeCardPublicPresentation(card({ adminDeactivatedAt: now }), now), "unavailable");
     assert.equal(celeCardPublicPresentation(card({ adminSuspendedAt: now }), now), "suspended");
+  });
+
+  it("honours administrator grace days on the paid live gate", () => {
+    const expired = card({
+      subscriptionStatus: "EXPIRED",
+      subscriptionExpiresAt: new Date(now.getTime() - 5 * 86_400_000),
+    });
+    const seven = { ...DEFAULT_CELECARD_LIFECYCLE_POLICY, gracePeriodDays: 7 };
+    const zero = { ...DEFAULT_CELECARD_LIFECYCLE_POLICY, gracePeriodDays: 0 };
+    assert.equal(resolveCeleCardLifecycle(expired, now, seven), "GRACE_PERIOD");
+    assert.equal(isCeleCardFullyPublic(resolveCeleCardLifecycle(expired, now, seven)), true);
+    assert.equal(resolveCeleCardLifecycle(expired, now, zero), "COURTESY");
+    assert.equal(celeCardPublicPresentation(expired, now, zero), "courtesy");
+    assert.equal(celeCardPublicPresentation(expired, now, seven), "live");
+  });
+
+  it("keeps a paid term running until expiry, with no owner cancel", () => {
+    const paid = card({
+      subscriptionStatus: "ACTIVE",
+      lastActivatedAt: now,
+      subscriptionExpiresAt: new Date(now.getTime() + 10 * 86_400_000),
+    });
+    const trial = card({ subscriptionStatus: "TRIAL", lastActivatedAt: null });
+    assert.equal(celeYouPaidTermIsRunning(paid, now), true);
+    assert.equal(
+      celeYouPaidTermIsRunning(
+        card({
+          subscriptionStatus: "EXPIRED",
+          lastActivatedAt: new Date(now.getTime() - 40 * 86_400_000),
+          subscriptionExpiresAt: new Date(now.getTime() - 1 * 86_400_000),
+        }),
+        now
+      ),
+      true
+    );
+    assert.equal(celeYouPaidTermIsRunning(trial, now), false);
+    assert.equal(
+      celeYouPaidTermIsRunning(
+        card({
+          subscriptionStatus: "EXPIRED",
+          lastActivatedAt: new Date(now.getTime() - 40 * 86_400_000),
+          subscriptionExpiresAt: new Date(now.getTime() - 10 * 86_400_000),
+        }),
+        now
+      ),
+      false
+    );
   });
 
   it("lets a published trial identity stay guest-shareable without flipping paid live", () => {
@@ -169,6 +222,28 @@ describe("CeleYou billing rules", () => {
     assert.equal(CELECARD_CHECKOUT_IS_RECURRING_MANDATE, false);
     assert.equal(paymentFailureShouldActivate(), false);
     assert.equal(refundShouldDeleteIdentity(), false);
+    assert.equal(paidTermCannotBeCancelled(), true);
+  });
+
+  it("blocks owner renewal until the paid window ends, then allows extra cards to share that term", () => {
+    const paid = card({
+      subscriptionStatus: "ACTIVE",
+      lastActivatedAt: now,
+      subscriptionExpiresAt: new Date(now.getTime() + 10 * 86_400_000),
+    });
+    const trial = card({ subscriptionStatus: "TRIAL", lastActivatedAt: null });
+    const ended = card({
+      subscriptionStatus: "EXPIRED",
+      lastActivatedAt: new Date(now.getTime() - 40 * 86_400_000),
+      subscriptionExpiresAt: new Date(now.getTime() - 10 * 86_400_000),
+    });
+    assert.equal(ownerMayRenewSubscription(paid, now), false);
+    assert.equal(ownerMayRenewSubscription(trial, now), true);
+    assert.equal(ownerMayRenewSubscription(ended, now), true);
+    assert.equal(ownerMayRenewSubscription(null, now), true);
+    const household = pickAccountPaidEntitlement([trial, paid, ended], now);
+    assert.equal(household, paid);
+    assert.equal(pickAccountPaidEntitlement([trial], now), null);
   });
 
   it("extends early renewal and starts late renewal from now", () => {

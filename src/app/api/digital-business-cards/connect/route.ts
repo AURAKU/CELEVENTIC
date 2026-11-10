@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { guestMayUsePublicAction, isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import {
   createSmartCardConnection,
   getDigitalCardBySlug,
@@ -60,10 +61,11 @@ export async function POST(req: NextRequest) {
   }
 
   const card = await getDigitalCardBySlug(parsed.data.slug);
-  if (!card || !isCeleCardPubliclyReachable(card)) {
+  const policy = await getCeleCardLifecyclePolicy();
+  if (!card || !isCeleCardPubliclyReachable(card, policy)) {
     return NextResponse.json({ error: "Card unavailable" }, { status: 404 });
   }
-  if (!guestMayUsePublicAction(card, "connect")) {
+  if (!guestMayUsePublicAction(card, "connect", policy)) {
     return NextResponse.json({ error: "Connect Back is disabled" }, { status: 403 });
   }
 

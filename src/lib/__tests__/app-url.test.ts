@@ -5,6 +5,8 @@ import {
   isCeleventicDomain,
   resolveAppUrl,
   sanitizePublicUrl,
+  celeYouGuestOrigin,
+  getCeleYouShareOrigin,
   DEFAULT_PRODUCTION_URL,
 } from "../app-url";
 
@@ -71,6 +73,16 @@ describe("resolveAppUrl", () => {
   it("only falls back to localhost outside of production", () => {
     const url = resolveAppUrl({ nodeEnv: "development" });
     assert.equal(url, "http://localhost:3000");
+  });
+});
+
+describe("CeleYou share origin", () => {
+  it("never encodes localhost into guest-facing QR, NFC, or share links", () => {
+    assert.equal(isLocalHost(getCeleYouShareOrigin()), false);
+    assert.equal(celeYouGuestOrigin("http://localhost:3000"), DEFAULT_PRODUCTION_URL);
+    assert.equal(celeYouGuestOrigin("http://127.0.0.1:3000"), DEFAULT_PRODUCTION_URL);
+    assert.equal(celeYouGuestOrigin("https://www.celeventic.com"), "https://www.celeventic.com");
+    assert.match(getCeleYouShareOrigin(), /^https:\/\//);
   });
 });
 

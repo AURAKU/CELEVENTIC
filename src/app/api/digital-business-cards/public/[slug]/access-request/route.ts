@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
 import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-business-card.service";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { createCeleCardAccessRequest } from "@/services/digital-business-card/celecard-access.service";
 import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
   }
 
   const card = await getDigitalCardBySlug(slug);
-  if (!card || !isCeleCardPubliclyReachable(card)) {
+  if (!card || !isCeleCardPubliclyReachable(card, await getCeleCardLifecyclePolicy())) {
     return NextResponse.json({ error: "Card unavailable" }, { status: 404 });
   }
 

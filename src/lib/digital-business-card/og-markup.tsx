@@ -213,7 +213,7 @@ export function CeleCardOgMarkup({
               <div style={{ width: QR - 20, height: QR - 20, display: "flex", position: "relative" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={qrSrc} alt="" width={QR - 20} height={QR - 20} />
-                <CeleCardQrCenterOverlay photoSrc={photoSrc} qrSize={QR - 20} />
+                <CeleCardQrCenterOverlay photoSrc={photoSrc} markSrc={markSrc} qrSize={QR - 20} />
               </div>
             </div>
           ) : null}

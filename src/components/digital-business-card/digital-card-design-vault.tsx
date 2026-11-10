@@ -17,43 +17,58 @@ export function DigitalCardDesignVault({ cardId }: { cardId: string | null }) {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (nextPage = 1) => {
+  const load = useCallback(async (nextPage = 1, signal?: AbortSignal) => {
     if (!cardId) return;
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/digital-business-cards/${cardId}/designs?page=${nextPage}`);
-      const json = await res.json();
+      const res = await fetch(`/api/digital-business-cards/${cardId}/designs?page=${nextPage}`, { signal });
+      const json = await res.json().catch(() => ({}));
+      if (signal?.aborted) return;
       if (res.ok) {
         setItems((json.data?.items ?? []) as VaultItem[]);
         setTotal(json.data?.total ?? 0);
         setPage(nextPage);
+      } else {
+        setError(typeof json.error === "string" ? json.error : "Could not load saved looks.");
       }
+    } catch (err) {
+      if (signal?.aborted || (err instanceof DOMException && err.name === "AbortError")) return;
+      setError("Could not load saved looks.");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [cardId]);
 
   useEffect(() => {
-    void load(1);
+    const ac = new AbortController();
+    void load(1, ac.signal);
+    return () => ac.abort();
   }, [load]);
 
   async function act(action: string, versionId?: string) {
     if (!cardId) return;
     setMessage(null);
-    const res = await fetch(`/api/digital-business-cards/${cardId}/designs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, versionId }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setMessage(json.error || "Could not update design");
-      return;
+    setError(null);
+    try {
+      const res = await fetch(`/api/digital-business-cards/${cardId}/designs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, versionId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(typeof json.error === "string" ? json.error : "Could not update design");
+        return;
+      }
+      setMessage(action === "restore" ? "Design restored. Identity and sharing link are unchanged." : "Saved.");
+      await load(page);
+      if (action === "restore") window.location.reload();
+    } catch {
+      setError("Could not update design.");
     }
-    setMessage(action === "restore" ? "Design restored. Identity and sharing link are unchanged." : "Saved.");
-    await load(page);
-    if (action === "restore") window.location.reload();
   }
 
   if (!cardId) return null;
@@ -70,6 +85,7 @@ export function DigitalCardDesignVault({ cardId }: { cardId: string | null }) {
         </Button>
       </div>
       {message ? <p className="mt-2 text-xs text-[#0B8A83]">{message}</p> : null}
+      {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       <ul className="mt-3 space-y-2">
         {items.map((item) => (
           <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 px-3 py-2 text-sm">

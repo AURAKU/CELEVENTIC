@@ -5,6 +5,9 @@ import { authOptions } from "@/lib/auth";
 import { DIGITAL_CARD_THEMES } from "@/lib/digital-business-card/themes";
 import { digitalCardSocialsSchema } from "@/lib/digital-business-card/socials";
 import { celeCardOwnerShareFlags } from "@/lib/digital-business-card/access";
+import { ownerMayRenewSubscription } from "@/lib/digital-business-card/billing-rules";
+import { pickAccountPaidEntitlement } from "@/lib/digital-business-card/lifecycle";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import {
   createDigitalCard,
   listDigitalCardsForUser,
@@ -38,13 +41,16 @@ export async function GET() {
 
   try {
     const cards = await listDigitalCardsForUser(session.user.id);
-    const nfcTokens = await nfcTokensByCardId(cards);
+    const [nfcTokens, policy] = await Promise.all([nfcTokensByCardId(cards), getCeleCardLifecyclePolicy()]);
+    const now = new Date();
+    const canRenew = ownerMayRenewSubscription(pickAccountPaidEntitlement(cards, now, policy), now);
     return NextResponse.json({
       success: true,
       data: cards.map((c) => ({
         ...c,
-        ...celeCardOwnerShareFlags(c),
+        ...celeCardOwnerShareFlags(c, policy),
         nfcPublicToken: nfcTokens.get(c.id) || null,
+        canRenew,
       })),
     });
   } catch (error) {
@@ -76,11 +82,11 @@ export async function POST(req: Request) {
     socials: parsed.data.socials as DigitalCardSocials,
   });
 
-  const nfcTokens = await nfcTokensByCardId([card]);
+  const [nfcTokens, policy] = await Promise.all([nfcTokensByCardId([card]), getCeleCardLifecyclePolicy()]);
   return NextResponse.json(
     {
       success: true,
-      data: { ...card, ...celeCardOwnerShareFlags(card), nfcPublicToken: nfcTokens.get(card.id) || null },
+      data: { ...card, ...celeCardOwnerShareFlags(card, policy), nfcPublicToken: nfcTokens.get(card.id) || null },
     },
     { status: 201 }
   );

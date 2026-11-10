@@ -12,7 +12,7 @@ export const CELECARD_QR_TILE_FILL = 1.26;
 /** Center portrait or house mark as a fraction of the tile. */
 export const CELECARD_QR_CENTER_WELL = 0.44;
 
-/** Photo sits in the QR. House mark or CeleYou logo sits there when no photo is set. */
+/** Photo sits in the QR. Official CeleYou logo sits there when no photo is set. */
 export function resolveCeleCardQrCenter(avatarUrl?: string | null): CeleCardQrCenter {
   if (isCeleCardPhotoUrl(avatarUrl) && avatarUrl) return { kind: "photo", src: avatarUrl };
   return { kind: "mark" };

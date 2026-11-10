@@ -37,6 +37,21 @@ const NILE: FaceTone = { skin: "#6b3a22", hair: "#14110f", brow: "#2a1c14", lip:
 const ISLAND: FaceTone = { skin: "#8a5a38", hair: "#1c1917", brow: "#2a1c14", lip: "#8a4a3a", eye: "#1c1917" };
 const SILK: FaceTone = { skin: "#e8c8b0", hair: "#1c1917", brow: "#3f2a1d", lip: "#b56a58", eye: "#1c1917" };
 const PAMPAS: FaceTone = { skin: "#c9956c", hair: "#2a1c14", brow: "#3f2a1d", lip: "#9a5340", eye: "#2a1c14" };
+const BUN: FaceTone = { skin: "#e8c4a8", hair: "#1a1410", brow: "#3f2a1d", lip: "#c47a72", eye: "#1c1917" };
+const BANGS: FaceTone = { skin: "#f0d2b8", hair: "#14110f", brow: "#3f2a1d", lip: "#d08a82", eye: "#2a1c14" };
+const TURBAN: FaceTone = { skin: "#c68642", hair: "#1c1917", brow: "#3f2a1d", lip: "#9a4e3c", eye: "#1c1917" };
+const KUFI: FaceTone = { skin: "#5c3317", hair: "#14110f", brow: "#1c140f", lip: "#7a4032", eye: "#14110f" };
+const PIXIE: FaceTone = { skin: "#f3d5c4", hair: "#3f2a1d", brow: "#5a3a28", lip: "#c47a72", eye: "#2a1c14" };
+const BALD: FaceTone = { skin: "#3f2414", hair: "#1c140f", brow: "#1c140f", lip: "#7a4032", eye: "#14110f" };
+const CURLS: FaceTone = { skin: "#d4a07a", hair: "#2a1c14", brow: "#3f2a1d", lip: "#a45c4a", eye: "#1c1917" };
+const PLAITS: FaceTone = { skin: "#b56a3c", hair: "#1c1917", brow: "#3f2a1d", lip: "#9a4e3c", eye: "#1c1917" };
+const BEANIE: FaceTone = { skin: "#e8c8b8", hair: "#3f2a1d", brow: "#5a3a28", lip: "#b56a58", eye: "#3a4a62" };
+const FLAX: FaceTone = { skin: "#f6e0cc", hair: "#e4c878", brow: "#c4a05a", lip: "#d08a82", eye: "#5a7188" };
+const RIDGE: FaceTone = { skin: "#6b3a22", hair: "#14110f", brow: "#1c140f", lip: "#7a4032", eye: "#14110f" };
+const PONY: FaceTone = { skin: "#c9956c", hair: "#1c1917", brow: "#3f2a1d", lip: "#b56a58", eye: "#1c1917" };
+const PEARL: FaceTone = { skin: "#ead3c2", hair: "#c5c0b5", brow: "#8a7e72", lip: "#b56a58", eye: "#4a5568" };
+const TIARE: FaceTone = { skin: "#8a5a38", hair: "#1c1917", brow: "#2a1c14", lip: "#8a4a3a", eye: "#1c1917" };
+const CEDAR: FaceTone = { skin: "#c9a06a", hair: "#1c1917", brow: "#3f2a1d", lip: "#9a5340", eye: "#1c1917" };
 
 function Shoulders({ color }: { color: string }) {
   return <path d="M8 100 C16 74 30 66 50 66 C70 66 84 74 92 100 Z" fill={color} />;
@@ -187,6 +202,28 @@ function Hoop({ accent, side = "left" }: { accent: string; side?: "left" | "righ
       {side !== "right" ? <circle cx="25.2" cy="58" r="3.4" fill="none" stroke={accent} strokeWidth="1.7" /> : null}
       {side !== "left" ? <circle cx="74.8" cy="58" r="3.4" fill="none" stroke={accent} strokeWidth="1.7" /> : null}
     </>
+  );
+}
+
+function Flower({ x, y, petal, center }: { x: number; y: number; petal: string; center: string }) {
+  return (
+    <g>
+      {[0, 1, 2, 3, 4].map((i) => {
+        const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        return (
+          <ellipse
+            key={i}
+            cx={x + Math.cos(a) * 4.2}
+            cy={y + Math.sin(a) * 4.2}
+            rx="3.1"
+            ry="2.2"
+            fill={petal}
+            transform={`rotate(${(a * 180) / Math.PI} ${x + Math.cos(a) * 4.2} ${y + Math.sin(a) * 4.2})`}
+          />
+        );
+      })}
+      <circle cx={x} cy={y} r="2.1" fill={center} />
+    </g>
   );
 }
 
@@ -600,6 +637,278 @@ function PampasFace({ accent }: { accent: string }) {
   );
 }
 
+function BunFace({ accent }: { accent: string }) {
+  const tone = BUN;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <circle cx="50" cy="16" r="13.5" fill={tone.hair} />
+      <path d="M32 40 C36 24 64 24 68 40 C62 30 38 30 32 40 Z" fill={tone.hair} />
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="oval" />
+      <Face tone={tone} shape="oval" eyes="lid" nose="button" brows="soft" smile={0.45} />
+      <circle cx="74.6" cy="58" r="1.8" fill={accent} />
+    </>
+  );
+}
+
+function BangsFace({ accent }: { accent: string }) {
+  const tone = BANGS;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <path d="M20 38 C22 8 78 8 80 40 C84 78 74 102 68 98 C76 70 76 48 68 38 C54 12 30 16 20 38 Z" fill={tone.hair} />
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="oval" />
+      <path d="M30 40 C38 32 62 32 70 40 C64 46 36 46 30 40 Z" fill={tone.hair} />
+      <Face tone={tone} shape="oval" eyes="lid" nose="straight" brows="straight" smile={0.3} />
+    </>
+  );
+}
+
+function TurbanFace({ accent }: { accent: string }) {
+  const tone = TURBAN;
+  const cloth = "#efe6d0";
+  return (
+    <>
+      <Shoulders color={accent} />
+      <Neck skin={tone.skin} wide />
+      <Head skin={tone.skin} shape="oval" />
+      <path d="M18 50 C20 16 80 16 82 50 C78 66 22 66 18 50 Z" fill={cloth} />
+      <path d="M24 48 C30 30 70 30 76 48 C70 38 30 38 24 48 Z" fill={cloth} />
+      <path d="M22 52 C50 62 78 52" fill="none" stroke="#c4b496" strokeWidth="2.2" strokeLinecap="round" />
+      <ellipse cx="50" cy="28" rx="16" ry="7" fill={cloth} />
+      <path d="M34 24 C50 18 66 24" fill="none" stroke="#c4b496" strokeWidth="1.6" strokeLinecap="round" />
+      <Face tone={tone} shape="oval" eyes="almond" nose="soft" brows="full" smile={0.2} beard="full" />
+    </>
+  );
+}
+
+function KufiFace({ accent }: { accent: string }) {
+  const tone = KUFI;
+  const cap = "#1c3d36";
+  return (
+    <>
+      <Shoulders color={accent} />
+      <Neck skin={tone.skin} wide />
+      <Head skin={tone.skin} shape="round" />
+      <ellipse cx="50" cy="32" rx="22" ry="8.2" fill={cap} />
+      <path d="M28 34 L28 44 C30 52 70 52 72 44 L72 34 Z" fill={cap} />
+      <path d="M32 40 L68 40" stroke="#e8c56a" strokeWidth="1.1" />
+      <path d="M50 32 L50 48" stroke="#e8c56a" strokeWidth="1.1" />
+      <Face tone={tone} shape="round" eyes="round" nose="broad" brows="arch" smile={0.55} beard="stubble" />
+    </>
+  );
+}
+
+function PixieFace({ accent }: { accent: string }) {
+  const tone = PIXIE;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <path d="M28 44 C26 18 74 16 74 42 C70 24 36 26 28 44 Z" fill={tone.hair} />
+      {[30, 38, 46, 54, 62, 70].map((x, i) => (
+        <path
+          key={x}
+          d={`M${x} ${28 - (i % 2) * 4} L${x + 1.5} ${18 - (i % 3)} L${x + 4} ${28 - (i % 2) * 3}`}
+          fill={tone.hair}
+        />
+      ))}
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="heart" />
+      <Face tone={tone} shape="heart" eyes="wide" nose="button" brows="arch" smile={0.85} />
+    </>
+  );
+}
+
+function BaldFace({ accent }: { accent: string }) {
+  const tone = BALD;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <Neck skin={tone.skin} wide />
+      <Head skin={tone.skin} shape="round" />
+      <ellipse cx="42" cy="34" rx="7" ry="3.2" fill="#fff" opacity="0.12" />
+      <Face tone={tone} shape="round" eyes="round" nose="broad" brows="full" smile={0.4} />
+      <Hoop accent={accent} />
+    </>
+  );
+}
+
+function CurlsFace({ accent }: { accent: string }) {
+  const tone = CURLS;
+  return (
+    <>
+      <Shoulders color={accent} />
+      {[
+        [28, 28],
+        [40, 18],
+        [50, 14],
+        [60, 18],
+        [72, 28],
+        [22, 42],
+        [78, 42],
+        [26, 56],
+        [74, 56],
+        [34, 22],
+        [66, 22],
+      ].map(([x, y]) => (
+        <circle key={`${x}-${y}`} cx={x} cy={y} r="8.2" fill={tone.hair} />
+      ))}
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="round" />
+      <Face tone={tone} shape="round" eyes="round" nose="soft" brows="full" smile={0.95} beard="mustache" />
+    </>
+  );
+}
+
+function PlaitsFace({ accent }: { accent: string }) {
+  const tone = PLAITS;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <path d="M24 32 C28 10 72 10 76 32 C80 48 72 54 68 48 C64 22 36 22 32 48 C28 54 20 44 24 32 Z" fill={tone.hair} />
+      {[
+        [28, 1],
+        [72, -1],
+      ].map(([x, dir]) => (
+        <g key={x}>
+          <path
+            d={`M${x} 48 C${x + dir * 6} 66 ${x - dir * 4} 82 ${x + dir * 2} 100`}
+            fill="none"
+            stroke={tone.hair}
+            strokeWidth="7.2"
+            strokeLinecap="round"
+          />
+          {[58, 70, 82, 94].map((y) => (
+            <circle key={y} cx={x + dir * (y % 20 === 10 ? 2 : -1)} cy={y} r="3.4" fill={tone.hair} />
+          ))}
+        </g>
+      ))}
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="square" />
+      <Face tone={tone} shape="square" eyes="almond" nose="broad" brows="straight" smile={0.25} />
+    </>
+  );
+}
+
+function BeanieFace({ accent }: { accent: string }) {
+  const tone = BEANIE;
+  const knit = "#3d4a58";
+  return (
+    <>
+      <Shoulders color={accent} />
+      <path d="M24 46 C24 16 76 16 76 46 L76 54 C70 60 30 60 24 54 Z" fill={knit} />
+      <path d="M24 50 H76" stroke="#0f172a" strokeWidth="1.2" opacity="0.22" />
+      <path d="M26 40 H74" stroke="#0f172a" strokeWidth="1.1" opacity="0.16" />
+      <ellipse cx="50" cy="18" rx="7" ry="5" fill={knit} />
+      <path d="M32 44 C38 36 62 36 68 44 C60 40 40 40 32 44 Z" fill={tone.hair} />
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="oval" />
+      <Face tone={tone} shape="oval" eyes="hooded" nose="straight" brows="soft" smile={0.5} />
+    </>
+  );
+}
+
+function FlaxFace({ accent }: { accent: string }) {
+  const tone = FLAX;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <path d="M28 46 C28 18 72 16 74 44 C66 22 38 24 28 46 Z" fill={tone.hair} />
+      <path d="M30 40 C40 26 58 24 68 36 C56 26 40 32 30 40 Z" fill={tone.hair} />
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="long" />
+      <Face tone={tone} shape="long" eyes="wide" nose="straight" brows="soft" smile={0.35} />
+    </>
+  );
+}
+
+function RidgeFace({ accent }: { accent: string }) {
+  const tone = RIDGE;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <path d="M42 8 C46 2 54 2 58 8 L60 48 C56 20 44 20 40 48 Z" fill={tone.hair} />
+      <path d="M30 46 C34 30 66 30 70 46 C62 34 38 34 30 46 Z" fill={tone.hair} />
+      <Neck skin={tone.skin} wide />
+      <Head skin={tone.skin} shape="wide" />
+      <Face tone={tone} shape="wide" eyes="round" nose="broad" brows="full" smile={0.2} beard="goatee" />
+      <Hoop accent={accent} side="both" />
+    </>
+  );
+}
+
+function PonyFace({ accent }: { accent: string }) {
+  const tone = PONY;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <path d="M62 24 C78 10 92 28 88 58 C86 82 78 96 72 92 C80 70 82 40 70 30 Z" fill={tone.hair} />
+      <ellipse cx="50" cy="26" rx="20" ry="13" fill={tone.hair} />
+      <path d="M30 40 C38 26 64 24 70 38 C60 28 40 30 30 40 Z" fill={tone.hair} />
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="heart" />
+      <Face tone={tone} shape="heart" eyes="almond" nose="soft" brows="arch" smile={0.8} />
+      <Hoop accent={accent} side="right" />
+    </>
+  );
+}
+
+function PearlFace({ accent }: { accent: string }) {
+  const tone = PEARL;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <circle cx="70" cy="62" r="11" fill={tone.hair} />
+      <path d="M28 46 C30 20 72 18 74 44 C68 24 38 26 28 46 Z" fill={tone.hair} />
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="oval" />
+      <path d="M34 64 C38 70 50 72 58 68" fill="none" stroke={tone.hair} strokeWidth="1.2" opacity="0.4" />
+      <Face tone={tone} shape="oval" eyes="hooded" nose="soft" brows="soft" smile={0.4} />
+      <circle cx="25.4" cy="58" r="2.1" fill="#f4ece0" />
+    </>
+  );
+}
+
+function TiareFace({ accent }: { accent: string }) {
+  const tone = TIARE;
+  return (
+    <>
+      <Shoulders color={accent} />
+      {[
+        [30, 26],
+        [42, 16],
+        [54, 16],
+        [66, 24],
+        [24, 42],
+        [76, 40],
+        [28, 58],
+        [74, 56],
+      ].map(([x, y]) => (
+        <circle key={`${x}-${y}`} cx={x} cy={y} r="9" fill={tone.hair} />
+      ))}
+      <Neck skin={tone.skin} />
+      <Head skin={tone.skin} shape="round" />
+      <Face tone={tone} shape="round" eyes="round" nose="broad" brows="arch" smile={1.05} wideMouth />
+      <Flower x={76} y={52} petal="#f8f4ea" center={accent} />
+    </>
+  );
+}
+
+function CedarFace({ accent }: { accent: string }) {
+  const tone = CEDAR;
+  return (
+    <>
+      <Shoulders color={accent} />
+      <path d="M30 44 C32 18 70 16 72 42 C66 22 38 24 30 44 Z" fill={tone.hair} />
+      <Neck skin={tone.skin} wide />
+      <Head skin={tone.skin} shape="square" />
+      <Face tone={tone} shape="square" eyes="deep" nose="straight" brows="full" smile={0.15} beard="full" />
+    </>
+  );
+}
+
 export function DigitalCardAvatarFace({
   id,
   accent,
@@ -656,6 +965,36 @@ export function DigitalCardAvatarFace({
       return <SilkFace accent={accent} />;
     case "pampas":
       return <PampasFace accent={accent} />;
+    case "bun":
+      return <BunFace accent={accent} />;
+    case "bangs":
+      return <BangsFace accent={accent} />;
+    case "turban":
+      return <TurbanFace accent={accent} />;
+    case "kufi":
+      return <KufiFace accent={accent} />;
+    case "pixie":
+      return <PixieFace accent={accent} />;
+    case "bald":
+      return <BaldFace accent={accent} />;
+    case "curls":
+      return <CurlsFace accent={accent} />;
+    case "plaits":
+      return <PlaitsFace accent={accent} />;
+    case "beanie":
+      return <BeanieFace accent={accent} />;
+    case "flax":
+      return <FlaxFace accent={accent} />;
+    case "ridge":
+      return <RidgeFace accent={accent} />;
+    case "pony":
+      return <PonyFace accent={accent} />;
+    case "pearl":
+      return <PearlFace accent={accent} />;
+    case "tiare":
+      return <TiareFace accent={accent} />;
+    case "cedar":
+      return <CedarFace accent={accent} />;
     default:
       return <DigitalCardStudioAvatarFace id={id} accent={accent} />;
   }

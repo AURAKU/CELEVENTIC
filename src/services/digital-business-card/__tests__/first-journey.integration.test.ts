@@ -7,6 +7,7 @@ import {
   activateDigitalCardFromPayment,
   createDigitalCard,
   isDigitalCardLive,
+  nfcTokensByCardId,
 } from "../digital-business-card.service";
 import { toGuestPublicPayload } from "@/lib/digital-business-card/access";
 
@@ -43,11 +44,9 @@ describe("CeleYou first commercial journey", () => {
     assert.equal(card.subscriptionStatus, "TRIAL");
     assert.equal(isDigitalCardLive(card), false);
     const unpaidGuest = toGuestPublicPayload(card);
-    assert.equal(unpaidGuest.presentationMode, "unavailable");
-    assert.equal(unpaidGuest.email, null);
-    assert.equal(unpaidGuest.phone, null);
-    assert.equal(unpaidGuest.publicToken, "");
-    assert.equal(unpaidGuest.displayName, "");
+    assert.equal(unpaidGuest.presentationMode, "live");
+    assert.equal(unpaidGuest.displayName, "Kojo Mensah");
+    assert.equal(unpaidGuest.publicToken, card.publicToken);
 
     const wrongAmount = await activateDigitalCardFromPayment({
       userId: registered.user.id,
@@ -99,5 +98,35 @@ describe("CeleYou first commercial journey", () => {
       paymentId: "pay_quoted_at_checkout",
     });
     assert.equal(duplicate?.subscriptionExpiresAt?.getTime(), activated?.subscriptionExpiresAt?.getTime());
+
+    const earlyRenew = await activateDigitalCardFromPayment({
+      userId: registered.user.id,
+      cardId: card.id,
+      planId: "yearly",
+      amountGhs: 400,
+      chargedPriceGhs: 400,
+      months: 12,
+      paymentId: "pay_early_renew_blocked",
+    });
+    assert.equal(earlyRenew?.subscriptionExpiresAt?.getTime(), activated?.subscriptionExpiresAt?.getTime());
+
+    const extra = await createDigitalCard(registered.user.id, {
+      displayName: "Kojo Studio",
+      title: "Second plate",
+      themeId: "teal-pulse",
+      isPublished: true,
+    });
+    assert.notEqual(extra.id, card.id);
+    assert.notEqual(extra.slug, card.slug);
+    assert.notEqual(extra.publicToken, card.publicToken);
+    assert.equal(extra.subscriptionStatus, "ACTIVE");
+    assert.equal(extra.subscriptionExpiresAt?.getTime(), activated?.subscriptionExpiresAt?.getTime());
+    assert.equal(isDigitalCardLive(extra), true);
+    const nfc = await nfcTokensByCardId([card, extra]);
+    assert.ok(nfc.get(card.id));
+    assert.ok(nfc.get(extra.id));
+    assert.notEqual(nfc.get(card.id), nfc.get(extra.id));
+    assert.notEqual(nfc.get(card.id), card.publicToken);
+    assert.notEqual(nfc.get(extra.id), extra.publicToken);
   });
 });

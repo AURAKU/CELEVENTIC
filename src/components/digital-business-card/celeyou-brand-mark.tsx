@@ -12,6 +12,20 @@ export const CELEYOU_WORDMARK_SRC = "/digital-cards/brands/celeyou-wordmark.png"
 /** Official CeleYou lockup: orb, wordmark, registered mark, and tagline. */
 export const CELEYOU_LOCKUP_SRC = "/digital-cards/brands/celeyou-lockup.png";
 
+/** True CeleYou inks. Never replace these with a template accent. */
+export const CELEYOU_BRAND_TEAL = "#0B8A83";
+export const CELEYOU_BRAND_TEAL_DEEP = "#073F3C";
+export const CELEYOU_BRAND_MINT = "#7FF0E4";
+export const CELEYOU_BRAND_WELL = "#034746";
+
+/**
+ * Official CeleYou teal on every template.
+ * Dark plates do not switch to mint; the origin mark stays one color.
+ */
+export function celeYouBrandStroke(_darkInkOnPlate?: boolean) {
+  return CELEYOU_BRAND_TEAL;
+}
+
 type CeleYouMarkIconProps = {
   className?: string;
 };
@@ -31,80 +45,29 @@ export type CeleYouThemeInk = {
   muted: string;
 };
 
-function parseRgb(color: string): [number, number, number] | null {
-  const hexMatch = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-  if (hexMatch) {
-    let hex = hexMatch[1];
-    if (hex.length === 3) hex = hex.split("").map((c) => `${c}${c}`).join("");
-    return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
-  }
-  const rgbMatch = color.trim().match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
-  if (rgbMatch) return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
-  return null;
-}
-
-function rgbToHex(rgb: [number, number, number]) {
-  return `#${rgb.map((n) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, "0")).join("")}`;
-}
-
-function colorLuminance(color: string) {
-  const rgb = parseRgb(color);
-  if (!rgb) return 0.5;
-  const [r, g, b] = rgb.map((v) => v / 255);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** Pick ink + metal so the official mark can take a template's foil without washing out. */
-export function celeYouThemeWash(theme: CeleYouThemeInk) {
-  const accentRgb = parseRgb(theme.accent) ?? parseRgb(theme.text) ?? [11, 138, 131];
-  const metalRgb = parseRgb(theme.border) ?? parseRgb(theme.muted) ?? accentRgb;
-  let accent = rgbToHex(accentRgb);
-  let metal = rgbToHex(metalRgb);
-  if (colorLuminance(accent) > 0.78) {
-    accent = rgbToHex(parseRgb(theme.text) ?? accentRgb);
-  }
-  if (colorLuminance(metal) > 0.82) {
-    metal = accent;
-  }
-  return { accent, metal };
-}
-
 type CeleYouThemedMarkProps = {
-  theme: CeleYouThemeInk;
+  theme?: CeleYouThemeInk;
   className?: string;
-  fit?: "contain" | "cover";
   style?: CSSProperties;
 };
 
 /**
- * Official CeleYou orb, recolored to the template. Shape stays exact.
- * Hue and metal come from the theme. Light and detail stay from the master mark.
+ * Official CeleYou orb at true color, shown in full.
+ * No teal plate behind it: only the uploaded logo, never cropped to fill a square.
  */
-export function CeleYouThemedMark({ theme, className, fit = "contain", style }: CeleYouThemedMarkProps) {
-  const wash = celeYouThemeWash(theme);
-  const size = fit === "cover" ? "cover" : "contain";
+export function CeleYouThemedMark({ theme: _theme, className, style }: CeleYouThemedMarkProps) {
   return (
-    <span className={cn("relative isolate inline-grid shrink-0 overflow-hidden", className)} style={style} aria-hidden>
+    <span
+      className={cn("relative isolate inline-grid shrink-0 overflow-visible bg-transparent", className)}
+      style={{ mixBlendMode: "normal", opacity: 1, ...style }}
+      aria-hidden
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={CELEYOU_MARK_SRC}
         alt=""
-        className={cn("col-start-1 row-start-1 h-full w-full", fit === "cover" ? "object-cover" : "object-contain")}
-      />
-      <span
-        className="pointer-events-none col-start-1 row-start-1 h-full w-full"
-        style={{
-          background: `linear-gradient(145deg, ${wash.accent} 8%, ${wash.metal} 92%)`,
-          mixBlendMode: "color",
-          WebkitMaskImage: `url(${CELEYOU_MARK_SRC})`,
-          maskImage: `url(${CELEYOU_MARK_SRC})`,
-          WebkitMaskSize: size,
-          maskSize: size,
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskPosition: "center",
-          maskPosition: "center",
-        }}
+        className="col-start-1 row-start-1 h-full w-full object-contain object-center"
+        style={{ mixBlendMode: "normal", opacity: 1, filter: "none" }}
       />
     </span>
   );

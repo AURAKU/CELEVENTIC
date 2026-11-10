@@ -8,6 +8,7 @@ import {
   isDemoCardSlug,
 } from "@/lib/digital-business-card/demo-card";
 import { toGuestPublicPayload } from "@/lib/digital-business-card/access";
+import { getSession } from "@/lib/auth";
 import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
 import {
   buildCeleCardShareMetadata,
@@ -17,9 +18,10 @@ import {
   withheldCeleCardMetadata,
 } from "@/lib/digital-business-card/share";
 import { celeCardPublicPresentation } from "@/lib/digital-business-card/lifecycle";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
-import { getServerAppUrl } from "@/lib/app-url";
+import { celeYouGuestOrigin, getServerAppUrl } from "@/lib/app-url";
 import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-business-card.service";
 import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
 import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
@@ -28,7 +30,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const origin = await getServerAppUrl();
+  const origin = celeYouGuestOrigin(await getServerAppUrl());
   const demo = getDemoCardBySlug(slug);
   if (demo) {
     if (!(await viewerMayOpenDummyLive())) return withheldCeleCardMetadata();
@@ -47,7 +49,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
   const card = await getDigitalCardBySlug(slug);
   if (!card || card.deletedAt) return withheldCeleCardMetadata();
-  const presentation = celeCardPublicPresentation(card);
+  const policy = await getCeleCardLifecyclePolicy();
+  const presentation = celeCardPublicPresentation(card, new Date(), policy);
   if (presentation !== "live") {
     return presentation === "courtesy"
       ? courtesyCeleCardMetadata(card.displayName)
@@ -91,7 +94,7 @@ export default async function CeleCardPresentPage({
     redirect(`/card/${DEMO_CARD_SLUG}/present`);
   }
 
-  const origin = await getServerAppUrl();
+  const origin = celeYouGuestOrigin(await getServerAppUrl());
   const wantImmersive = query.immersive === "1";
   const demo = getDemoCardBySlug(slug);
   if (demo) {
@@ -101,14 +104,20 @@ export default async function CeleCardPresentPage({
 
   const card = await getDigitalCardBySlug(slug);
   if (!card || card.deletedAt) notFound();
+  const policy = await getCeleCardLifecyclePolicy();
   const jar = await cookies();
   const grant = await resolveCeleCardGrant(card.id, jar.get(celeCardGrantCookieName(card.id))?.value);
 
+  const session = await getSession();
+  const hostCardId = session?.user?.id && card.userId === session.user.id ? card.id : null;
+
   return (
     <DigitalCardPresentView
-      card={toGuestPublicPayload(card, grant?.itemKeys ?? [])}
+      card={toGuestPublicPayload(card, grant?.itemKeys ?? [], policy)}
       origin={origin}
       wantImmersive={wantImmersive}
+      hostCardId={hostCardId}
+      proximityDiscoverable={card.proximityDiscoverable !== false}
     />
   );
 }

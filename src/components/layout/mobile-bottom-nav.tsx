@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Calendar, Store, MessageSquare, UserCircle } from "lucide-react";
@@ -14,13 +15,65 @@ const NAV_ITEMS = [
   { href: "/dashboard/settings", labelKey: "dashboard.mobile_nav_profile", icon: UserCircle },
 ] as const;
 
+function readScrollY() {
+  return Math.max(window.scrollY, document.documentElement.scrollTop, 0);
+}
+
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { t } = useLocale();
+  const [tucked, setTucked] = useState(false);
 
   const hidden =
     pathname.startsWith("/dashboard/getting-started") ||
     pathname.startsWith("/vendor/onboarding");
+
+  useEffect(() => {
+    setTucked(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (hidden) {
+      delete document.documentElement.dataset.mobileDock;
+      return;
+    }
+    document.documentElement.dataset.mobileDock = tucked ? "tucked" : "shown";
+    return () => {
+      delete document.documentElement.dataset.mobileDock;
+    };
+  }, [hidden, tucked]);
+
+  useEffect(() => {
+    if (hidden) return;
+    let lastY = readScrollY();
+    let ticking = false;
+
+    function update() {
+      ticking = false;
+      const y = readScrollY();
+      const delta = y - lastY;
+      lastY = y;
+      setTucked((isTucked) => {
+        if (y < 24) return false;
+        if (delta > 6) return true;
+        if (delta < -6) return false;
+        return isTucked;
+      });
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("scroll", onScroll, true);
+    };
+  }, [hidden]);
 
   if (hidden) return null;
 
@@ -31,11 +84,17 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-slate-200/80 bg-white/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
+      className={cn(
+        "lg:hidden pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 transition-[transform,translate] duration-300 ease-out motion-reduce:transition-none",
+        "pb-[max(0.35rem,env(safe-area-inset-bottom))]"
+      )}
+      style={{ transform: tucked ? "translateY(calc(100% + 0.5rem))" : "translateY(0)" }}
       aria-label="Main navigation"
       data-tour="nav-browse-mobile"
+      data-tucked={tucked ? "true" : "false"}
+      onFocusCapture={() => setTucked(false)}
     >
-      <div className="flex items-stretch justify-around">
+      <div className="pointer-events-auto mx-auto flex h-11 max-w-md items-stretch justify-around overflow-hidden rounded-full border border-slate-200/80 bg-white/92 shadow-[0_8px_24px_rgba(15,23,42,0.12)] backdrop-blur-xl">
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.href, "exact" in item ? item.exact : undefined);
           const Icon = item.icon;
@@ -44,13 +103,13 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[56px] px-1 py-2 text-[11px] font-semibold transition-colors touch-manipulation",
+                "flex h-11 flex-1 flex-col items-center justify-center gap-0 px-1 text-[10px] font-semibold leading-none transition-colors touch-manipulation",
                 active ? "text-brand-700" : "text-slate-600 hover:text-slate-800"
               )}
               aria-current={active ? "page" : undefined}
             >
-              <Icon className={cn("h-5 w-5", active && "text-brand-600")} />
-              <span className="truncate max-w-full">{t(item.labelKey)}</span>
+              <Icon className={cn("h-4 w-4", active && "text-brand-600")} strokeWidth={active ? 2.4 : 2} />
+              <span className="mt-0.5 truncate max-w-full">{t(item.labelKey)}</span>
             </Link>
           );
         })}

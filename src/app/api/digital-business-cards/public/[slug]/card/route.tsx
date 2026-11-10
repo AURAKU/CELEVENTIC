@@ -13,8 +13,9 @@ import {
 } from "@/lib/digital-business-card/share";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
-import { getAppUrlFromEnv } from "@/lib/app-url";
+import { celeYouGuestOrigin, getAppUrlFromEnv } from "@/lib/app-url";
 import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-business-card.service";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { normalizeSocials } from "@/lib/digital-business-card/types";
 
 export const runtime = "nodejs";
@@ -57,7 +58,7 @@ function renderCard(props: {
 }
 
 async function cardAssets(publicToken: string) {
-  const origin = getAppUrlFromEnv();
+  const origin = celeYouGuestOrigin(getAppUrlFromEnv());
   const destination = celeCardStableQrUrl(publicToken, origin);
   const qrSrc = await celeCardGuideQrDataUrl(destination, 1024);
   return {
@@ -95,8 +96,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
   const card = await getDigitalCardBySlug(slug);
   if (!card) return new Response("Not found", { status: 404 });
+  const policy = await getCeleCardLifecyclePolicy();
 
-  if (!isCeleCardPubliclyReachable(card)) {
+  if (!isCeleCardPubliclyReachable(card, policy)) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.id !== card.userId) {
       return new Response("Not found", { status: 404 });
@@ -116,7 +118,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     portraitFrame: normalizeSocials(card.socials).portraitFrame,
     filename,
     download,
-    cacheControl: isCeleCardPubliclyReachable(card)
+    cacheControl: isCeleCardPubliclyReachable(card, policy)
       ? "public, max-age=300, stale-while-revalidate=86400"
       : "private, no-store",
   });

@@ -7,6 +7,7 @@ import {
 } from "@/services/digital-business-card/celecard-access.service";
 import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
 import { isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: strin
   const token = req.nextUrl.searchParams.get("token")?.trim() || "";
   const dest = digitalCardPublicUrl(slug);
   const card = await getDigitalCardBySlug(slug);
-  if (!card || !isCeleCardPubliclyReachable(card) || !token) {
+  if (!card || !isCeleCardPubliclyReachable(card, await getCeleCardLifecyclePolicy()) || !token) {
     return NextResponse.redirect(new URL(dest, req.url));
   }
   const grant = await resolveCeleCardGrant(card.id, token);

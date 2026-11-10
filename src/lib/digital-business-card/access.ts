@@ -14,10 +14,12 @@ import { buildGuestReach } from "@/lib/digital-business-card/privacy";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import { smartCardStudioPath } from "@/lib/auth/safe-next-path";
 import {
+  DEFAULT_CELECARD_LIFECYCLE_POLICY,
   celeCardPublicPresentation,
   isCeleCardGuestShareable,
   resolveCeleCardLifecycle,
   type CeleCardLifecycleInput,
+  type CeleCardLifecyclePolicy,
 } from "@/lib/digital-business-card/lifecycle";
 import { courtesyGuestPayload, unavailableGuestPayload } from "@/lib/digital-business-card/courtesy";
 
@@ -69,23 +71,33 @@ export function celeCardOwnerStudioPath(plan?: string | null, theme?: string | n
   return smartCardStudioPath(plan, theme);
 }
 
-export function isCeleCardPubliclyReachable(card: LiveGateCard): boolean {
-  return isCeleCardGuestShareable(card);
+function livePolicy(policy?: CeleCardLifecyclePolicy) {
+  return policy ?? DEFAULT_CELECARD_LIFECYCLE_POLICY;
 }
 
-export function celeCardOwnerShareFlags(card: LiveGateCard) {
+export function isCeleCardPubliclyReachable(
+  card: LiveGateCard,
+  policy?: CeleCardLifecyclePolicy,
+  now = new Date()
+): boolean {
+  return isCeleCardGuestShareable(card, now, livePolicy(policy));
+}
+
+export function celeCardOwnerShareFlags(card: LiveGateCard, policy?: CeleCardLifecyclePolicy, now = new Date()) {
+  const resolved = livePolicy(policy);
   return {
-    isLive: isDigitalCardLive(card),
-    guestShareable: isCeleCardGuestShareable(card),
-    lifecycleState: resolveCeleCardLifecycle(card),
+    isLive: isDigitalCardLive(card, now, resolved),
+    guestShareable: isCeleCardGuestShareable(card, now, resolved),
+    lifecycleState: resolveCeleCardLifecycle(card, now, resolved),
   };
 }
 
 export function guestMayUsePublicAction(
   card: LiveGateCard & { connectBackEnabled?: boolean },
-  action: CeleCardPublicAction
+  action: CeleCardPublicAction,
+  policy?: CeleCardLifecyclePolicy
 ): boolean {
-  if (!isCeleCardPubliclyReachable(card)) return false;
+  if (!isCeleCardPubliclyReachable(card, livePolicy(policy))) return false;
   if (action === "connect") return card.connectBackEnabled !== false;
   return true;
 }
@@ -98,18 +110,24 @@ export function withheldGuestPayload(slug: string, themeId?: string): DigitalCar
   return unavailableGuestPayload(slug, themeId, "unavailable");
 }
 
-export function isCeleCardCourtesyReachable(card: LiveGateCard): boolean {
-  return celeCardPublicPresentation(card) === "courtesy";
+export function isCeleCardCourtesyReachable(
+  card: LiveGateCard,
+  policy?: CeleCardLifecyclePolicy,
+  now = new Date()
+): boolean {
+  return celeCardPublicPresentation(card, now, livePolicy(policy)) === "courtesy";
 }
 
 /** Guest-safe payload. Contact and socials exist only while the identity is guest-shareable. */
 export function toGuestPublicPayload(
   card: GuestSourceCard,
-  grantedItemKeys: Iterable<string> = []
+  grantedItemKeys: Iterable<string> = [],
+  policy?: CeleCardLifecyclePolicy
 ): DigitalCardPublicPayload {
-  const presentation = celeCardPublicPresentation(card);
+  const resolved = livePolicy(policy);
+  const presentation = celeCardPublicPresentation(card, new Date(), resolved);
   if (presentation === "live") {
-    const payload = toPublicPayload(card);
+    const payload = toPublicPayload(card, resolved);
     const guest = buildGuestReach(card, grantedItemKeys);
     return {
       ...payload,

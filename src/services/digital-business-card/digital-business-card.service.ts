@@ -8,13 +8,21 @@ import {
 } from "@/lib/digital-business-card/types";
 import { resolveDigitalCardTheme, type DigitalCardThemeId } from "@/lib/digital-business-card/themes";
 import {
+  CeleYouPaidTermLockedError,
+  DEFAULT_CELECARD_LIFECYCLE_POLICY,
+  celeYouPaidTermIsRunning,
   isCeleCardFullyPublic,
-  isCeleCardGuestShareable,
+  isWithinPaidWindow,
+  pickAccountPaidEntitlement,
   renewalBaseDate,
   resolveCeleCardLifecycle,
   type CeleCardLifecycleInput,
+  type CeleCardLifecyclePolicy,
 } from "@/lib/digital-business-card/lifecycle";
+import { pickCurrentNfcDevice } from "@/lib/digital-business-card/nfc-device";
 import { isReservedCeleYouShareToken } from "@/lib/digital-business-card/share-identity";
+import { randomBytes } from "node:crypto";
+import { sha256Hex } from "@/lib/crypto/sha256-hex";
 import { pesewasMatch } from "@/lib/digital-business-card/plans";
 import {
   digitalCardSlugCandidates,
@@ -70,8 +78,19 @@ export async function proposeDigitalCardSlug(input: AllocateDigitalCardSlugOptio
   };
 }
 
-export function isDigitalCardLive(card: CeleCardLifecycleInput, now = new Date()): boolean {
-  return isCeleCardFullyPublic(resolveCeleCardLifecycle(card, now));
+export function isDigitalCardLive(
+  card: CeleCardLifecycleInput,
+  now = new Date(),
+  policy: CeleCardLifecyclePolicy = DEFAULT_CELECARD_LIFECYCLE_POLICY
+): boolean {
+  return isCeleCardFullyPublic(resolveCeleCardLifecycle(card, now, policy));
+}
+
+async function celeCardPolicyForLiveGate(): Promise<CeleCardLifecyclePolicy> {
+  const { getCeleCardLifecyclePolicy } = await import(
+    "@/services/digital-business-card/lifecycle-policy.service"
+  );
+  return getCeleCardLifecyclePolicy();
 }
 
 export function toPublicPayload(card: {
@@ -98,7 +117,7 @@ export function toPublicPayload(card: {
   adminDeactivatedAt?: Date | null;
   deletedAt?: Date | null;
   lastActivatedAt?: Date | null;
-}): DigitalCardPublicPayload {
+}, policy: CeleCardLifecyclePolicy = DEFAULT_CELECARD_LIFECYCLE_POLICY): DigitalCardPublicPayload {
   const theme = resolveDigitalCardTheme(card.themeId);
   return {
     id: card.id,
@@ -118,8 +137,8 @@ export function toPublicPayload(card: {
     nfcEnabled: card.nfcEnabled,
     connectBackEnabled: card.connectBackEnabled !== false,
     defaultMode: card.defaultMode || "professional",
-    isLive: isDigitalCardLive(card),
-    presentationMode: isDigitalCardLive(card) ? "live" : "unavailable",
+    isLive: isDigitalCardLive(card, new Date(), policy),
+    presentationMode: isDigitalCardLive(card, new Date(), policy) ? "live" : "unavailable",
   };
 }
 
@@ -166,17 +185,35 @@ export async function getDigitalCardByPublicToken(publicToken: string) {
   return prisma.digitalBusinessCard.findUnique({ where: { publicToken } });
 }
 
+function newNfcClaimSecretHash(): string {
+  return sha256Hex(randomBytes(32).toString("base64url"));
+}
+
 export async function ensureDefaultNfcDevice(card: { id: string; publicToken: string }) {
-  const existing = await prisma.smartCardNfcDevice.findFirst({
-    where: { cardId: card.id, status: "ACTIVE" },
+  const devices = await prisma.smartCardNfcDevice.findMany({
+    where: { cardId: card.id },
     orderBy: { createdAt: "asc" },
   });
-  if (
-    existing &&
-    existing.publicToken !== card.publicToken &&
-    !isReservedCeleYouShareToken(existing.publicToken)
-  ) {
-    return existing;
+  const existing = pickCurrentNfcDevice(devices);
+  if (existing) {
+    const colliding =
+      existing.publicToken === card.publicToken || isReservedCeleYouShareToken(existing.publicToken);
+    // A paused or lost physical card already stores this URL. Do not mint a new token
+    // just because it is not ACTIVE. Only retire a live tag that still shares the QR token.
+    if (existing.status === "ACTIVE" && colliding) {
+      await prisma.smartCardNfcDevice.update({
+        where: { id: existing.id },
+        data: { status: "REPLACED" },
+      });
+    } else {
+      if (!existing.claimSecretHash) {
+        await prisma.smartCardNfcDevice.update({
+          where: { id: existing.id },
+          data: { claimSecretHash: newNfcClaimSecretHash() },
+        });
+      }
+      return existing;
+    }
   }
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const created = await prisma.smartCardNfcDevice.create({
@@ -184,6 +221,7 @@ export async function ensureDefaultNfcDevice(card: { id: string; publicToken: st
         cardId: card.id,
         name: "CeleYou card",
         deviceType: "card",
+        claimSecretHash: newNfcClaimSecretHash(),
       },
     });
     if (created.publicToken !== card.publicToken && !isReservedCeleYouShareToken(created.publicToken)) {
@@ -198,13 +236,19 @@ export async function nfcTokensByCardId(cards: { id: string; publicToken: string
   const tokens = new Map<string, string>();
   if (!cards.length) return tokens;
   const existing = await prisma.smartCardNfcDevice.findMany({
-    where: { cardId: { in: cards.map((card) => card.id) }, status: "ACTIVE" },
+    where: { cardId: { in: cards.map((card) => card.id) }, status: { in: ["ACTIVE", "DISABLED", "LOST"] } },
     orderBy: { createdAt: "asc" },
   });
+  const byCard = new Map<string, typeof existing>();
   for (const row of existing) {
-    if (tokens.has(row.cardId)) continue;
-    if (row.publicToken && !isReservedCeleYouShareToken(row.publicToken)) {
-      tokens.set(row.cardId, row.publicToken);
+    const list = byCard.get(row.cardId) ?? [];
+    list.push(row);
+    byCard.set(row.cardId, list);
+  }
+  for (const card of cards) {
+    const current = pickCurrentNfcDevice(byCard.get(card.id) ?? []);
+    if (current?.publicToken && !isReservedCeleYouShareToken(current.publicToken)) {
+      tokens.set(card.id, current.publicToken);
     }
   }
   for (const card of cards) {
@@ -213,30 +257,6 @@ export async function nfcTokensByCardId(cards: { id: string; publicToken: string
     tokens.set(card.id, device.publicToken);
   }
   return tokens;
-}
-
-export async function resolveNfcDeviceTap(publicToken: string) {
-  const device = await prisma.smartCardNfcDevice.findUnique({
-    where: { publicToken },
-    include: { card: true },
-  });
-  if (!device || device.status !== "ACTIVE") return null;
-  if (!isCeleCardGuestShareable(device.card)) return device.card;
-  await prisma.smartCardNfcDevice.update({
-    where: { id: device.id },
-    data: { tapCount: { increment: 1 }, lastTapAt: new Date() },
-  });
-  await prisma.smartCardInteraction
-    .create({
-      data: {
-        cardId: device.cardId,
-        campaignId: device.campaignId,
-        kind: "nfc_tap",
-        meta: { deviceId: device.id, deviceType: device.deviceType },
-      },
-    })
-    .catch(() => undefined);
-  return device.card;
 }
 
 export async function createSmartCardConnection(input: {
@@ -298,6 +318,50 @@ export async function getDigitalCardForUser(userId: string, id: string) {
   return card;
 }
 
+type AccountEntitlementSource = {
+  id: string;
+  userId: string;
+  subscriptionStatus: string;
+  subscriptionExpiresAt: Date | null;
+  lastActivatedAt: Date | null;
+  lastActivationPaymentId: string | null;
+  entitlementKind: string | null;
+};
+
+function accountEntitlementWrite(source: AccountEntitlementSource) {
+  return {
+    subscriptionStatus: source.subscriptionStatus,
+    subscriptionExpiresAt: source.subscriptionExpiresAt,
+    lastActivatedAt: source.lastActivatedAt,
+    lastActivationPaymentId: source.lastActivationPaymentId,
+    entitlementKind: source.entitlementKind,
+    lastCourtesyAt: null,
+  };
+}
+
+export async function findAccountPaidEntitlement(userId: string, now = new Date()) {
+  const cards = await listDigitalCardsForUser(userId);
+  const policy = await celeCardPolicyForLiveGate();
+  return pickAccountPaidEntitlement(cards, now, policy);
+}
+
+export async function attachDigitalCardToAccountEntitlement(
+  cardId: string,
+  source: AccountEntitlementSource
+) {
+  return prisma.digitalBusinessCard.update({
+    where: { id: cardId },
+    data: accountEntitlementWrite(source),
+  });
+}
+
+export async function propagateAccountEntitlement(source: AccountEntitlementSource) {
+  await prisma.digitalBusinessCard.updateMany({
+    where: { userId: source.userId, deletedAt: null, id: { not: source.id } },
+    data: accountEntitlementWrite(source),
+  });
+}
+
 export async function createDigitalCard(userId: string, input: UpsertDigitalCardInput) {
   const displayName = (input.displayName ?? "").trim();
   if (displayName.length < 2) {
@@ -309,6 +373,13 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
     company: input.company?.trim() || null,
     title: input.title?.trim() || null,
   };
+  const household = await findAccountPaidEntitlement(userId);
+  const entitlement = household
+    ? accountEntitlementWrite(household)
+    : {
+        subscriptionStatus: "TRIAL",
+        subscriptionExpiresAt: trialExpiryFromNow(),
+      };
   let created: Awaited<ReturnType<typeof prisma.digitalBusinessCard.create>> | null = null;
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const slug = await allocateDigitalCardSlug(input.slug || displayName, slugSeed);
@@ -329,8 +400,7 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
           avatarUrl: input.avatarUrl || null,
           isPublished: input.isPublished ?? true,
           nfcEnabled: input.nfcEnabled ?? true,
-          subscriptionStatus: "TRIAL",
-          subscriptionExpiresAt: trialExpiryFromNow(),
+          ...entitlement,
         },
       });
       break;
@@ -340,7 +410,11 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
   }
   if (!created) throw new Error("Could not allocate a unique public link");
   await ensureDefaultNfcDevice(created);
-  await recordCeleCardLifecycleEvent({ cardId: created.id, kind: "CardCreated" });
+  await recordCeleCardLifecycleEvent({
+    cardId: created.id,
+    kind: "CardCreated",
+    meta: household ? { inheritedEntitlementFrom: household.id } : undefined,
+  });
   await prisma.smartCardDesignVersion
     .create({
       data: {
@@ -441,8 +515,17 @@ export async function activateDigitalCardFromPayment(input: {
   if (input.paymentId && existing.lastActivationPaymentId === input.paymentId) {
     return existing;
   }
-  const wasLive = isDigitalCardLive(existing);
-  const base = renewalBaseDate(existing);
+  const policy = await celeCardPolicyForLiveGate();
+  const now = new Date();
+  const household = await findAccountPaidEntitlement(input.userId, now);
+  if (household && isWithinPaidWindow(household, now)) {
+    if (existing.id !== household.id && !isWithinPaidWindow(existing, now)) {
+      return attachDigitalCardToAccountEntitlement(existing.id, household);
+    }
+    return existing;
+  }
+  const wasLive = isDigitalCardLive(existing, now, policy);
+  const base = renewalBaseDate(existing, now, policy);
   const expires = smartCardExpiryFromNow(months, base);
   const updated = await prisma.digitalBusinessCard.update({
     where: { id: existing.id },
@@ -450,11 +533,13 @@ export async function activateDigitalCardFromPayment(input: {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: expires,
       isPublished: true,
-      lastActivatedAt: new Date(),
+      lastActivatedAt: now,
       lastActivationPaymentId: input.paymentId || existing.lastActivationPaymentId,
       lastCourtesyAt: null,
+      entitlementKind: "PAID",
     },
   });
+  await propagateAccountEntitlement(updated);
   await recordCeleCardLifecycleEvent({
     cardId: existing.id,
     kind: wasLive ? "SubscriptionRenewed" : "SubscriptionActivated",
@@ -476,18 +561,28 @@ export async function activateDigitalCardPlan(userId: string, id: string, planId
   const existing = await getDigitalCardForUser(userId, id);
   if (!existing) return null;
   if (existing.deletedAt || existing.adminSuspendedAt) return null;
-  const wasLive = isDigitalCardLive(existing);
-  const base = renewalBaseDate(existing);
+  const policy = await celeCardPolicyForLiveGate();
+  const now = new Date();
+  const household = await findAccountPaidEntitlement(userId, now);
+  if (household && isWithinPaidWindow(household, now)) {
+    if (existing.id !== household.id && !isWithinPaidWindow(existing, now)) {
+      return attachDigitalCardToAccountEntitlement(existing.id, household);
+    }
+    return existing;
+  }
+  const wasLive = isDigitalCardLive(existing, now, policy);
+  const base = renewalBaseDate(existing, now, policy);
   const updated = await prisma.digitalBusinessCard.update({
     where: { id: existing.id },
     data: {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: smartCardExpiryFromNow(plan.months, base),
       isPublished: true,
-      lastActivatedAt: new Date(),
+      lastActivatedAt: now,
       lastCourtesyAt: null,
     },
   });
+  await propagateAccountEntitlement(updated);
   await recordCeleCardLifecycleEvent({
     cardId: existing.id,
     kind: wasLive ? "SubscriptionRenewed" : "SubscriptionActivated",
@@ -517,6 +612,10 @@ export async function recordCeleCardLifecycleEvent(input: {
 export async function softDeleteDigitalCard(userId: string, id: string) {
   const existing = await getDigitalCardForUser(userId, id);
   if (!existing) return null;
+  const policy = await celeCardPolicyForLiveGate();
+  if (celeYouPaidTermIsRunning(existing, new Date(), policy)) {
+    throw new CeleYouPaidTermLockedError();
+  }
   const updated = await prisma.digitalBusinessCard.update({
     where: { id: existing.id },
     data: { deletedAt: new Date(), isPublished: false },

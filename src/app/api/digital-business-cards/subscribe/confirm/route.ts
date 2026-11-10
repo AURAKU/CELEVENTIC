@@ -7,6 +7,7 @@ import {
   isDigitalCardLive,
   recordCeleCardLifecycleEvent,
 } from "@/services/digital-business-card/digital-business-card.service";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
@@ -45,7 +46,7 @@ export async function GET(req: Request) {
       success: true,
       data: {
         status: payment.status,
-        live: card ? isDigitalCardLive(card) : false,
+        live: card ? isDigitalCardLive(card, new Date(), await getCeleCardLifecyclePolicy()) : false,
         cardId,
       },
     });

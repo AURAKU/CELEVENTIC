@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { resolveDigitalCardTheme, type DigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { applyCeleCardDesign, celeCardPaperStyle, type CeleCardDesign } from "@/lib/digital-business-card/design";
 import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
-import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
+import { CELEYOU_BRAND_TEAL, CeleYouThemedMark } from "@/components/digital-business-card/celeyou-brand-mark";
 import { CELECARD_PORTRAIT_MAX_EDGE, isCeleCardPhotoUrl } from "@/lib/digital-business-card/portraits";
 import {
   resolveCeleCardPortraitFrame,
@@ -55,6 +55,20 @@ function initialsOf(name: string) {
     .join("");
 }
 
+/** Keeps frame and ornament strokes out of the origin mark and the CeleYou lockup. */
+function copySafeMask(compact?: boolean): CSSProperties {
+  const origin = compact ? "18cqw 10cqw" : "20cqw 11cqw";
+  const lockup = compact ? "86cqw 9.2cqw" : "84cqw 10cqw";
+  const top = `radial-gradient(ellipse ${origin} at 50% 0%, transparent 0 72%, #000 73%)`;
+  const bottom = `radial-gradient(ellipse ${lockup} at 50% 100%, transparent 0 72%, #000 73%)`;
+  return {
+    WebkitMaskImage: `${top}, ${bottom}`,
+    maskImage: `${top}, ${bottom}`,
+    WebkitMaskComposite: "source-in",
+    maskComposite: "intersect",
+  };
+}
+
 function HouseFrame({
   theme,
   compact,
@@ -66,24 +80,24 @@ function HouseFrame({
 }) {
   const inset = compact ? "inset-[1.4cqw]" : "inset-[2cqw]";
   const corner = compact ? "h-[3.2cqw] w-[3.2cqw]" : "h-[4.4cqw] w-[4.4cqw]";
-  const gap = compact ? "17cqw" : "19cqw";
-  const topMask = `linear-gradient(90deg, #000 0, #000 calc(50% - ${gap}), transparent calc(50% - ${gap} + 2.4cqw), transparent calc(50% + ${gap} - 2.4cqw), #000 calc(50% + ${gap}), #000 100%)`;
+  const brand = CELEYOU_BRAND_TEAL;
+  const mask = copySafeMask(compact);
   return (
     <div className={cn("pointer-events-none absolute rounded-[14px]", inset)} aria-hidden>
       <div
         className="absolute inset-0 rounded-[12px]"
-        style={{ boxShadow: `inset 0 0 0 1px ${theme.border}`, WebkitMaskImage: topMask, maskImage: topMask }}
+        style={{ boxShadow: `inset 0 0 0 1px ${theme.border}`, ...mask }}
       />
       {rich ? (
         <div
-          className="absolute inset-[4px] rounded-[10px] opacity-70"
-          style={{ boxShadow: `inset 0 0 0 1px ${theme.accent}`, WebkitMaskImage: topMask, maskImage: topMask }}
+          className="absolute inset-[4px] rounded-[10px]"
+          style={{ boxShadow: `inset 0 0 0 1px ${brand}`, ...mask }}
         />
       ) : null}
-      <span className={cn("absolute left-0 top-0 border-l-2 border-t-2", corner)} style={{ borderColor: theme.accent }} />
-      <span className={cn("absolute right-0 top-0 border-r-2 border-t-2", corner)} style={{ borderColor: theme.accent }} />
-      <span className={cn("absolute bottom-0 left-0 border-b-2 border-l-2", corner)} style={{ borderColor: theme.accent }} />
-      <span className={cn("absolute bottom-0 right-0 border-b-2 border-r-2", corner)} style={{ borderColor: theme.accent }} />
+      <span className={cn("absolute left-0 top-0 border-l-[2.5px] border-t-[2.5px]", corner)} style={{ borderColor: brand }} />
+      <span className={cn("absolute right-0 top-0 border-r-[2.5px] border-t-[2.5px]", corner)} style={{ borderColor: brand }} />
+      <span className={cn("absolute bottom-0 left-0 border-b-[2.5px] border-l-[2.5px]", corner)} style={{ borderColor: brand }} />
+      <span className={cn("absolute bottom-0 right-0 border-b-[2.5px] border-r-[2.5px]", corner)} style={{ borderColor: brand }} />
     </div>
   );
 }
@@ -139,8 +153,9 @@ function OrnamentLayer({ theme, compact }: { theme: DigitalCardTheme; compact?: 
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "linear-gradient(90deg, transparent 0 12%, rgba(34,211,238,0.22) 12% 12.4%, transparent 12.4%), linear-gradient(0deg, transparent 0 78%, rgba(192,38,211,0.28) 78% 78.5%, transparent 78.5%)",
+              "linear-gradient(90deg, transparent 0 12%, rgba(34,211,238,0.22) 12% 12.4%, transparent 12.4%), linear-gradient(0deg, transparent 0 88%, rgba(192,38,211,0.28) 88% 88.5%, transparent 88.5%)",
             boxShadow: `inset 0 0 40px ${theme.accentSoft}`,
+            ...copySafeMask(compact),
           }}
           aria-hidden
         />
@@ -148,7 +163,7 @@ function OrnamentLayer({ theme, compact }: { theme: DigitalCardTheme; compact?: 
       {ornament === "cel" ? (
         <div
           className="pointer-events-none absolute inset-2 rounded-xl border-[3px]"
-          style={{ borderColor: theme.text }}
+          style={{ borderColor: theme.text, ...copySafeMask(compact) }}
           aria-hidden
         >
           <span
@@ -161,7 +176,7 @@ function OrnamentLayer({ theme, compact }: { theme: DigitalCardTheme; compact?: 
       ) : null}
       {ornament === "marquee" ? (
         <div className="pointer-events-none absolute inset-[6px] rounded-xl" aria-hidden>
-          <div className="absolute inset-0 rounded-xl border-2" style={{ borderColor: theme.accent }} />
+          <div className="absolute inset-0 rounded-xl border-2" style={{ borderColor: theme.accent, ...copySafeMask(compact) }} />
           <div className="absolute inset-0 flex justify-between px-1 pt-0.5">
             {Array.from({ length: compact ? 18 : 28 }).map((_, i) => (
               <span
@@ -205,14 +220,16 @@ function plateFill(theme: DigitalCardTheme) {
 
 function PaperFinish({ theme }: { theme: DigitalCardTheme }) {
   const lightPaper = isDarkInk(theme.text);
+  const copySafe = copySafeMask();
   return (
     <>
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: lightPaper
-            ? `radial-gradient(ellipse at 12% 8%, ${theme.accent}2e 0%, transparent 38%), radial-gradient(ellipse at 92% 88%, ${theme.accent}24 0%, transparent 46%), linear-gradient(118deg, rgba(255,252,245,0.28) 0%, transparent 36%, rgba(120,70,20,0.08) 100%)`
-            : `radial-gradient(ellipse at 16% 0%, rgba(255,255,255,0.16) 0%, transparent 40%), linear-gradient(160deg, rgba(0,0,0,0.08) 0%, transparent 55%)`,
+            ? `radial-gradient(ellipse at 12% 22%, ${theme.accent}2e 0%, transparent 38%), radial-gradient(ellipse at 92% 88%, ${theme.accent}24 0%, transparent 46%), linear-gradient(118deg, rgba(255,252,245,0.28) 0%, transparent 36%, rgba(120,70,20,0.08) 100%)`
+            : `radial-gradient(ellipse at 16% 18%, rgba(255,255,255,0.16) 0%, transparent 40%), linear-gradient(160deg, rgba(0,0,0,0.08) 0%, transparent 55%)`,
+          ...copySafe,
         }}
         aria-hidden
       />
@@ -221,6 +238,7 @@ function PaperFinish({ theme }: { theme: DigitalCardTheme }) {
         style={{
           backgroundImage:
             "repeating-linear-gradient(0deg, transparent 0 2px, rgba(90,58,18,0.05) 2px 3px), repeating-linear-gradient(90deg, transparent 0 3px, rgba(90,58,18,0.035) 3px 4px)",
+          ...copySafe,
         }}
         aria-hidden
       />
@@ -228,30 +246,13 @@ function PaperFinish({ theme }: { theme: DigitalCardTheme }) {
   );
 }
 
-function originWell(theme: DigitalCardTheme) {
-  return {
-    background: "radial-gradient(circle at 50% 38%, #ffffff 0%, #f4fbf9 58%, #e7f5f2 100%)",
-    boxShadow: `0 0 0 0.18cqw ${theme.border}, 0 0 0 0.52cqw ${theme.accent}59, 0 0.7cqw 1.6cqw rgba(8,12,24,0.22), inset 0 1px 0 rgba(255,255,255,0.95)`,
-  } as const;
-}
-
-function CeleCardOrigin({
-  theme,
-}: {
-  theme: DigitalCardTheme;
-  compact?: boolean;
-}) {
+function CeleCardOrigin() {
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center"
+      className="pointer-events-none absolute inset-x-0 top-0 z-[8] flex justify-center"
       aria-label={SMARTCARD_PRODUCT_SHORT_NAME}
     >
-      <span
-        className="celecard-origin-plate relative inline-flex items-center justify-center overflow-hidden rounded-full"
-        style={originWell(theme)}
-      >
-        <CeleYouMarkIcon className="celecard-origin-mark" />
-      </span>
+      <CeleYouThemedMark className="celecard-origin-plate" />
     </div>
   );
 }
@@ -687,7 +688,12 @@ function CardPlate({
             composition === "media-first" ? "is-media-first" : null
           )}
         >
-          {portrait ? null : composition === "type-first" ? (
+          {portrait ? (
+            <>
+              {identity}
+              {qr}
+            </>
+          ) : composition === "type-first" ? (
             <>
               {identity}
               {photo}
@@ -738,7 +744,7 @@ export function DigitalCardFace({
         color: theme.text,
         fontFamily: voice.meta,
         ["--celecard-accent" as string]: theme.accent,
-        boxShadow: `0 18px 44px rgba(8,12,24,0.28), 0 1px 0 rgba(255,255,255,0.28), inset 0 1px 0 rgba(255,255,255,0.34), inset 0 -3px 8px rgba(0,0,0,0.14), inset 0 0 0 1px ${theme.border}`,
+        boxShadow: `0 18px 44px rgba(8,12,24,0.28), 0 1px 0 rgba(255,255,255,0.28), inset 0 1px 0 rgba(255,255,255,0.34), inset 0 -3px 8px rgba(0,0,0,0.14)`,
       }}
     >
       {customPaper ? (
@@ -766,7 +772,7 @@ export function DigitalCardFace({
         <DigitalCardAtmosphere atmosphere={theme.atmosphere ?? "none"} theme={theme} compact={compact} />
       </div>
       <OrnamentLayer theme={theme} compact={compact} />
-      <CeleCardOrigin theme={theme} compact={compact} />
+      <CeleCardOrigin />
       <CeleCardWordmark theme={theme} compact={compact} />
       <CardPlate
         theme={theme}

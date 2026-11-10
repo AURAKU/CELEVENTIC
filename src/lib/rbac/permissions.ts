@@ -45,6 +45,7 @@ const ROLE_PERMISSIONS: Record<string, readonly Permission[]> = {
     Permission.CELECARD_DEACTIVATE,
     Permission.CELECARD_SUSPEND,
     Permission.CELECARD_SUBSCRIPTION_MANAGE,
+    Permission.CELECARD_GRANT_COMPLIMENTARY,
     Permission.CELECARD_TEMPLATE_MANAGE,
     Permission.CELECARD_SUPPORT,
     Permission.CELECARD_AUDIT_VIEW,

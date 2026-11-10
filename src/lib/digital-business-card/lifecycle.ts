@@ -151,6 +151,41 @@ export function isCeleCardCourtesyState(state: CeleCardLifecycleState): boolean 
   return state === "COURTESY";
 }
 
+export const CELEYOU_PAID_TERM_LOCKED_MESSAGE =
+  "A paid CeleYou runs until the term ends. It cannot be cancelled.";
+
+export class CeleYouPaidTermLockedError extends Error {
+  readonly status = 409;
+  constructor(message = CELEYOU_PAID_TERM_LOCKED_MESSAGE) {
+    super(message);
+    this.name = "CeleYouPaidTermLockedError";
+  }
+}
+
+/** Paid and grace windows keep running. Owners cannot cancel or end them early. */
+export function celeYouPaidTermIsRunning(
+  card: CeleCardLifecycleInput,
+  now = new Date(),
+  policy: CeleCardLifecyclePolicy = DEFAULT_CELECARD_LIFECYCLE_POLICY
+): boolean {
+  return isWithinPaidWindow(card, now) || isWithinGracePeriod(card, now, policy);
+}
+
+/** The owner's current paid or grace window, if any. Extra cards inherit this same term. */
+export function pickAccountPaidEntitlement<T extends CeleCardLifecycleInput>(
+  cards: T[],
+  now = new Date(),
+  policy: CeleCardLifecyclePolicy = DEFAULT_CELECARD_LIFECYCLE_POLICY
+): T | null {
+  const live = cards.filter((card) => !card.deletedAt && celeYouPaidTermIsRunning(card, now, policy));
+  if (!live.length) return null;
+  return live.reduce((best, card) => {
+    const bestEnd = best.subscriptionExpiresAt?.getTime() ?? 0;
+    const nextEnd = card.subscriptionExpiresAt?.getTime() ?? 0;
+    return nextEnd > bestEnd ? card : best;
+  });
+}
+
 /**
  * Recipients may open a published identity without installing CeleYou.
  * Paid ACTIVE / EXPIRING / GRACE stay guest-shareable.
@@ -185,11 +220,15 @@ export function celeCardPublicPresentation(
   return "unavailable";
 }
 
-export function renewalBaseDate(card: CeleCardLifecycleInput, now = new Date()): Date {
+export function renewalBaseDate(
+  card: CeleCardLifecycleInput,
+  now = new Date(),
+  policy: CeleCardLifecyclePolicy = DEFAULT_CELECARD_LIFECYCLE_POLICY
+): Date {
   if (isWithinPaidWindow(card, now) && card.subscriptionExpiresAt) {
     return card.subscriptionExpiresAt;
   }
-  if (isWithinGracePeriod(card, now) && card.subscriptionExpiresAt) {
+  if (isWithinGracePeriod(card, now, policy) && card.subscriptionExpiresAt) {
     return card.subscriptionExpiresAt;
   }
   return now;

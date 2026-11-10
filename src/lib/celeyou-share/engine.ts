@@ -91,7 +91,12 @@ export async function shareCeleYouProfile(
   }
   try {
     if (nav?.clipboard && typeof nav.clipboard.writeText === "function") {
-      await nav.clipboard.writeText(`${input.text}\n${input.url}`);
+      await Promise.race([
+        nav.clipboard.writeText(`${input.text}\n${input.url}`),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("clipboard-timeout")), 1200);
+        }),
+      ]);
       return "copied";
     }
   } catch {

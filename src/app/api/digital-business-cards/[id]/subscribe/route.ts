@@ -10,11 +10,15 @@ import {
   getSmartCardPlanFromCatalog,
 } from "@/lib/digital-business-card/plans";
 import { getCeleCardCatalog } from "@/services/digital-business-card/catalog.service";
-import { resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
+import { CELEYOU_RENEWAL_WAIT_MESSAGE } from "@/lib/digital-business-card/billing-rules";
+import { isWithinPaidWindow, pickAccountPaidEntitlement, resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import {
   activateDigitalCardPlan,
+  attachDigitalCardToAccountEntitlement,
   getDigitalCardForUser,
   isDigitalCardLive,
+  listDigitalCardsForUser,
   recordCeleCardLifecycleEvent,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { paymentService, PaymentProviderError } from "@/services/payments/payment.service";
@@ -39,17 +43,35 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   const card = await getDigitalCardForUser(session.user.id, id);
   if (!card) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const lifecycle = resolveCeleCardLifecycle(card);
+  const policy = await getCeleCardLifecyclePolicy();
+  const now = new Date();
+  const lifecycle = resolveCeleCardLifecycle(card, now, policy);
   if (lifecycle === "SUSPENDED" || lifecycle === "DELETED") {
     return NextResponse.json({ error: "This CeleYou cannot be reactivated from billing." }, { status: 403 });
   }
 
+  const household = pickAccountPaidEntitlement(await listDigitalCardsForUser(session.user.id), now, policy);
+  if (household && isWithinPaidWindow(household, now)) {
+    if (card.id !== household.id && !isWithinPaidWindow(card, now)) {
+      const attached = await attachDigitalCardToAccountEntitlement(card.id, household);
+      return NextResponse.json({
+        success: true,
+        data: {
+          inherited: true,
+          card: { ...attached, isLive: isDigitalCardLive(attached, new Date(), policy) },
+        },
+      });
+    }
+    return NextResponse.json({ error: CELEYOU_RENEWAL_WAIT_MESSAGE }, { status: 409 });
+  }
+
   await recordCeleCardLifecycleEvent({
     cardId: card.id,
-    kind: isDigitalCardLive(card) ? "ReactivationStarted" : "CheckoutStarted",
+    kind: isDigitalCardLive(card, now, policy) ? "ReactivationStarted" : "CheckoutStarted",
     meta: { planId: plan.id },
   }).catch(() => undefined);
 
+  // Platform ADMIN and SUPER_ADMIN may activate without Paystack. Live users pay.
   if (isAdminCommerceBypass(session.user.role)) {
     const activated = await activateDigitalCardPlan(session.user.id, id, plan.id);
     if (!activated) return NextResponse.json({ error: "Could not activate" }, { status: 500 });
@@ -58,7 +80,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       data: {
         free: true,
         adminBypass: true,
-        card: { ...activated, isLive: isDigitalCardLive(activated) },
+        card: { ...activated, isLive: isDigitalCardLive(activated, new Date(), policy) },
       },
     });
   }

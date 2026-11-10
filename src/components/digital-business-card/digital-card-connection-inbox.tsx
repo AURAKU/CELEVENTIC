@@ -4,6 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  CELECARD_LEAD_STATUSES,
+  CELECARD_LEAD_STATUS_LABEL,
+  normalizeCeleCardLeadStatus,
+  type CeleCardLeadStatus,
+} from "@/lib/digital-business-card/leads";
+import {
   downloadMeetingIcs,
   formatMeetingWhen,
   meetingIcs,
@@ -16,6 +22,7 @@ type ConnectionRow = {
   visitorEmail: string | null;
   visitorPhone: string | null;
   source: string;
+  status: string;
   note: string | null;
   createdAt: string;
 };
@@ -26,30 +33,66 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState<CeleCardLeadStatus | "ALL">("ALL");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
-    async (nextPage = 1) => {
+    async (nextPage = 1, nextFilter = filter, signal?: AbortSignal) => {
       if (!cardId) return;
       setLoading(true);
+      setError(null);
       try {
-        const res = await fetch(`/api/digital-business-cards/${cardId}/connections?page=${nextPage}`);
-        const json = await res.json();
+        const params = new URLSearchParams({ page: String(nextPage) });
+        if (nextFilter !== "ALL") params.set("status", nextFilter);
+        const res = await fetch(`/api/digital-business-cards/${cardId}/connections?${params}`, { signal });
+        const json = await res.json().catch(() => ({}));
+        if (signal?.aborted) return;
         if (res.ok) {
           setItems((json.data?.items ?? []) as ConnectionRow[]);
           setTotal(json.data?.total ?? 0);
           setPageSize(json.data?.pageSize ?? 20);
           setPage(nextPage);
+        } else {
+          setError(typeof json.error === "string" ? json.error : "Could not load requests.");
         }
+      } catch (err) {
+        if (signal?.aborted || (err instanceof DOMException && err.name === "AbortError")) return;
+        setError("Could not load requests.");
       } finally {
-        setLoading(false);
+        if (!signal?.aborted) setLoading(false);
       }
     },
-    [cardId]
+    [cardId, filter]
   );
 
+  async function saveStatus(connectionId: string, status: CeleCardLeadStatus) {
+    if (!cardId) return;
+    setBusyId(connectionId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/digital-business-cards/${cardId}/connections`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId, status }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Could not update that request.");
+      setItems((current) =>
+        current.map((item) => (item.id === connectionId ? { ...item, status } : item))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update that request.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   useEffect(() => {
-    void load(1);
-  }, [load]);
+    const ac = new AbortController();
+    void load(1, filter, ac.signal);
+    return () => ac.abort();
+  }, [load, filter]);
 
   if (!cardId) return null;
 
@@ -61,6 +104,36 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
       <p className="text-xs text-slate-500">
         Connect Back, courtesy reconnects, and meeting times. Contact details appear only when the visitor chose to share them.
       </p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={() => {
+            setFilter("ALL");
+            void load(1, "ALL");
+          }}
+          className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+            filter === "ALL" ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]" : "border-slate-200 text-slate-500"
+          }`}
+        >
+          All
+        </button>
+        {CELECARD_LEAD_STATUSES.map((status) => (
+          <button
+            key={status}
+            type="button"
+            onClick={() => {
+              setFilter(status);
+              void load(1, status);
+            }}
+            className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+              filter === status ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]" : "border-slate-200 text-slate-500"
+            }`}
+          >
+            {CELECARD_LEAD_STATUS_LABEL[status]}
+          </button>
+        ))}
+      </div>
+      {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {loading && items.length === 0 ? <p className="mt-3 text-xs text-slate-500">Loading…</p> : null}
       <ul className="mt-3 space-y-2">
         {items.map((item) => {
@@ -79,14 +152,32 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                 <p className="text-[11px] text-slate-500">Anonymous request</p>
               )}
               {meeting?.note ? <p className="text-[11px] text-slate-500">{meeting.note}</p> : null}
-              <p className="text-[11px] text-slate-500">
-                {item.source === "courtesy_reconnect"
-                  ? "Courtesy reconnect"
-                  : item.source === "meeting"
-                    ? "Meeting request"
-                    : "Connect Back"}{" "}
-                · {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <label className="sr-only" htmlFor={`lead-status-${item.id}`}>
+                  Request status
+                </label>
+                <select
+                  id={`lead-status-${item.id}`}
+                  value={normalizeCeleCardLeadStatus(item.status)}
+                  disabled={busyId === item.id}
+                  onChange={(event) => void saveStatus(item.id, event.target.value as CeleCardLeadStatus)}
+                  className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700"
+                >
+                  {CELECARD_LEAD_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {CELECARD_LEAD_STATUS_LABEL[status]}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-500">
+                  {item.source === "courtesy_reconnect"
+                    ? "Courtesy reconnect"
+                    : item.source === "meeting"
+                      ? "Meeting request"
+                      : "Connect Back"}{" "}
+                  · {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                </p>
+              </div>
               {meeting ? (
                 <button
                   type="button"

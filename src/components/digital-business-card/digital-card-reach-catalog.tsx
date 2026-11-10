@@ -92,7 +92,7 @@ export function DigitalCardReachCatalog({
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       {intro}
       {open.length ? (
         <div className="grid grid-cols-1 gap-4">
@@ -113,27 +113,27 @@ export function DigitalCardReachCatalog({
       ) : null}
 
       {showPicker ? (
-        <div className={cn("rounded-2xl border border-black/10 bg-white/70 p-3", open.length ? "mt-3" : "")}>
-          <label className="block">
+        <div className={cn("min-w-0 overflow-hidden rounded-2xl border border-black/10 bg-white/70 p-3", open.length ? "mt-3" : "")}>
+          <label className="block min-w-0">
             <span className="sr-only">Search a network</span>
-            <span className="relative block">
+            <span className="relative block min-w-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
               <input
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search WhatsApp, or any page"
+                placeholder="Search a network"
                 className={cn(
-                  "h-11 w-full rounded-xl border border-black/10 bg-white pl-10 pr-3 text-sm outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-stone-400",
+                  "h-11 w-full min-w-0 rounded-xl border border-black/10 bg-white pl-10 pr-3 text-sm outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-stone-400",
                   searchClassName
                 )}
                 style={searchStyle}
               />
             </span>
           </label>
-          <div className="mt-2.5 flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-              Flip through, then tap to add
+          <div className="mt-2.5 flex items-center gap-2">
+            <p className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-stone-500">
+              Tap a network to add
             </p>
             {matches.length > 3 ? (
               <span className="flex shrink-0 gap-1">
@@ -141,7 +141,7 @@ export function DigitalCardReachCatalog({
                   type="button"
                   aria-label="Previous networks"
                   onClick={() => flip(-1)}
-                  className="grid h-8 w-8 place-items-center rounded-full border border-black/10 bg-white text-stone-600 transition hover:border-black/20"
+                  className="grid h-11 w-11 place-items-center rounded-full border border-black/10 bg-white text-stone-600 transition hover:border-black/20"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -149,7 +149,7 @@ export function DigitalCardReachCatalog({
                   type="button"
                   aria-label="Next networks"
                   onClick={() => flip(1)}
-                  className="grid h-8 w-8 place-items-center rounded-full border border-black/10 bg-white text-stone-600 transition hover:border-black/20"
+                  className="grid h-11 w-11 place-items-center rounded-full border border-black/10 bg-white text-stone-600 transition hover:border-black/20"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -159,7 +159,7 @@ export function DigitalCardReachCatalog({
           {matches.length ? (
             <div
               ref={scrollerRef}
-              className="mt-2.5 flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]"
+              className="fit-scroller mt-2.5 flex snap-x snap-mandatory gap-2 pb-1 [scrollbar-width:thin]"
             >
               {matches.map((network) => (
                 <button
@@ -169,11 +169,11 @@ export function DigitalCardReachCatalog({
                     onAdd(network.key);
                     setQuery("");
                   }}
-                  className="flex w-[5.5rem] shrink-0 snap-start flex-col items-center gap-1.5 rounded-2xl border border-black/10 bg-white px-2 py-3 text-center shadow-[0_4px_12px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-black/20 hover:shadow-[0_8px_18px_rgba(15,23,42,0.1)]"
+                  className="flex w-[4.75rem] shrink-0 snap-start flex-col items-center gap-1.5 rounded-2xl border border-black/10 bg-white px-1.5 py-3 text-center shadow-[0_4px_12px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-black/20 hover:shadow-[0_8px_18px_rgba(15,23,42,0.1)] sm:w-[5.5rem] sm:px-2"
                 >
                   <DigitalCardBrandMark id={network.key} className="h-11 w-11 rounded-[13px]" />
                   <span
-                    className="text-[10px] font-semibold uppercase leading-tight tracking-[0.08em]"
+                    className="w-full break-words text-[10px] font-semibold uppercase leading-tight tracking-[0.08em]"
                     style={{ color: accent }}
                   >
                     {network.label}

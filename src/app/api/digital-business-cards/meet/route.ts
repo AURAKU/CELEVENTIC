@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import {
   compactMeetingDesk,
   listOpenMeetingSlots,
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
   }
 
   const card = await getDigitalCardBySlug(slug);
-  if (!card || !isCeleCardPubliclyReachable(card)) {
+  if (!card || !isCeleCardPubliclyReachable(card, await getCeleCardLifecyclePolicy())) {
     return NextResponse.json({ error: "Card unavailable" }, { status: 404 });
   }
   const desk = deskForSocials(card.socials);
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
   }
 
   const card = await getDigitalCardBySlug(parsed.data.slug);
-  if (!card || !isCeleCardPubliclyReachable(card)) {
+  if (!card || !isCeleCardPubliclyReachable(card, await getCeleCardLifecyclePolicy())) {
     return NextResponse.json({ error: "Card unavailable" }, { status: 404 });
   }
   const desk = deskForSocials(card.socials);

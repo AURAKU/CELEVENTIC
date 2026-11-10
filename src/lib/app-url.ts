@@ -120,6 +120,27 @@ export function getClientAppUrl(): string {
   return fromEnv;
 }
 
+/**
+ * Origin encoded into CeleYou QR, NFC, share links, and vCards.
+ * Recipients scan these in the real world, so localhost is never encoded.
+ */
+export function getCeleYouShareOrigin(): string {
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin;
+    if (origin && !isLocalHost(origin)) return normalizeUrl(origin);
+  }
+  const env = getAppUrlFromEnv();
+  if (!isLocalHost(env)) return normalizeUrl(env);
+  return DEFAULT_PRODUCTION_URL;
+}
+
+/** Prefer a live request host. Rewrite localhost onto the CeleYou share origin. */
+export function celeYouGuestOrigin(candidate?: string | null): string {
+  const value = candidate?.trim();
+  if (value && !isLocalHost(value)) return normalizeUrl(value);
+  return getCeleYouShareOrigin();
+}
+
 /** Rewrite stored share links that incorrectly contain localhost. */
 export function sanitizePublicUrl(url: string, baseUrl?: string): string {
   const base = baseUrl ?? getAppUrlFromEnv();

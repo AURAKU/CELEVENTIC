@@ -71,7 +71,7 @@ import { DigitalCardReachGrid } from "@/components/digital-business-card/digital
 import { DigitalCardPortraitField } from "@/components/digital-business-card/digital-card-portrait-field";
 import { DigitalCardCompanyLogoField } from "@/components/digital-business-card/digital-card-company-logo-field";
 import { DigitalCardSlugField } from "@/components/digital-business-card/digital-card-slug-field";
-import { DigitalCardSubscriptionCountdown } from "@/components/digital-business-card/digital-card-subscription-countdown";
+import { DigitalCardLiveTermRibbon } from "@/components/digital-business-card/digital-card-subscription-countdown";
 import { DigitalCardPrivacyDesk } from "@/components/digital-business-card/digital-card-privacy-desk";
 import { DigitalCardDesignVault } from "@/components/digital-business-card/digital-card-design-vault";
 import { DigitalCardConnectionInbox } from "@/components/digital-business-card/digital-card-connection-inbox";
@@ -86,7 +86,8 @@ import {
 } from "@/lib/digital-business-card/portrait-frame";
 import { digitalCardPresentPath } from "@/lib/digital-business-card/share";
 import { TAP_TO_CONNECT_CTA, tapStudioPath } from "@/lib/celeyou-proximity/product";
-import { getClientAppUrl } from "@/lib/app-url";
+import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
+import { getCeleYouShareOrigin } from "@/lib/app-url";
 import { celeCardHouseAvatarId, celeCardHouseAvatarMeta } from "@/lib/digital-business-card/portraits";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 
@@ -114,6 +115,7 @@ type CardRow = {
   publicToken?: string;
   nfcPublicToken?: string | null;
   lifecycleState?: string;
+  canRenew?: boolean;
 };
 
 const studioInputClass =
@@ -129,7 +131,7 @@ function StudioPanel({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+    <section className="min-w-0 space-y-4 rounded-2xl border border-slate-200 bg-white p-3 sm:p-5">
       <div>
         <h2 className="text-sm font-semibold tracking-tight text-slate-900">{title}</h2>
         {hint ? <p className="mt-1 text-xs leading-relaxed text-slate-500">{hint}</p> : null}
@@ -184,7 +186,7 @@ export function DigitalCardStudioClient() {
   const activeIdRef = useRef<string | null>(null);
   activeIdRef.current = activeId;
 
-  const origin = getClientAppUrl();
+  const origin = getCeleYouShareOrigin();
 
   const applyThemeQuery = useCallback(() => {
     const themeId = themeFromQuery.current;
@@ -501,6 +503,11 @@ export function DigitalCardStudioClient() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Checkout failed");
+      if (json.data?.inherited) {
+        setMessage("This card now uses your current subscription. It has its own QR, link, and NFC.");
+        await load();
+        return;
+      }
       if (json.data?.free) {
         setMessage("Plan activated. Your CeleYou is live.");
         await load();
@@ -529,13 +536,18 @@ export function DigitalCardStudioClient() {
   async function uploadPayQr(file: File): Promise<string | null> {
     const data = new FormData();
     data.append("file", file);
-    const res = await fetch("/api/digital-business-cards/pay-qr", { method: "POST", body: data });
-    const json = await res.json();
-    if (!res.ok) {
-      setError(json.error || "Could not upload the QR.");
+    try {
+      const res = await fetch("/api/digital-business-cards/pay-qr", { method: "POST", body: data });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "Could not upload the QR.");
+        return null;
+      }
+      return (json.data?.url as string) || null;
+    } catch {
+      setError("Could not upload the QR.");
       return null;
     }
-    return (json.data?.url as string) || null;
   }
 
   function startNew() {
@@ -550,16 +562,17 @@ export function DigitalCardStudioClient() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
           <CeleYouBrandMark variant="chip" tone="light" className="mb-3" markClassName="h-8 w-8" />
-          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             One link for every contact
           </h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
             Use the same design tools as every house template. Layout, atmosphere, ornament, and a
             background that blends into the plate. Then share via QR, NFC card, Nearby Share, or link.
-            Recipients open your profile in any browser with no app and no account.
+            Recipients open your profile in any browser with no app and no account. Extra cards you
+            create stay on the same subscription, each with its own QR, link, and NFC.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="action-row">
           <Button asChild>
             <Link href={tapStudioPath(activeId || undefined)}>
               <Smartphone className="mr-2 h-4 w-4" />
@@ -580,7 +593,8 @@ export function DigitalCardStudioClient() {
       <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
         Studio design is open for {DIGITAL_CARD_TRIAL_DAYS} days.{" "}
         <strong>Publish to share. Recipients do not need CeleYou or an account.</strong> A paid plan
-        keeps the page live after the studio window and unlocks NFC hardware.
+        keeps every card on this account live until the term ends. You can add more cards on that
+        same subscription. Renewal opens only after expiry.
         {active ? (
           <span className="ml-2 inline-flex flex-wrap items-center gap-2">
             Status:{" "}
@@ -588,15 +602,26 @@ export function DigitalCardStudioClient() {
               {active.subscriptionStatus}
               {active.isLive ? " · live" : active.guestShareable ? " · shareable" : " · offline"}
             </Badge>
-            <DigitalCardSubscriptionCountdown
-              endsAt={active.subscriptionExpiresAt}
-              status={active.subscriptionStatus}
-              showPaidThrough
-              tone="onLight"
-            />
           </span>
         ) : null}
       </div>
+
+      {active?.subscriptionExpiresAt ? (
+        <DigitalCardLiveTermRibbon
+          themeName={previewTheme.name}
+          planLabel={(active.subscriptionStatus || "").toUpperCase() === "TRIAL" ? "Trial" : "Live"}
+          endsAt={active.subscriptionExpiresAt}
+          status={active.subscriptionStatus}
+          viewCount={active.viewCount}
+          nfcEnabled={active.nfcEnabled}
+          qrLive={Boolean(active.publicToken)}
+          accent={previewTheme.accent}
+          border={previewTheme.border}
+          fg="#1c1917"
+          muted="rgba(28,25,23,0.68)"
+          faint="rgba(28,25,23,0.05)"
+        />
+      ) : null}
 
       {active?.lifecycleState === "COURTESY" || (active && !active.isLive && active.subscriptionStatus === "EXPIRED") ? (
         <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-800">
@@ -1057,6 +1082,11 @@ export function DigitalCardStudioClient() {
                 <Nfc className="h-4 w-4 text-slate-500" />
                 NFC ready
               </label>
+              {activeId ? (
+                <Link href={nfcStudioPath(activeId)} className="text-xs font-semibold text-[#0B8A83]">
+                  Manage NFC cards
+                </Link>
+              ) : null}
               <label className="inline-flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -1113,7 +1143,7 @@ export function DigitalCardStudioClient() {
               {form.slug ? (
                 <DigitalCardShareDesk
                   profileUrl={publicUrl || digitalCardIdentityUrl(form.slug)}
-                  presentUrl={digitalCardPresentPath(form.slug)}
+                  presentUrl={digitalCardPresentPath(form.slug, { immersive: true })}
                   shareUrl={shareUrl || publicUrl}
                   nfcUrl={nfcShareUrl || publicUrl}
                   cardId={activeId || undefined}
@@ -1170,12 +1200,18 @@ export function DigitalCardStudioClient() {
                   size="sm"
                   className="bg-[#0B8A83] hover:bg-[#097a74]"
                   onClick={subscribe}
-                  disabled={!activeId || paying}
+                  disabled={!activeId || paying || active?.canRenew === false}
                 >
                   {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-                  Activate {plans.find((p) => p.id === planId)?.label} · ₵
-                  {plans.find((p) => p.id === planId)?.priceGhs}
+                  {active?.canRenew === false
+                    ? "Paid through this term"
+                    : `Activate ${plans.find((p) => p.id === planId)?.label} · ₵${plans.find((p) => p.id === planId)?.priceGhs}`}
                 </Button>
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  {active?.canRenew === false
+                    ? "Renewal opens after this term ends. New cards you save stay on this same subscription, each with a unique QR, link, and NFC."
+                    : "Live activation uses Paystack. A paid term runs until expiry and cannot be cancelled. Extra cards share that term."}
+                </p>
                 <Button asChild variant="ghost" size="sm">
                   <Link href="/dashboard/business-card/billing">Manage billing</Link>
                 </Button>

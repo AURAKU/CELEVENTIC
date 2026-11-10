@@ -23,8 +23,9 @@ export type CeleCardShareFields = {
   updatedAt?: Date | string | null;
 };
 
-export function digitalCardPresentPath(slug: string): string {
-  return `${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(slug)}/present`;
+export function digitalCardPresentPath(slug: string, options?: { immersive?: boolean }): string {
+  const path = `${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(slug)}/present`;
+  return options?.immersive ? `${path}?immersive=1` : path;
 }
 
 export function digitalCardPresentUrl(slug: string, origin?: string): string {

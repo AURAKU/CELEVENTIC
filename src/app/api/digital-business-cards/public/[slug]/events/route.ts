@@ -11,6 +11,7 @@ import {
   recordSmartCardInteraction,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { isCeleCardGuestShareable } from "@/lib/digital-business-card/lifecycle";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
   if (!limited.success) return new NextResponse(null, { status: 204 });
 
   const card = await getDigitalCardBySlug(slug);
-  if (!card || card.deletedAt || !isCeleCardGuestShareable(card)) {
+  if (!card || card.deletedAt || !isCeleCardGuestShareable(card, new Date(), await getCeleCardLifecyclePolicy())) {
     return new NextResponse(null, { status: 204 });
   }
 

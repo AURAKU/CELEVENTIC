@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
+  countdownFlowDelayMs,
   countdownTickMs,
   subscriptionCountdown,
   type SubscriptionCountdown,
@@ -20,7 +21,11 @@ function useSubscriptionSnap(
     let timer = 0;
     function arm() {
       const current = subscriptionCountdown(endsAt, status, Date.now());
-      const delay = current ? countdownTickMs(current.remainingMs) : 60_000;
+      const delay = current
+        ? current.remainingMs > 0
+          ? countdownFlowDelayMs()
+          : countdownTickMs(current.remainingMs)
+        : 60_000;
       timer = window.setTimeout(() => {
         setNow(Date.now());
         arm();
@@ -31,6 +36,83 @@ function useSubscriptionSnap(
   }, [endsAt, status]);
 
   return snap;
+}
+
+function padUnit(value: number, width: number) {
+  return String(Math.max(0, value)).padStart(width, "0");
+}
+
+function TermFlowDigits({ value }: { value: string }) {
+  return (
+    <span className="celecard-term-counter-value" aria-hidden>
+      {value.split("").map((digit, index) => (
+        <span key={`${index}-${digit}`} className="celecard-term-digit">
+          {digit}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function DigitalCardTermFlowCounter({
+  snap,
+  accent,
+  border,
+  fg,
+  muted,
+}: {
+  snap: SubscriptionCountdown;
+  accent: string;
+  border: string;
+  fg: string;
+  muted: string;
+}) {
+  const verb =
+    snap.kind === "ended" ? "Ended" : snap.kind === "expiry" ? "Studio ends in" : "Renews in";
+  const units = [
+    { key: "days", value: padUnit(snap.parts.days, snap.parts.days >= 100 ? 3 : 2), label: snap.parts.days === 1 ? "Day" : "Days" },
+    { key: "hours", value: padUnit(snap.parts.hours, 2), label: "Hrs" },
+    { key: "minutes", value: padUnit(snap.parts.minutes, 2), label: "Min" },
+    { key: "seconds", value: padUnit(snap.parts.seconds, 2), label: "Sec" },
+  ];
+
+  return (
+    <div className="celecard-term-counter" data-urgent={snap.urgent ? "true" : "false"}>
+      <p className="sr-only" aria-live="polite">
+        {snap.label}
+      </p>
+      <p className="celecard-term-counter-verb" style={{ color: muted }}>
+        {verb}
+      </p>
+      <div className="celecard-term-counter-track">
+        {units.map((unit, index) => (
+          <div key={unit.key} className="celecard-term-counter-unit">
+            {index > 0 ? (
+              <span className="celecard-term-counter-sep" style={{ color: accent }} aria-hidden />
+            ) : null}
+            <div
+              className="celecard-term-counter-cell"
+              style={{
+                borderColor: border,
+                color: fg,
+                background: `color-mix(in srgb, ${accent} 10%, transparent)`,
+              }}
+            >
+              <TermFlowDigits value={unit.value} />
+              <span className="celecard-term-counter-label" style={{ color: muted }}>
+                {unit.label}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+      {snap.kind === "ended" ? (
+        <p className="celecard-term-counter-ago" style={{ color: muted }}>
+          ago
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 export function DigitalCardSubscriptionCountdown({
@@ -155,11 +237,17 @@ export function DigitalCardLiveTermRibbon({
         <span className="celecard-term-flow-glint" />
       </div>
       {snap ? (
-        <div className="relative z-[1] mt-2.5 flex flex-col gap-0.5 text-[12px] leading-relaxed" style={{ color: muted }}>
+        <div className="relative z-[1] mt-2.5 flex flex-col gap-2 text-[12px] leading-relaxed" style={{ color: muted }}>
           <p>
             {throughWord} {snap.paidThrough}
           </p>
-          <p aria-live="polite">{snap.label}</p>
+          <DigitalCardTermFlowCounter
+            snap={snap}
+            accent={accent}
+            border={border}
+            fg={fg}
+            muted={muted}
+          />
           {channels.length ? <p>{channels.join(" · ")}</p> : null}
         </div>
       ) : null}

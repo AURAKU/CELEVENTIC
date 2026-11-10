@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it } from "node:test";
+import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
 import {
   celeYouShareIdentity,
   isReservedCeleYouShareToken,
   shareIdentityArtifactsAreUnique,
 } from "@/lib/digital-business-card/share-identity";
 import { demoCardPreviewQrSrc } from "@/lib/digital-business-card/demo-card";
+import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
 
 describe("CeleYou unique share identity", () => {
   it("keeps profile URL, Smart QR, and NFC tap on three different tokens", () => {
@@ -40,6 +44,34 @@ describe("CeleYou unique share identity", () => {
       }),
       false
     );
+  });
+
+  it("rewrites localhost onto the live domain and keeps each card's QR unique", () => {
+    const kojo = celeYouShareIdentity({
+      slug: "kojo-mensah",
+      publicToken: "cmqr_kojo_live",
+      nfcToken: "cmnfc_kojo_live",
+      origin: "http://localhost:3000",
+    });
+    const ama = celeYouShareIdentity({
+      slug: "ama-serwaa",
+      publicToken: "cmqr_ama_live",
+      nfcToken: "cmnfc_ama_live",
+    });
+    assert.equal(kojo.qrUrl, `${DEFAULT_PRODUCTION_URL}/c/cmqr_kojo_live`);
+    assert.equal(kojo.nfcUrl, `${DEFAULT_PRODUCTION_URL}/n/cmnfc_kojo_live`);
+    assert.equal(kojo.profileUrl, `${DEFAULT_PRODUCTION_URL}/u/kojo-mensah`);
+    assert.notEqual(kojo.qrUrl, ama.qrUrl);
+    assert.notEqual(kojo.nfcUrl, ama.nfcUrl);
+    assert.doesNotMatch(kojo.qrUrl, /localhost|127\.0\.0\.1/);
+    const src = digitalCardQrImageSrc(kojo.qrUrl);
+    assert.match(src, /data=https%3A%2F%2Fwww.celeventic.com%2Fc%2Fcmqr_kojo_live/);
+    const studio = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-studio-client.tsx"),
+      "utf8"
+    );
+    assert.match(studio, /getCeleYouShareOrigin/);
+    assert.match(studio, /smartCardShortUrl\(active\.publicToken, origin\)/);
   });
 
   it("gives each template look its own dummy QR bitmap", () => {

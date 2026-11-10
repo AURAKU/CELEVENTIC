@@ -242,7 +242,11 @@ export function CeleCardCardDetail({ cardId }: { cardId: string }) {
 
       {tab === "Subscription" ? (
         <section className="space-y-3 rounded-2xl border bg-white p-5">
-          <p className="text-sm text-slate-600">Payment history is not rewritten here. Entitlements are recorded on a separate ledger.</p>
+          <p className="text-sm text-slate-600">
+            Payment history is not rewritten here. Entitlements are recorded on a separate ledger.
+            Complimentary, promotional, and manual activation skip Paystack for the selected customer.
+            Paid terms still run until expiry and cannot be cancelled.
+          </p>
           <select className="rounded-md border px-3 py-2" value={planId} onChange={(e) => setPlanId(e.target.value)}>
             <option value="monthly">Monthly</option>
             <option value="quarter">3 months</option>

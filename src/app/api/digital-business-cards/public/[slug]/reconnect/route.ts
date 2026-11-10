@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
   }
 
   const card = await getDigitalCardBySlug(slug);
-  if (!card || card.deletedAt || !isCeleCardCourtesyReachable(card)) {
+  if (!card || card.deletedAt || !isCeleCardCourtesyReachable(card, policy)) {
     return NextResponse.json({ error: "Card unavailable" }, { status: 404 });
   }
 

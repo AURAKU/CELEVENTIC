@@ -8,13 +8,24 @@ import {
 import { SMARTCARD_PLANS } from "@/lib/digital-business-card/plans";
 import { recordCeleCardLifecycleEvent } from "./digital-business-card.service";
 
+let policyCache: { value: CeleCardLifecyclePolicy; at: number } | null = null;
+const POLICY_CACHE_MS = 15_000;
+
+export function invalidateCeleCardLifecyclePolicyCache() {
+  policyCache = null;
+}
+
 export async function getCeleCardLifecyclePolicy(): Promise<CeleCardLifecyclePolicy> {
+  if (policyCache && Date.now() - policyCache.at < POLICY_CACHE_MS) return policyCache.value;
   const row = await prisma.celeCardLifecyclePolicy.findUnique({ where: { id: "default" } }).catch(() => null);
-  if (!row) return DEFAULT_CELECARD_LIFECYCLE_POLICY;
+  if (!row) {
+    policyCache = { value: DEFAULT_CELECARD_LIFECYCLE_POLICY, at: Date.now() };
+    return policyCache.value;
+  }
   const offsets = Array.isArray(row.reminderOffsetsDays)
     ? (row.reminderOffsetsDays as number[])
     : DEFAULT_CELECARD_LIFECYCLE_POLICY.reminderOffsetsDays;
-  return celeCardPolicyFromRecord({
+  const value = celeCardPolicyFromRecord({
     timezone: row.timezone,
     gracePeriodDays: row.gracePeriodDays,
     expiringSoonDays: row.expiringSoonDays,
@@ -24,6 +35,8 @@ export async function getCeleCardLifecyclePolicy(): Promise<CeleCardLifecyclePol
     reconnectPerIpPerHour: row.reconnectPerIpPerHour,
     designVaultMax: row.designVaultMax,
   });
+  policyCache = { value, at: Date.now() };
+  return value;
 }
 
 export async function upsertCeleCardLifecyclePolicy(
@@ -32,6 +45,7 @@ export async function upsertCeleCardLifecyclePolicy(
 ) {
   const current = await getCeleCardLifecyclePolicy();
   const next = celeCardPolicyFromRecord({ ...current, ...input });
+  invalidateCeleCardLifecyclePolicyCache();
   return prisma.celeCardLifecyclePolicy.upsert({
     where: { id: "default" },
     create: {
@@ -61,6 +75,7 @@ export async function upsertCeleCardLifecyclePolicy(
 }
 
 export async function getCeleCardAdminOverview() {
+  const policy = await getCeleCardLifecyclePolicy();
   const cards = await prisma.digitalBusinessCard.findMany({
     select: {
       id: true,
@@ -83,7 +98,7 @@ export async function getCeleCardAdminOverview() {
     DELETED: 0,
   };
   for (const card of cards) {
-    const state = resolveCeleCardLifecycle(card);
+    const state = resolveCeleCardLifecycle(card, new Date(), policy);
     counts[state] = (counts[state] ?? 0) + 1;
   }
   const reconnects = await prisma.smartCardConnection.count({

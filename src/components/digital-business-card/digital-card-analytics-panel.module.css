@@ -1,0 +1,133 @@
+.panel {
+  --flow-teal: #0b8a83;
+  --flow-ink: #0f172a;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--flow-teal) 18%, #e2e8f0);
+  background:
+    radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--flow-teal) 10%, transparent), transparent 52%),
+    linear-gradient(180deg, #f8fffe 0%, #ffffff 42%);
+  padding: 0.85rem;
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.22), transparent 42%),
+    linear-gradient(145deg, #0b8a83 0%, #0a5f5c 58%, #0f172a 120%);
+  color: #f8fffe;
+  padding: 0.8rem 0.9rem 0.75rem;
+}
+
+.rings {
+  position: absolute;
+  inset: auto auto -40% -18%;
+  width: 9.5rem;
+  height: 9.5rem;
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  animation: flow-ring 3.6s ease-out infinite;
+}
+
+.ring:nth-child(2) {
+  animation-delay: 1.2s;
+}
+
+.ring:nth-child(3) {
+  animation-delay: 2.4s;
+}
+
+.stage {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.stageLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.rail {
+  height: 2px;
+  flex: 1;
+  border-radius: 99px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--flow-teal) 55%, #e2e8f0), #e2e8f0 82%);
+  overflow: hidden;
+}
+
+.railFill {
+  display: block;
+  height: 100%;
+  width: 42%;
+  border-radius: inherit;
+  background: var(--flow-teal);
+  animation: flow-rail 2.8s ease-in-out infinite;
+}
+
+.tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: rgba(248, 250, 252, 0.92);
+  padding: 0.45rem 0.65rem 0.42rem;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+}
+
+.tileBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  transform-origin: left;
+  background: color-mix(in srgb, var(--flow-teal) 70%, #94a3b8);
+}
+
+.static .ring,
+.static .railFill {
+  animation: none;
+}
+
+@keyframes flow-ring {
+  0% {
+    transform: scale(0.42);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
+@keyframes flow-rail {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring,
+  .railFill {
+    animation: none;
+  }
+}

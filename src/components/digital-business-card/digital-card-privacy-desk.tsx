@@ -62,16 +62,24 @@ export function DigitalCardPrivacyDesk({
 
   useEffect(() => {
     if (!cardId) return;
+    const ac = new AbortController();
     void (async () => {
-      const [codeRes, reqRes] = await Promise.all([
-        fetch(`/api/digital-business-cards/${cardId}/access-codes`),
-        fetch(`/api/digital-business-cards/${cardId}/access-requests`),
-      ]);
-      const codeJson = await codeRes.json().catch(() => null);
-      const reqJson = await reqRes.json().catch(() => null);
-      if (codeRes.ok) setCodes(codeJson.data ?? []);
-      if (reqRes.ok) setRequests(reqJson.data ?? []);
+      try {
+        const [codeRes, reqRes] = await Promise.all([
+          fetch(`/api/digital-business-cards/${cardId}/access-codes`, { signal: ac.signal }),
+          fetch(`/api/digital-business-cards/${cardId}/access-requests`, { signal: ac.signal }),
+        ]);
+        const codeJson = await codeRes.json().catch(() => null);
+        const reqJson = await reqRes.json().catch(() => null);
+        if (ac.signal.aborted) return;
+        if (codeRes.ok) setCodes(codeJson?.data ?? []);
+        if (reqRes.ok) setRequests(reqJson?.data ?? []);
+      } catch (err) {
+        if (ac.signal.aborted || (err instanceof DOMException && err.name === "AbortError")) return;
+        setError("Could not load privacy settings.");
+      }
     })();
+    return () => ac.abort();
   }, [cardId]);
 
   function setMode(id: string, mode: ReachVisibility) {
@@ -94,48 +102,60 @@ export function DigitalCardPrivacyDesk({
       setError("Use four digits or four letters.");
       return;
     }
-    const res = await fetch(`/api/digital-business-cards/${cardId}/access-codes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label, code, itemKeys }),
-    });
-    const json = await res.json().catch(() => null);
-    if (!res.ok) {
-      setError(json?.error || "Could not save the code");
-      return;
+    try {
+      const res = await fetch(`/api/digital-business-cards/${cardId}/access-codes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label, code, itemKeys }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(json?.error || "Could not save the code");
+        return;
+      }
+      setCode("");
+      setMessage("Code saved. Guests who enter it only unveil the hidden details you assigned.");
+      const list = await fetch(`/api/digital-business-cards/${cardId}/access-codes`);
+      const listed = await list.json().catch(() => null);
+      if (list.ok) setCodes(listed?.data ?? []);
+    } catch {
+      setError("Could not save the code.");
     }
-    setCode("");
-    setMessage("Code saved. Guests who enter it only unveil the hidden details you assigned.");
-    const list = await fetch(`/api/digital-business-cards/${cardId}/access-codes`);
-    const listed = await list.json();
-    if (list.ok) setCodes(listed.data ?? []);
   }
 
   async function revoke(codeId: string) {
     if (!cardId) return;
-    await fetch(`/api/digital-business-cards/${cardId}/access-codes/${codeId}/revoke`, { method: "POST" });
-    setCodes((rows) => rows.map((row) => (row.id === codeId ? { ...row, revokedAt: new Date().toISOString() } : row)));
+    try {
+      await fetch(`/api/digital-business-cards/${cardId}/access-codes/${codeId}/revoke`, { method: "POST" });
+      setCodes((rows) => rows.map((row) => (row.id === codeId ? { ...row, revokedAt: new Date().toISOString() } : row)));
+    } catch {
+      setError("Could not revoke that code.");
+    }
   }
 
   async function decide(requestId: string, decision: "approve" | "decline" | "revoke") {
     if (!cardId) return;
-    const res = await fetch(`/api/digital-business-cards/${cardId}/access-requests/${requestId}/decide`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ decision }),
-    });
-    const json = await res.json().catch(() => null);
-    if (!res.ok) {
-      setError(json?.error || "Could not update the request");
-      return;
+    try {
+      const res = await fetch(`/api/digital-business-cards/${cardId}/access-requests/${requestId}/decide`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(json?.error || "Could not update the request");
+        return;
+      }
+      if (json?.data?.grantPath) {
+        await navigator.clipboard.writeText(`${window.location.origin}${json.data.grantPath}`);
+        setMessage("Approved. The access link is copied. Send it to the visitor.");
+      }
+      const list = await fetch(`/api/digital-business-cards/${cardId}/access-requests`);
+      const listed = await list.json().catch(() => null);
+      if (list.ok) setRequests(listed?.data ?? []);
+    } catch {
+      setError("Could not update the request.");
     }
-    if (json?.data?.grantPath) {
-      await navigator.clipboard.writeText(`${window.location.origin}${json.data.grantPath}`);
-      setMessage("Approved. The access link is copied. Send it to the visitor.");
-    }
-    const list = await fetch(`/api/digital-business-cards/${cardId}/access-requests`);
-    const listed = await list.json();
-    if (list.ok) setRequests(listed.data ?? []);
   }
 
   return (

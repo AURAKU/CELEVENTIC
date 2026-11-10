@@ -1,9 +1,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import {
   applyCeleCardDesign,
   celeCardPaperStyle,
   compactCeleCardDesign,
+  CELECARD_HOUSE_PAPERS,
   paperToneFromBrightness,
 } from "@/lib/digital-business-card/design";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
@@ -37,6 +40,12 @@ describe("CeleYou design desk", () => {
     const design = compactCeleCardDesign({ paperUrl: "/smartcard/textures/ukiyo.jpg", paperTone: "dark" });
     assert.equal(design?.paperUrl, "/smartcard/textures/ukiyo.jpg");
     assert.equal(design?.paperTone, "dark");
+    assert.equal(CELECARD_HOUSE_PAPERS.length, 24);
+    for (const paper of CELECARD_HOUSE_PAPERS) {
+      assert.match(paper.url, /^\/smartcard\/textures\/[a-z0-9._-]+\.jpg$/);
+      assert.equal(existsSync(join(process.cwd(), "public", paper.url.replace(/^\//, ""))), true, paper.id);
+      assert.equal(compactCeleCardDesign({ paperUrl: paper.url })?.paperUrl, paper.url);
+    }
   });
 
   it("applies owner layout on top of a house template", () => {

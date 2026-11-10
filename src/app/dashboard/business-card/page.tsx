@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function DigitalBusinessCardDashboardPage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-6xl py-5 sm:py-8">
       <DigitalCardStudioClient />
     </div>
   );

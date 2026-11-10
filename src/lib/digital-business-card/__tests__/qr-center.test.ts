@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 import { celeCardHouseAvatarValue } from "@/lib/digital-business-card/portraits";
 import {
@@ -18,6 +20,22 @@ describe("CeleYou QR center", () => {
     assert.equal(resolveCeleCardQrCenter(null).kind, "mark");
     assert.equal(resolveCeleCardQrCenter(celeCardHouseAvatarValue("foil")).kind, "mark");
     assert.equal(resolveCeleCardQrCenter(celeCardHouseAvatarValue("celecard")).kind, "mark");
+  });
+
+  it("paints the official CeleYou logo in the live QR well", () => {
+    const badge = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/celecard-qr-badge.tsx"),
+      "utf8"
+    );
+    const overlay = readFileSync(
+      join(process.cwd(), "src/lib/digital-business-card/qr-center-overlay.tsx"),
+      "utf8"
+    );
+    assert.match(badge, /CeleYouThemedMark/);
+    assert.match(badge, /p-\[10%\]/);
+    assert.doesNotMatch(badge, /DigitalCardHouseAvatar/);
+    assert.match(overlay, /CELEYOU_MARK_SRC/);
+    assert.match(overlay, /objectFit: official \? "contain"/);
   });
 
   it("fills the tile and keeps a large center portrait", () => {

@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { SMARTCARD_PAYMENT_KIND, getSmartCardPlan } from "@/lib/digital-business-card/plans";
-import { resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
+import { ownerMayRenewSubscription } from "@/lib/digital-business-card/billing-rules";
+import { pickAccountPaidEntitlement, resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
 import { isDigitalCardLive } from "@/services/digital-business-card/digital-business-card.service";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { parsePaginationInput } from "@/lib/pagination";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -55,16 +57,21 @@ export async function getSmartCardBilling(
     })
     .filter(Boolean);
 
+  const policy = await getCeleCardLifecyclePolicy();
+  const now = new Date();
+  const retained = cards.filter((card) => !card.deletedAt);
+  const canRenew = ownerMayRenewSubscription(pickAccountPaidEntitlement(retained, now, policy), now);
   return {
-    cards: cards.filter((card) => !card.deletedAt).map((card) => ({
+    cards: retained.map((card) => ({
       id: card.id,
       slug: card.slug,
       displayName: card.displayName,
       themeId: card.themeId,
       subscriptionStatus: card.subscriptionStatus,
       subscriptionExpiresAt: card.subscriptionExpiresAt?.toISOString() ?? null,
-      isLive: isDigitalCardLive(card),
-      lifecycleState: resolveCeleCardLifecycle(card),
+      isLive: isDigitalCardLive(card, now, policy),
+      lifecycleState: resolveCeleCardLifecycle(card, now, policy),
+      canRenew,
       hoursLeft: card.subscriptionExpiresAt
         ? (card.subscriptionExpiresAt.getTime() - Date.now()) / 3_600_000
         : null,

@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function SmartCardBillingPage() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-5xl py-5 sm:py-8">
       <SmartCardBillingClient />
     </div>
   );

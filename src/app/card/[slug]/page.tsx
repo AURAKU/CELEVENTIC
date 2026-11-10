@@ -17,8 +17,9 @@ import {
   withheldCeleCardMetadata,
 } from "@/lib/digital-business-card/share";
 import { celeCardPublicPresentation } from "@/lib/digital-business-card/lifecycle";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { recordCeleCardLifecycleEvent } from "@/services/digital-business-card/digital-business-card.service";
-import { getServerAppUrl } from "@/lib/app-url";
+import { celeYouGuestOrigin, getServerAppUrl } from "@/lib/app-url";
 import {
   getDigitalCardBySlug,
   incrementDigitalCardView,
@@ -30,7 +31,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const origin = await getServerAppUrl();
+  const origin = celeYouGuestOrigin(await getServerAppUrl());
   const demo = getDemoCardBySlug(slug);
   if (demo) {
     if (!(await viewerMayOpenDummyLive())) return withheldCeleCardMetadata();
@@ -45,7 +46,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
   const card = await getDigitalCardBySlug(slug);
   if (!card || card.deletedAt) return withheldCeleCardMetadata();
-  const presentation = celeCardPublicPresentation(card);
+  const policy = await getCeleCardLifecyclePolicy();
+  const presentation = celeCardPublicPresentation(card, new Date(), policy);
   if (presentation === "live") {
     return buildCeleCardShareMetadata({
       card,
@@ -72,13 +74,14 @@ export default async function DigitalBusinessCardPage({
   const demo = getDemoCardBySlug(slug);
   if (demo) {
     if (!(await viewerMayOpenDummyLive())) redirect(CELECARD_DUMMY_LIVE_FALLBACK);
-    return <DigitalCardPublicView card={demo} origin={await getServerAppUrl()} />;
+    return <DigitalCardPublicView card={demo} origin={celeYouGuestOrigin(await getServerAppUrl())} />;
   }
 
   const card = await getDigitalCardBySlug(slug);
   if (!card || card.deletedAt) notFound();
 
-  const presentation = celeCardPublicPresentation(card);
+  const policy = await getCeleCardLifecyclePolicy();
+  const presentation = celeCardPublicPresentation(card, new Date(), policy);
   if (presentation === "live") {
     void incrementDigitalCardView(card.id).catch(() => undefined);
   } else if (presentation === "courtesy") {
@@ -90,8 +93,8 @@ export default async function DigitalBusinessCardPage({
 
   return (
     <DigitalCardPublicView
-      card={toGuestPublicPayload(card, grant?.itemKeys ?? [])}
-      origin={await getServerAppUrl()}
+      card={toGuestPublicPayload(card, grant?.itemKeys ?? [], policy)}
+      origin={celeYouGuestOrigin(await getServerAppUrl())}
     />
   );
 }

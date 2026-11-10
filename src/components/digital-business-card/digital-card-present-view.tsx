@@ -11,10 +11,12 @@ import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-busin
 import { applyCeleCardDesign } from "@/lib/digital-business-card/design";
 import { digitalCardPublicUrl, digitalCardQrImageSrc, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import { smartCardShortUrl } from "@/lib/digital-business-card/product";
+import { sanitizePublicUrl } from "@/lib/app-url";
 import {
   DigitalCardContinuityView,
   DigitalCardUnavailableView,
 } from "@/components/digital-business-card/digital-card-continuity-view";
+import { useEmbeddedCardShare } from "@/components/digital-business-card/use-embedded-card-share";
 
 type FullscreenNode = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -58,10 +60,14 @@ export function DigitalCardPresentView({
   card,
   origin,
   wantImmersive = false,
+  hostCardId = null,
+  proximityDiscoverable = true,
 }: {
   card: DigitalCardPublicPayload;
   origin: string;
   wantImmersive?: boolean;
+  hostCardId?: string | null;
+  proximityDiscoverable?: boolean;
 }) {
   const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), card.socials.design);
   const motionMood = celecardMotionMood(theme);
@@ -69,7 +75,17 @@ export function DigitalCardPresentView({
   const rootRef = useRef<HTMLElement>(null);
   const shortUrl = smartCardShortUrl(card.publicToken, origin);
   const profileUrl = digitalCardPublicUrl(card.slug);
+  const shareUrl = sanitizePublicUrl(
+    profileUrl.startsWith("http") ? profileUrl : `${origin.replace(/\/$/, "")}${profileUrl}`,
+    origin
+  );
   const qrSrc = digitalCardQrImageSrc(shortUrl, 1024);
+  const { sharingLive, sent, sendFromCard } = useEmbeddedCardShare({
+    card,
+    profileUrl: shareUrl,
+    hostCardId,
+    discoverable: proximityDiscoverable,
+  });
   const [landscape, setLandscape] = useState(false);
   const [nativeFs, setNativeFs] = useState(false);
   const [fsHint, setFsHint] = useState(wantImmersive);
@@ -215,29 +231,48 @@ export function DigitalCardPresentView({
       <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center">
         <div className="flex w-full max-w-full flex-col items-center justify-center">
           <div className="w-full max-w-full" style={{ width: stageWidth }}>
-            <DigitalCardFace
-              themeId={card.themeId}
-              displayName={card.displayName}
-              title={card.title}
-              company={card.company}
-              avatarUrl={card.avatarUrl}
-              qrSrc={qrSrc}
-              qrHref={profileUrl}
-              className="max-w-none shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
-              portraitFrame={card.socials.portraitFrame}
-              companyLogoUrl={card.socials.companyLogoUrl}
-              design={card.socials.design}
-            />
+            <div
+              onClick={(event) => {
+                if ((event.target as HTMLElement | null)?.closest("a")) return;
+                void sendFromCard();
+              }}
+              aria-label="Tap this card to send the profile from this phone"
+              className={`block cursor-pointer rounded-[1.35rem] ${
+                sharingLive
+                  ? "ring-2 ring-[#7FF0E4]/80 ring-offset-2 ring-offset-transparent"
+                  : "ring-2 ring-white/25 ring-offset-2 ring-offset-transparent"
+              }`}
+            >
+              <DigitalCardFace
+                themeId={card.themeId}
+                displayName={card.displayName}
+                title={card.title}
+                company={card.company}
+                avatarUrl={card.avatarUrl}
+                qrSrc={qrSrc}
+                qrBadgeHref={profileUrl}
+                className="max-w-none shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                portraitFrame={card.socials.portraitFrame}
+                companyLogoUrl={card.socials.companyLogoUrl}
+                design={card.socials.design}
+              />
+            </div>
           </div>
         </div>
-        {landscape ? null : (
-          <p
-            className="mt-4 max-w-sm text-center text-[11px] font-medium leading-relaxed motion-reduce:transition-none"
-            style={{ color: theme.muted }}
-          >
-            Turn the device for a larger card. The QR on the plate opens this profile.
-          </p>
-        )}
+        <p
+          className={`max-w-sm text-center text-[11px] font-medium leading-relaxed motion-reduce:transition-none ${
+            landscape ? "mt-2" : "mt-4"
+          }`}
+          style={{ color: theme.muted }}
+        >
+          {sent === "shared"
+            ? "Sent from this phone. Their phone opens the same profile."
+            : sent === "copied"
+              ? "Link copied. Hand it to them or keep the plate facing their camera."
+              : sent === "unavailable"
+                ? "Keep the plate facing their camera. They scan and the profile opens."
+                : "Bring their phone to this card. They scan the plate and the profile opens. They do not need CeleYou. Tap the card to send it from this phone."}
+        </p>
         {landscape ? null : (
           <ScanPlate
             qrSrc={qrSrc}

@@ -13,6 +13,7 @@ import {
   withheldGuestPayload,
 } from "@/lib/digital-business-card/access";
 import { courtesyPayloadExposesPrivateReach } from "@/lib/digital-business-card/courtesy";
+import { DEFAULT_CELECARD_LIFECYCLE_POLICY } from "@/lib/digital-business-card/lifecycle";
 
 const future = new Date(Date.now() + 86400000);
 const past = new Date(Date.now() - 86400000);
@@ -107,6 +108,9 @@ describe("CeleYou public access policy", () => {
     const graced = source({ subscriptionExpiresAt: past, lastActivatedAt: new Date(Date.now() - 40 * 86400000) });
     assert.equal(isCeleCardPubliclyReachable(graced), true);
     assert.equal(toGuestPublicPayload(graced).isLive, true);
+    const zeroGrace = { ...DEFAULT_CELECARD_LIFECYCLE_POLICY, gracePeriodDays: 0 };
+    assert.equal(isCeleCardPubliclyReachable(graced, zeroGrace), false);
+    assert.equal(toGuestPublicPayload(graced, [], zeroGrace).presentationMode, "courtesy");
   });
 
   it("serves a sanitized courtesy preview after grace, never private reach", () => {

@@ -1,3 +1,4 @@
+import { celeYouGuestOrigin } from "@/lib/app-url";
 import type { DigitalCardPublicPayload } from "./types";
 import { digitalCardPublicUrl } from "./types";
 import { buildVCard, digitalCardVcardPath, vcardFileName } from "./vcard";
@@ -26,7 +27,7 @@ export async function saveDigitalCardContact(
     return "opened";
   }
 
-  const cardUrl = digitalCardPublicUrl(card.slug, options?.origin);
+  const cardUrl = digitalCardPublicUrl(card.slug, celeYouGuestOrigin(options?.origin));
   const vcf = buildVCard(card, { cardUrl });
   const blob = new Blob([vcf], { type: "text/vcard;charset=utf-8" });
   const file = new File([blob], filename, { type: "text/vcard;charset=utf-8" });

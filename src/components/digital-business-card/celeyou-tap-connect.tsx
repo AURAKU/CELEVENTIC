@@ -76,15 +76,19 @@ export function CeleYouTapConnect({
   const card = cards.find((row) => row.id === cardId) ?? cards[0] ?? null;
 
   const loadCards = useCallback(async () => {
-    const res = await fetch("/api/digital-business-cards");
-    const json = await res.json();
-    if (!res.ok) {
-      setError(json.error || "Could not load your CeleYou.");
-      return;
+    try {
+      const res = await fetch("/api/digital-business-cards");
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "Could not load your CeleYou.");
+        return;
+      }
+      const list = (json.data || []) as CardOption[];
+      setCards(list);
+      setCardId((current) => current || initialCardId || list[0]?.id || "");
+    } catch {
+      setError("Could not load your CeleYou.");
     }
-    const list = (json.data || []) as CardOption[];
-    setCards(list);
-    setCardId((current) => current || initialCardId || list[0]?.id || "");
   }, [initialCardId]);
 
   useEffect(() => {
@@ -98,10 +102,14 @@ export function CeleYouTapConnect({
   }, [card, initialCode, session]);
 
   const refreshSession = useCallback(async (id: string) => {
-    const res = await fetch(`/api/digital-business-cards/proximity/sessions/${id}`);
-    const json = await res.json();
-    if (!res.ok) return;
-    setSession(json.data as SessionView);
+    try {
+      const res = await fetch(`/api/digital-business-cards/proximity/sessions/${id}`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) return;
+      setSession(json.data as SessionView);
+    } catch {
+      return;
+    }
   }, []);
 
   useEffect(() => {
@@ -126,56 +134,71 @@ export function CeleYouTapConnect({
     if (!card) return;
     setBusy(true);
     setError(null);
-    const res = await fetch("/api/digital-business-cards/proximity/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardId: card.id, transport: "qr" }),
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setError(json.error || "Could not open Tap Mode.");
-      return;
+    try {
+      const res = await fetch("/api/digital-business-cards/proximity/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId: card.id, transport: "qr" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "Could not open Tap Mode.");
+        return;
+      }
+      setTimedOut(false);
+      setSession(json.data as SessionView);
+    } catch {
+      setError("Could not open Tap Mode.");
+    } finally {
+      setBusy(false);
     }
-    setTimedOut(false);
-    setSession(json.data as SessionView);
   }
 
   async function joinWithCode(code: string) {
     if (!card) return;
     setBusy(true);
     setError(null);
-    const res = await fetch("/api/digital-business-cards/proximity/sessions/join", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardId: card.id, joinCode: code }),
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setError(json.error || "Could not join.");
-      return;
+    try {
+      const res = await fetch("/api/digital-business-cards/proximity/sessions/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId: card.id, joinCode: code }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "Could not join.");
+        return;
+      }
+      setScanning(false);
+      setSession(json.data as SessionView);
+    } catch {
+      setError("Could not join.");
+    } finally {
+      setBusy(false);
     }
-    setScanning(false);
-    setSession(json.data as SessionView);
   }
 
   async function act(action: "request" | "approve" | "decline" | "cancel") {
     if (!session) return;
     setBusy(true);
     setError(null);
-    const res = await fetch(`/api/digital-business-cards/proximity/sessions/${session.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setError(json.error || "That action did not complete.");
-      return;
+    try {
+      const res = await fetch(`/api/digital-business-cards/proximity/sessions/${session.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "That action did not complete.");
+        return;
+      }
+      setSession(json.data as SessionView);
+    } catch {
+      setError("That action did not complete.");
+    } finally {
+      setBusy(false);
     }
-    setSession(json.data as SessionView);
   }
 
   const origin = getClientAppUrl();

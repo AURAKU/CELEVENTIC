@@ -18,7 +18,11 @@ import { buildVCard } from "@/lib/digital-business-card/vcard";
 import { isDigitalCardLive } from "@/services/digital-business-card/digital-business-card.service";
 import { SMARTCARD_PLANS, getSmartCardPlan } from "@/lib/digital-business-card/plans";
 import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
-import { celeYouThemeWash } from "@/components/digital-business-card/celeyou-brand-mark";
+import {
+  CELEYOU_BRAND_TEAL,
+  CELEYOU_MARK_SRC,
+  celeYouBrandStroke,
+} from "@/components/digital-business-card/celeyou-brand-mark";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { SMARTCARD_THEME_DEMOS } from "@/lib/digital-business-card/demos";
@@ -93,19 +97,64 @@ describe("digital business card themes", () => {
     assert.equal(lockup.length > 80_000, true);
   });
 
-  it("washes the official CeleYou mark with each template's ink and metal", () => {
-    const frost = celeYouThemeWash(resolveDigitalCardTheme("elegant-frost"));
-    assert.equal(frost.accent, "#0b8a83");
-    assert.equal(frost.metal, "#d4a63a");
-    const midnight = celeYouThemeWash(resolveDigitalCardTheme("midnight-executive"));
-    assert.equal(midnight.accent, "#38bdf8");
-    assert.equal(midnight.metal, "#334155");
+  it("keeps frame strokes from crossing the CeleYou lockup on every plate", () => {
+    const source = readFileSync(join(process.cwd(), "src/components/digital-business-card/digital-card-face.tsx"), "utf8");
+    assert.match(source, /function copySafeMask/);
+    assert.match(source, /ellipse \$\{lockup\} at 50% 100%/);
+    assert.doesNotMatch(
+      source,
+      /inset 0 -3px 8px rgba\(0,0,0,0\.14\), inset 0 0 0 1px \$\{theme\.border\}/
+    );
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    assert.match(css, /\.celecard-wordmark \{[\s\S]*padding: 1\.1cqw 6cqw 3\.6cqw;/);
+  });
+
+  it("shows the official CeleYou logo in full, never cropped to fill a square", () => {
+    const house = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-house-avatar.tsx"),
+      "utf8"
+    );
+    const mark = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/celeyou-brand-mark.tsx"),
+      "utf8"
+    );
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    assert.match(house, /CeleYouThemedMark/);
+    assert.match(house, /background: house \? theme\.cardBackground/);
+    assert.doesNotMatch(house, /CELEYOU_BRAND_WELL/);
+    assert.doesNotMatch(mark, /background: CELEYOU_BRAND_WELL/);
+    assert.doesNotMatch(house, /scale-\[1\.28\]/);
+    assert.doesNotMatch(house, /fillSquare/);
+    assert.doesNotMatch(house, /fit="cover"/);
+    assert.doesNotMatch(house, /#000000/);
+    assert.match(mark, /object-contain object-center/);
+    assert.doesNotMatch(mark, /object-cover/);
+    const originPlate = css.match(/\.celecard-origin-plate \{[^}]+\}/);
+    assert.ok(originPlate);
+    assert.match(originPlate[0], /overflow:\s*visible/);
+    assert.match(originPlate[0], /background:\s*transparent/);
+    assert.doesNotMatch(originPlate[0], /border-radius:\s*999px/);
+    const originImg = css.match(/\.celecard-origin-plate img \{[^}]+\}/);
+    assert.ok(originImg);
+    assert.match(originImg[0], /object-fit: contain/);
+    assert.doesNotMatch(originImg[0], /transform:\s*scale/);
+    assert.match(mark, /overflow-visible/);
+    assert.doesNotMatch(mark, /overflow-hidden/);
+  });
+
+  it("keeps the official CeleYou mark's own teal on every template", () => {
+    assert.equal(CELEYOU_MARK_SRC, "/digital-cards/brands/celeyou-mark.png");
+    assert.equal(celeYouBrandStroke(true), CELEYOU_BRAND_TEAL);
+    assert.equal(celeYouBrandStroke(false), CELEYOU_BRAND_TEAL);
     for (const theme of DIGITAL_CARD_THEMES) {
-      const wash = celeYouThemeWash(theme);
-      assert.match(wash.accent, /^#/);
-      assert.match(wash.metal, /^#/);
-      assert.equal(wash.accent.length >= 7, true);
-      assert.equal(wash.metal.length >= 7, true);
+      const stroke = celeYouBrandStroke(
+        (parseInt(theme.text.slice(1, 3), 16) * 299 +
+          parseInt(theme.text.slice(3, 5), 16) * 587 +
+          parseInt(theme.text.slice(5, 7), 16) * 114) /
+          1000 <
+          148
+      );
+      assert.equal(stroke, CELEYOU_BRAND_TEAL, theme.id);
     }
   });
 
@@ -115,11 +164,33 @@ describe("digital business card themes", () => {
     assert.equal(isCeleCardPhotoUrl("/digital-cards/demo/ama-serwaa.jpg"), true);
     assert.equal(celeCardHouseAvatarId(null), "celecard");
     assert.equal(celeCardHouseAvatarId(celeCardHouseAvatarValue("earth")), "earth");
-    assert.equal(celeCardHouseAvatarsByKind("mark").length, 8);
-    assert.equal(celeCardHouseAvatarsByKind("avatar").length, 39);
-    assert.equal(CELECARD_HOUSE_AVATAR_IDS.length, 47);
-    assert.equal(celeCardHouseAvatarsByGroup("people").length, 23);
-    assert.equal(celeCardHouseAvatarsByGroup("creature").length, 6);
+    assert.equal(celeCardHouseAvatarsByKind("mark").length, 24);
+    assert.equal(celeCardHouseAvatarsByKind("avatar").length, 68);
+    assert.equal(CELECARD_HOUSE_AVATAR_IDS.length, 92);
+    assert.equal(celeCardHouseAvatarsByGroup("people").length, 38);
+    const faces = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-avatar-faces.tsx"),
+      "utf8"
+    );
+    for (const person of celeCardHouseAvatarsByGroup("people")) {
+      assert.match(faces, new RegExp(`case "${person.id}":`));
+    }
+    const house = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-house-avatar.tsx"),
+      "utf8"
+    );
+    for (const mark of celeCardHouseAvatarsByGroup("mark")) {
+      if (mark.id === "celecard") continue;
+      assert.match(house, new RegExp(`case "${mark.id}":`));
+    }
+    assert.equal(celeCardHouseAvatarsByGroup("creature").length, 20);
+    const studioSource = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-avatar-studio.tsx"),
+      "utf8"
+    );
+    for (const creature of celeCardHouseAvatarsByGroup("creature")) {
+      assert.match(studioSource, new RegExp(`case "${creature.id}":`));
+    }
     assert.equal(celeCardHouseAvatarsByGroup("studio").length, 10);
     assert.equal(celeCardHouseAvatarMeta("braids").kind, "avatar");
     assert.equal(celeCardHouseAvatarMeta("fox").group, "creature");
@@ -200,6 +271,9 @@ describe("subscription countdown", () => {
   it("counts down to renewal, studio end, and an ended window", async () => {
     const { DEMO_CARD_PAID_THROUGH } = await import("@/lib/digital-business-card/demo-card");
     const {
+      countdownFlowDelayMs,
+      countdownParts,
+      countdownTickMs,
       formatPaidThrough,
       subscriptionCountdown,
     } = await import("@/lib/digital-business-card/subscription-countdown");
@@ -208,14 +282,25 @@ describe("subscription countdown", () => {
     assert.equal(renew?.kind, "renewal");
     assert.equal(renew?.paidThrough, formatPaidThrough(DEMO_CARD_PAID_THROUGH));
     assert.match(renew?.label ?? "", /^Renews in 365 days/);
+    assert.equal(renew?.parts.days, 365);
+    assert.equal(renew?.parts.hours, 7);
+    assert.equal(renew?.parts.minutes, 39);
+    assert.equal(renew?.parts.seconds, 59);
     assert.equal((renew?.remainingRatio ?? 0) > 0.9, true);
+    assert.equal(countdownTickMs(renew?.remainingMs ?? 1), 1000);
+    assert.equal(countdownFlowDelayMs(1_700_000_500), 500);
+    const split = countdownParts(2 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000 + 4 * 60 * 1000 + 5 * 1000);
+    assert.deepEqual(split, { days: 2, hours: 3, minutes: 4, seconds: 5 });
     const trialEnd = new Date(now.getTime() + 5 * 60 * 60 * 1000 + 12 * 60 * 1000);
     const trial = subscriptionCountdown(trialEnd, "TRIAL", now);
     assert.equal(trial?.kind, "expiry");
     assert.match(trial?.label ?? "", /^Studio ends in 5 hours 12 minutes/);
+    assert.equal(trial?.parts.hours, 5);
+    assert.equal(trial?.parts.minutes, 12);
     const ended = subscriptionCountdown(new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), "ACTIVE", now);
     assert.equal(ended?.kind, "ended");
     assert.match(ended?.label ?? "", /^Ended 2 days/);
+    assert.equal(countdownTickMs(ended?.remainingMs ?? -1), 60_000);
   });
 });
 
@@ -659,6 +744,32 @@ describe("celecard smart QR", () => {
     assert.match(src, /\/api\/qr\/image\?/);
     assert.equal(demoCardPreviewExplorePath(), "/digital-cards#smartcard-themes");
   });
+
+  it("makes every theme tile clickable, same destination as Use this Card", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/public-digital-cards-showcase.tsx"),
+      "utf8"
+    );
+    assert.match(source, /href=\{themeHref\(theme\.id\)\}/);
+    assert.match(source, /aria-label=\{`Use \$\{theme\.name\} card`\}/);
+    assert.match(source, /Use this Card/);
+    assert.match(source, /absolute inset-0 z-10/);
+    assert.match(source, /pointer-events-none relative px-4 pb-5 pt-5/);
+  });
+
+  it("keeps name, title, company, and QR on portrait-led and iconic plates", () => {
+    const source = readFileSync(join(process.cwd(), "src/components/digital-business-card/digital-card-face.tsx"), "utf8");
+    assert.match(source, /\{portrait \? \(/);
+    assert.match(source, /\{identity\}\s*\{qr\}/);
+    assert.doesNotMatch(source, /portrait \? null : composition/);
+    for (const theme of DIGITAL_CARD_THEMES) {
+      assert.equal(
+        ["classic", "portrait-led", "type-first", "media-first", "grid", "iconic"].includes(theme.composition),
+        true,
+        theme.id
+      );
+    }
+  });
 });
 
 describe("celecard dummy portrait", () => {
@@ -931,5 +1042,90 @@ describe("celecard multiple reach", () => {
     assert.match(live?.href ?? "", /weixin:\/\/dl\/chat\?foliohouse/);
     assert.match(live?.appHref ?? "", /weixin:\/\/dl\/chat\?foliohouse/);
     assert.equal(live?.qrUrl, "/digital-cards/pay/demo-wechat.png");
+  });
+});
+
+describe("CeleYou device frame", () => {
+  it("keeps reach pickers inside the phone frame", () => {
+    const catalog = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-reach-catalog.tsx"),
+      "utf8"
+    );
+    const shell = readFileSync(
+      join(process.cwd(), "src/components/layout/dashboard-shell.tsx"),
+      "utf8"
+    );
+    const studioPage = readFileSync(
+      join(process.cwd(), "src/app/dashboard/business-card/page.tsx"),
+      "utf8"
+    );
+    assert.match(catalog, /placeholder="Search a network"/);
+    assert.match(catalog, /Tap a network to add/);
+    assert.match(catalog, /fit-scroller/);
+    assert.match(catalog, /min-w-0 overflow-hidden/);
+    assert.match(shell, /p-3 sm:p-6 lg:p-8/);
+    assert.doesNotMatch(studioPage, /px-4 py-8/);
+  });
+});
+
+describe("CeleYou activity flow", () => {
+  it("keeps privacy copy and stages the published counts", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-analytics-panel.tsx"),
+      "utf8"
+    );
+    const css = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-analytics-panel.module.css"),
+      "utf8"
+    );
+    assert.match(source, /These counts are not the recipient’s identity/);
+    assert.match(source, /label: "Arrive"/);
+    assert.match(source, /label: "Save contact"/);
+    assert.match(source, /label: "Reach"/);
+    assert.match(source, /label: "Pass on"/);
+    assert.match(source, /useReducedMotion/);
+    assert.match(css, /@keyframes flow-ring/);
+    assert.match(css, /prefers-reduced-motion: reduce/);
+  });
+});
+
+describe("CeleYou paid activation lock", () => {
+  it("lets only platform admins skip Paystack, and locks paid terms until expiry", () => {
+    const subscribe = readFileSync(
+      join(process.cwd(), "src/app/api/digital-business-cards/[id]/subscribe/route.ts"),
+      "utf8"
+    );
+    const service = readFileSync(
+      join(process.cwd(), "src/services/digital-business-card/digital-business-card.service.ts"),
+      "utf8"
+    );
+    const deleteRoute = readFileSync(
+      join(process.cwd(), "src/app/api/digital-business-cards/[id]/route.ts"),
+      "utf8"
+    );
+    const permissions = readFileSync(join(process.cwd(), "src/lib/rbac/permissions.ts"), "utf8");
+    const billing = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/smartcard-billing-client.tsx"),
+      "utf8"
+    );
+    const renewal = readFileSync(
+      join(process.cwd(), "src/services/digital-business-card/smartcard-renewal.service.ts"),
+      "utf8"
+    );
+    assert.match(subscribe, /isAdminCommerceBypass\(session\.user\.role\)/);
+    assert.match(subscribe, /paymentService\.initializePayment/);
+    assert.match(subscribe, /SMARTCARD_PAYMENT_KIND/);
+    assert.match(subscribe, /CELEYOU_RENEWAL_WAIT_MESSAGE/);
+    assert.match(subscribe, /pickAccountPaidEntitlement/);
+    assert.match(service, /inheritedEntitlementFrom|findAccountPaidEntitlement/);
+    assert.match(service, /propagateAccountEntitlement/);
+    assert.match(billing, /Renewal opens after this term ends|same subscription/);
+    assert.match(service, /if \(celeYouPaidTermIsRunning/);
+    assert.match(service, /throw new CeleYouPaidTermLockedError/);
+    assert.match(deleteRoute, /CeleYouPaidTermLockedError/);
+    assert.match(permissions, /ADMIN: \[[\s\S]*Permission\.CELECARD_GRANT_COMPLIMENTARY/);
+    assert.match(billing, /cannot be cancelled/);
+    assert.match(renewal, /subscriptionStatus: "EXPIRED"/);
+    assert.doesNotMatch(billing, /Cancel subscription|End subscription|Terminate/);
   });
 });

@@ -26,7 +26,7 @@ export function ContextualHelpTrigger() {
 
   return (
     <>
-      <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40">
+      <div className="fixed bottom-[max(4.35rem,calc(env(safe-area-inset-bottom)+3.5rem))] right-[max(0.85rem,env(safe-area-inset-right))] z-40 transition-[bottom] duration-300 ease-out motion-reduce:transition-none [:root[data-mobile-dock=tucked]_&]:bottom-[max(1rem,env(safe-area-inset-bottom))] lg:bottom-[max(1rem,env(safe-area-inset-bottom))]">
         <Button
           type="button"
           size="sm"

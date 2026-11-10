@@ -13,13 +13,14 @@ import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
 import { isCeleCardPhotoUrl } from "@/lib/digital-business-card/portraits";
 import { digitalCardIdentityUrl, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import { buildVCard, vcardFileName, type VCardPhoto } from "@/lib/digital-business-card/vcard";
-import { getServerAppUrl } from "@/lib/app-url";
+import { celeYouGuestOrigin, getServerAppUrl } from "@/lib/app-url";
 import { readUploadFile } from "@/lib/uploads/file-storage";
 import {
   getDigitalCardBySlug,
   recordSmartCardInteraction,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { isCeleCardGuestShareable } from "@/lib/digital-business-card/lifecycle";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
 import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
 
@@ -38,7 +39,7 @@ export async function GET(
     });
   }
 
-  const origin = await getServerAppUrl();
+  const origin = celeYouGuestOrigin(await getServerAppUrl());
   const photo = await readVCardPhoto(card.avatarUrl);
   const vcf = buildVCard(card, {
     cardUrl: digitalCardIdentityUrl(card.slug, origin),
@@ -50,7 +51,8 @@ export async function GET(
   const disposition = appleMobile ? "inline" : "attachment";
   if (!isDemoCardSlug(slug)) {
     const live = await getDigitalCardBySlug(slug);
-    if (live && !live.deletedAt && isCeleCardGuestShareable(live)) {
+    const policy = await getCeleCardLifecyclePolicy();
+    if (live && !live.deletedAt && isCeleCardGuestShareable(live, new Date(), policy)) {
       void recordSmartCardInteraction(live.id, "vcard_save", { surface: "vcf" }).catch(() => undefined);
     }
   }
@@ -75,9 +77,10 @@ async function resolveGuestCard(slug: string): Promise<DigitalCardPublicPayload 
 
   const card = await getDigitalCardBySlug(slug);
   if (!card || card.deletedAt) return null;
+  const policy = await getCeleCardLifecyclePolicy();
   const jar = await cookies();
   const grant = await resolveCeleCardGrant(card.id, jar.get(celeCardGrantCookieName(card.id))?.value);
-  const payload = toGuestPublicPayload(card, grant?.itemKeys ?? []);
+  const payload = toGuestPublicPayload(card, grant?.itemKeys ?? [], policy);
   if (!payload.isLive) return null;
   return payload;
 }

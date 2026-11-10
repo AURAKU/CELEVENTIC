@@ -7,6 +7,7 @@ import {
   type CeleCardLifecyclePolicy,
 } from "@/lib/digital-business-card/lifecycle";
 import { courtesyGivenName } from "@/lib/digital-business-card/courtesy";
+import { parseCeleCardLeadStatus } from "@/lib/digital-business-card/leads";
 import { recordCeleCardLifecycleEvent } from "./digital-business-card.service";
 
 const DUPLICATE_WINDOW_MS = 6 * 3_600_000;
@@ -174,7 +175,12 @@ async function notifyOwnerReconnect(input: {
   return { batched: false };
 }
 
-export async function listCardConnections(userId: string, cardId: string, page = 1) {
+export async function listCardConnections(
+  userId: string,
+  cardId: string,
+  page = 1,
+  status?: string | null
+) {
   const card = await prisma.digitalBusinessCard.findFirst({
     where: { id: cardId, userId },
     select: { id: true },
@@ -182,14 +188,43 @@ export async function listCardConnections(userId: string, cardId: string, page =
   if (!card) return null;
   const take = 20;
   const skip = Math.max(0, (page - 1) * take);
+  const statusFilter = parseCeleCardLeadStatus(status);
+  const where = {
+    cardId,
+    ...(statusFilter ? { status: statusFilter } : {}),
+  };
   const [items, total] = await Promise.all([
     prisma.smartCardConnection.findMany({
-      where: { cardId },
+      where,
       orderBy: { createdAt: "desc" },
       skip,
       take,
     }),
-    prisma.smartCardConnection.count({ where: { cardId } }),
+    prisma.smartCardConnection.count({ where }),
   ]);
-  return { items, total, page, pageSize: take };
+  return { items, total, page, pageSize: take, status: statusFilter };
+}
+
+export async function updateCardConnectionStatus(
+  userId: string,
+  cardId: string,
+  connectionId: string,
+  status: string
+) {
+  const card = await prisma.digitalBusinessCard.findFirst({
+    where: { id: cardId, userId },
+    select: { id: true },
+  });
+  if (!card) return null;
+  const nextStatus = parseCeleCardLeadStatus(status);
+  if (!nextStatus) return { error: "Unknown request status" as const };
+  const existing = await prisma.smartCardConnection.findFirst({
+    where: { id: connectionId, cardId },
+  });
+  if (!existing) return { error: "Request not found" as const };
+  const updated = await prisma.smartCardConnection.update({
+    where: { id: existing.id },
+    data: { status: nextStatus },
+  });
+  return { connection: updated };
 }

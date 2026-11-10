@@ -976,6 +976,15 @@
     @apply min-w-0 max-w-full;
   }
 
+  .fit-scroller {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .data-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 min-w-0;
   }
@@ -1036,17 +1045,16 @@
   }
 }
 
-/* Coarse pointers: keep product chrome tappable without touching invitation art */
+/* Coarse pointers: keep product chrome tappable without stretching icon chips. */
 @media (pointer: coarse) {
   body {
     background-attachment: scroll;
   }
 
-  .page-scaffold button,
-  .page-scaffold a.inline-flex,
-  header a.inline-flex,
-  .action-row > * {
+  .action-row > *,
+  .touch-target {
     min-height: 2.75rem;
+    min-width: 2.75rem;
   }
 }
 
@@ -1749,7 +1757,7 @@
   min-height: 0;
   align-items: center;
   gap: 3.4cqw;
-  padding: 10.4cqw 4.4cqw 8.8cqw;
+  padding: 10.4cqw 4.4cqw 10.6cqw;
 }
 
 .celecard-face[data-compact="true"] .celecard-face-row {
@@ -1758,8 +1766,15 @@
 }
 
 .celecard-face-row.is-portrait {
-  gap: 3.2cqw;
+  justify-content: space-between;
+  gap: 2.4cqw;
   padding: 10.4cqw 3.6cqw 7.2cqw;
+}
+
+.celecard-face[data-composition="portrait-led"] .celecard-face-qr,
+.celecard-face[data-composition="iconic"] .celecard-face-qr {
+  width: 22.4cqw;
+  height: 22.4cqw;
 }
 
 .celecard-face-body {
@@ -1868,31 +1883,38 @@
   width: 9.2cqw;
   height: 9.2cqw;
   flex-shrink: 0;
+  isolation: isolate;
+  mix-blend-mode: normal;
+  opacity: 1;
+  filter: none;
 }
 
 .celecard-origin-plate {
   margin-top: 0.35cqw;
-  height: 13.8cqw;
-  width: 16.2cqw;
+  height: 16.8cqw;
+  width: 16.8cqw;
+  border-radius: 0;
   isolation: isolate;
-  background: radial-gradient(circle at 50% 38%, #ffffff 0%, #f4fbf9 58%, #e7f5f2 100%);
+  mix-blend-mode: normal;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
 }
 
-.celecard-origin-mark {
-  height: 12.8cqw;
-  width: 12.8cqw;
-  filter: drop-shadow(0 0.22cqw 0.32cqw rgba(4, 40, 38, 0.22));
+.celecard-origin-plate img {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  object-position: center;
+  mix-blend-mode: normal;
+  opacity: 1;
+  filter: none;
 }
 
 .celecard-face[data-compact="true"] .celecard-origin-plate {
   margin-top: 0.28cqw;
-  height: 11.8cqw;
-  width: 13.8cqw;
-}
-
-.celecard-face[data-compact="true"] .celecard-origin-mark {
-  height: 10.8cqw;
-  width: 10.8cqw;
+  height: 14.6cqw;
+  width: 14.6cqw;
 }
 
 .celecard-wordmark {
@@ -1900,7 +1922,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding-bottom: 1.15cqw;
+  padding: 1.1cqw 6cqw 3.6cqw;
   gap: 0.32cqw;
 }
 
@@ -1933,7 +1955,7 @@
 }
 
 .celecard-face[data-compact="true"] .celecard-wordmark {
-  padding-bottom: 0.85cqw;
+  padding: 0.85cqw 5cqw 3.2cqw;
   gap: 0.22cqw;
 }
 
@@ -2033,11 +2055,19 @@
   background: linear-gradient(
     115deg,
     transparent 38%,
-    color-mix(in srgb, var(--celecard-accent) 28%, rgba(255, 255, 255, 0.16)) 50%,
+    rgba(255, 255, 255, 0.2) 50%,
     transparent 62%
   );
   background-size: 240% 100%;
   animation: celecard-foil-sheen 7.2s ease-in-out infinite;
+  -webkit-mask-image:
+    radial-gradient(ellipse 15cqw 8.4cqw at 50% 0%, transparent 0 72%, #000 73%),
+    radial-gradient(ellipse 84cqw 10cqw at 50% 100%, transparent 0 72%, #000 73%);
+  mask-image:
+    radial-gradient(ellipse 15cqw 8.4cqw at 50% 0%, transparent 0 72%, #000 73%),
+    radial-gradient(ellipse 84cqw 10cqw at 50% 100%, transparent 0 72%, #000 73%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 .celecard-stage[data-celecard-mood="cinema"] .celecard-foil::after {
@@ -2288,6 +2318,10 @@
   border-radius: 999px;
 }
 
+.celecard-term-flow-fill {
+  transition: width 0.9s linear;
+}
+
 .celecard-term-flow-glint {
   position: absolute;
   top: 0;
@@ -2296,6 +2330,92 @@
   width: 34%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.78), transparent);
   animation: celecard-term-glint 2.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.celecard-term-counter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  margin-top: 0.15rem;
+}
+
+.celecard-term-counter-verb {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.celecard-term-counter-track {
+  display: flex;
+  align-items: stretch;
+  gap: 0.2rem;
+}
+
+.celecard-term-counter-unit {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+}
+
+.celecard-term-counter-sep {
+  flex: 0 0 auto;
+  width: 4px;
+  height: 4px;
+  margin: 0 0.18rem 0.7rem;
+  border-radius: 99px;
+  background: currentColor;
+  box-shadow: 0 8px 0 currentColor;
+  animation: celecard-term-sep-pulse 1s ease-in-out infinite;
+}
+
+.celecard-term-counter-cell {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid;
+  border-radius: 0.85rem;
+  padding: 0.62rem 0.2rem 0.48rem;
+}
+
+.celecard-term-counter-value {
+  display: flex;
+  height: 1.15em;
+  overflow: hidden;
+  font-size: clamp(1.2rem, 2.6vw, 1.55rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+.celecard-term-digit {
+  display: inline-block;
+  animation: celecard-term-digit-flow 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.celecard-term-counter-label {
+  margin-top: 0.16rem;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.celecard-term-counter-ago {
+  font-size: 11px;
+}
+
+.celecard-term-counter[data-urgent="true"] .celecard-term-counter-sep {
+  animation-duration: 0.55s;
+}
+
+.celecard-term-counter[data-urgent="true"] .celecard-term-counter-unit:last-child .celecard-term-counter-cell {
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.45);
 }
 
 .celecard-live-pip {
@@ -2320,6 +2440,23 @@
   100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
 }
 
+@keyframes celecard-term-digit-flow {
+  from {
+    opacity: 0.22;
+    transform: translate3d(0, 58%, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes celecard-term-sep-pulse {
+  0%,
+  100% { opacity: 0.22; }
+  50% { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .celecard-enter,
   .celecard-atmo,
@@ -2331,7 +2468,9 @@
   .celecard-sheet,
   .celecard-term-ribbon::after,
   .celecard-term-flow-glint,
-  .celecard-live-pip {
+  .celecard-live-pip,
+  .celecard-term-digit,
+  .celecard-term-counter-sep {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

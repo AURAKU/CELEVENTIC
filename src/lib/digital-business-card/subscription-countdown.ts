@@ -5,6 +5,13 @@ const DAY = 24 * HOUR;
 
 export type SubscriptionCountdownKind = "renewal" | "expiry" | "ended";
 
+export type CountdownParts = {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+};
+
 export type SubscriptionCountdown = {
   kind: SubscriptionCountdownKind;
   remainingMs: number;
@@ -12,6 +19,7 @@ export type SubscriptionCountdown = {
   paidThrough: string;
   clock: string;
   label: string;
+  parts: CountdownParts;
   urgent: boolean;
   /** 1 is a full paid window still ahead. 0 is ended. */
   remainingRatio: number;
@@ -41,10 +49,23 @@ export function formatPaidThrough(date: Date): string {
 }
 
 export function countdownTickMs(remainingMs: number): number {
-  const abs = Math.abs(remainingMs);
-  if (abs < HOUR) return SECOND;
-  if (abs < DAY) return 15 * SECOND;
-  return MINUTE;
+  if (remainingMs <= 0) return MINUTE;
+  return SECOND;
+}
+
+/** Align the next paint to the wall-clock second so digits flip on the beat. */
+export function countdownFlowDelayMs(nowMs: number = Date.now()): number {
+  return Math.max(32, SECOND - (nowMs % SECOND));
+}
+
+export function countdownParts(ms: number): CountdownParts {
+  const abs = Math.max(0, Math.abs(ms));
+  return {
+    days: Math.floor(abs / DAY),
+    hours: Math.floor((abs % DAY) / HOUR),
+    minutes: Math.floor((abs % HOUR) / MINUTE),
+    seconds: Math.floor((abs % MINUTE) / SECOND),
+  };
 }
 
 export function formatCountdownClock(ms: number): string {
@@ -95,6 +116,7 @@ export function subscriptionCountdown(
     paidThrough: formatPaidThrough(endsAt),
     clock,
     label,
+    parts: countdownParts(remainingMs),
     urgent: remainingMs > 0 && remainingMs <= 3 * DAY,
     remainingRatio,
   };

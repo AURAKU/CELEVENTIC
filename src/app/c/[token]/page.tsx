@@ -4,6 +4,7 @@ import {
   recordSmartCardInteraction,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { isCeleCardGuestShareable } from "@/lib/digital-business-card/lifecycle";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { DIGITAL_CARD_PUBLIC_PATH } from "@/lib/digital-business-card/types";
 import { demoCardGuestPath, isDemoQrToken } from "@/lib/digital-business-card/demo-card";
 import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
@@ -27,7 +28,7 @@ export default async function SmartCardShortRedirectPage({
   }
   const card = await getDigitalCardByPublicToken(token);
   if (!card || card.deletedAt) notFound();
-  if (isCeleCardGuestShareable(card)) {
+  if (isCeleCardGuestShareable(card, new Date(), await getCeleCardLifecyclePolicy())) {
     void recordSmartCardInteraction(card.id, "qr_open").catch(() => undefined);
   }
   redirect(`${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(card.slug)}`);

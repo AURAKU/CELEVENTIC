@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
-import { getAppUrlFromEnv } from "@/lib/app-url";
+import { getCeleYouShareOrigin } from "@/lib/app-url";
 import { parsePaginationInput, paginatedResult, ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 import { Permission } from "@/lib/rbac/types";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { communicationService } from "@/services/communications/communication.service";
 import {
   createDigitalCard,
+  propagateAccountEntitlement,
   recordCeleCardLifecycleEvent,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
@@ -15,6 +16,7 @@ import {
   celeCardPublicPresentation,
   renewalBaseDate,
   isCeleCardFullyPublic,
+  type CeleCardLifecyclePolicy,
 } from "@/lib/digital-business-card/lifecycle";
 import { DIGITAL_CARD_THEMES, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { getSmartCardPlan, smartCardExpiryFromNow, SMARTCARD_PLANS } from "@/lib/digital-business-card/plans";
@@ -215,7 +217,8 @@ function serializeDirectoryCard(
     updatedAt: Date;
     user?: { id: string; name: string; email: string | null; phone: string | null; status: string; role: string } | null;
   },
-  origin: string
+  origin: string,
+  policy: CeleCardLifecyclePolicy
 ) {
   const unclaimed = !card.claimedAt && Boolean(card.unclaimedEmail);
   const holder = isUnclaimedHolderEmail(card.user?.email);
@@ -225,8 +228,8 @@ function serializeDirectoryCard(
     : holder
       ? card.unclaimedEmail || card.email
       : card.user?.email || card.email;
-  const lifecycle = resolveCeleCardLifecycle(card);
-  const presentation = celeCardPublicPresentation(card);
+  const lifecycle = resolveCeleCardLifecycle(card, new Date(), policy);
+  const presentation = celeCardPublicPresentation(card, new Date(), policy);
   return {
     id: card.id,
     cardholderName,
@@ -323,9 +326,10 @@ export async function listCeleCardAdminDirectory(input: {
     }),
     prisma.digitalBusinessCard.count({ where }),
   ]);
-  const origin = getAppUrlFromEnv();
+  const origin = getCeleYouShareOrigin();
+  const policy = await getCeleCardLifecyclePolicy();
   return paginatedResult(
-    rows.map((row) => serializeDirectoryCard(row, origin)),
+    rows.map((row) => serializeDirectoryCard(row, origin, policy)),
     total,
     page,
     limit
@@ -395,9 +399,9 @@ export async function getCeleCardCommandOverview() {
   let live = 0;
   let courtesy = 0;
   for (const card of cards) {
-    const state = resolveCeleCardLifecycle(card);
+    const state = resolveCeleCardLifecycle(card, now, policy);
     totals[state] = (totals[state] ?? 0) + 1;
-    const presentation = celeCardPublicPresentation(card);
+    const presentation = celeCardPublicPresentation(card, now, policy);
     if (presentation === "live") live += 1;
     if (presentation === "courtesy") courtesy += 1;
   }
@@ -497,7 +501,7 @@ async function issueClaimInvite(input: {
       createdByUserId: input.actor.id,
     },
   });
-  const origin = getAppUrlFromEnv();
+  const origin = getCeleYouShareOrigin();
   return {
     token,
     claimUrl: `${origin.replace(/\/$/, "")}/card/claim/${encodeURIComponent(token)}`,
@@ -589,9 +593,10 @@ export async function createAssistedCeleCard(actor: AdminActor, input: AssistedC
     next: { slug: patched.slug, activation: input.activation.kind },
   });
 
-  const origin = getAppUrlFromEnv();
+  const origin = getCeleYouShareOrigin();
+  const policy = await getCeleCardLifecyclePolicy();
   return {
-    card: serializeDirectoryCard({ ...patched, user: null }, origin),
+    card: serializeDirectoryCard({ ...patched, user: null }, origin, policy),
     claimUrl: claim?.claimUrl ?? null,
     claimExpiresAt: claim?.expiresAt ?? null,
   };
@@ -616,7 +621,7 @@ export async function grantManualEntitlement(
     (input.kind === "complimentary" || input.kind === "promotional" || input.kind === "manual") &&
     !canGrantComplimentary(actorCtx(actor))
   ) {
-    throw new CeleCardAdminError("Complimentary entitlements require super-admin approval.", 403, "complimentary_forbidden");
+    throw new CeleCardAdminError("Complimentary entitlements require a platform admin.", 403, "complimentary_forbidden");
   }
   const reason = requireReason(input.reason);
   const plan = getSmartCardPlan(input.planId);
@@ -627,7 +632,7 @@ export async function grantManualEntitlement(
     throw new CeleCardAdminError("Suspended cards cannot receive a public entitlement until unsuspended.", 409);
   }
   const months = input.months && input.months > 0 ? input.months : plan.months;
-  const startsAt = renewalBaseDate(card);
+  const startsAt = renewalBaseDate(card, new Date(), await getCeleCardLifecyclePolicy());
   const expiresAt = smartCardExpiryFromNow(months, startsAt);
   const previous = {
     subscriptionStatus: card.subscriptionStatus,
@@ -646,6 +651,7 @@ export async function grantManualEntitlement(
       adminDeactivatedAt: null,
     },
   });
+  await propagateAccountEntitlement(updated);
   await prisma.smartCardEntitlementGrant.create({
     data: {
       cardId: card.id,
@@ -737,7 +743,11 @@ export async function applyCeleCardAdminAction(
       throw new CeleCardAdminError("Unsuspend this card before restoring public availability.", 409);
     }
     if (card.deletedAt) throw new CeleCardAdminError("Deleted cards cannot be reactivated.", 409);
-    if (!isCeleCardFullyPublic(resolveCeleCardLifecycle({ ...card, adminDeactivatedAt: null }))) {
+    if (
+      !isCeleCardFullyPublic(
+        resolveCeleCardLifecycle({ ...card, adminDeactivatedAt: null }, new Date(), await getCeleCardLifecyclePolicy())
+      )
+    ) {
       throw new CeleCardAdminError("This card is not eligible to go live. Assign an entitlement first.", 409);
     }
     const updated = await prisma.digitalBusinessCard.update({
@@ -804,7 +814,11 @@ export async function applyCeleCardAdminAction(
     if (card.adminSuspendedAt) {
       throw new CeleCardAdminError("Unsuspend this card before activating.", 409);
     }
-    if (isCeleCardFullyPublic(resolveCeleCardLifecycle({ ...card, adminDeactivatedAt: null }))) {
+    if (
+      isCeleCardFullyPublic(
+        resolveCeleCardLifecycle({ ...card, adminDeactivatedAt: null }, new Date(), await getCeleCardLifecyclePolicy())
+      )
+    ) {
       return prisma.digitalBusinessCard.update({
         where: { id: card.id },
         data: { adminDeactivatedAt: null, isPublished: true },
@@ -882,7 +896,7 @@ export async function applyCeleCardAdminAction(
       phone: card.unclaimedPhone || card.phone,
       actor,
     });
-    const origin = getAppUrlFromEnv();
+    const origin = getCeleYouShareOrigin();
     const publicUrl = digitalCardPublicUrl(card.slug, origin);
     await communicationService.trySendDirect({
       channel: "EMAIL",
@@ -943,14 +957,15 @@ export async function getCeleCardAdminDetail(cardId: string) {
     },
   });
   if (!card) return null;
-  const origin = getAppUrlFromEnv();
+  const origin = getCeleYouShareOrigin();
+  const policy = await getCeleCardLifecyclePolicy();
   const events = await prisma.smartCardLifecycleEvent.findMany({
     where: { cardId },
     orderBy: { createdAt: "desc" },
     take: 40,
   });
   return {
-    card: serializeDirectoryCard(card, origin),
+    card: serializeDirectoryCard(card, origin, policy),
     owner: isUnclaimedHolderEmail(card.user?.email)
       ? { id: null, name: card.displayName, email: card.unclaimedEmail, unclaimed: true }
       : card.user,

@@ -8,8 +8,7 @@ import {
   CELECARD_QR_TILE_FILL,
   resolveCeleCardQrCenter,
 } from "@/lib/digital-business-card/qr-center";
-import { celeCardHouseAvatarId, isCeleCardIllustratedAvatar } from "@/lib/digital-business-card/portraits";
-import { DigitalCardHouseAvatar } from "@/components/digital-business-card/digital-card-house-avatar";
+import { CeleYouThemedMark } from "@/components/digital-business-card/celeyou-brand-mark";
 
 export function CeleCardQrBadge({
   qrSrc,
@@ -32,12 +31,8 @@ export function CeleCardQrBadge({
 }) {
   const center = resolveCeleCardQrCenter(avatarUrl);
   const label = `Open ${displayName || "this"} CeleYou`;
-  const well =
-    center.kind === "photo" ||
-    isCeleCardIllustratedAvatar(avatarUrl) ||
-    celeCardHouseAvatarId(avatarUrl) === "celecard"
-      ? "rounded-full"
-      : "rounded-[0.4rem]";
+  const official = center.kind === "mark";
+  const well = official ? "rounded-[18%]" : "rounded-full";
 
   const wellPct = `${Math.round(CELECARD_QR_CENTER_WELL * 100)}%`;
   const mark = qrSrc ? (
@@ -74,13 +69,7 @@ export function CeleCardQrBadge({
               className={cn("celecard-portrait-img h-full w-full object-cover object-center", well)}
             />
           ) : (
-            <DigitalCardHouseAvatar
-              theme={theme}
-              avatarUrl={avatarUrl}
-              rounded="none"
-              framed={false}
-              className="h-full w-full"
-            />
+            <CeleYouThemedMark className="h-full w-full p-[10%]" />
           )}
         </span>
       </span>

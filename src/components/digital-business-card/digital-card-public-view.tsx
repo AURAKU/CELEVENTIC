@@ -213,7 +213,7 @@ export function DigitalCardPublicView({
         <div className="celecard-guest-rest flex flex-col gap-5">
         <div className="relative z-10 flex items-center justify-center gap-4">
           <Link
-            href={digitalCardPresentPath(card.slug)}
+            href={digitalCardPresentPath(card.slug, { immersive: true })}
             className="inline-flex min-h-10 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]"
             style={{ color: theme.accent }}
           >

@@ -8,12 +8,9 @@ import {
   CreditCard,
   Download,
   ExternalLink,
-  Maximize2,
   Nfc,
   QrCode,
-  Radio,
   Share2,
-  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capability";
@@ -24,10 +21,9 @@ import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { CeleCardQrBadge } from "@/components/digital-business-card/celecard-qr-badge";
 import { celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
 import { digitalCardExportImagePath } from "@/lib/digital-business-card/share";
-import { getClientAppUrl, sanitizePublicUrl } from "@/lib/app-url";
-import { TAP_TO_CONNECT_CTA, tapStudioPath } from "@/lib/celeyou-proximity/product";
+import { getCeleYouShareOrigin, sanitizePublicUrl } from "@/lib/app-url";
+import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import {
-  NEARBY_SHARE_CTA,
   SHARE_MY_CARD_CTA,
   SHARE_MY_CELEYOU,
   detectSmartShareCapability,
@@ -67,7 +63,7 @@ export function DigitalCardShareDesk({
   }, [proximityDiscoverable]);
   const nfc = useMemo(() => detectNfcWriteSupport(), []);
   const shareEngine = useMemo(() => detectSmartShareCapability(), []);
-  const origin = getClientAppUrl();
+  const origin = getCeleYouShareOrigin();
   const publicShare = sanitizePublicUrl(shareUrl || profileUrl, origin);
   const identityShare = sanitizePublicUrl(
     profileUrl.startsWith("http")
@@ -77,7 +73,7 @@ export function DigitalCardShareDesk({
         : publicShare,
     origin
   );
-  const publicNfc = sanitizePublicUrl(nfcUrl || shareUrl || profileUrl, getClientAppUrl());
+  const publicNfc = sanitizePublicUrl(nfcUrl || shareUrl || profileUrl, origin);
   const qrPng = publicShare.startsWith("http") ? digitalCardQrImageSrc(publicShare, { size: 1024, format: "png" }) : "";
   const qrPngHi = publicShare.startsWith("http")
     ? digitalCardQrImageSrc(publicShare, { size: 2048, format: "png", download: true })
@@ -111,7 +107,7 @@ export function DigitalCardShareDesk({
   }
 
   function saveContact() {
-    void saveDigitalCardContact(vcard, { origin: getClientAppUrl(), source: "owner" });
+    void saveDigitalCardContact(vcard, { origin, source: "owner" });
   }
 
   async function writeTag() {
@@ -123,31 +119,40 @@ export function DigitalCardShareDesk({
   }
 
   const ready = Boolean(identityShare || publicShare);
+  const immersivePresent = presentUrl.includes("immersive=1")
+    ? presentUrl
+    : `${presentUrl}${presentUrl.includes("?") ? "&" : "?"}immersive=1`;
 
   async function toggleDiscoverable() {
     if (!cardId || discoverBusy) return;
     const next = !discoverable;
     setDiscoverBusy(true);
-    const res = await fetch(`/api/digital-business-cards/${cardId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ proximityDiscoverable: next }),
-    });
-    setDiscoverBusy(false);
-    if (!res.ok) {
-      const json = await res.json().catch(() => ({}));
-      setNfcMessage(typeof json.error === "string" ? json.error : "Could not update Tap-to-Connect.");
-      return;
+    try {
+      const res = await fetch(`/api/digital-business-cards/${cardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proximityDiscoverable: next }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setNfcMessage(typeof json.error === "string" ? json.error : "Could not update Tap-to-Connect.");
+        return;
+      }
+      setDiscoverable(next);
+      onProximityChange?.(next);
+    } catch {
+      setNfcMessage("Could not update Tap-to-Connect.");
+    } finally {
+      setDiscoverBusy(false);
     }
-    setDiscoverable(next);
-    onProximityChange?.(next);
   }
 
   return (
     <div className="space-y-3">
       <p className="text-sm font-semibold text-slate-900">{SHARE_MY_CELEYOU}</p>
       <p className="text-xs text-slate-600">
-        Recipients open your public profile in any browser. They do not need CeleYou or an account.
+        Recipients open your public profile in any browser. They do not need CeleYou or an account. Show my card
+        opens the plate. Nearby Share and Tap to Connect live on that card.
       </p>
       <Button type="button" size="sm" className="w-full" disabled={!ready} onClick={() => void nativeShare()}>
         <Share2 className="mr-2 h-4 w-4" />
@@ -155,26 +160,10 @@ export function DigitalCardShareDesk({
       </Button>
       <p className="text-[11px] leading-relaxed text-slate-500">{shareEngine.nearbyGuidance}</p>
       <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-1">
-        <Button type="button" variant="outline" size="sm" disabled={!ready} onClick={() => void nativeShare()}>
-          <Radio className="mr-2 h-4 w-4" />
-          {NEARBY_SHARE_CTA}
-        </Button>
-        <Button asChild size="sm" variant="outline" disabled={!ready}>
-          <Link href={tapStudioPath(cardId)}>
-            <Smartphone className="mr-2 h-4 w-4" />
-            {TAP_TO_CONNECT_CTA}
-          </Link>
-        </Button>
         <Button asChild variant="outline" size="sm" disabled={!ready}>
-          <Link href={presentUrl}>
+          <Link href={immersivePresent}>
             <CreditCard className="mr-2 h-4 w-4" />
             Show my card
-          </Link>
-        </Button>
-        <Button asChild variant="outline" size="sm" disabled={!ready}>
-          <Link href={`${presentUrl}${presentUrl.includes("?") ? "&" : "?"}immersive=1`}>
-            <Maximize2 className="mr-2 h-4 w-4" />
-            Immersive
           </Link>
         </Button>
         <Button type="button" variant="outline" size="sm" disabled={!ready} onClick={() => void copy("link", identityShare || publicShare)}>
@@ -275,6 +264,14 @@ export function DigitalCardShareDesk({
           </button>
         )}
         {nfcMessage ? <p className="mt-2 text-xs text-slate-700">{nfcMessage}</p> : null}
+        {cardId ? (
+          <Link
+            href={nfcStudioPath(cardId)}
+            className="mt-2 inline-block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#0B8A83]"
+          >
+            Manage NFC cards
+          </Link>
+        ) : null}
       </div>
       {cardId ? (
         <label className="flex items-start gap-2 rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
@@ -288,7 +285,7 @@ export function DigitalCardShareDesk({
           <span>
             <span className="font-medium text-slate-900">Allow Tap-to-Connect</span>
             <span className="mt-0.5 block text-xs text-slate-500">
-              Nearby sharing stays off until another CeleYou scans your session QR or code. Turn this off to refuse new Tap sessions.
+              When you show the card, Tap-to-Connect waits on the plate. Turn this off to refuse new Tap sessions.
             </span>
           </span>
         </label>

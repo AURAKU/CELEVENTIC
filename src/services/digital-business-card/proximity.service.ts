@@ -42,6 +42,7 @@ export type ProximitySessionView = {
   id: string;
   role: "host" | "peer";
   status: ProximityStatus;
+  hostCardId: string;
   joinCode: string | null;
   verifyCode: string | null;
   discoveryId: string;
@@ -177,6 +178,7 @@ async function toView(
     id: session.id,
     role,
     status,
+    hostCardId: session.hostCardId,
     joinCode: role === "host" || status !== "DISCOVERING" ? session.joinCode : null,
     verifyCode: session.verifyCode,
     discoveryId: session.discoveryId,

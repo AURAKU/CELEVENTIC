@@ -5,6 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { DIGITAL_CARD_THEMES } from "@/lib/digital-business-card/themes";
 import { digitalCardSocialsSchema } from "@/lib/digital-business-card/socials";
 import { celeCardOwnerShareFlags } from "@/lib/digital-business-card/access";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
+import { CeleYouPaidTermLockedError } from "@/lib/digital-business-card/lifecycle";
 import {
   getDigitalCardForUser,
   nfcTokensByCardId,
@@ -44,7 +46,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     success: true,
     data: {
       ...card,
-      ...celeCardOwnerShareFlags(card),
+      ...celeCardOwnerShareFlags(card, await getCeleCardLifecyclePolicy()),
       nfcPublicToken: (await nfcTokensByCardId([card])).get(card.id) || null,
     },
   });
@@ -78,7 +80,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     success: true,
     data: {
       ...updated,
-      ...celeCardOwnerShareFlags(updated),
+      ...celeCardOwnerShareFlags(updated, await getCeleCardLifecyclePolicy()),
       nfcPublicToken: (await nfcTokensByCardId([updated])).get(updated.id) || null,
     },
   });
@@ -88,7 +90,14 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await ctx.params;
-  const deleted = await softDeleteDigitalCard(session.user.id, id);
-  if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ success: true });
+  try {
+    const deleted = await softDeleteDigitalCard(session.user.id, id);
+    if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    if (error instanceof CeleYouPaidTermLockedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    throw error;
+  }
 }

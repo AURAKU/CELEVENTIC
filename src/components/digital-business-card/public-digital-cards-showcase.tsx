@@ -479,8 +479,13 @@ export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?
             return (
               <article
                 key={theme.id}
-                className="group flex flex-col overflow-hidden rounded-[1.35rem] border border-slate-200/70 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-0.5 hover:border-brand-500/25 hover:shadow-[0_22px_48px_rgba(11,138,131,0.16)]"
+                className="group relative flex flex-col overflow-hidden rounded-[1.35rem] border border-slate-200/70 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-0.5 hover:border-brand-500/25 hover:shadow-[0_22px_48px_rgba(11,138,131,0.16)]"
               >
+                <Link
+                  href={themeHref(theme.id)}
+                  className="absolute inset-0 z-10 rounded-[1.35rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                  aria-label={`Use ${theme.name} card`}
+                />
                 <div
                   className="relative overflow-hidden"
                   style={{ background: theme.stageBackground }}
@@ -493,7 +498,7 @@ export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?
                     }}
                     aria-hidden
                   />
-                  <div className="relative px-4 pb-5 pt-5 sm:px-5 sm:pb-6 sm:pt-6">
+                  <div className="pointer-events-none relative px-4 pb-5 pt-5 sm:px-5 sm:pb-6 sm:pt-6">
                     <DigitalCardFace
                       themeId={theme.id}
                       displayName={demo.displayName}
@@ -501,7 +506,6 @@ export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?
                       company={demo.company}
                       avatarUrl={demo.avatarUrl}
                       qrSrc={demoCardPreviewQrSrc(theme.id)}
-                      qrBadgeHref={demoCardPreviewExplorePath()}
                       companyLogo={demo.companyLogo}
                       compact
                       className="w-full shadow-[0_24px_48px_rgba(0,0,0,0.45)] ring-1 ring-white/15 transition duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_32px_64px_rgba(0,0,0,0.5)]"
@@ -526,13 +530,10 @@ export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?
                   <p className="mt-2 text-xs text-slate-500">
                     {demo.displayName} · {demo.title}
                   </p>
-                  <Link
-                    href={themeHref(theme.id)}
-                    className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-700"
-                  >
-                    Use this theme
+                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 group-hover:text-brand-700">
+                    Use this Card
                     <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                  </Link>
+                  </span>
                 </div>
               </article>
             );

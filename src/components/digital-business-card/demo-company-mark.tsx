@@ -103,12 +103,12 @@ export function CeleCardCompanyMark({
   if (!hasCeleCardCompanyLogo(url)) return null;
   return (
     <span
-      className={cn("relative shrink-0 overflow-hidden rounded-[20%] bg-white", className)}
-      style={{ boxShadow: `inset 0 0 0 1px ${metal}` }}
+      className={cn("relative isolate shrink-0 overflow-hidden rounded-[20%] bg-white", className)}
+      style={{ boxShadow: `inset 0 0 0 1px ${metal}`, mixBlendMode: "normal", opacity: 1 }}
       aria-hidden
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url!} alt="" className="h-full w-full object-contain p-[10%]" />
+      <img src={url!} alt="" className="h-full w-full object-contain p-[10%]" style={{ mixBlendMode: "normal", opacity: 1 }} />
     </span>
   );
 }
