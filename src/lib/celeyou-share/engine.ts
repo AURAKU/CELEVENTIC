@@ -91,8 +91,9 @@ export async function shareCeleYouProfile(
   }
   try {
     if (nav?.clipboard && typeof nav.clipboard.writeText === "function") {
+      const clipboard = input.text.includes(input.url) ? input.text : `${input.text}\n${input.url}`;
       await Promise.race([
-        nav.clipboard.writeText(`${input.text}\n${input.url}`),
+        nav.clipboard.writeText(clipboard),
         new Promise<never>((_, reject) => {
           setTimeout(() => reject(new Error("clipboard-timeout")), 1200);
         }),

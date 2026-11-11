@@ -6,9 +6,9 @@ import { buildVCard, digitalCardVcardPath, vcardFileName } from "./vcard";
 export type SaveContactResult = "shared" | "opened" | "downloaded" | "cancelled";
 
 /**
- * Save the CeleYou into the device address book.
- * iPhone and iPad open Add to Contacts. Android, Windows, and Mac get a .vcf
- * that Contacts, People, and Outlook already know how to import.
+ * Save every live CeleYou field into the device address book.
+ * iPhone and iPad open Add to Contacts. Android shares or downloads a .vcf.
+ * Windows and Mac download a .vcf that People, Outlook, and Contacts open.
  */
 export async function saveDigitalCardContact(
   card: DigitalCardPublicPayload,
@@ -16,40 +16,50 @@ export async function saveDigitalCardContact(
 ): Promise<SaveContactResult> {
   const filename = vcardFileName(card);
   const guestHref = digitalCardVcardPath(card.slug);
-
-  if (options?.source !== "owner" && isAppleTouchDevice()) {
-    window.location.assign(guestHref);
-    return "opened";
-  }
-
-  if (options?.source !== "owner" && isAndroidDevice()) {
-    window.location.assign(guestHref);
-    return "opened";
-  }
-
   const cardUrl = digitalCardPublicUrl(card.slug, celeYouGuestOrigin(options?.origin));
-  const vcf = buildVCard(card, { cardUrl });
-  const blob = new Blob([vcf], { type: "text/vcard;charset=utf-8" });
-  const file = new File([blob], filename, { type: "text/vcard;charset=utf-8" });
+  const serverFile = await readVcfFile(guestHref, filename);
+  const file =
+    serverFile ??
+    new File([buildVCard(card, { cardUrl })], filename, { type: "text/vcard;charset=utf-8" });
 
-  if (isMobileDevice()) {
-    try {
-      if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: card.displayName, text: card.displayName });
-        return "shared";
-      }
-    } catch (error) {
-      if ((error as { name?: string })?.name === "AbortError") return "cancelled";
-    }
+  if (serverFile && isAppleTouchDevice()) {
+    window.location.assign(guestHref);
+    return "opened";
   }
 
-  if (options?.source !== "owner") {
+  try {
+    if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: card.displayName,
+        text: `Save ${card.displayName} to contacts`,
+      });
+      return "shared";
+    }
+  } catch (error) {
+    if ((error as { name?: string })?.name === "AbortError") return "cancelled";
+  }
+
+  if (serverFile) {
     triggerDownload(guestHref, filename);
     return "downloaded";
   }
 
-  triggerBlobDownload(blob, filename);
+  triggerBlobDownload(file, filename);
   return "downloaded";
+}
+
+async function readVcfFile(href: string, filename: string): Promise<File | null> {
+  try {
+    const url = href.includes("?") ? `${href}&delivery=1` : `${href}?delivery=1`;
+    const res = await fetch(url, { credentials: "include", cache: "no-store" });
+    if (!res.ok) return null;
+    const buffer = await res.arrayBuffer();
+    if (buffer.byteLength < 16) return null;
+    return new File([buffer], filename, { type: "text/vcard;charset=utf-8" });
+  } catch {
+    return null;
+  }
 }
 
 function isAppleTouchDevice() {
@@ -58,14 +68,6 @@ function isAppleTouchDevice() {
     /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
   );
-}
-
-function isAndroidDevice() {
-  return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-}
-
-function isMobileDevice() {
-  return isAppleTouchDevice() || isAndroidDevice();
 }
 
 function triggerDownload(href: string, filename: string) {

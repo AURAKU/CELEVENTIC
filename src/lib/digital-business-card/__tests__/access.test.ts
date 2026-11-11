@@ -183,6 +183,9 @@ describe("CeleYou public access policy", () => {
     assert.equal(roleMayOpenDummyLive("ORGANIZER"), false);
     assert.equal(roleMayOpenDummyLive("VENDOR"), false);
     assert.equal(roleMayOpenDummyLive("GUEST"), false);
+    assert.equal(roleMayOpenDummyLive("AGENCY"), false);
+    assert.equal(roleMayOpenDummyLive("STAFF"), false);
+    assert.equal(roleMayOpenDummyLive("USER"), false);
     assert.equal(roleMayOpenDummyLive(null), false);
     assert.equal(roleMayOpenDummyLive(undefined), false);
   });

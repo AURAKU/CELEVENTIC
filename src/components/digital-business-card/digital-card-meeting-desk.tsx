@@ -9,9 +9,18 @@ import {
   MEETING_WEEKDAYS,
   defaultMeetingDesk,
   guessMeetingTimezone,
+  listOpenMeetingSlots,
   meetingDurationCopy,
   type CeleCardMeetingDesk,
 } from "@/lib/digital-business-card/meetings";
+
+const NOTICE = [
+  { hours: 0, label: "Now" },
+  { hours: 2, label: "2 hours" },
+  { hours: 24, label: "1 day" },
+] as const;
+const HORIZON = [7, 14, 28] as const;
+const BUFFER = [0, 15, 30] as const;
 
 const HOURS = Array.from({ length: 16 }, (_, index) => index + 7);
 
@@ -56,6 +65,7 @@ export function DigitalCardMeetingDesk({
   inputStyle?: CSSProperties;
 }) {
   const desk = value ?? defaultMeetingDesk({ timezone: guessMeetingTimezone() });
+  const nextSlot = desk.enabled ? listOpenMeetingSlots(desk)[0] : undefined;
   const zones = MEETING_TIMEZONES.includes(desk.timezone as (typeof MEETING_TIMEZONES)[number])
     ? MEETING_TIMEZONES
     : ([desk.timezone, ...MEETING_TIMEZONES] as string[]);
@@ -79,7 +89,7 @@ export function DigitalCardMeetingDesk({
             Guests can book a time
           </span>
           <span className="mt-0.5 block text-xs text-stone-500">
-            They pick a date and time. You get a message in your inbox.
+            They pick a date and time. You get a studio message, a notification, and email. Confirm or decline from Requests.
           </span>
         </span>
         <span
@@ -213,6 +223,51 @@ export function DigitalCardMeetingDesk({
               ))}
             </select>
           </label>
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">Soonest</p>
+            <div className="flex flex-wrap gap-1.5">
+              {NOTICE.map((item) => (
+                <Chip
+                  key={item.hours}
+                  on={desk.noticeHours === item.hours}
+                  accent={accent}
+                  onClick={() => patch({ noticeHours: item.hours })}
+                >
+                  {item.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">Open for</p>
+            <div className="flex flex-wrap gap-1.5">
+              {HORIZON.map((days) => (
+                <Chip
+                  key={days}
+                  on={desk.horizonDays === days}
+                  accent={accent}
+                  onClick={() => patch({ horizonDays: days })}
+                >
+                  {`${days} days`}
+                </Chip>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">Gap between times</p>
+            <div className="flex flex-wrap gap-1.5">
+              {BUFFER.map((minutes) => (
+                <Chip
+                  key={minutes}
+                  on={desk.bufferMin === minutes}
+                  accent={accent}
+                  onClick={() => patch({ bufferMin: minutes })}
+                >
+                  {minutes === 0 ? "None" : `${minutes} min`}
+                </Chip>
+              ))}
+            </div>
+          </div>
           <label className="block">
             <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">
               Note guests see
@@ -225,6 +280,15 @@ export function DigitalCardMeetingDesk({
               style={inputStyle}
             />
           </label>
+          {nextSlot ? (
+            <p className="text-xs text-stone-500">
+              Next open time {nextSlot.weekday} {nextSlot.dayLabel} at {nextSlot.timeLabel}. Guests tap Meetings, pick a slot, and you get a studio message plus email.
+            </p>
+          ) : (
+            <p className="text-xs text-stone-500">
+              No open times in this window. Add a weekday or widen the hours.
+            </p>
+          )}
         </div>
       ) : null}
     </div>

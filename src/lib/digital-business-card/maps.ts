@@ -66,6 +66,7 @@ function mapKindFromUrl(url: URL): MapKind | null {
   const host = stripHost(url.hostname);
   const path = `${url.pathname}${url.search}`.toLowerCase();
 
+  if (host === "ditu.google.cn" || host === "maps.google.cn") return "google";
   if (host === "maps.app.goo.gl" || host === "g.page" || host === "g.co") return "google";
   if (host === "goo.gl" && path.startsWith("/maps")) return "google";
   if (host.startsWith("maps.google.")) return "google";
@@ -75,12 +76,20 @@ function mapKindFromUrl(url: URL): MapKind | null {
 
   if (host === "maps.apple.com") return "apple";
 
-  if (hostEnds(host, "amap.com") || hostEnds(host, "gaode.com")) return "amap";
+  if (
+    hostEnds(host, "amap.com") ||
+    hostEnds(host, "gaode.com") ||
+    host === "ditu.amap.com" ||
+    host === "uri.amap.com" ||
+    host === "surl.amap.com"
+  ) {
+    return "amap";
+  }
 
   if (hostEnds(host, "map.baidu.com") || host === "j.map.baidu.com" || host === "maps.baidu.com") return "baidu";
   if (hostEnds(host, "baidu.com") && path.includes("/maps")) return "baidu";
 
-  if (hostEnds(host, "bing.com") && path.includes("/maps")) return "bing";
+  if (hostEnds(host, "bing.com") && (path.includes("/maps") || url.searchParams.has("cp"))) return "bing";
 
   if (hostEnds(host, "waze.com")) return "waze";
 
@@ -107,6 +116,10 @@ function mapKindFromUrl(url: URL): MapKind | null {
   if (hostEnds(host, "komoot.com")) return "komoot";
 
   if (hostEnds(host, "what3words.com") || host === "w3w.co") return "what3words";
+
+  if (hostEnds(host, "mapquest.com")) return "bing";
+  if (hostEnds(host, "tomtom.com") && path.includes("maps")) return "here";
+  if (host === "ditu.google.cn" || host.startsWith("maps.google.")) return "google";
 
   return null;
 }
@@ -168,6 +181,15 @@ function coordsFromUrl(url: URL): { lat: number; lng: number } | null {
   );
   if (fromParams) return fromParams;
 
+  const cp = url.searchParams.get("cp") || url.searchParams.get("sll");
+  if (cp) {
+    const parts = cp.split(/[,~]/).map((part) => part.trim());
+    if (parts.length >= 2) {
+      const coords = asCoords(parseNumber(parts[0]), parseNumber(parts[1]));
+      if (coords) return coords;
+    }
+  }
+
   const location = url.searchParams.get("location") || url.searchParams.get("position");
   if (location) {
     const pair = location.trim().match(PAIR_COORDS);
@@ -222,6 +244,23 @@ function labelFromUrl(url: URL, kind: MapKind, coords: { lat: number; lng: numbe
 
 function googleEmbed(query: string): string {
   return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed`;
+}
+
+function osmEmbed(lat: number, lng: number): string {
+  const pad = 0.012;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - pad}%2C${lat - pad}%2C${lng + pad}%2C${lat + pad}&layer=mapnik&marker=${lat}%2C${lng}`;
+}
+
+function embedFor(
+  kind: MapKind,
+  coords: { lat: number; lng: number } | null,
+  query: string
+): string | null {
+  if (coords) return osmEmbed(coords.lat, coords.lng);
+  if (kind === "google" || kind === "apple" || kind === "waze" || kind === "osm" || kind === "bing" || kind === "amap" || kind === "here") {
+    return googleEmbed(query);
+  }
+  return googleEmbed(query);
 }
 
 function googleSearchHref(query: string): string {
@@ -298,12 +337,9 @@ export function parseCeleCardPlace(value: string): CeleCardPlace | null {
     const href = url.toString();
     const label = labelFromUrl(url, kind, coords);
     const query = coords ? `${coords.lat},${coords.lng}` : label === PROVIDER_NAME[kind] ? href : label;
-    const embedUrl = coords || kind === "google" || kind === "apple" || kind === "waze" || kind === "bing" || kind === "osm"
-      ? googleEmbed(query)
-      : null;
     return {
       href,
-      embedUrl,
+      embedUrl: embedFor(kind, coords, query),
       label,
       provider: PROVIDER_NAME[kind],
       lat: coords?.lat ?? null,

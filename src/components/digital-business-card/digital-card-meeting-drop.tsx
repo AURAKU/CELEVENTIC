@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarPlus, Check } from "lucide-react";
+import { CalendarPlus, Check, ChevronLeft, Clock, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   compactMeetingDesk,
   defaultMeetingDesk,
   downloadMeetingIcs,
   formatMeetingWhen,
+  groupMeetingDays,
   guessMeetingTimezone,
   listOpenMeetingSlots,
+  meetingDurationCopy,
   meetingIcs,
   meetingSubtitle,
   type CeleCardMeetingDesk,
@@ -26,17 +28,19 @@ function deskFromItem(item: DigitalCardReachItem): CeleCardMeetingDesk {
   }
 }
 
-function groupSlots(slots: CeleCardMeetingSlot[]) {
-  const days: Array<{ key: string; weekday: string; label: string; slots: CeleCardMeetingSlot[] }> = [];
-  for (const slot of slots) {
-    const current = days[days.length - 1];
-    if (!current || current.key !== slot.dayKey) {
-      days.push({ key: slot.dayKey, weekday: slot.weekday, label: slot.dayLabel, slots: [slot] });
-    } else {
-      current.slots.push(slot);
-    }
-  }
-  return days;
+export function meetingPreviewItems(desk: CeleCardMeetingDesk | null | undefined): DigitalCardReachItem[] {
+  if (!desk?.enabled) return [];
+  return [
+    {
+      id: "meeting-preview",
+      brand: "meeting",
+      title: desk.title,
+      subtitle: meetingSubtitle(desk),
+      href: "",
+      copyValue: JSON.stringify(desk),
+      surface: "stack",
+    },
+  ];
 }
 
 export function DigitalCardMeetingDrop({
@@ -101,6 +105,7 @@ function MeetingBooker({
   useEffect(() => {
     setSlots(localSlots);
     setDayKey(localSlots[0]?.dayKey ?? "");
+    setPicked(null);
   }, [localSlots]);
 
   useEffect(() => {
@@ -120,10 +125,11 @@ function MeetingBooker({
     };
   }, [preview, slug]);
 
-  const days = groupSlots(slots);
+  const days = groupMeetingDays(slots);
   const day = days.find((row) => row.key === dayKey) ?? days[0];
   const inputClass = "w-full rounded-xl border px-3 py-2.5 text-sm outline-none";
   const inputStyle = { borderColor: `${theme.border}`, background: "#fff", color: theme.text };
+  const step = done ? "done" : picked ? "details" : "time";
 
   async function submit() {
     if (preview) {
@@ -180,7 +186,8 @@ function MeetingBooker({
         </p>
         <p className="text-sm leading-relaxed" style={{ color: theme.text }}>
           {formatMeetingWhen(done.start, desk.timezone)}
-          {guestZone !== desk.timezone ? ` · your ${formatMeetingWhen(done.start, guestZone)}` : ""}. They will confirm this time.
+          {guestZone !== desk.timezone ? ` · your ${formatMeetingWhen(done.start, guestZone)}` : ""}.{" "}
+          {ownerName ? `${ownerName.split(" ")[0]} gets a message to confirm.` : "They get a message to confirm this time."}
         </p>
         <button
           type="button"
@@ -201,7 +208,7 @@ function MeetingBooker({
               )
             )
           }
-          className="inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white"
+          className="inline-flex items-center justify-center gap-2 rounded-full px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white"
           style={{ background: theme.accent }}
         >
           <CalendarPlus className="h-3.5 w-3.5" />
@@ -217,42 +224,67 @@ function MeetingBooker({
         <p className="text-sm font-semibold" style={{ color: theme.text }}>
           {desk.title}
         </p>
-        <p className="mt-0.5 text-xs" style={{ color: theme.muted }}>
-          {meetingSubtitle(desk)}
-          {desk.note ? ` · ${desk.note}` : ""}
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: theme.muted }}>
+          <span className="inline-flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" />
+            {meetingDurationCopy(desk.durationMin)}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <MapPin className="h-3.5 w-3.5" />
+            {desk.place}
+          </span>
         </p>
+        {desk.note ? (
+          <p className="mt-1 text-xs leading-relaxed" style={{ color: theme.muted }}>
+            {desk.note}
+          </p>
+        ) : null}
       </div>
-      {days.length ? (
-        <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]">
-          {days.map((row) => {
-            const on = row.key === (day?.key ?? "");
-            return (
-              <button
-                key={row.key}
-                type="button"
-                onClick={() => {
-                  setDayKey(row.key);
-                  setPicked(null);
-                }}
-                className="flex w-[3.6rem] shrink-0 snap-start flex-col items-center rounded-2xl border px-1.5 py-2"
-                style={{
-                  borderColor: on ? theme.accent : theme.border,
-                  background: on ? theme.accent : "#fff",
-                  color: on ? "#fff" : theme.text,
-                }}
-              >
-                <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">{row.weekday}</span>
-                <span className="text-sm font-semibold">{row.label.split(" ")[0]}</span>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <p className="text-xs" style={{ color: theme.muted }}>
-          No open times in the next {desk.horizonDays} days.
-        </p>
-      )}
-      {day?.slots.length ? (
+
+      <p className="flex flex-wrap gap-x-3 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: theme.muted }}>
+        <span style={{ color: !picked ? theme.accent : theme.muted }}>1 Day</span>
+        <span style={{ color: !picked ? theme.accent : theme.muted }}>2 Time</span>
+        <span style={{ color: picked ? theme.accent : theme.muted }}>3 Your details</span>
+      </p>
+
+      {step !== "details" ? (
+        days.length ? (
+          <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]">
+            {days.map((row) => {
+              const on = row.key === (day?.key ?? "");
+              return (
+                <button
+                  key={row.key}
+                  type="button"
+                  onClick={() => {
+                    setDayKey(row.key);
+                    setPicked(null);
+                    setError(null);
+                  }}
+                  className="flex w-[4.1rem] shrink-0 snap-start flex-col items-center rounded-2xl border px-1.5 py-2"
+                  style={{
+                    borderColor: on ? theme.accent : theme.border,
+                    background: on ? theme.accent : "#fff",
+                    color: on ? "#fff" : theme.text,
+                  }}
+                >
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">{row.weekday}</span>
+                  <span className="text-base font-semibold leading-tight">{row.label.split(" ")[0]}</span>
+                  <span className="text-[9px] opacity-80">
+                    {row.slots.length} {row.slots.length === 1 ? "time" : "times"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs" style={{ color: theme.muted }}>
+            No open times in the next {desk.horizonDays} days.
+          </p>
+        )
+      ) : null}
+
+      {step !== "details" && day?.slots.length ? (
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
           {day.slots.map((slot) => {
             const on = picked?.start === slot.start;
@@ -260,12 +292,15 @@ function MeetingBooker({
               <button
                 key={slot.start}
                 type="button"
-                onClick={() => setPicked(slot)}
-                className="rounded-xl border px-2 py-2 text-sm font-semibold"
+                onClick={() => {
+                  setPicked(slot);
+                  setError(null);
+                }}
+                className="rounded-xl border px-2 py-2.5 text-sm font-semibold"
                 style={{
                   borderColor: on ? theme.accent : theme.border,
-                  background: on ? theme.accentSoft : "#fff",
-                  color: theme.accent,
+                  background: on ? theme.accent : "#fff",
+                  color: on ? "#fff" : theme.accent,
                 }}
               >
                 {slot.timeLabel}
@@ -274,13 +309,41 @@ function MeetingBooker({
           })}
         </div>
       ) : null}
-      {picked && guestZone !== desk.timezone ? (
-        <p className="text-[11px]" style={{ color: theme.muted }}>
-          Your time {formatMeetingClockSafe(picked.start, guestZone)}
-        </p>
-      ) : null}
+
       {picked ? (
+        <div
+          className="rounded-2xl border px-3 py-2.5"
+          style={{ borderColor: theme.border, background: theme.accentSoft || "rgba(11,138,131,0.08)" }}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: theme.accent }}>
+            You picked
+          </p>
+          <p className="mt-0.5 text-sm font-semibold" style={{ color: theme.text }}>
+            {formatMeetingWhen(picked.start, desk.timezone)}
+          </p>
+          {guestZone !== desk.timezone ? (
+            <p className="text-[11px]" style={{ color: theme.muted }}>
+              Your time {formatMeetingClockSafe(picked.start, guestZone)}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-xs" style={{ color: theme.muted }}>
+          Pick a day, then a time. They get a message in their CeleYou inbox.
+        </p>
+      )}
+
+      {step === "details" && picked ? (
         <div className="grid gap-2">
+          <button
+            type="button"
+            onClick={() => setPicked(null)}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em]"
+            style={{ color: theme.accent }}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            Change time
+          </button>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -332,11 +395,7 @@ function MeetingBooker({
             {busy ? "Sending…" : preview ? "Preview request" : "Request this time"}
           </button>
         </div>
-      ) : (
-        <p className="text-xs" style={{ color: theme.muted }}>
-          Pick a day, then a time. They get a message in their CeleYou inbox.
-        </p>
-      )}
+      ) : null}
       {error ? (
         <p className="text-xs font-medium" style={{ color: "#b45309" }}>
           {error}

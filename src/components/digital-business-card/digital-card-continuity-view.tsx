@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
 import { DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
 import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
+import { applyCeleCardDesign } from "@/lib/digital-business-card/design";
 import { COURTESY_COPY } from "@/lib/digital-business-card/courtesy";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
@@ -109,8 +110,8 @@ function ContinuityPanel({
 }
 
 export function DigitalCardContinuityView({ card }: { card: DigitalCardPublicPayload }) {
-  const theme = resolveDigitalCardTheme(card.themeId);
-  const motionMood = celecardMotionMood(theme);
+  const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), card.socials.design);
+  const motionMood = celecardMotionMood(theme, card.socials.design?.motion);
   const headingId = useId();
   const descriptionId = useId();
   const reopenRef = useRef<HTMLButtonElement>(null);
@@ -219,6 +220,7 @@ export function DigitalCardContinuityView({ card }: { card: DigitalCardPublicPay
                 qrHref={null}
                 className="max-w-none"
                 portraitFrame={card.socials.portraitFrame}
+                companyLogo
                 companyLogoUrl={card.socials.companyLogoUrl}
               />
             </div>

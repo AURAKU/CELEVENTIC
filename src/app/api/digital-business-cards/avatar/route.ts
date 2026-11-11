@@ -67,8 +67,8 @@ export async function POST(req: Request) {
       const pipeline = svg
         ? sharp(buffer, { density: 320, failOn: "error" })
         : sharp(buffer, { failOn: "error", animated: false }).rotate();
-      const edge = isLogo ? CELECARD_LOGO_MAX_EDGE : isPaper ? 1920 : CELECARD_PORTRAIT_MAX_EDGE;
-      const quality = isLogo ? CELECARD_LOGO_WEBP_QUALITY : isPaper ? 86 : CELECARD_PORTRAIT_WEBP_QUALITY;
+      const edge = isLogo ? CELECARD_LOGO_MAX_EDGE : CELECARD_PORTRAIT_MAX_EDGE;
+      const quality = isLogo ? CELECARD_LOGO_WEBP_QUALITY : isPaper ? 88 : CELECARD_PORTRAIT_WEBP_QUALITY;
       out = await pipeline
         .resize(edge, edge, {
           fit: "inside",

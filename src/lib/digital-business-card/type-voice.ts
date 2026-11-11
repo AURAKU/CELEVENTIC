@@ -166,7 +166,16 @@ export function celecardNameShouldStack(name: string, stackedVoice: boolean, com
   return celecardNameFitCqw(name, false, compact) < 5;
 }
 
-export function celecardTypeVoice(theme: DigitalCardTheme): CeleCardTypeVoice {
+export function celecardTypeVoice(
+  theme: DigitalCardTheme,
+  lettering?: CeleCardOriginStyle | null
+): CeleCardTypeVoice {
+  if (lettering === "letterhead") return letterhead();
+  if (lettering === "credit") return credit();
+  if (lettering === "stamp") return stamp();
+  if (lettering === "neon") return neon();
+  if (lettering === "masthead") return masthead();
+  if (lettering === "carved") return carved();
   const { category, ornament, atmosphere } = theme;
 
   if (ornament === "neon" || atmosphere === "cel-speed" || theme.id === "cyber-neon") {
@@ -231,9 +240,10 @@ export type CeleCardDockFinish = {
 
 export function celecardDockFinish(
   theme: DigitalCardTheme,
-  stage: { darkStage: boolean; stageHex?: string }
+  stage: { darkStage: boolean; stageHex?: string },
+  lettering?: CeleCardOriginStyle | null
 ): CeleCardDockFinish {
-  const voice = celecardTypeVoice(theme);
+  const voice = celecardTypeVoice(theme, lettering);
   const { originStyle } = voice;
   const dark = stage.darkStage;
   const stageHex = stage.stageHex ?? (dark ? "1a1410" : "f5efe4");

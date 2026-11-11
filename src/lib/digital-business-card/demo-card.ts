@@ -85,7 +85,7 @@ export const DEMO_CARD: DigitalCardPublicPayload = {
   avatarUrl: DEMO_CARD_AVATAR_PATH,
   pronouns: null,
   nfcEnabled: true,
-  connectBackEnabled: true,
+  connectBackEnabled: false,
   defaultMode: "professional",
   isLive: true,
   isDemo: true,

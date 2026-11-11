@@ -21,6 +21,14 @@ describe("CeleYou design desk", () => {
       paperUrl: "/uploads/celecard-papers/x.webp",
       paperWeight: "rich",
       paperTone: "dark",
+      nameScale: "statement",
+      faceLead: "code",
+      lettering: "credit",
+      ink: "dark",
+      accent: "gold",
+      qrFinish: "foil",
+      grain: "linen",
+      motion: "cinema",
     });
     assert.equal(design?.composition, "portrait-led");
     assert.equal(design?.atmosphere, "spotlight");
@@ -28,12 +36,21 @@ describe("CeleYou design desk", () => {
     assert.equal(design?.paperUrl, "/uploads/celecard-papers/x.webp");
     assert.equal(design?.paperWeight, "rich");
     assert.equal(design?.paperTone, "dark");
+    assert.equal(design?.nameScale, "statement");
+    assert.equal(design?.faceLead, "code");
+    assert.equal(design?.lettering, "credit");
+    assert.equal(design?.ink, "dark");
+    assert.equal(design?.accent, "gold");
+    assert.equal(design?.qrFinish, "foil");
+    assert.equal(design?.grain, "linen");
+    assert.equal(design?.motion, "cinema");
   });
 
   it("rejects unsafe paper urls and unknown tokens", () => {
     assert.equal(compactCeleCardDesign({ paperUrl: "javascript:alert(1)" }), undefined);
     assert.equal(compactCeleCardDesign({ composition: "unknown" }), undefined);
     assert.equal(compactCeleCardDesign({ paperUrl: "blob:http://localhost/1" }), undefined);
+    assert.equal(compactCeleCardDesign({ lettering: "comic-sans", accent: "hotpink" }), undefined);
   });
 
   it("keeps house paper textures used by the templates", () => {
@@ -67,9 +84,21 @@ describe("CeleYou design desk", () => {
     });
     assert.equal(paper?.mixBlendMode, "multiply");
     assert.equal((paper?.opacity ?? 0) > 0.1, true);
+    assert.equal(paper?.custom, true);
     assert.match(paper?.veil ?? "", /linear-gradient/);
+    assert.match(paper?.mask ?? "", /linear-gradient/);
+    assert.match(paper?.copyVeil ?? "", /linear-gradient/);
+    assert.match(paper?.edge ?? "", /radial-gradient/);
     assert.equal(paperToneFromBrightness(0.2), "dark");
     assert.equal(paperToneFromBrightness(0.8), "light");
+  });
+
+  it("applies house ink and accent tokens without inventing CSS", () => {
+    const frost = resolveDigitalCardTheme("elegant-frost");
+    const next = applyCeleCardDesign(frost, { ink: "dark", accent: "gold", lettering: "neon" });
+    assert.equal(next.accent, "#d4a63a");
+    assert.equal(next.text, "#faf6ef");
+    assert.match(next.cardBackground, /rgba\(8,10,16/);
   });
 
   it("keeps hue when a dark paper sits on a light plate", () => {
@@ -89,10 +118,16 @@ describe("CeleYou design desk", () => {
         composition: "grid",
         paperUrl: "/digital-cards/demo/ama-serwaa.jpg",
         paperWeight: "subtle",
+        lettering: "letterhead",
+        faceLead: "name",
+        motion: "atelier",
       },
     });
     assert.equal(socials.design?.composition, "grid");
     assert.equal(socials.design?.paperUrl, "/digital-cards/demo/ama-serwaa.jpg");
+    assert.equal(socials.design?.lettering, "letterhead");
+    assert.equal(socials.design?.faceLead, "name");
+    assert.equal(socials.design?.motion, "atelier");
     assert.equal(socials.instagram, "ama");
   });
 });

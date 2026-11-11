@@ -300,6 +300,7 @@ export function CeleCardCreateWizard() {
               title={title}
               company={company}
               avatarUrl={avatarUrl || null}
+              companyLogo
               companyLogoUrl={companyLogoUrl}
               qrSrc={demoCardPreviewQrSrc()}
               qrBadgeHref={demoCardPreviewExplorePath()}

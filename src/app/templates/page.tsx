@@ -13,6 +13,7 @@ import {
   PublicDesignStudioCollection,
   type PublicDesignStudioItem,
 } from "@/components/invitation/public-design-studio-collection";
+import { DummyLiveTapCta } from "@/components/digital-business-card/dummy-live-tap-cta";
 import { PublicDigitalCardsShowcase } from "@/components/digital-business-card/public-digital-cards-showcase";
 import { prisma } from "@/lib/prisma";
 import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
@@ -134,7 +135,7 @@ export default async function PublicTemplatesPage({
 
           <PublicTemplatesCatalog templates={browseTemplates} />
 
-          <PublicDigitalCardsShowcase />
+          <PublicDigitalCardsShowcase dummyLiveCta={await DummyLiveTapCta()} />
 
           <PublicDesignStudioCollection
             templates={designTemplates}

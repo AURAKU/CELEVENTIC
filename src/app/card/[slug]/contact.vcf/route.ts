@@ -12,7 +12,13 @@ import { resolveCeleYouPublicShare, toGuestPublicPayload } from "@/lib/digital-b
 import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
 import { isCeleCardPhotoUrl } from "@/lib/digital-business-card/portraits";
 import { digitalCardIdentityUrl, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
-import { buildVCard, vcardFileName, type VCardPhoto } from "@/lib/digital-business-card/vcard";
+import {
+  buildVCard,
+  vcardContentDisposition,
+  vcardDelivery,
+  vcardFileName,
+  type VCardPhoto,
+} from "@/lib/digital-business-card/vcard";
 import { celeYouGuestOrigin, getServerAppUrl } from "@/lib/app-url";
 import { readUploadFile } from "@/lib/uploads/file-storage";
 import {
@@ -46,9 +52,9 @@ export async function GET(
   });
   const filename = vcardFileName(card);
   const agent = request.headers.get("user-agent") || "";
-  const appleMobile = /iPhone|iPad|iPod/i.test(agent) || (/Macintosh/i.test(agent) && /Mobile/i.test(agent));
-  const disposition = appleMobile ? "inline" : "attachment";
-  if (!isDemoCardSlug(slug)) {
+  const delivery = vcardDelivery(agent);
+  const skipCount = new URL(request.url).searchParams.get("delivery") === "1";
+  if (!skipCount && !isDemoCardSlug(slug)) {
     const live = await getDigitalCardBySlug(slug);
     const policy = await getCeleCardLifecyclePolicy();
     if (live && resolveCeleYouPublicShare({ card: live, channel: "vcard", policy }).recordOpen) {
@@ -59,8 +65,9 @@ export async function GET(
   return new NextResponse(vcf, {
     status: 200,
     headers: {
-      "Content-Type": "text/vcard; charset=utf-8",
-      "Content-Disposition": `${disposition}; filename="${filename}"`,
+      "Content-Type": delivery.contentType,
+      "Content-Disposition": vcardContentDisposition(delivery.disposition, filename),
+      "X-Content-Type-Options": "nosniff",
       "Cache-Control": "private, no-store",
     },
   });

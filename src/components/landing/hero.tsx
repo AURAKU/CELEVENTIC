@@ -106,7 +106,7 @@ export function Hero() {
                 <Link
                   key={item.labelKey}
                   href={item.href}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-base font-semibold text-white backdrop-blur-sm transition hover:border-gold-400/50 hover:bg-white/15"
+                  className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-white/10 px-4 py-2 text-base font-semibold text-white backdrop-blur-sm transition hover:border-gold-400/50 hover:bg-white/15"
                 >
                   <item.icon
                     className={item.labelKey === "landing.pill_cards" ? "h-5 w-5" : "h-4 w-4 text-gold-300"}

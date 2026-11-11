@@ -14,7 +14,7 @@ import {
   isCeleCardIllustratedAvatar,
   isCeleCardPhotoUrl,
 } from "@/lib/digital-business-card/portraits";
-import { buildVCard } from "@/lib/digital-business-card/vcard";
+import { buildVCard, vcardContentDisposition, vcardDelivery } from "@/lib/digital-business-card/vcard";
 import { isDigitalCardLive } from "@/services/digital-business-card/digital-business-card.service";
 import { SMARTCARD_PLANS, getSmartCardPlan } from "@/lib/digital-business-card/plans";
 import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
@@ -27,6 +27,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { SMARTCARD_THEME_DEMOS } from "@/lib/digital-business-card/demos";
 import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
+import { celecardShouldHoldViewport } from "@/lib/digital-business-card/hold-viewport";
 
 describe("digital business card themes", () => {
   it("resolves known and fallback themes", () => {
@@ -115,7 +116,18 @@ describe("digital business card themes", () => {
       /inset 0 -3px 8px rgba\(0,0,0,0\.14\), inset 0 0 0 1px \$\{theme\.border\}/
     );
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
-    assert.match(css, /\.celecard-wordmark \{[\s\S]*padding: 1\.1cqw 6cqw 3\.6cqw;/);
+    const wordmark = css.match(/\.celecard-wordmark \{[^}]+\}/);
+    assert.ok(wordmark);
+    assert.match(wordmark[0], /padding: 1\.2cqw 5cqw 3\.4cqw;/);
+    assert.match(wordmark[0], /background:\s*transparent/);
+    assert.match(wordmark[0], /box-shadow:\s*none/);
+    assert.match(wordmark[0], /mix-blend-mode:\s*multiply/);
+    assert.doesNotMatch(wordmark[0], /border-radius:\s*999px/);
+    assert.match(css, /\.celecard-wordmark\[data-paper="dark"\] \{[\s\S]*mix-blend-mode:\s*screen/);
+    assert.match(css, /\.celecard-wordmark-slogan \{/);
+    assert.match(css, /\.celecard-wordmark-rule \{/);
+    assert.match(source, /SMARTCARD_BRAND_TAGLINE/);
+    assert.match(source, /celecard-wordmark-rule/);
   });
 
   it("shows the official CeleYou logo in full, never cropped to fill a square", () => {
@@ -142,10 +154,28 @@ describe("digital business card themes", () => {
     assert.ok(originPlate);
     assert.match(originPlate[0], /overflow:\s*visible/);
     assert.match(originPlate[0], /background:\s*transparent/);
+    assert.match(originPlate[0], /isolation:\s*isolate/);
+    assert.match(originPlate[0], /mix-blend-mode:\s*normal/);
+    assert.match(originPlate[0], /height:\s*32cqw/);
+    assert.doesNotMatch(originPlate[0], /isolation:\s*auto/);
+    assert.doesNotMatch(originPlate[0], /mix-blend-mode:\s*multiply/);
     assert.doesNotMatch(originPlate[0], /border-radius:\s*999px/);
+    const originDark = css.match(/\.celecard-origin-plate\[data-paper="dark"\] \{[^}]+\}/);
+    assert.ok(originDark);
+    assert.match(originDark[0], /mix-blend-mode:\s*normal/);
+    assert.doesNotMatch(originDark[0], /mix-blend-mode:\s*screen/);
+    assert.match(css, /\.celecard-origin-knockout \{/);
+    assert.match(css, /\.celecard-origin-foil \{/);
+    assert.match(css, /#7ff0e4 34%/);
+    assert.doesNotMatch(css, /color-mix\(in srgb, var\(--celecard-accent\) 72%, #0b8a83\)/);
+    assert.match(mark, /celecard-origin-knockout/);
+    assert.match(mark, /celecard-origin-foil/);
+    assert.match(mark, /stamp \? "celecard-origin-stamp" : "isolate"/);
+    assert.match(mark, /mixBlendMode: "normal"/);
     const originImg = css.match(/\.celecard-origin-plate img \{[^}]+\}/);
     assert.ok(originImg);
     assert.match(originImg[0], /object-fit: contain/);
+    assert.match(originImg[0], /mix-blend-mode:\s*normal/);
     assert.doesNotMatch(originImg[0], /transform:\s*scale/);
     assert.match(mark, /overflow-visible/);
     assert.doesNotMatch(mark, /overflow-hidden/);
@@ -184,6 +214,14 @@ describe("digital business card themes", () => {
     for (const person of celeCardHouseAvatarsByGroup("people")) {
       assert.match(faces, new RegExp(`case "${person.id}":`));
     }
+    for (const shape of ["round", "oval", "square", "heart", "long", "wide", "diamond"]) {
+      assert.match(faces, new RegExp(`shape="${shape}"`));
+    }
+    for (const eyes of ["round", "almond", "hooded", "lid", "wide", "deep"]) {
+      assert.match(faces, new RegExp(`eyes="${eyes}"`));
+    }
+    assert.match(faces, /fullness="full"/);
+    assert.match(faces, /aged/);
     const house = readFileSync(
       join(process.cwd(), "src/components/digital-business-card/digital-card-house-avatar.tsx"),
       "utf8"
@@ -311,6 +349,25 @@ describe("subscription countdown", () => {
     assert.match(ended?.label ?? "", /^Ended 2 days/);
     assert.equal(countdownTickMs(ended?.remainingMs ?? -1), 60_000);
   });
+
+  it("keeps the live term plate free of a listed price", () => {
+    const ribbon = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-subscription-countdown.tsx"),
+      "utf8"
+    );
+    const demo = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-live-demo-studio.tsx"),
+      "utf8"
+    );
+    assert.doesNotMatch(ribbon, /priceGhs/);
+    assert.doesNotMatch(ribbon, /₵\{/);
+    assert.match(ribbon, /celecard-term-flow/);
+    assert.match(ribbon, /profile views/);
+    assert.match(demo, /planLabel="Yearly"/);
+    assert.doesNotMatch(demo, /yearly\?\.priceGhs/);
+    assert.match(demo, /<FolioField label="Company"/);
+    assert.doesNotMatch(demo, /<FolioField label="House"/);
+  });
 });
 
 describe("smartcard plans", () => {
@@ -420,8 +477,56 @@ describe("vcard export", () => {
     assert.match(vcf, /EMAIL;TYPE=INTERNET:ama@example.com/);
     assert.match(vcf, /URL;TYPE=WORK:https:\/\/celeventic.com/);
     assert.match(vcf, /X-ABLabel:LinkedIn/);
+    assert.match(vcf, /X-SOCIALPROFILE;TYPE=linkedin:/);
+    assert.match(vcf, /CATEGORIES:CeleYou/);
     assert.match(vcf, /NOTE:Hello/);
     assert.match(vcf, /END:VCARD/);
+  });
+
+  it("puts the live profile URL and pronouns in the contact file", () => {
+    const vcf = buildVCard(
+      {
+        id: "card_1",
+        slug: "ama",
+        publicToken: "tok_ama",
+        displayName: "Ama Mensah",
+        title: "Founder",
+        company: "Celeventic",
+        bio: "Hello",
+        email: "ama@example.com",
+        phone: "+233000",
+        website: "https://celeventic.com",
+        socials: { linkedin: "ama" },
+        themeId: "elegant-frost",
+        avatarUrl: null,
+        pronouns: "she/her",
+        nfcEnabled: true,
+        connectBackEnabled: true,
+        defaultMode: "professional",
+        isLive: true,
+      },
+      { cardUrl: "https://www.celeventic.com/u/ama" }
+    );
+    assert.match(vcf, /URL;TYPE=PREF:https:\/\/www\.celeventic\.com\/u\/ama/);
+    assert.match(vcf, /X-ABLabel:CeleYou/);
+    assert.match(vcf, /NOTE:she\/her\\nHello/);
+  });
+
+  it("hands the vcf to each OS the way Contacts expects", () => {
+    const ios = vcardDelivery("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)");
+    assert.equal(ios.disposition, "inline");
+    assert.match(ios.contentType, /text\/vcard/);
+    const android = vcardDelivery("Mozilla/5.0 (Linux; Android 14)");
+    assert.equal(android.disposition, "attachment");
+    assert.match(android.contentType, /text\/x-vcard/);
+    const mac = vcardDelivery("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)");
+    assert.equal(mac.disposition, "attachment");
+    const windows = vcardDelivery("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+    assert.equal(windows.disposition, "attachment");
+    assert.match(
+      vcardContentDisposition("attachment", "ama-mensah.vcf"),
+      /filename="ama-mensah\.vcf"/
+    );
   });
 });
 
@@ -787,6 +892,68 @@ describe("celecard dummy portrait", () => {
     assert.equal(DEMO_CARD.avatarUrl, DEMO_CARD_AVATAR_PATH);
     assert.match(DEMO_CARD_AVATAR_PATH, /^\/digital-cards\/demo\/ama-serwaa\.jpg$/);
   });
+
+  it("never offers Connect Back on the dummy plate", async () => {
+    const { DEMO_CARD } = await import("@/lib/digital-business-card/demo-card");
+    assert.equal(DEMO_CARD.connectBackEnabled, false);
+    assert.equal(DEMO_CARD.isDemo, true);
+    const view = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-public-view.tsx"),
+      "utf8"
+    );
+    assert.match(view, /connectBackEnabled && !card\.isDemo/);
+    assert.doesNotMatch(view, /Demo tap/i);
+    assert.doesNotMatch(view, /Same page a link, QR, or NFC opens/i);
+  });
+});
+
+describe("dummy live privacy", () => {
+  it("keeps non-admin CeleYou marketing HTML free of the dummy live tap CTA", () => {
+    const page = readFileSync(join(process.cwd(), "src/app/digital-cards/page.tsx"), "utf8");
+    const showcase = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/public-digital-cards-showcase.tsx"),
+      "utf8"
+    );
+    const templates = readFileSync(join(process.cwd(), "src/app/templates/page.tsx"), "utf8");
+    const cta = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/dummy-live-tap-cta.tsx"),
+      "utf8"
+    );
+    assert.doesNotMatch(showcase, /See a live dummy tap/);
+    assert.doesNotMatch(showcase, /\/digital-cards\/demo(?!\/)/);
+    assert.doesNotMatch(showcase, /demoCardHubPath/);
+    assert.doesNotMatch(page, /See a live dummy tap/);
+    assert.doesNotMatch(page, /href=\/digital-cards\/demo/);
+    assert.match(page, /DummyLiveTapCta/);
+    assert.match(page, /dummyLiveCta/);
+    assert.match(templates, /DummyLiveTapCta/);
+    assert.match(cta, /See a live dummy tap/);
+    assert.match(cta, /viewerMayOpenDummyLive/);
+    assert.match(cta, /demoCardHubPath/);
+  });
+
+  it("server-redirects dummy live routes for anyone who is not a platform admin", () => {
+    const files = [
+      "src/app/digital-cards/demo/page.tsx",
+      "src/app/digital-cards/demo/studio/page.tsx",
+      "src/app/card/[slug]/page.tsx",
+      "src/app/card/[slug]/present/page.tsx",
+      "src/app/c/[token]/page.tsx",
+      "src/app/n/[token]/page.tsx",
+    ];
+    for (const file of files) {
+      const source = readFileSync(join(process.cwd(), file), "utf8");
+      assert.match(source, /viewerMayOpenDummyLive/, file);
+      assert.match(source, /CELECARD_DUMMY_LIVE_FALLBACK/, file);
+    }
+    const vcf = readFileSync(join(process.cwd(), "src/app/card/[slug]/contact.vcf/route.ts"), "utf8");
+    assert.match(vcf, /viewerMayOpenDummyLive/);
+    const json = readFileSync(
+      join(process.cwd(), "src/app/api/digital-business-cards/public/[slug]/route.ts"),
+      "utf8"
+    );
+    assert.match(json, /dummyLiveNotFoundJson/);
+  });
 });
 
 describe("celecard company logo", () => {
@@ -798,6 +965,20 @@ describe("celecard company logo", () => {
     assert.equal(hasCeleCardCompanyLogo(""), false);
     assert.equal(hasCeleCardCompanyLogo("   "), false);
     assert.equal(hasCeleCardCompanyLogo("/uploads/u/logo.webp"), true);
+  });
+
+  it("puts a company mark beside the house name on every template", async () => {
+    const { celeCardShowsCompanyMark } = await import(
+      "@/components/digital-business-card/demo-company-mark"
+    );
+    assert.equal(celeCardShowsCompanyMark(null), false);
+    assert.equal(celeCardShowsCompanyMark("Northline"), true);
+    for (const theme of DIGITAL_CARD_THEMES) {
+      const demo = SMARTCARD_THEME_DEMOS[theme.id];
+      assert.equal(Boolean(demo.company.trim()), true);
+      assert.equal(celeCardShowsCompanyMark(demo.company), true);
+      assert.equal(demo.companyLogo, true);
+    }
   });
 
   it("keeps a company mark url beside the house name and rejects unsafe urls", async () => {
@@ -1068,12 +1249,37 @@ describe("CeleYou device frame", () => {
       join(process.cwd(), "src/app/dashboard/business-card/page.tsx"),
       "utf8"
     );
-    assert.match(catalog, /placeholder="Search a network"/);
-    assert.match(catalog, /Tap a network to add/);
+    assert.match(catalog, /placeholder="Search a network or paste any link"/);
+    assert.match(catalog, /Tap a network to add or edit/);
+    assert.match(catalog, /Add a page that is not listed/);
+    assert.match(catalog, /celecard-other-links/);
+    const otherFields = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-other-fields.tsx"),
+      "utf8"
+    );
+    assert.match(otherFields, /Other links/);
+    assert.match(otherFields, /App or category not listed/);
+    assert.match(catalog, /setActiveKey/);
+    assert.match(catalog, /celecard-reach-picker/);
+    assert.match(catalog, /celecard-reach-chips/);
     assert.match(catalog, /fit-scroller/);
     assert.match(catalog, /min-w-0 overflow-hidden/);
+    assert.match(catalog, /celecard-reach-open/);
+    assert.match(catalog, /celecard-reach-card/);
+    assert.doesNotMatch(catalog, /sm:grid-cols-2/);
     assert.match(shell, /p-3 sm:p-6 lg:p-8/);
     assert.doesNotMatch(studioPage, /px-4 py-8/);
+    const studio = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-studio-client.tsx"),
+      "utf8"
+    );
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    assert.match(studio, /celecard-studio-desk/);
+    assert.match(studio, /celecard-studio-jump/);
+    assert.doesNotMatch(studio, /lg:grid-cols-\[1fr_360px\]/);
+    assert.match(css, /@media \(min-width: 1180px\)/);
+    assert.match(css, /\.celecard-reach-open/);
+    assert.match(css, /\.celecard-reach-chips/);
   });
 });
 
@@ -1136,5 +1342,29 @@ describe("CeleYou paid activation lock", () => {
     assert.match(billing, /cannot be cancelled/);
     assert.match(renewal, /subscriptionStatus: "EXPIRED"/);
     assert.doesNotMatch(billing, /Cancel subscription|End subscription|Terminate/);
+  });
+});
+
+describe("CeleYou landscape hold", () => {
+  it("fills the frame with only the ID-1 plate on a rotated short landscape", () => {
+    assert.equal(celecardShouldHoldViewport(932, 430, true), true);
+    assert.equal(celecardShouldHoldViewport(1180, 651, false), true);
+    assert.equal(celecardShouldHoldViewport(844, 390, false, 390, 844), true);
+    assert.equal(celecardShouldHoldViewport(390, 844, true), false);
+    assert.equal(celecardShouldHoldViewport(781, 731, false), false);
+    assert.equal(celecardShouldHoldViewport(1440, 900, false), false);
+    assert.equal(celecardShouldHoldViewport(1280, 720, false, 1280, 800), false);
+
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    const view = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-public-view.tsx"),
+      "utf8"
+    );
+    assert.match(css, /data-celecard-hold="true"/);
+    assert.match(css, /\(orientation: landscape\) and \(max-height: 740px\)/);
+    assert.match(css, /85\.6 \/\s*54/);
+    assert.match(view, /data-celecard-hold=\{hold \? "true" : undefined\}/);
+    assert.match(view, /readCelecardHoldViewport/);
+    assert.match(view, /qrHref=\{hold \? undefined : digitalCardPublicUrl/);
   });
 });

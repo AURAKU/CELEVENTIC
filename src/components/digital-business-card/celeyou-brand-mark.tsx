@@ -49,25 +49,43 @@ type CeleYouThemedMarkProps = {
   theme?: CeleYouThemeInk;
   className?: string;
   style?: CSSProperties;
+  /** Stamp the orb onto the plate with a local halo. The PNG stays true teal. */
+  stamp?: boolean;
+  paper?: "light" | "dark";
 };
 
 /**
  * Official CeleYou orb at true color, shown in full.
- * No teal plate behind it: only the uploaded logo, never cropped to fill a square.
+ * On a card face (`stamp`), a soft paper knockout keeps the orbit readable
+ * without a sticker tile. Theme foil stays under the PNG and never tints it.
+ * Elsewhere it stays a true-color mark: never cropped to fill a square.
  */
-export function CeleYouThemedMark({ theme: _theme, className, style }: CeleYouThemedMarkProps) {
+export function CeleYouThemedMark({
+  theme: _theme,
+  className,
+  style,
+  stamp = false,
+  paper = "light",
+}: CeleYouThemedMarkProps) {
   return (
     <span
-      className={cn("relative isolate inline-grid shrink-0 overflow-visible bg-transparent", className)}
+      className={cn(
+        "relative inline-grid shrink-0 overflow-visible bg-transparent",
+        stamp ? "celecard-origin-stamp" : "isolate",
+        className
+      )}
+      data-paper={stamp ? paper : undefined}
       style={{ mixBlendMode: "normal", opacity: 1, ...style }}
       aria-hidden
     >
+      {stamp ? <span className="celecard-origin-knockout" aria-hidden /> : null}
+      {stamp ? <span className="celecard-origin-foil" aria-hidden /> : null}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={CELEYOU_MARK_SRC}
         alt=""
-        className="col-start-1 row-start-1 h-full w-full object-contain object-center"
-        style={{ mixBlendMode: "normal", opacity: 1, filter: "none" }}
+        className="celecard-origin-ink col-start-1 row-start-1 h-full w-full object-contain object-center"
+        style={{ mixBlendMode: "normal", opacity: 1 }}
       />
     </span>
   );

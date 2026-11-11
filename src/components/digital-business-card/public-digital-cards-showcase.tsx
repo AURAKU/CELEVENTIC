@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { smartCardLoginPath, smartCardSignupPath, smartCardStudioPath } from "@/lib/auth/safe-next-path";
@@ -42,12 +42,10 @@ import {
   SMARTCARD_HERO_SUPPORT,
 } from "@/lib/digital-business-card/product";
 import {
-  demoCardHubPath,
   demoCardPreviewExplorePath,
   demoCardPreviewQrSrc,
 } from "@/lib/digital-business-card/demo-card";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
-import { canAccessAdminPanel } from "@/lib/rbac/permissions";
 
 const CAPABILITY_ICONS = {
   "Smart QR": QrCode,
@@ -220,7 +218,13 @@ function HeroFan() {
   );
 }
 
-export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?: boolean }) {
+export function PublicDigitalCardsShowcase({
+  standalone = false,
+  dummyLiveCta = null,
+}: {
+  standalone?: boolean;
+  dummyLiveCta?: ReactNode;
+}) {
   const { data: session, status } = useSession();
   const [filter, setFilter] = useState<"all" | DigitalCardThemeCategory>("all");
   const [planId, setPlanId] = useState<SmartCardPlanId>("yearly");
@@ -253,7 +257,6 @@ export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?
     };
   }, []);
   const signedIn = status === "authenticated" && Boolean(session?.user);
-  const showDummyLive = canAccessAdminPanel(session?.user?.role);
   const registerHref = signedIn ? smartCardStudioPath(planId) : smartCardSignupPath(planId);
   const loginHref = smartCardLoginPath(planId);
   const themeHref = (themeId: string) =>
@@ -319,15 +322,7 @@ export function PublicDigitalCardsShowcase({ standalone = false }: { standalone?
               >
                 <a href="#smartcard-themes">{SMARTCARD_CTA_SECONDARY}</a>
               </Button>
-              {showDummyLive ? (
-                <Button
-                  asChild
-                  variant="outline"
-                  className="min-h-11 border-amber-200/40 bg-amber-300/10 text-amber-100 hover:bg-amber-300/20 hover:text-white"
-                >
-                  <Link href={demoCardHubPath()}>See a live dummy tap</Link>
-                </Button>
-              ) : null}
+              {dummyLiveCta}
             </div>
             <ul className="mt-7 flex flex-wrap gap-2">
               {(Object.keys(CAPABILITY_ICONS) as (keyof typeof CAPABILITY_ICONS)[]).map((label) => {

@@ -162,6 +162,19 @@ export function DigitalCardSubscriptionCountdown({
   );
 }
 
+function cleanTermLabel(label: string) {
+  return label.replace(/\s*[·•|,]\s*(GH)?₵?\s*\d[\d,.]*.*$/i, "").trim() || "Paid";
+}
+
+function inkIsDark(color: string) {
+  const hex = color.replace("#", "");
+  if (hex.length < 6) return true;
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 < 148;
+}
+
 export function DigitalCardLiveTermRibbon({
   themeName,
   planLabel,
@@ -192,18 +205,22 @@ export function DigitalCardLiveTermRibbon({
   const snap = useSubscriptionSnap(endsAt, status);
   const live = (status ?? "").toUpperCase() === "ACTIVE" && snap?.kind === "renewal";
   const fill = snap ? Math.max(0.08, snap.remainingRatio) : 0.08;
+  const remainingPct = Math.round(fill * 100);
   const throughWord =
     snap?.kind === "ended" ? "Ended" : snap?.kind === "expiry" ? "Open through" : "Paid through";
-  const channels = [
-    `${viewCount.toLocaleString("en-GB")} views`,
+  const statusLabel = live ? "Active · Live" : snap?.kind === "ended" ? "Ended" : "Studio open";
+  const termLabel = cleanTermLabel(planLabel);
+  const onDark = !inkIsDark(fg);
+  const chips = [
+    `${viewCount.toLocaleString("en-GB")} profile views`,
     qrLive ? "QR live" : null,
     nfcEnabled ? "NFC ready" : null,
     live ? "Guest page live" : null,
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
 
   return (
     <div
-      className="celecard-term-ribbon relative mb-8 overflow-hidden rounded-2xl px-4 py-3.5"
+      className="celecard-term-ribbon relative mb-8 overflow-hidden rounded-2xl px-4 py-4 sm:px-5"
       style={{
         background: faint,
         border: `1px solid ${border}`,
@@ -211,34 +228,54 @@ export function DigitalCardLiveTermRibbon({
       }}
     >
       <div className="relative z-[1] flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <span className="inline-flex items-center gap-2">
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]"
+          style={{
+            background: live
+              ? onDark
+                ? "rgba(34,197,94,0.18)"
+                : "rgba(22,163,74,0.14)"
+              : onDark
+                ? "rgba(251,191,36,0.16)"
+                : "rgba(217,119,6,0.12)",
+            color: live ? (onDark ? "#86efac" : "#166534") : onDark ? "#fde68a" : "#92400e",
+          }}
+        >
           <span
-            className={cn("celecard-live-pip h-2 w-2 rounded-full", live ? "bg-[#22c55e]" : "bg-amber-400")}
+            className={cn(
+              "celecard-live-pip h-1.5 w-1.5 rounded-full",
+              live ? (onDark ? "bg-[#4ade80]" : "bg-[#16a34a]") : onDark ? "bg-amber-300" : "bg-amber-600"
+            )}
             aria-hidden
           />
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em]">
-            {live ? "Live" : snap?.kind === "ended" ? "Ended" : "Studio"}
-          </span>
+          {statusLabel}
         </span>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: muted }}>
-          {planLabel} plan
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: muted }}>
+          {termLabel} term
         </span>
       </div>
-      <p className="relative z-[1] mt-1.5 text-sm font-semibold tracking-tight">{themeName}</p>
-      <div
-        className="celecard-term-flow relative z-[1] mt-3"
-        style={{ background: `${border}` }}
-        aria-hidden
-      >
-        <span
-          className="celecard-term-flow-fill block h-full rounded-full"
-          style={{ width: `${Math.round(fill * 100)}%`, background: accent }}
-        />
-        <span className="celecard-term-flow-glint" />
+      <p className="relative z-[1] mt-3 text-[1.05rem] font-semibold tracking-tight">{themeName}</p>
+      <div className="relative z-[1] mt-3">
+        <div
+          className="celecard-term-flow"
+          style={{ background: onDark ? "rgba(255,255,255,0.16)" : "rgba(28,25,23,0.1)" }}
+          aria-hidden
+        >
+          <span
+            className="celecard-term-flow-fill block h-full rounded-full"
+            style={{ width: `${remainingPct}%`, background: accent }}
+          />
+          <span className="celecard-term-flow-glint" />
+        </div>
+        {snap ? (
+          <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: muted }}>
+            {snap.kind === "ended" ? "Term complete" : `${remainingPct}% of this term still ahead`}
+          </p>
+        ) : null}
       </div>
       {snap ? (
-        <div className="relative z-[1] mt-2.5 flex flex-col gap-2 text-[12px] leading-relaxed" style={{ color: muted }}>
-          <p>
+        <div className="relative z-[1] mt-3 flex flex-col gap-2.5">
+          <p className="text-[13px] font-medium" style={{ color: fg }}>
             {throughWord} {snap.paidThrough}
           </p>
           <DigitalCardTermFlowCounter
@@ -248,7 +285,19 @@ export function DigitalCardLiveTermRibbon({
             fg={fg}
             muted={muted}
           />
-          {channels.length ? <p>{channels.join(" · ")}</p> : null}
+          {chips.length ? (
+            <div className="celecard-term-chips">
+              {chips.map((chip) => (
+                <span
+                  key={chip}
+                  className="celecard-term-chip"
+                  style={{ borderColor: border, color: muted }}
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

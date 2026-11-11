@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Download, Nfc, RotateCcw, Share2 } from "lucide-react";
+import { ArrowLeft, Nfc, RotateCcw } from "lucide-react";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
 import { cn } from "@/lib/utils";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
@@ -24,7 +24,7 @@ import {
 } from "@/lib/digital-business-card/demo-card";
 import { smartCardShortUrl } from "@/lib/digital-business-card/product";
 import { digitalCardPublicUrl, digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
-import { celeCardShareMessage, celeCardShareTitle, digitalCardExportImagePath } from "@/lib/digital-business-card/share";
+import { celeCardShareClipboard, celeCardShareMessage, celeCardShareTitle, digitalCardExportImagePath } from "@/lib/digital-business-card/share";
 import {
   DIGITAL_CARD_SOCIAL_GROUPS,
   chatKindsForBrand,
@@ -59,16 +59,27 @@ import {
   writePayQrBrand,
 } from "@/components/digital-business-card/digital-card-pay-fields";
 import { DigitalCardReachCatalog } from "@/components/digital-business-card/digital-card-reach-catalog";
-import { DigitalCardOtherFields } from "@/components/digital-business-card/digital-card-other-fields";
+import {
+  DigitalCardOtherFields,
+  DigitalCardOtherReservation,
+} from "@/components/digital-business-card/digital-card-other-fields";
 import { DigitalCardMeetingDesk } from "@/components/digital-business-card/digital-card-meeting-desk";
+import {
+  DigitalCardMeetingDrop,
+  meetingPreviewItems,
+} from "@/components/digital-business-card/digital-card-meeting-drop";
+import {
+  DigitalCardLocationDrop,
+  locationPreviewItems,
+} from "@/components/digital-business-card/digital-card-location-drop";
 import { DigitalCardBrandMark } from "@/components/digital-business-card/digital-card-brand-mark";
 import { DigitalCardReachOrderEditor } from "@/components/digital-business-card/digital-card-reach-order";
 import { DigitalCardPrivacyDesk } from "@/components/digital-business-card/digital-card-privacy-desk";
 import { applyReachVisibilityPreview, type ReachVisibility } from "@/lib/digital-business-card/privacy-preview";
-import { SMARTCARD_PLANS } from "@/lib/digital-business-card/plans";
 import { DigitalCardPortraitField } from "@/components/digital-business-card/digital-card-portrait-field";
 import { DigitalCardCompanyLogoField } from "@/components/digital-business-card/digital-card-company-logo-field";
 import { DigitalCardLiveTermRibbon } from "@/components/digital-business-card/digital-card-subscription-countdown";
+import { DigitalCardTileActions } from "@/components/digital-business-card/digital-card-tile-actions";
 import { celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import {
   celecardPortraitFrame,
@@ -241,7 +252,6 @@ export function DigitalCardLiveDemoStudio({
   const qrUrl = smartCardShortUrl(DEMO_CARD.publicToken, origin);
   const qrSrc = qrUrl ? digitalCardQrImageSrc(qrUrl) : null;
   const cardPng = digitalCardExportImagePath(DEMO_CARD_SLUG);
-  const yearly = SMARTCARD_PLANS.find((p) => p.id === "yearly");
   const theme = resolveDigitalCardTheme(desk.themeId);
   const typeVoice = celecardTypeVoice(theme);
   const stage = stageInk(theme.stageBackground);
@@ -301,19 +311,17 @@ export function DigitalCardLiveDemoStudio({
   }
 
   async function shareCard() {
+    const title = celeCardShareTitle(desk);
+    const text = celeCardShareMessage(desk);
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: celeCardShareTitle(desk),
-          text: celeCardShareMessage(desk),
-          url: guestUrl,
-        });
+        await navigator.share({ title, text, url: guestUrl });
         return;
       }
     } catch {
       /* fall through */
     }
-    await copy("share", guestUrl);
+    await copy("share", celeCardShareClipboard(desk, guestUrl));
   }
 
   const dirty =
@@ -381,21 +389,21 @@ export function DigitalCardLiveDemoStudio({
           >
             {desk.displayName || "Your name"}
           </h1>
-          <label className="mt-4 block">
+          <label className="mt-5 block max-w-xl">
             <span className="sr-only">About</span>
             <textarea
               value={desk.bio}
               onChange={(e) => patch({ bio: e.target.value })}
               rows={3}
               placeholder="A few words guests read under your name."
-              className="w-full resize-y rounded-r-xl border-y border-r border-transparent bg-transparent py-1.5 pl-3.5 pr-1 text-[1.05rem] font-medium leading-[1.42] outline-none placeholder:opacity-40 sm:text-xl sm:leading-[1.38] transition focus:border-[color:var(--folio-line)] focus:pr-3"
+              className="celecard-live-bio w-full resize-y bg-transparent py-1 text-[1.2rem] font-semibold leading-[1.45] outline-none placeholder:opacity-40 sm:text-[1.45rem] sm:leading-[1.4]"
               style={{
                 color: stage.fg,
-                fontFamily: typeVoice.heading,
-                letterSpacing: "-0.018em",
+                fontFamily: typeVoice.title,
+                fontStyle: typeVoice.titleItalic ? "italic" : "normal",
+                letterSpacing: typeVoice.titleTracking,
                 caretColor: theme.accent,
-                borderLeft: `2px solid ${theme.accent}`,
-                ["--folio-line" as string]: theme.border,
+                textShadow: stage.dark ? "0 1px 0 rgba(0,0,0,0.35)" : "0 1px 0 rgba(255,255,255,0.65)",
               }}
             />
           </label>
@@ -403,7 +411,7 @@ export function DigitalCardLiveDemoStudio({
 
         <DigitalCardLiveTermRibbon
           themeName={theme.name}
-          planLabel={yearly?.label ?? "Yearly"}
+          planLabel="Yearly"
           endsAt={DEMO_CARD_PAID_THROUGH}
           status="ACTIVE"
           viewCount={DEMO_CARD_VIEW_COUNT}
@@ -415,7 +423,7 @@ export function DigitalCardLiveDemoStudio({
           faint={stage.faint}
         />
 
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <div className="grid grid-cols-1 items-start gap-8 min-[1180px]:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <div className="min-w-0 lg:sticky lg:top-24">
             <div
               className="relative min-w-0 overflow-hidden rounded-[1.75rem] p-4 sm:p-7"
@@ -450,34 +458,16 @@ export function DigitalCardLiveDemoStudio({
                   compact={!wideStage}
                   className="mx-auto w-full max-w-full"
                   portraitFrame={desk.portraitFrame}
+                  companyLogo
                   companyLogoUrl={desk.companyLogoUrl}
                 />
-                <div className="mt-3 flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void shareCard()}
-                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] shadow-[0_8px_18px_rgba(15,23,42,0.12)]"
-                    style={{
-                      background: theme.accent,
-                      color: "#fffef8",
-                    }}
-                  >
-                    {copied === "share" ? <Check className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
-                    {copied === "share" ? "Copied" : "Share"}
-                  </button>
-                  <a
-                    href={cardPng}
-                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] shadow-[0_8px_18px_rgba(15,23,42,0.12)]"
-                    style={{
-                      background: "rgba(255,255,255,0.92)",
-                      color: theme.accent,
-                      border: `1px solid ${theme.border}`,
-                    }}
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Download
-                  </a>
-                </div>
+                <DigitalCardTileActions
+                  accent={theme.accent}
+                  border={theme.border}
+                  copied={copied === "share"}
+                  downloadHref={cardPng}
+                  onShare={() => void shareCard()}
+                />
               </div>
               {desk.bio ? (
                 <p
@@ -499,7 +489,7 @@ export function DigitalCardLiveDemoStudio({
                 </div>
               ) : null}
               <p className="mt-4 text-center text-[11px]" style={{ color: theme.muted }}>
-                Tap the QR for the guest page. Share sends that same link.
+                Tap the card to open the live page. Share copies that same link.
               </p>
             </div>
           </div>
@@ -516,7 +506,7 @@ export function DigitalCardLiveDemoStudio({
             <div className="mb-5 flex items-end justify-between gap-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: theme.accent }}>
-                  Customise the house
+                  Your details
                 </p>
                 <h2 className="mt-1 text-xl font-semibold" style={{ fontFamily: typeVoice.heading }}>
                   Identity on the card
@@ -584,10 +574,10 @@ export function DigitalCardLiveDemoStudio({
                       onChange={(e) => patch({ company: e.target.value })}
                       className={folioInputClass}
                       style={folioControlStyle(theme)}
-                      placeholder="Company or studio"
+                      placeholder="Your company, studio, or business"
                     />
                     <p className="text-[11px] leading-relaxed" style={{ color: theme.muted }}>
-                      Upload a square mark. It sits beside the company name on the card.
+                      The business guests should remember. Upload a square mark beside the name.
                     </p>
                   </div>
                 </div>
@@ -675,6 +665,16 @@ export function DigitalCardLiveDemoStudio({
                   inputStyle={folioControlStyle(theme)}
                   addStyle={{ color: theme.accent }}
                 />
+                {locationPreviewItems(desk.socials.location).length ? (
+                  <div className="mt-2">
+                    <DigitalCardLocationDrop
+                      items={locationPreviewItems(desk.socials.location)}
+                      theme={theme}
+                      compact
+                      preview
+                    />
+                  </div>
+                ) : null}
               </FolioField>
               <FolioField
                 label="Meetings"
@@ -689,6 +689,17 @@ export function DigitalCardLiveDemoStudio({
                   inputClassName={folioInputClass}
                   inputStyle={folioControlStyle(theme)}
                 />
+                {meetingPreviewItems(desk.meeting).length ? (
+                  <div className="mt-2 overflow-hidden rounded-2xl border" style={{ borderColor: theme.border }}>
+                    <DigitalCardMeetingDrop
+                      items={meetingPreviewItems(desk.meeting)}
+                      theme={theme}
+                      compact
+                      preview
+                      ownerName={desk.displayName}
+                    />
+                  </div>
+                ) : null}
               </FolioField>
             </div>
 
@@ -697,7 +708,7 @@ export function DigitalCardLiveDemoStudio({
                 Reach
               </p>
               <p className="mt-1 text-xs leading-relaxed" style={{ color: theme.muted }}>
-                Search or flip through a network, then add it. Missing apps become a page guests can open.
+                Search or flip through a network. Tap one to add it, then fill that field. If the app is not listed, save it as another page guests can open.
               </p>
               {DIGITAL_CARD_SOCIAL_GROUPS.map((group) => (
                 <div key={group.id} className="mt-4">
@@ -711,7 +722,7 @@ export function DigitalCardLiveDemoStudio({
                       accent={theme.accent}
                       intro={
                         <p className="mb-3 text-xs leading-relaxed" style={{ color: theme.muted }}>
-                          Official wallet marks. Guests only see the wallets you fill, never blank ones. Number, cashtag, payment link, bank account, or a receive QR.
+                          Official wallet marks. Guests only see the wallets you fill. Number, cashtag, payment link, bank account, or a receive QR.
                         </p>
                       }
                       onAdd={(key) => {
@@ -720,6 +731,12 @@ export function DigitalCardLiveDemoStudio({
                           socials: { ...desk.socials, [key]: current?.length ? current : [""] },
                         });
                       }}
+                      onRemove={(key) =>
+                        patch({
+                          socials: { ...desk.socials, [key]: [] },
+                          payQr: writePayQrBrand(desk.payQr, key, []),
+                        })
+                      }
                     >
                       {(network) => (
                         <FolioField
@@ -730,7 +747,7 @@ export function DigitalCardLiveDemoStudio({
                         >
                           <DigitalCardPayFields
                             brand={network.key}
-                            values={desk.socials[network.key]}
+                            values={desk.socials[network.key] ?? []}
                             qrUrls={payQrListForBrand(desk.payQr, network.key, desk.socials[network.key])}
                             onChange={(next, qrUrls) =>
                               patch({
@@ -764,11 +781,11 @@ export function DigitalCardLiveDemoStudio({
                     intro={
                       group.id === "chat" ? (
                         <p className="mb-3 text-xs leading-relaxed" style={{ color: theme.muted }}>
-                          Number, username, share URL, group, or channel. Each one is tagged so guests can choose.
+                          Number, username, group, or channel. Tagged so guests can choose.
                         </p>
                       ) : group.id === "social" ? (
                         <p className="mb-3 text-xs leading-relaxed" style={{ color: theme.muted }}>
-                          Profiles, posts, and any page that is not in the list. Guests tap the name you give it.
+                          Profiles, posts, and any page that is not in the list. Other links stay reserved at the bottom.
                         </p>
                       ) : null
                     }
@@ -796,7 +813,7 @@ export function DigitalCardLiveDemoStudio({
                       >
                         {network.key === "other" ? (
                           <DigitalCardOtherFields
-                            values={desk.socials[network.key]}
+                            values={desk.socials[network.key] ?? []}
                             onChange={(next) => patch({ socials: { ...desk.socials, [network.key]: next } })}
                             inputClassName={folioInputClass}
                             inputStyle={folioControlStyle(theme)}
@@ -805,7 +822,7 @@ export function DigitalCardLiveDemoStudio({
                         ) : (
                           <DigitalCardRepeatFields
                             brand={network.key}
-                            values={desk.socials[network.key]}
+                            values={desk.socials[network.key] ?? []}
                             onChange={(next) => patch({ socials: { ...desk.socials, [network.key]: next } })}
                             showChatKinds={usesChatLinkKinds(network.key)}
                             chatKinds={desk.linkKinds[network.key]}
@@ -831,6 +848,15 @@ export function DigitalCardLiveDemoStudio({
                   )}
                 </div>
               ))}
+              <div className="mt-4">
+                <DigitalCardOtherReservation
+                  values={desk.socials.other ?? []}
+                  onChange={(next) => patch({ socials: { ...desk.socials, other: next } })}
+                  accent={theme.accent}
+                  inputClassName={folioInputClass}
+                  inputStyle={folioControlStyle(theme)}
+                />
+              </div>
             </div>
 
             <div className="mt-6 rounded-2xl bg-white/94 p-4" style={{ border: `1px solid ${theme.border}` }}>

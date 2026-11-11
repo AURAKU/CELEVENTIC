@@ -14,6 +14,7 @@ import {
   celeCardShareCacheVersion,
   courtesyCeleCardMetadata,
   digitalCardOgImagePath,
+  isCeleYouUnfurlRequest,
   withheldCeleCardMetadata,
 } from "@/lib/digital-business-card/share";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
@@ -33,7 +34,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const origin = celeYouGuestOrigin(await getServerAppUrl());
   const demo = getDemoCardBySlug(slug);
   if (demo) {
-    if (!(await viewerMayOpenDummyLive())) return withheldCeleCardMetadata();
     if (demo.presentationMode === "courtesy" || !demo.isLive) {
       return courtesyCeleCardMetadata(demo.displayName);
     }
@@ -72,7 +72,10 @@ export default async function DigitalBusinessCardPage({
 
   const demo = getDemoCardBySlug(slug);
   if (demo) {
-    if (!(await viewerMayOpenDummyLive())) redirect(CELECARD_DUMMY_LIVE_FALLBACK);
+    if (!(await viewerMayOpenDummyLive())) {
+      if (await isCeleYouUnfurlRequest()) return null;
+      redirect(CELECARD_DUMMY_LIVE_FALLBACK);
+    }
     return <DigitalCardPublicView card={demo} origin={celeYouGuestOrigin(await getServerAppUrl())} />;
   }
 
@@ -82,7 +85,9 @@ export default async function DigitalBusinessCardPage({
   const policy = await getCeleCardLifecyclePolicy();
   const presentation = resolveCeleYouPublicShare({ card, channel: "profile", policy }).presentation;
   if (presentation === "live") {
-    void incrementDigitalCardView(card.id).catch(() => undefined);
+    if (!(await isCeleYouUnfurlRequest())) {
+      void incrementDigitalCardView(card.id).catch(() => undefined);
+    }
   } else if (presentation === "courtesy") {
     void recordCeleCardLifecycleEvent({ cardId: card.id, kind: "CourtesyPageViewed" }).catch(() => undefined);
   }

@@ -73,7 +73,7 @@ export function InvitationExperience() {
               <Link
                 key={type.value}
                 href={catalogBrowseHref(type.value)}
-                className="inline-flex min-h-11 items-center rounded-full border border-slate-200 bg-white px-4 py-2.5 text-base font-semibold text-slate-800 transition hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full border border-slate-200 bg-white px-4 py-2.5 text-base font-semibold text-slate-800 transition hover:border-brand-400 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 {t(EVENT_TYPE_KEYS[type.value] ?? type.label)}
               </Link>

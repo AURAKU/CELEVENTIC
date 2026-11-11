@@ -54,6 +54,15 @@ function toOwnerDevice(
   };
 }
 
+/** Read-only NFC lookup. Never records a tap. Used for OG unfurl. */
+export async function peekNfcDeviceCard(publicToken: string) {
+  const device = await prisma.smartCardNfcDevice.findUnique({
+    where: { publicToken },
+    include: { card: true },
+  });
+  return device?.card ?? null;
+}
+
 export async function resolveNfcDeviceTap(publicToken: string): Promise<NfcTapResolution> {
   const device = await prisma.smartCardNfcDevice.findUnique({
     where: { publicToken },

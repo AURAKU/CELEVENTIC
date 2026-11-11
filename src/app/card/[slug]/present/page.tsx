@@ -15,6 +15,7 @@ import {
   celeCardShareCacheVersion,
   courtesyCeleCardMetadata,
   digitalCardOgImagePath,
+  isCeleYouUnfurlRequest,
   withheldCeleCardMetadata,
 } from "@/lib/digital-business-card/share";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
@@ -32,7 +33,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const origin = celeYouGuestOrigin(await getServerAppUrl());
   const demo = getDemoCardBySlug(slug);
   if (demo) {
-    if (!(await viewerMayOpenDummyLive())) return withheldCeleCardMetadata();
     if (demo.presentationMode === "courtesy" || !demo.isLive) {
       return courtesyCeleCardMetadata(demo.displayName);
     }
@@ -97,7 +97,10 @@ export default async function CeleCardPresentPage({
   const wantImmersive = query.immersive === "1";
   const demo = getDemoCardBySlug(slug);
   if (demo) {
-    if (!(await viewerMayOpenDummyLive())) redirect(CELECARD_DUMMY_LIVE_FALLBACK);
+    if (!(await viewerMayOpenDummyLive())) {
+      if (await isCeleYouUnfurlRequest()) return null;
+      redirect(CELECARD_DUMMY_LIVE_FALLBACK);
+    }
     return <DigitalCardPresentView card={demo} origin={origin} wantImmersive={wantImmersive} />;
   }
 

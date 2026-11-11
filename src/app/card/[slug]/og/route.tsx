@@ -1,0 +1,10 @@
+import { renderCeleCardOgBySlug } from "@/lib/digital-business-card/og-image";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 300;
+
+export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const { slug } = await ctx.params;
+  return renderCeleCardOgBySlug(slug);
+}

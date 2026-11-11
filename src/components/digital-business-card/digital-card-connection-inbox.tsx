@@ -11,9 +11,12 @@ import {
 } from "@/lib/digital-business-card/leads";
 import {
   downloadMeetingIcs,
+  formatMeetingDay,
   formatMeetingWhen,
   meetingIcs,
+  meetingReplyCopy,
   parseMeetingBooking,
+  whatsappComposeHref,
 } from "@/lib/digital-business-card/meetings";
 
 type ConnectionRow = {
@@ -66,7 +69,11 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
     [cardId, filter]
   );
 
-  async function saveStatus(connectionId: string, status: CeleCardLeadStatus) {
+  async function saveStatus(
+    connectionId: string,
+    status: CeleCardLeadStatus,
+    meetingReply?: "confirm" | "decline"
+  ) {
     if (!cardId) return;
     setBusyId(connectionId);
     setError(null);
@@ -74,12 +81,13 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
       const res = await fetch(`/api/digital-business-cards/${cardId}/connections`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ connectionId, status }),
+        body: JSON.stringify({ connectionId, status, meetingReply }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Could not update that request.");
+      const nextStatus = (json.data?.status as CeleCardLeadStatus | undefined) ?? status;
       setItems((current) =>
-        current.map((item) => (item.id === connectionId ? { ...item, status } : item))
+        current.map((item) => (item.id === connectionId ? { ...item, status: nextStatus } : item))
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update that request.");
@@ -139,8 +147,43 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
         {items.map((item) => {
           const meeting = item.source === "meeting" ? parseMeetingBooking(item.note) : null;
           const contact = [item.visitorEmail, item.visitorPhone].filter(Boolean).join(" · ");
+          const meetDay = meeting ? formatMeetingDay(meeting.start, meeting.timezone) : null;
+          const leadStatus = normalizeCeleCardLeadStatus(item.status);
+          const meetingOpen = meeting && leadStatus !== "WON" && leadStatus !== "ARCHIVED";
+          const confirmCopy = meeting
+            ? meetingReplyCopy({
+                kind: "confirm",
+                ownerName: "I",
+                guestName: item.visitorName,
+                booking: meeting,
+              })
+            : null;
+          const declineCopy = meeting
+            ? meetingReplyCopy({
+                kind: "decline",
+                ownerName: "I",
+                guestName: item.visitorName,
+                booking: meeting,
+              })
+            : null;
+          const whatsappConfirm = confirmCopy
+            ? whatsappComposeHref(item.visitorPhone, confirmCopy.body)
+            : null;
+          const whatsappDecline = declineCopy
+            ? whatsappComposeHref(item.visitorPhone, declineCopy.body)
+            : null;
           return (
             <li key={item.id} className="rounded-lg border border-slate-100 px-3 py-2 text-sm">
+              <div className={meeting ? "flex items-start gap-3" : undefined}>
+                {meetDay ? (
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-teal-50 text-center">
+                    <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-teal-800">
+                      {meetDay.weekday}
+                    </span>
+                    <span className="text-sm font-semibold leading-none text-teal-950">{meetDay.label.split(" ")[0]}</span>
+                  </span>
+                ) : null}
+                <div className="min-w-0 flex-1">
               <p className="font-medium text-slate-800">{item.visitorName}</p>
               {meeting ? (
                 <p className="text-[11px] text-slate-700">
@@ -179,20 +222,86 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                 </p>
               </div>
               {meeting ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadMeetingIcs(
-                      "celeyou-meeting.ics",
-                      meetingIcs(meeting, "CeleYou", item.visitorName)
-                    )
-                  }
-                  className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
-                >
-                  <CalendarPlus className="h-3.5 w-3.5" />
-                  Add to calendar
-                </button>
+                <div className="mt-1.5 flex flex-wrap gap-2">
+                  {meetingOpen ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={busyId === item.id}
+                        onClick={() => void saveStatus(item.id, "WON", "confirm")}
+                        className="rounded-full bg-[#0B8A83] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white disabled:opacity-60"
+                      >
+                        Confirm this time
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === item.id}
+                        onClick={() => void saveStatus(item.id, "ARCHIVED", "decline")}
+                        className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600 disabled:opacity-60"
+                      >
+                        Cannot make this time
+                      </button>
+                    </>
+                  ) : leadStatus === "WON" ? (
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800">
+                      Confirmed. Guest was messaged.
+                    </p>
+                  ) : leadStatus === "ARCHIVED" ? (
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Declined. Guest was asked to pick another time.
+                    </p>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      downloadMeetingIcs(
+                        "celeyou-meeting.ics",
+                        meetingIcs(meeting, "CeleYou", item.visitorName)
+                      )
+                    }
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                  >
+                    <CalendarPlus className="h-3.5 w-3.5" />
+                    Add to calendar
+                  </button>
+                  {item.visitorEmail ? (
+                    <a
+                      href={`mailto:${item.visitorEmail}?subject=${encodeURIComponent(meeting.title)}`}
+                      className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                    >
+                      Reply by email
+                    </a>
+                  ) : null}
+                  {whatsappConfirm && meetingOpen ? (
+                    <a
+                      href={whatsappConfirm}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                    >
+                      Confirm on WhatsApp
+                    </a>
+                  ) : whatsappDecline && leadStatus === "ARCHIVED" ? (
+                    <a
+                      href={whatsappDecline}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                    >
+                      Message on WhatsApp
+                    </a>
+                  ) : item.visitorPhone ? (
+                    <a
+                      href={`tel:${item.visitorPhone}`}
+                      className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                    >
+                      Call
+                    </a>
+                  ) : null}
+                </div>
               ) : null}
+                </div>
+              </div>
             </li>
           );
         })}

@@ -1,4 +1,5 @@
 import type {
+  CeleCardMotionMood,
   DigitalCardAtmosphere,
   DigitalCardComposition,
   DigitalCardOrnament,
@@ -7,6 +8,14 @@ import type {
 
 export type CeleCardPaperWeight = "subtle" | "balanced" | "rich";
 export type CeleCardPaperTone = "light" | "dark";
+export type CeleCardNameScale = "quiet" | "balanced" | "statement";
+export type CeleCardFaceLead = "photo" | "name" | "code";
+export type CeleCardLettering = "letterhead" | "credit" | "stamp" | "neon" | "masthead" | "carved";
+export type CeleCardInk = "light" | "dark";
+export type CeleCardAccent = "teal" | "gold" | "ivory" | "rose" | "sky" | "ink";
+export type CeleCardQrFinish = "foil" | "quiet";
+export type CeleCardGrain = "paper" | "linen" | "none";
+export type CeleCardMotion = CeleCardMotionMood;
 
 export type CeleCardDesign = {
   composition?: DigitalCardComposition;
@@ -15,6 +24,22 @@ export type CeleCardDesign = {
   paperUrl?: string;
   paperWeight?: CeleCardPaperWeight;
   paperTone?: CeleCardPaperTone;
+  /** Quiet, balanced, or statement name on the plate. */
+  nameScale?: CeleCardNameScale;
+  /** What leads the face row. Portrait templates keep the photo panel. */
+  faceLead?: CeleCardFaceLead;
+  /** Lettering voice used by the house templates. */
+  lettering?: CeleCardLettering;
+  /** Dark type on a lighter plate, or light type on a deeper plate. */
+  ink?: CeleCardInk;
+  /** House accent inks already used across templates. */
+  accent?: CeleCardAccent;
+  /** QR tile: foil edge or a quiet white well. */
+  qrFinish?: CeleCardQrFinish;
+  /** Paper grain over the plate, including a custom background. */
+  grain?: CeleCardGrain;
+  /** Guest-page motion family. */
+  motion?: CeleCardMotion;
 };
 
 export const CELECARD_COMPOSITIONS: { id: DigitalCardComposition; label: string; hint: string }[] = [
@@ -134,6 +159,60 @@ export const CELECARD_PAPER_WEIGHTS: { id: CeleCardPaperWeight; label: string; h
   { id: "rich", label: "Rich", hint: "The paper leads the room" },
 ];
 
+export const CELECARD_NAME_SCALES: { id: CeleCardNameScale; label: string; hint: string }[] = [
+  { id: "quiet", label: "Quiet", hint: "A smaller name, more room around it" },
+  { id: "balanced", label: "Balanced", hint: "The size this look already uses" },
+  { id: "statement", label: "Statement", hint: "The name takes the plate" },
+];
+
+export const CELECARD_FACE_LEADS: { id: CeleCardFaceLead; label: string; hint: string }[] = [
+  { id: "photo", label: "Photo", hint: "Portrait sits first in the row" },
+  { id: "name", label: "Name", hint: "The name leads, photo stays quiet" },
+  { id: "code", label: "Code", hint: "QR sits beside the name" },
+];
+
+export const CELECARD_LETTERING: { id: CeleCardLettering; label: string; hint: string }[] = [
+  { id: "letterhead", label: "Letterhead", hint: "Serif name, foil rule, stacked given name" },
+  { id: "credit", label: "Credits", hint: "Cinema tracking, a title-card bar" },
+  { id: "stamp", label: "Stamp", hint: "Clean sans, boardroom quiet" },
+  { id: "masthead", label: "Masthead", hint: "Editorial bold, magazine type" },
+  { id: "carved", label: "Carved", hint: "Inscribed serif for landmarks and earth" },
+  { id: "neon", label: "Neon", hint: "Wide tracking, night type" },
+];
+
+export const CELECARD_INKS: { id: CeleCardInk; label: string; hint: string }[] = [
+  { id: "light", label: "Dark on light", hint: "Ink on a brighter plate" },
+  { id: "dark", label: "Light on dark", hint: "Ivory type on a deeper plate" },
+];
+
+export const CELECARD_ACCENTS: { id: CeleCardAccent; label: string; swatch: string }[] = [
+  { id: "teal", label: "CeleYou teal", swatch: "#0B8A83" },
+  { id: "gold", label: "Foil gold", swatch: "#d4a63a" },
+  { id: "ivory", label: "Ivory", swatch: "#e8d5b5" },
+  { id: "rose", label: "Rose", swatch: "#e11d48" },
+  { id: "sky", label: "Sky", swatch: "#38bdf8" },
+  { id: "ink", label: "Ink", swatch: "#0f172a" },
+];
+
+export const CELECARD_QR_FINISHES: { id: CeleCardQrFinish; label: string; hint: string }[] = [
+  { id: "foil", label: "Foil edge", hint: "Accent ring around the code" },
+  { id: "quiet", label: "Quiet well", hint: "A simple white tile" },
+];
+
+export const CELECARD_GRAINS: { id: CeleCardGrain; label: string; hint: string }[] = [
+  { id: "paper", label: "Paper", hint: "Fine laid grain over the plate" },
+  { id: "linen", label: "Linen", hint: "A stronger cloth tooth" },
+  { id: "none", label: "Smooth", hint: "No extra grain" },
+];
+
+export const CELECARD_MOTIONS: { id: CeleCardMotion; label: string; hint: string }[] = [
+  { id: "atelier", label: "Atelier", hint: "Slow, house-quiet motion" },
+  { id: "cinema", label: "Cinema", hint: "Title-card motion" },
+  { id: "pulse", label: "Pulse", hint: "Live, creator energy" },
+  { id: "earth", label: "Earth", hint: "Warm landmark drift" },
+  { id: "linen", label: "Linen", hint: "Soft, even motion" },
+];
+
 export const CELECARD_HOUSE_PAPERS: {
   id: string;
   label: string;
@@ -181,46 +260,53 @@ const ATMOSPHERE_IDS = new Set(
   CELECARD_ATMOSPHERE_GROUPS.flatMap((group) => group.items.map((item) => item.id))
 );
 const PAPER_WEIGHTS = new Set(CELECARD_PAPER_WEIGHTS.map((item) => item.id));
+const NAME_SCALES = new Set(CELECARD_NAME_SCALES.map((item) => item.id));
+const FACE_LEADS = new Set(CELECARD_FACE_LEADS.map((item) => item.id));
+const LETTERING_IDS = new Set(CELECARD_LETTERING.map((item) => item.id));
+const INK_IDS = new Set(CELECARD_INKS.map((item) => item.id));
+const ACCENT_IDS = new Set(CELECARD_ACCENTS.map((item) => item.id));
+const QR_FINISH_IDS = new Set(CELECARD_QR_FINISHES.map((item) => item.id));
+const GRAIN_IDS = new Set(CELECARD_GRAINS.map((item) => item.id));
+const MOTION_IDS = new Set(CELECARD_MOTIONS.map((item) => item.id));
+
+function pickToken<T extends string>(raw: unknown, allowed: Set<T>): T | undefined {
+  const value = String(raw ?? "").trim() as T;
+  return allowed.has(value) ? value : undefined;
+}
 
 export function compactCeleCardDesign(raw: unknown): CeleCardDesign | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const record = raw as Record<string, unknown>;
   const out: CeleCardDesign = {};
-  const composition = String(record.composition ?? "").trim();
-  if (COMPOSITION_IDS.has(composition as DigitalCardComposition)) {
-    out.composition = composition as DigitalCardComposition;
-  }
-  const atmosphere = String(record.atmosphere ?? "").trim();
-  if (ATMOSPHERE_IDS.has(atmosphere as DigitalCardAtmosphere)) {
-    out.atmosphere = atmosphere as DigitalCardAtmosphere;
-  }
-  const ornament = String(record.ornament ?? "").trim();
-  if (ORNAMENT_IDS.has(ornament as DigitalCardOrnament)) {
-    out.ornament = ornament as DigitalCardOrnament;
-  }
+  const composition = pickToken(record.composition, COMPOSITION_IDS);
+  if (composition) out.composition = composition;
+  const atmosphere = pickToken(record.atmosphere, ATMOSPHERE_IDS);
+  if (atmosphere) out.atmosphere = atmosphere;
+  const ornament = pickToken(record.ornament, ORNAMENT_IDS);
+  if (ornament) out.ornament = ornament;
   const paperUrl = persistPaperUrl(record.paperUrl);
   if (paperUrl) out.paperUrl = paperUrl;
-  const paperWeight = String(record.paperWeight ?? "").trim();
-  if (PAPER_WEIGHTS.has(paperWeight as CeleCardPaperWeight)) {
-    out.paperWeight = paperWeight as CeleCardPaperWeight;
-  }
+  const paperWeight = pickToken(record.paperWeight, PAPER_WEIGHTS);
+  if (paperWeight) out.paperWeight = paperWeight;
   const paperTone = String(record.paperTone ?? "").trim();
   if (paperTone === "light" || paperTone === "dark") out.paperTone = paperTone;
+  const nameScale = pickToken(record.nameScale, NAME_SCALES);
+  if (nameScale) out.nameScale = nameScale;
+  const faceLead = pickToken(record.faceLead, FACE_LEADS);
+  if (faceLead) out.faceLead = faceLead;
+  const lettering = pickToken(record.lettering, LETTERING_IDS);
+  if (lettering) out.lettering = lettering;
+  const ink = pickToken(record.ink, INK_IDS);
+  if (ink) out.ink = ink;
+  const accent = pickToken(record.accent, ACCENT_IDS);
+  if (accent) out.accent = accent;
+  const qrFinish = pickToken(record.qrFinish, QR_FINISH_IDS);
+  if (qrFinish) out.qrFinish = qrFinish;
+  const grain = pickToken(record.grain, GRAIN_IDS);
+  if (grain) out.grain = grain;
+  const motion = pickToken(record.motion, MOTION_IDS);
+  if (motion) out.motion = motion;
   return Object.keys(out).length ? out : undefined;
-}
-
-export function applyCeleCardDesign(
-  theme: DigitalCardTheme,
-  design?: CeleCardDesign | null
-): DigitalCardTheme {
-  if (!design) return theme;
-  return {
-    ...theme,
-    composition: design.composition ?? theme.composition,
-    atmosphere: design.atmosphere ?? theme.atmosphere,
-    ornament: design.ornament ?? theme.ornament,
-    textureUrl: design.paperUrl || theme.textureUrl,
-  };
 }
 
 function textIsDark(color: string) {
@@ -232,6 +318,65 @@ function textIsDark(color: string) {
   return (r * 299 + g * 587 + b * 114) / 1000 < 148;
 }
 
+function accentPair(id: CeleCardAccent, theme: DigitalCardTheme) {
+  if (id === "teal") return { accent: "#0B8A83", accentSoft: "rgba(11,138,131,0.14)" };
+  if (id === "gold") return { accent: "#d4a63a", accentSoft: "rgba(212,166,58,0.16)" };
+  if (id === "ivory") return { accent: "#e8d5b5", accentSoft: "rgba(232,213,181,0.16)" };
+  if (id === "rose") return { accent: "#e11d48", accentSoft: "rgba(225,29,72,0.12)" };
+  if (id === "sky") return { accent: "#38bdf8", accentSoft: "rgba(56,189,248,0.14)" };
+  const darkPlate = !textIsDark(theme.text);
+  return darkPlate
+    ? { accent: "#f8fafc", accentSoft: "rgba(248,250,252,0.14)" }
+    : { accent: "#0f172a", accentSoft: "rgba(15,23,42,0.1)" };
+}
+
+export function applyCeleCardDesign(
+  theme: DigitalCardTheme,
+  design?: CeleCardDesign | null
+): DigitalCardTheme {
+  if (!design) return theme;
+  const next: DigitalCardTheme = {
+    ...theme,
+    composition: design.composition ?? theme.composition,
+    atmosphere: design.atmosphere ?? theme.atmosphere,
+    ornament: design.ornament ?? theme.ornament,
+    textureUrl: design.paperUrl || theme.textureUrl,
+  };
+  if (design.accent) {
+    const pair = accentPair(design.accent, next);
+    next.accent = pair.accent;
+    next.accentSoft = pair.accentSoft;
+  }
+  if (design.ink === "light" && !textIsDark(next.text)) {
+    next.text = "#1c1917";
+    next.muted = "#57534e";
+    next.qrInk = "#1c1917";
+    next.cardBackground = `linear-gradient(180deg, rgba(255,252,247,0.88) 0%, rgba(255,252,247,0.7) 100%), ${theme.cardBackground}`;
+  } else if (design.ink === "dark" && textIsDark(next.text)) {
+    next.text = "#faf6ef";
+    next.muted = "#d6bc8a";
+    next.qrInk = "#0c0a09";
+    next.cardBackground = `linear-gradient(180deg, rgba(8,10,16,0.74) 0%, rgba(8,10,16,0.58) 100%), ${theme.cardBackground}`;
+  }
+  return next;
+}
+
+export function celeCardNameScaleFactor(scale?: CeleCardNameScale | null) {
+  if (scale === "quiet") return 0.84;
+  if (scale === "statement") return 1.18;
+  return 1;
+}
+
+export function celeCardFaceLead(
+  composition: DigitalCardComposition,
+  lead?: CeleCardFaceLead | null
+): CeleCardFaceLead {
+  if (lead) return lead;
+  if (composition === "type-first") return "name";
+  if (composition === "grid") return "name";
+  return "photo";
+}
+
 export function celeCardPaperStyle(theme: DigitalCardTheme, design?: CeleCardDesign | null) {
   const src = design?.paperUrl || theme.textureUrl;
   if (!src) return null;
@@ -239,21 +384,52 @@ export function celeCardPaperStyle(theme: DigitalCardTheme, design?: CeleCardDes
   const weight = design?.paperWeight ?? "balanced";
   const tone = design?.paperTone;
   const paperIsDark = tone === "dark" || (!tone && !lightCard);
+  const custom = Boolean(design?.paperUrl);
+  if (!custom) {
+    return {
+      src,
+      opacity: theme.composition === "iconic" ? 0.22 : 0.16,
+      mixBlendMode: "luminosity" as const,
+      custom: false,
+      veil: "transparent",
+      mask: "none",
+      copyVeil: "transparent",
+      edge: "transparent",
+    };
+  }
   const opacity =
-    weight === "subtle" ? 0.16 : weight === "rich" ? 0.38 : 0.24;
+    weight === "subtle" ? 0.22 : weight === "rich" ? 0.5 : 0.34;
   let mixBlendMode: "multiply" | "soft-light" | "luminosity" | "overlay" = "luminosity";
   if (lightCard && !paperIsDark) mixBlendMode = "multiply";
   else if (lightCard && paperIsDark) mixBlendMode = "overlay";
   else if (!lightCard && paperIsDark) mixBlendMode = "soft-light";
   else mixBlendMode = "overlay";
-  const veilOpacity = weight === "rich" ? 0.42 : weight === "subtle" ? 0.22 : 0.32;
+  const veilOpacity = custom
+    ? weight === "rich"
+      ? 0.5
+      : weight === "subtle"
+        ? 0.28
+        : 0.38
+    : weight === "rich"
+      ? 0.42
+      : weight === "subtle"
+        ? 0.22
+        : 0.32;
+  const cream = lightCard ? "255,252,247" : "8,10,16";
+  const identity = lightCard ? "255,252,247" : "12,14,20";
   return {
     src,
     opacity,
     mixBlendMode,
-    veil: lightCard
-      ? `linear-gradient(180deg, rgba(255,252,247,${veilOpacity}) 0%, rgba(255,252,247,${veilOpacity * 0.45}) 100%)`
-      : `linear-gradient(180deg, rgba(8,10,16,${veilOpacity}) 0%, rgba(8,10,16,${veilOpacity * 0.4}) 100%)`,
+    custom,
+    veil: `linear-gradient(180deg, rgba(${cream},${veilOpacity}) 0%, rgba(${cream},${veilOpacity * 0.42}) 42%, rgba(${cream},${veilOpacity * 0.55}) 100%)`,
+    /** Fades the photo under the origin mark and the CeleYou wordmark. */
+    mask: "linear-gradient(180deg, transparent 0%, #000 18%, #000 78%, transparent 100%)",
+    /** Soft band so the name, title, and company stay readable. */
+    copyVeil: `linear-gradient(90deg, rgba(${identity},0) 0%, rgba(${identity},${custom ? 0.46 : 0.28}) 22%, rgba(${identity},${custom ? 0.5 : 0.3}) 78%, rgba(${identity},0) 100%)`,
+    edge: lightCard
+      ? "radial-gradient(ellipse at center, transparent 42%, rgba(120,70,20,0.16) 100%)"
+      : "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.28) 100%)",
   };
 }
 

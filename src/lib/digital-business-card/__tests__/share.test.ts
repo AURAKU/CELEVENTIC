@@ -1,8 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   buildCeleCardShareMetadata,
   celeCardShareCacheVersion,
+  celeCardShareClipboard,
   celeCardShareDescription,
   celeCardShareMessage,
   celeCardShareTextLeaksPrivate,
@@ -16,26 +19,30 @@ import {
   courtesyCeleCardMetadata,
   withheldCeleCardMetadata,
 } from "@/lib/digital-business-card/share";
+import { SMARTCARD_BRAND_TAGLINE } from "@/lib/digital-business-card/product";
 import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
 import { DEMO_CARD } from "@/lib/digital-business-card/demo-card";
 import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capability";
 
 describe("CeleYou share metadata", () => {
   it("builds a personalized title and public description", () => {
-    assert.equal(celeCardShareTitle(DEMO_CARD), "Ama Serwaa");
+    assert.equal(celeCardShareTitle(DEMO_CARD), "Ama Serwaa on CeleYou");
     const description = celeCardShareDescription(DEMO_CARD);
-    assert.match(description, /Creative Director/);
-    assert.match(description, /Folio Maison/);
-    assert.match(description, /My CeleYou/);
-    assert.match(description, /One identity/);
+    assert.equal(description, SMARTCARD_BRAND_TAGLINE);
     assert.equal(description.includes(" · "), false);
+    assert.equal(description.includes(" - "), false);
+    assert.equal(description.includes("This is my CeleYou"), false);
     assert.equal(celeCardShareTextLeaksPrivate(description, DEMO_CARD), false);
     assert.equal(digitalCardPresentPath("ama-serwaa"), "/card/ama-serwaa/present");
     assert.equal(digitalCardPresentPath("ama-serwaa", { immersive: true }), "/card/ama-serwaa/present?immersive=1");
-    assert.match(digitalCardOgImagePath("ama-serwaa", "card-tile"), /\/og\?v=card-tile$/);
+    assert.equal(digitalCardOgImagePath("ama-serwaa", "card-tile"), "/card/ama-serwaa/og?v=card-tile");
     assert.equal(
       celeCardShareMessage(DEMO_CARD),
-      "Ama Serwaa. My CeleYou. One identity. Every way to reach me."
+      "Ama Serwaa on CeleYou. One Identity. Infinite Connections."
+    );
+    assert.equal(
+      celeCardShareClipboard(DEMO_CARD, "https://www.celeventic.com/c/demo-ama-serwaa"),
+      "Ama Serwaa on CeleYou. One Identity. Infinite Connections.\nhttps://www.celeventic.com/c/demo-ama-serwaa"
     );
     assert.equal(celeCardQrTapPath("ama-serwaa"), "/card/ama-serwaa");
     assert.equal(celeCardStableQrUrl("demo-ama-serwaa", "https://www.celeventic.com"), "https://www.celeventic.com/c/demo-ama-serwaa");
@@ -73,10 +80,13 @@ describe("CeleYou share metadata", () => {
     assert.equal(metadata.openGraph?.url, "https://www.celeventic.com/card/ama-serwaa");
     assert.equal(metadata.alternates?.canonical, "https://www.celeventic.com/card/ama-serwaa");
     assert.equal((metadata.twitter as { card?: string } | undefined)?.card, "summary_large_image");
+    assert.equal(metadata.openGraph?.title, "Ama Serwaa on CeleYou");
+    assert.equal(metadata.openGraph?.description, SMARTCARD_BRAND_TAGLINE);
+    assert.equal(metadata.openGraph?.siteName, "CeleYou");
     const image = Array.isArray(metadata.openGraph?.images) ? metadata.openGraph?.images[0] : metadata.openGraph?.images;
     assert.equal(typeof image === "object" && image && "width" in image ? image.width : 0, 1200);
     assert.equal(typeof image === "object" && image && "height" in image ? image.height : 0, 630);
-    assert.match(String(typeof image === "object" && image && "url" in image ? image.url : ""), /\/og\?v=demo/);
+    assert.match(String(typeof image === "object" && image && "url" in image ? image.url : ""), /\/card\/ama-serwaa\/og\?v=demo/);
     assert.equal(String(metadata.openGraph?.url).includes("localhost"), false);
   });
 
@@ -101,6 +111,13 @@ describe("CeleYou share metadata", () => {
     const at = new Date("2026-11-09T12:00:00.000Z");
     assert.equal(celeCardShareCacheVersion(at), String(at.getTime()));
   });
+
+  it("keeps dummy OG image ungated for crawlers", () => {
+    const source = readFileSync(join(process.cwd(), "src/lib/digital-business-card/og-image.tsx"), "utf8");
+    assert.doesNotMatch(source, /dummyLiveNotFoundResponse|viewerMayOpenDummyLive/);
+    assert.match(source, /getDemoCardBySlug/);
+    assert.match(source, /CeleCardOgMarkup/);
+  });
 });
 
 describe("CeleYou QR export", () => {
@@ -118,6 +135,28 @@ describe("CeleYou QR export", () => {
     assert.match(clear, /bg=transparent/);
     const branded = digitalCardQrImageSrc(share, { variant: "brand", size: 2048, download: true });
     assert.match(branded, /mode=brand/);
+  });
+});
+
+describe("CeleYou studio share controls", () => {
+  it("keeps dummy share on the card tile and drops duplicate copy chips", () => {
+    const studio = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-live-demo-studio.tsx"),
+      "utf8"
+    );
+    const desk = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-share-desk.tsx"),
+      "utf8"
+    );
+    assert.match(studio, /DigitalCardTileActions/);
+    assert.doesNotMatch(studio, /Open live page/);
+    assert.doesNotMatch(studio, /Copy share link/);
+    assert.doesNotMatch(studio, /Copy \$\{demoCardQrPath/);
+    assert.doesNotMatch(studio, /Smart share/);
+    assert.doesNotMatch(desk, /Share via Apps/);
+    assert.doesNotMatch(desk, /Open profile/);
+    assert.doesNotMatch(desk, /Download card/);
+    assert.match(desk, /Hold up this card/);
   });
 });
 

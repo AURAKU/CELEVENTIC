@@ -86,29 +86,39 @@ export function hasCeleCardCompanyLogo(url?: string | null): boolean {
   return Boolean(url?.trim());
 }
 
-/** Uploaded house mark only. No file means the slot does not exist. */
+/** Every template with a company name gets a mark beside it. */
+export function celeCardShowsCompanyMark(company?: string | null): boolean {
+  return Boolean(company?.trim());
+}
+
+/** Uploaded house mark, or the generated badge from the company name. */
 export function CeleCardCompanyMark({
   url,
   name,
   accent,
   metal,
   className,
+  allowGenerated = true,
 }: {
   url?: string | null;
   name: string;
   accent: string;
   metal: string;
   className?: string;
+  allowGenerated?: boolean;
 }) {
-  if (!hasCeleCardCompanyLogo(url)) return null;
-  return (
-    <span
-      className={cn("relative isolate shrink-0 overflow-hidden rounded-[20%] bg-white", className)}
-      style={{ boxShadow: `inset 0 0 0 1px ${metal}`, mixBlendMode: "normal", opacity: 1 }}
-      aria-hidden
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url!} alt="" className="h-full w-full object-contain p-[10%]" style={{ mixBlendMode: "normal", opacity: 1 }} />
-    </span>
-  );
+  if (hasCeleCardCompanyLogo(url)) {
+    return (
+      <span
+        className={cn("relative isolate shrink-0 overflow-hidden rounded-[20%] bg-white", className)}
+        style={{ boxShadow: `inset 0 0 0 1px ${metal}`, mixBlendMode: "normal", opacity: 1 }}
+        aria-hidden
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url!} alt="" className="h-full w-full object-contain p-[10%]" style={{ mixBlendMode: "normal", opacity: 1 }} />
+      </span>
+    );
+  }
+  if (!allowGenerated) return null;
+  return <DemoCompanyMark name={name} accent={accent} metal={metal} className={className} />;
 }

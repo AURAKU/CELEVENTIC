@@ -36,11 +36,11 @@ export function CeleYouFeatureTile() {
           ))}
         </ul>
         <div className={styles.actions}>
-          <Link href={START_HREF} className={styles.primary}>
+          <Link href={START_HREF} className={`${styles.primary} inline-flex`}>
             {t("landing.svc_start_card")}
-            <ArrowRight className="h-4 w-4" aria-hidden />
+            <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
           </Link>
-          <Link href={EXPLORE_HREF} className={styles.secondary}>
+          <Link href={EXPLORE_HREF} className={`${styles.secondary} inline-flex`}>
             {t("landing.svc_explore")}
           </Link>
         </div>

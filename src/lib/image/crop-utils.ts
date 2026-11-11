@@ -12,6 +12,7 @@ export type CropAspectPreset =
   | "3:1"
   | "3:4"
   | "3:2"
+  | "card"
   | "circle"
   | "rounded-square";
 
@@ -27,6 +28,7 @@ export const CROP_ASPECT_OPTIONS: { id: CropAspectPreset; label: string; ratio: 
   { id: "3:1", label: "Ticket banner", ratio: 3 },
   { id: "3:4", label: "Story card", ratio: 3 / 4 },
   { id: "3:2", label: "Photo 3:2", ratio: 3 / 2 },
+  { id: "card", label: "Card plate", ratio: 85.6 / 54 },
   { id: "circle", label: "Circle", ratio: 1 },
   { id: "rounded-square", label: "Rounded square", ratio: 1 },
   { id: "free", label: "Custom crop", ratio: null },
@@ -474,6 +476,7 @@ export const CROP_PRESETS = {
   gallery: ["1:1", "4:5", "9:16", "16:9", "5:7", "4:6", "3:1", "circle", "rounded-square", "free"] as CropAspectPreset[],
   logo: ["1:1", "circle", "rounded-square", "free"] as CropAspectPreset[],
   cover: ["4:5", "9:16", "16:9", "5:7", "4:6", "3:4", "free"] as CropAspectPreset[],
+  paper: ["card", "16:9", "3:2", "1:1", "free"] as CropAspectPreset[],
   portrait: ["4:5", "5:7", "9:16", "1:1", "circle", "free"] as CropAspectPreset[],
   inspiration: ["free", "5:7", "4:5", "3:4", "9:16", "1:1", "16:9"] as CropAspectPreset[],
   celecard: ["circle", "rounded-square", "1:1"] as CropAspectPreset[],

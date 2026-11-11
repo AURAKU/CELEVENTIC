@@ -36,6 +36,42 @@ export function digitalCardVcardPath(slug: string): string {
   return `${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(slug)}/contact.vcf`;
 }
 
+/** How the .vcf should be handed to this browser. */
+export function vcardDelivery(userAgent: string): {
+  contentType: string;
+  disposition: "inline" | "attachment";
+} {
+  const appleMobile =
+    /iPhone|iPad|iPod/i.test(userAgent) || (/Macintosh/i.test(userAgent) && /Mobile/i.test(userAgent));
+  const android = /Android/i.test(userAgent);
+  return {
+    contentType: android ? "text/x-vcard; charset=utf-8" : "text/vcard; charset=utf-8",
+    disposition: appleMobile ? "inline" : "attachment",
+  };
+}
+
+export function vcardContentDisposition(disposition: "inline" | "attachment", filename: string): string {
+  const ascii = filename.replace(/[^\x20-\x7E]/g, "_").replace(/"/g, "") || "contact.vcf";
+  return `${disposition}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
+const SOCIAL_PROFILE_TYPE: Record<string, string> = {
+  linkedin: "linkedin",
+  instagram: "instagram",
+  facebook: "facebook",
+  x: "twitter",
+  youtube: "youtube",
+  github: "github",
+  tiktok: "tiktok",
+  threads: "threads",
+  snapchat: "snapchat",
+  pinterest: "pinterest",
+  whatsapp: "whatsapp",
+  telegram: "telegram",
+  signal: "signal",
+  wechat: "wechat",
+};
+
 export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOptions = {}): string {
   const { family, given } = vcardNameParts(card.displayName);
   const lines: string[] = [
@@ -48,6 +84,7 @@ export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOp
   ];
   if (card.company) lines.push(`ORG:${escapeVCard(card.company)}`);
   if (card.title) lines.push(`TITLE:${escapeVCard(card.title)}`);
+  lines.push("CATEGORIES:CeleYou");
 
   collectTaggedPhones(card).forEach((entry, index) => {
     lines.push(`TEL;TYPE=${vcardTelType(entry.tag, index)}:${escapeVCard(entry.value)}`);
@@ -67,18 +104,27 @@ export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOp
   });
 
   let item = 1;
+  const seenUrls = new Set<string>();
   const cardUrl = options.cardUrl?.trim() || "";
   if (cardUrl) {
+    seenUrls.add(cardUrl);
+    lines.push(`URL;TYPE=PREF:${escapeVCard(cardUrl)}`);
     lines.push(`item${item}.URL:${escapeVCard(cardUrl)}`);
     lines.push(`item${item}.X-ABLabel:CeleYou`);
     item += 1;
   }
 
   const notes: string[] = [];
+  if (card.pronouns) notes.push(card.pronouns);
   if (card.bio) notes.push(card.bio);
 
   for (const reach of unlockedReach(card)) {
-    if (reach.brand === "email" || reach.brand === "phone" || reach.brand === "website" || reach.brand === "meeting") continue;
+    if (reach.brand === "email" || reach.brand === "phone" || reach.brand === "website") continue;
+    if (reach.brand === "meeting") {
+      const meeting = [reach.title, reach.subtitle].filter(Boolean).join(" · ");
+      if (meeting) notes.push(meeting);
+      continue;
+    }
     if (reach.brand === "bank") {
       const bank = [reach.title, reach.subtitle, reach.copyValue].filter(Boolean).join(" · ");
       if (bank) notes.push(bank);
@@ -94,9 +140,7 @@ export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOp
       }
       const mapHref = (place?.href || reach.href || "").trim();
       if (/^https?:\/\//i.test(mapHref)) {
-        lines.push(`item${item}.URL:${escapeVCard(mapHref)}`);
-        lines.push(`item${item}.X-ABLabel:Location`);
-        item += 1;
+        item = pushReachUrl(lines, item, seenUrls, mapHref, "Location", null);
       }
       continue;
     }
@@ -105,13 +149,8 @@ export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOp
       if (reach.copyValue) notes.push(`${brandReachLabel(reach.brand)} · ${reach.copyValue}`);
       continue;
     }
-    lines.push(`item${item}.URL:${escapeVCard(href)}`);
-    lines.push(
-      `item${item}.X-ABLabel:${escapeVCard(
-        reach.brand === "other" ? reach.title || "Page" : brandReachLabel(reach.brand)
-      )}`
-    );
-    item += 1;
+    const label = reach.brand === "other" ? reach.title || "Page" : brandReachLabel(reach.brand);
+    item = pushReachUrl(lines, item, seenUrls, href, label, SOCIAL_PROFILE_TYPE[reach.brand] ?? null);
   }
 
   if (options.photo?.base64 && isCeleCardPhotoUrl(card.avatarUrl)) {
@@ -122,7 +161,26 @@ export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOp
   if (notes.length) lines.push(`NOTE:${escapeVCard(notes.join("\n"))}`);
   lines.push(`REV:${vcardRev()}`);
   lines.push("END:VCARD");
-  return lines.map(foldVCardLine).join("\r\n");
+  return lines.map(foldVCardLine).join("\r\n") + "\r\n";
+}
+
+function pushReachUrl(
+  lines: string[],
+  item: number,
+  seen: Set<string>,
+  href: string,
+  label: string,
+  socialType: string | null
+): number {
+  if (seen.has(href)) return item;
+  seen.add(href);
+  lines.push(`URL:${escapeVCard(href)}`);
+  if (socialType) {
+    lines.push(`X-SOCIALPROFILE;TYPE=${socialType}:${escapeVCard(href)}`);
+  }
+  lines.push(`item${item}.URL:${escapeVCard(href)}`);
+  lines.push(`item${item}.X-ABLabel:${escapeVCard(label)}`);
+  return item + 1;
 }
 
 function unlockedReach(card: DigitalCardPublicPayload) {

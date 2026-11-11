@@ -1,12 +1,17 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   compactMeetingDesk,
   defaultMeetingDesk,
+  groupMeetingDays,
   listOpenMeetingSlots,
+  meetingReplyCopy,
   persistMeetingDesk,
   serializeMeetingBooking,
   parseMeetingBooking,
+  whatsappComposeHref,
   zonedWallTime,
 } from "@/lib/digital-business-card/meetings";
 import { listDigitalCardReachItems } from "@/lib/digital-business-card/socials";
@@ -36,6 +41,9 @@ describe("CeleYou meeting desk", () => {
     const blocked = listOpenMeetingSlots(desk, [slots[0]!.start], monday);
     assert.equal(blocked.some((slot) => slot.start === slots[0]!.start), false);
     assert.equal(blocked[0]?.timeLabel, "09:30");
+    const days = groupMeetingDays(slots);
+    assert.ok(days.length >= 1);
+    assert.equal(days[0]?.slots[0]?.timeLabel, "09:00");
   });
 
   it("stays off the guest card until enabled", () => {
@@ -70,5 +78,54 @@ describe("CeleYou meeting desk", () => {
     assert.equal(parsed?.title, "Book a sitting");
     assert.equal(parsed?.place, "Video");
     assert.equal(parsed?.note, "Lookbook review");
+  });
+
+  it("lets guests pick a day and time, then messages the cardholder", () => {
+    const drop = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-meeting-drop.tsx"),
+      "utf8"
+    );
+    const desk = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-meeting-desk.tsx"),
+      "utf8"
+    );
+    const inbox = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-connection-inbox.tsx"),
+      "utf8"
+    );
+    assert.match(drop, /Request this time/);
+    assert.match(drop, /You picked/);
+    assert.match(drop, /1 Day/);
+    assert.match(drop, /gets a message to confirm/);
+    assert.match(desk, /Guests can book a time/);
+    assert.match(desk, /Soonest/);
+    assert.match(inbox, /Confirm this time/);
+    assert.match(inbox, /Cannot make this time/);
+    assert.match(inbox, /Confirm on WhatsApp/);
+    const route = readFileSync(
+      join(process.cwd(), "src/app/api/digital-business-cards/[id]/connections/route.ts"),
+      "utf8"
+    );
+    assert.match(route, /meetingReply/);
+  });
+
+  it("writes a confirm message the guest can receive", () => {
+    const copy = meetingReplyCopy({
+      kind: "confirm",
+      ownerName: "Ama Serwaa",
+      guestName: "Kojo Mensah",
+      booking: {
+        start: "2026-11-12T09:00:00.000Z",
+        end: "2026-11-12T09:30:00.000Z",
+        timezone: "Africa/Accra",
+        title: "Book a sitting",
+        place: "Video",
+        note: "",
+      },
+    });
+    assert.match(copy.subject, /Ama confirmed your time/);
+    assert.match(copy.body, /Kojo/);
+    assert.match(copy.body, /Book a sitting/);
+    assert.equal(whatsappComposeHref("+233 24 000 1111", copy.body)?.startsWith("https://wa.me/233"), true);
   });
 });

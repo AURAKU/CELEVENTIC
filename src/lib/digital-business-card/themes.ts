@@ -187,7 +187,11 @@ export type DigitalCardTheme = {
 /** Guest-page motion family. Every template maps to one so motion complements the room. */
 export type CeleCardMotionMood = "atelier" | "cinema" | "pulse" | "earth" | "linen";
 
-export function celecardMotionMood(theme: DigitalCardTheme): CeleCardMotionMood {
+export function celecardMotionMood(
+  theme: DigitalCardTheme,
+  override?: CeleCardMotionMood | null
+): CeleCardMotionMood {
+  if (override) return override;
   const atmo = theme.atmosphere;
   if (
     theme.category === "cinematic" ||

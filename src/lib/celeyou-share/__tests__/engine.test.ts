@@ -98,6 +98,8 @@ describe("CeleYou Smart Share Engine", () => {
     assert.equal(isCeleYouPublicEventKind("vcard_save"), true);
     assert.equal(isCeleYouPublicEventKind("userId"), false);
     assert.equal(isAutomatedPreviewAgent("facebookexternalhit/1.1"), true);
+    assert.equal(isAutomatedPreviewAgent("WhatsApp/2.2490.2"), true);
+    assert.equal(isAutomatedPreviewAgent("Twitterbot/1.0"), true);
     assert.equal(isAutomatedPreviewAgent("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"), false);
   });
 });

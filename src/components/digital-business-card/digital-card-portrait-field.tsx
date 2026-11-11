@@ -48,7 +48,7 @@ function AvatarRow({
       <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: theme.muted }}>
         {label}
       </p>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="celecard-avatar-row">
         {items.map((item) => {
           const active = !photo && selectedHouse === item.id;
           return (
@@ -60,7 +60,7 @@ function AvatarRow({
               onClick={() => onPick(item.id)}
               className={cn(
                 "overflow-hidden rounded-full transition",
-                compact ? "h-9 w-9" : "h-10 w-10",
+                compact ? "min-h-9 min-w-9" : "min-h-11 min-w-11",
                 active ? "ring-2 ring-offset-2" : "opacity-80 hover:opacity-100"
               )}
               style={{

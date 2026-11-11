@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Loader2, Upload, X } from "lucide-react";
 import { ImageCropDialog } from "@/components/media/image-crop-dialog";
-import { CeleCardCompanyMark } from "@/components/digital-business-card/demo-company-mark";
+import { CeleCardCompanyMark, DemoCompanyMark } from "@/components/digital-business-card/demo-company-mark";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
 import { readImageDimensions } from "@/lib/image/crop-utils";
 import { validateClientImage } from "@/lib/media/upload-with-progress";
@@ -128,8 +128,22 @@ export function DigitalCardCompanyLogoField({
             className="h-full w-full"
           />
         ) : (
-          <span className="flex h-full w-full items-center justify-center bg-white/70">
-            {uploading ? null : <Upload className="h-4 w-4" style={{ color: theme.accent }} />}
+          <span className="relative flex h-full w-full items-center justify-center bg-white/80">
+            {company ? (
+              <DemoCompanyMark
+                name={company}
+                accent={theme.accent}
+                metal={theme.border}
+                className="h-full w-full"
+              />
+            ) : uploading ? null : (
+              <Upload className="h-4 w-4" style={{ color: theme.accent }} />
+            )}
+            {company ? (
+              <span className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/35 to-transparent pb-1">
+                <Upload className="h-3.5 w-3.5 text-white" />
+              </span>
+            ) : null}
           </span>
         )}
         {uploading ? (

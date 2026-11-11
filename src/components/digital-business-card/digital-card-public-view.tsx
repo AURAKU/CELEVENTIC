@@ -31,11 +31,12 @@ import {
 } from "@/components/digital-business-card/digital-card-continuity-view";
 import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_NAME } from "@/lib/digital-business-card/product";
 import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
-import { celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
+import { celeCardShareClipboard, celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 import { guestPrimaryActions } from "@/lib/celeyou-share/guest-actions";
 import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
 import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
+import { readCelecardHoldViewport } from "@/lib/digital-business-card/hold-viewport";
 
 export function DigitalCardPublicView({
   card,
@@ -45,8 +46,8 @@ export function DigitalCardPublicView({
   origin: string;
 }) {
   const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), card.socials.design);
-  const motionMood = celecardMotionMood(theme);
-  const typeVoice = celecardTypeVoice(theme);
+  const motionMood = celecardMotionMood(theme, card.socials.design?.motion);
+  const typeVoice = celecardTypeVoice(theme, card.socials.design?.lettering);
   const stageHex = theme.stageBackground.match(/#([0-9a-fA-F]{6})/)?.[1] ?? "1a1410";
   const stageLum =
     (parseInt(stageHex.slice(0, 2), 16) * 299 +
@@ -54,7 +55,7 @@ export function DigitalCardPublicView({
       parseInt(stageHex.slice(4, 6), 16) * 114) /
     1000;
   const darkStage = stageLum < 140;
-  const dock = celecardDockFinish(theme, { darkStage, stageHex });
+  const dock = celecardDockFinish(theme, { darkStage, stageHex }, card.socials.design?.lettering);
   const copyInk = darkStage ? "rgba(250,246,239,0.88)" : "rgba(28,25,23,0.8)";
   const faintInk = darkStage ? "rgba(250,246,239,0.42)" : "rgba(28,25,23,0.42)";
   const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
@@ -66,6 +67,7 @@ export function DigitalCardPublicView({
   const [connectDone, setConnectDone] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [hold, setHold] = useState(false);
   const [form, setForm] = useState({
     visitorName: "",
     visitorEmail: "",
@@ -111,7 +113,7 @@ export function DigitalCardPublicView({
     } catch {
       /* fall through */
     }
-    await navigator.clipboard.writeText(`${text}\n${scanUrl}`);
+    await navigator.clipboard.writeText(celeCardShareClipboard(card, scanUrl));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [card, scanUrl]);
@@ -156,20 +158,39 @@ export function DigitalCardPublicView({
   }, [connectOpen]);
 
   useEffect(() => {
-    const landscape = window.matchMedia("(orientation: landscape)");
-    const coarse = window.matchMedia("(pointer: coarse)");
     const apply = () => {
-      const hold = landscape.matches && (coarse.matches || window.innerHeight <= 560);
-      if (hold) setConnectOpen(false);
+      const next = readCelecardHoldViewport();
+      setHold(next);
+      if (next) setConnectOpen(false);
     };
     apply();
+    const landscape = window.matchMedia("(orientation: landscape)");
+    const coarse = window.matchMedia("(pointer: coarse)");
     landscape.addEventListener("change", apply);
+    coarse.addEventListener("change", apply);
     window.addEventListener("resize", apply);
+    window.visualViewport?.addEventListener("resize", apply);
     return () => {
       landscape.removeEventListener("change", apply);
+      coarse.removeEventListener("change", apply);
       window.removeEventListener("resize", apply);
+      window.visualViewport?.removeEventListener("resize", apply);
     };
   }, []);
+
+  useEffect(() => {
+    if (!hold) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, [hold]);
 
   if (!card.isLive) {
     if (card.presentationMode === "courtesy") {
@@ -180,8 +201,10 @@ export function DigitalCardPublicView({
 
   return (
     <main
-      className="celecard-stage relative min-h-app-viewport overflow-hidden pb-40"
+      className={`celecard-stage relative min-h-app-viewport overflow-hidden ${hold ? "pb-0" : "pb-40"}`}
       data-celecard-mood={motionMood}
+      data-celecard-guest=""
+      data-celecard-hold={hold ? "true" : undefined}
       style={{
         background: theme.stageBackground,
         ["--celecard-accent" as string]: theme.accent,
@@ -200,8 +223,9 @@ export function DigitalCardPublicView({
             company={card.company}
             avatarUrl={card.avatarUrl}
             qrSrc={qrSrc}
-            qrHref={digitalCardPublicUrl(card.slug)}
+            qrHref={hold ? undefined : digitalCardPublicUrl(card.slug)}
             portraitFrame={card.socials.portraitFrame}
+            companyLogo
             companyLogoUrl={card.socials.companyLogoUrl}
             design={card.socials.design}
           />
@@ -301,8 +325,8 @@ export function DigitalCardPublicView({
               style={{ background: `linear-gradient(90deg, ${theme.accent}, transparent)` }}
             />
           </span>
-          <span className="inline-flex items-center gap-3.5">
-            <CeleYouMarkIcon className="h-20 w-20" />
+          <span className="inline-flex items-center gap-3">
+            <CeleYouMarkIcon className="h-16 w-16 overflow-visible" />
             <span className="flex flex-col items-start leading-none">
               <span
                 className="font-display text-[1.65rem] font-bold tracking-[-0.04em] sm:text-[1.85rem]"
@@ -382,7 +406,7 @@ export function DigitalCardPublicView({
             type="button"
             onClick={downloadVCard}
             data-kind="save"
-            aria-label="Save all details to contacts"
+            aria-label="Save all details to contacts on this device"
             aria-busy={saveState === "saving"}
             className="celecard-action"
             style={{
@@ -397,9 +421,9 @@ export function DigitalCardPublicView({
             <span className="celecard-action-mark" aria-hidden>
               {saveState === "saved" ? <Check /> : <Download />}
             </span>
-            {saveState === "saved" ? "Saved" : "Save Contact"}
+            {saveState === "saved" ? "Saved" : "Save"}
           </button>
-          {card.connectBackEnabled && !connectDone ? (
+          {card.connectBackEnabled && !card.isDemo && !connectDone ? (
             <button
               type="button"
               data-kind="ghost"
@@ -442,7 +466,7 @@ export function DigitalCardPublicView({
         </div>
       </div>
 
-      {card.connectBackEnabled && connectOpen && !connectDone ? (
+      {card.connectBackEnabled && !card.isDemo && connectOpen && !connectDone ? (
         <div className="celecard-connect-layer fixed inset-0 z-50 grid place-items-end bg-black/55 p-3 sm:place-items-center" role="dialog" aria-modal aria-labelledby="celecard-connect-title">
           <button type="button" className="absolute inset-0" aria-label="Close connect" onClick={() => setConnectOpen(false)} />
           <form

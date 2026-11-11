@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { APP_NAME } from "@/lib/constants";
 import { isLocalHost } from "@/lib/app-url";
-import { SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
+import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
 import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
 import { DIGITAL_CARD_PUBLIC_PATH } from "@/lib/digital-business-card/types";
+import { isAutomatedPreviewAgent } from "@/lib/celeyou-share/events";
 
 export const CELECARD_OG_WIDTH = 1200;
 export const CELECARD_OG_HEIGHT = 630;
@@ -36,7 +36,7 @@ export function digitalCardPresentUrl(slug: string, origin?: string): string {
 }
 
 export function digitalCardOgImagePath(slug: string, version?: string | number | null): string {
-  const base = `/api/digital-business-cards/public/${encodeURIComponent(slug)}/og`;
+  const base = `/card/${encodeURIComponent(slug)}/og`;
   if (version == null || version === "") return base;
   return `${base}?v=${encodeURIComponent(String(version))}`;
 }
@@ -74,24 +74,45 @@ export function celeCardShareCacheVersion(updatedAt?: Date | string | null, fall
 }
 
 export function celeCardShareTitle(card: Pick<CeleCardShareFields, "displayName" | "title">): string {
-  return card.displayName.trim() || SMARTCARD_PRODUCT_SHORT_NAME;
-}
-
-/** Link preview subtitle on WhatsApp, iMessage, X, LinkedIn. */
-export function celeCardShareDescription(
-  card: Pick<CeleCardShareFields, "title" | "company" | "bio" | "displayName" | "email" | "phone">
-): string {
-  const role = [card.title?.trim(), card.company?.trim()].filter(Boolean).join(", ");
-  const line = "My CeleYou. One identity. Every way to reach me.";
-  if (role) return `${role}. ${line}`;
-  return line;
-}
-
-/** Native share body. Short enough for WhatsApp. Calm enough for a boardroom. */
-export function celeCardShareMessage(card: Pick<CeleCardShareFields, "displayName">): string {
   const name = card.displayName.trim();
-  if (!name) return "My CeleYou. One identity. Every way to reach me.";
-  return `${name}. My CeleYou. One identity. Every way to reach me.`;
+  return name ? `${name} on ${SMARTCARD_PRODUCT_SHORT_NAME}` : SMARTCARD_PRODUCT_SHORT_NAME;
+}
+
+/** Link preview subtitle on WhatsApp, iMessage, X, LinkedIn. Matches the share caption. */
+export function celeCardShareDescription(
+  _card?: Pick<CeleCardShareFields, "title" | "company" | "bio" | "displayName" | "email" | "phone">
+): string {
+  return SMARTCARD_BRAND_TAGLINE;
+}
+
+/** Native share body. Name, CeleYou, official line. Optional live URL on its own line. */
+export function celeCardShareMessage(
+  card: Pick<CeleCardShareFields, "displayName">,
+  url?: string | null
+): string {
+  const name = card.displayName.trim();
+  const line = name
+    ? `${name} on ${SMARTCARD_PRODUCT_SHORT_NAME}. ${SMARTCARD_BRAND_TAGLINE}`
+    : `My ${SMARTCARD_PRODUCT_SHORT_NAME}. ${SMARTCARD_BRAND_TAGLINE}`;
+  const live = url?.trim();
+  if (!live || line.includes(live)) return line;
+  return `${line}\n${live}`;
+}
+
+export function celeCardShareClipboard(
+  card: Pick<CeleCardShareFields, "displayName">,
+  url: string
+): string {
+  return celeCardShareMessage(card, url);
+}
+
+export async function isCeleYouUnfurlRequest(): Promise<boolean> {
+  try {
+    const { headers } = await import("next/headers");
+    return isAutomatedPreviewAgent((await headers()).get("user-agent") || "");
+  } catch {
+    return false;
+  }
 }
 
 export function celeCardShareTextLeaksPrivate(
@@ -135,7 +156,7 @@ export function buildCeleCardShareMetadata(input: {
     : `${input.origin.replace(/\/$/, "")}${input.imagePath}`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical },
     openGraph: {
@@ -143,7 +164,7 @@ export function buildCeleCardShareMetadata(input: {
       description,
       type: "profile",
       url: canonical,
-      siteName: APP_NAME,
+      siteName: SMARTCARD_PRODUCT_SHORT_NAME,
       images: [
         {
           url: image,

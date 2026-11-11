@@ -173,14 +173,22 @@ export function DigitalCardReachGrid({
                   preview={compact}
                 />
               ) : isMeetingGroup(openDock) ? (
-                <DigitalCardMeetingDrop
-                  items={openDock.items}
-                  theme={theme}
-                  compact={compact}
-                  preview={compact}
-                  slug={slug}
-                  ownerName={ownerName}
-                />
+                <>
+                  <div className="px-3.5 pt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-50">Meetings</p>
+                    <p className={cn("mt-0.5 font-medium opacity-70", compact ? "text-[11px]" : "text-[12px]")}>
+                      Pick a day and time. They get a message to confirm.
+                    </p>
+                  </div>
+                  <DigitalCardMeetingDrop
+                    items={openDock.items}
+                    theme={theme}
+                    compact={compact}
+                    preview={compact}
+                    slug={slug}
+                    ownerName={ownerName}
+                  />
+                </>
               ) : (
               <ChoiceList
                 group={openDock}
@@ -528,21 +536,41 @@ function StackTap({
           style={plate}
         >
               {isLocationGroup(group) ? (
-                <DigitalCardLocationDrop
-                  items={group.items}
-                  theme={theme}
-                  compact={compact}
-                  preview={compact}
-                />
+                <>
+                  <div className="px-3.5 pt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-50">
+                      Location
+                    </p>
+                    <p className={cn("mt-0.5 font-medium opacity-70", compact ? "text-[11px]" : "text-[12px]")}>
+                      See the place, then open it in maps
+                    </p>
+                  </div>
+                  <DigitalCardLocationDrop
+                    items={group.items}
+                    theme={theme}
+                    compact={compact}
+                    preview={compact}
+                  />
+                </>
               ) : isMeetingGroup(group) ? (
-                <DigitalCardMeetingDrop
-                  items={group.items}
-                  theme={theme}
-                  compact={compact}
-                  preview={compact}
-                  slug={slug}
-                  ownerName={ownerName}
-                />
+                <>
+                  <div className="px-3.5 pt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-50">
+                      Meetings
+                    </p>
+                    <p className={cn("mt-0.5 font-medium opacity-70", compact ? "text-[11px]" : "text-[12px]")}>
+                      Pick a day and time. They get a message to confirm.
+                    </p>
+                  </div>
+                  <DigitalCardMeetingDrop
+                    items={group.items}
+                    theme={theme}
+                    compact={compact}
+                    preview={compact}
+                    slug={slug}
+                    ownerName={ownerName}
+                  />
+                </>
               ) : (
               <ChoiceList
                 group={group}

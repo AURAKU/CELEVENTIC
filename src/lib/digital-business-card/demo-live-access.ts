@@ -7,7 +7,7 @@ import { canAccessAdminPanel } from "@/lib/rbac";
 export const CELECARD_DUMMY_LIVE_FALLBACK = "/digital-cards";
 
 export function roleMayOpenDummyLive(role?: string | null): boolean {
-  if (!role) return false;
+  if (role !== "ADMIN" && role !== "SUPER_ADMIN") return false;
   return canAccessAdminPanel(role as UserRole);
 }
 

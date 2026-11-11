@@ -1045,6 +1045,22 @@
   }
 }
 
+/*
+ * Body uses overflow-wrap: anywhere so long copy fits phones.
+ * Button phrases must stay on one line ("Explore", not "Expl" / "ore").
+ * If two actions cannot share a row, wrap the buttons, not the label.
+ */
+button,
+input[type="submit"],
+input[type="button"],
+a.inline-flex,
+.action-row > a {
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: nowrap;
+  text-wrap: nowrap;
+}
+
 /* Coarse pointers: keep product chrome tappable without stretching icon chips. */
 @media (pointer: coarse) {
   body {
@@ -1689,11 +1705,11 @@
 }
 
 /*
- * Rotated phone or tablet: only the ID-1 card, as if you are holding it.
- * Desktop landscape keeps the full guest page.
+ * Rotated phone, tablet, or a short landscape viewport: only the ID-1 card,
+ * as if you are holding it. Tall desktop landscape keeps the full guest page.
  */
-@media (orientation: landscape) and (pointer: coarse),
-  (orientation: landscape) and (max-height: 560px) {
+@media (orientation: landscape) and (pointer: coarse) and (min-aspect-ratio: 1.12/1),
+  (orientation: landscape) and (max-height: 740px) and (min-aspect-ratio: 1.35/1) and (max-width: 1200px) {
   html:has(.celecard-stage),
   body:has(.celecard-stage) {
     height: 100dvh;
@@ -1715,17 +1731,17 @@
     display: grid;
     place-items: center;
     gap: 0;
-    padding: max(0.4rem, env(safe-area-inset-top, 0px))
-      max(0.55rem, env(safe-area-inset-right, 0px))
-      max(0.4rem, env(safe-area-inset-bottom, 0px))
-      max(0.55rem, env(safe-area-inset-left, 0px));
+    padding: max(0.35rem, env(safe-area-inset-top, 0px))
+      max(0.45rem, env(safe-area-inset-right, 0px))
+      max(0.35rem, env(safe-area-inset-bottom, 0px))
+      max(0.45rem, env(safe-area-inset-left, 0px));
   }
 
   .celecard-hold-frame {
     width: min(
-      100%,
+      calc(100dvw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 0.7rem),
       calc(
-        (100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 0.8rem) * 85.6 /
+        (100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 0.7rem) * 85.6 /
           54
       )
     );
@@ -1734,8 +1750,253 @@
   .celecard-guest-rest,
   .celecard-dock-bar,
   .celecard-connect-layer,
-  .celecard-sheet {
+  .celecard-sheet,
+  .celecard-atmo {
     display: none !important;
+  }
+
+  .celecard-enter {
+    animation: none;
+  }
+}
+
+.celecard-stage[data-celecard-hold="true"] {
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.celecard-stage[data-celecard-hold="true"] .celecard-guest-column {
+  max-width: none;
+  height: 100%;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  gap: 0;
+  padding: max(0.35rem, env(safe-area-inset-top, 0px))
+    max(0.45rem, env(safe-area-inset-right, 0px))
+    max(0.35rem, env(safe-area-inset-bottom, 0px))
+    max(0.45rem, env(safe-area-inset-left, 0px));
+}
+
+.celecard-stage[data-celecard-hold="true"] .celecard-hold-frame {
+  width: min(
+    calc(100dvw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 0.7rem),
+    calc(
+      (100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 0.7rem) * 85.6 /
+        54
+    )
+  );
+}
+
+.celecard-stage[data-celecard-hold="true"] .celecard-guest-rest,
+.celecard-stage[data-celecard-hold="true"] .celecard-dock-bar,
+.celecard-stage[data-celecard-hold="true"] .celecard-connect-layer,
+.celecard-stage[data-celecard-hold="true"] .celecard-sheet,
+.celecard-stage[data-celecard-hold="true"] .celecard-atmo {
+  display: none !important;
+}
+
+.celecard-stage[data-celecard-hold="true"] .celecard-enter {
+  animation: none;
+}
+
+/* CeleYou studio desk: one readable column until the frame is truly wide. */
+.celecard-studio {
+  min-width: 0;
+  width: 100%;
+}
+
+.celecard-studio-jump {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  position: sticky;
+  top: 0;
+  z-index: 24;
+  margin: 0 -0.15rem 0.15rem;
+  padding: 0.4rem 0.15rem 0.55rem;
+  background: color-mix(in srgb, #f4f1ea 86%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.celecard-studio-jump::-webkit-scrollbar {
+  display: none;
+}
+
+.celecard-studio-jump a {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.celecard-studio-jump a:hover,
+.celecard-studio-jump a:focus-visible {
+  border-color: #0b8a83;
+  color: #0b8a83;
+  outline: none;
+}
+
+.celecard-studio-desk {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  min-width: 0;
+}
+
+.celecard-studio-identity-col,
+.celecard-studio-work,
+.celecard-studio-preview {
+  min-width: 0;
+}
+
+.celecard-studio-identity-col {
+  order: 1;
+}
+
+.celecard-studio-preview {
+  order: 2;
+}
+
+.celecard-studio-work {
+  order: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  container-type: inline-size;
+  container-name: celecard-studio;
+}
+
+.celecard-studio-identity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.celecard-studio-identity-wide {
+  min-width: 0;
+}
+
+.celecard-avatar-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.celecard-avatar-row > button {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  max-width: 3.15rem;
+  justify-self: start;
+}
+
+.celecard-reach-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.celecard-reach-card {
+  position: relative;
+  min-width: 0;
+  padding: 0.9rem 0.95rem 1rem;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.celecard-reach-chips {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
+}
+
+.celecard-reach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 8.5rem;
+  max-width: 11.5rem;
+  flex-shrink: 0;
+  padding: 0.4rem 0.65rem 0.4rem 0.4rem;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 999px;
+  background: #fff;
+  color: rgb(68 64 60);
+  text-align: left;
+}
+
+.celecard-reach-chip-active {
+  background: #fffef8;
+}
+
+@media (min-width: 1180px) {
+  .celecard-studio-desk {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 22.5rem);
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    gap: 1.75rem;
+  }
+
+  .celecard-studio-identity-col {
+    order: 0;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .celecard-studio-work {
+    order: 0;
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .celecard-studio-preview {
+    order: 0;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    position: sticky;
+    top: 5.25rem;
+    max-height: calc(100dvh - 6rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+@container celecard-studio (min-width: 34rem) {
+  .celecard-studio-identity {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .celecard-studio-identity-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .celecard-studio-jump {
+    top: -0.15rem;
   }
 }
 
@@ -1812,6 +2073,37 @@
   height: 22.4cqw;
 }
 
+.celecard-face[data-face-lead="code"] .celecard-face-qr {
+  width: 28.6cqw;
+  height: 28.6cqw;
+}
+
+.celecard-face[data-face-lead="code"] .celecard-face-photo {
+  width: 16.2cqw;
+  height: 16.2cqw;
+}
+
+.celecard-face[data-face-lead="name"] .celecard-face-photo {
+  width: 16.8cqw;
+  height: 16.8cqw;
+}
+
+.celecard-face[data-name-scale="quiet"] .celecard-face-name {
+  max-height: 9.4cqw;
+}
+
+.celecard-face[data-name-scale="statement"] .celecard-face-name {
+  max-height: 13.6cqw;
+}
+
+.celecard-face[data-qr-finish="foil"] .celecard-face-qr {
+  box-shadow: 0 0 0 0.45cqw var(--celecard-accent), 0 10px 22px rgba(0, 0, 0, 0.22);
+}
+
+.celecard-face[data-qr-finish="quiet"] .celecard-face-qr {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
 .celecard-face-grid {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
@@ -1877,44 +2169,145 @@
 .celecard-face-company {
   font-size: 2.65cqw;
   line-height: 1.12;
+  overflow: visible;
 }
 
 .celecard-company-mark {
   width: 9.2cqw;
   height: 9.2cqw;
   flex-shrink: 0;
+  position: relative;
+  z-index: 2;
   isolation: isolate;
   mix-blend-mode: normal;
   opacity: 1;
   filter: none;
 }
 
+.celecard-face[data-compact="true"] .celecard-company-mark {
+  width: 7.8cqw;
+  height: 7.8cqw;
+}
+
+.celecard-face[data-composition="iconic"] .celecard-company-mark,
+.celecard-face[data-composition="portrait-led"] .celecard-company-mark,
+.celecard-face[data-composition="media-first"] .celecard-company-mark,
+.celecard-face[data-composition="grid"] .celecard-company-mark,
+.celecard-face[data-composition="type-first"] .celecard-company-mark {
+  width: 8.6cqw;
+  height: 8.6cqw;
+}
+
+.celecard-face[data-compact="true"][data-composition="iconic"] .celecard-company-mark,
+.celecard-face[data-compact="true"][data-composition="portrait-led"] .celecard-company-mark,
+.celecard-face[data-compact="true"][data-composition="media-first"] .celecard-company-mark,
+.celecard-face[data-compact="true"][data-composition="grid"] .celecard-company-mark,
+.celecard-face[data-compact="true"][data-composition="type-first"] .celecard-company-mark {
+  width: 7.4cqw;
+  height: 7.4cqw;
+}
+
 .celecard-origin-plate {
-  margin-top: 0.35cqw;
-  height: 16.8cqw;
-  width: 16.8cqw;
+  margin-top: -1.4cqw;
+  height: 32cqw;
+  width: 32cqw;
   border-radius: 0;
   isolation: isolate;
-  mix-blend-mode: normal;
   overflow: visible;
   background: transparent;
   box-shadow: none;
+  mix-blend-mode: normal;
+  opacity: 1;
+  filter: none;
+}
+
+.celecard-origin-plate[data-paper="dark"] {
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
+.celecard-origin-stamp {
+  isolation: isolate;
+}
+
+.celecard-origin-knockout,
+.celecard-origin-foil {
+  grid-column: 1;
+  grid-row: 1;
+  pointer-events: none;
+}
+
+.celecard-origin-knockout {
+  z-index: 0;
+  place-self: center;
+  width: 84%;
+  height: 84%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 46%,
+    color-mix(in srgb, var(--celecard-paper, #fff8ee) 42%, #ffffff) 0%,
+    color-mix(in srgb, var(--celecard-paper, #fff8ee) 16%, transparent) 46%,
+    transparent 74%
+  );
+}
+
+.celecard-origin-stamp[data-paper="dark"] .celecard-origin-knockout {
+  background: radial-gradient(
+    circle at 50% 46%,
+    rgba(244, 255, 253, 0.3) 0%,
+    rgba(127, 240, 228, 0.14) 42%,
+    transparent 72%
+  );
+}
+
+.celecard-origin-foil {
+  z-index: 0;
+  background: linear-gradient(
+    158deg,
+    color-mix(in srgb, #7ff0e4 34%, transparent) 0%,
+    color-mix(in srgb, #0b8a83 16%, transparent) 42%,
+    transparent 68%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0.38;
+  -webkit-mask-image: url("/digital-cards/brands/celeyou-mark.png");
+  mask-image: url("/digital-cards/brands/celeyou-mark.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.celecard-origin-plate[data-paper="dark"] .celecard-origin-foil {
+  mix-blend-mode: overlay;
+  opacity: 0.26;
+}
+
+.celecard-origin-ink {
+  mix-blend-mode: normal;
 }
 
 .celecard-origin-plate img {
+  position: relative;
+  z-index: 1;
   height: 100%;
   width: 100%;
   object-fit: contain;
   object-position: center;
   mix-blend-mode: normal;
-  opacity: 1;
-  filter: none;
+  isolation: isolate;
+  filter: drop-shadow(0 0.12cqw 0.42cqw rgba(7, 63, 60, 0.28));
+}
+
+.celecard-origin-plate[data-paper="dark"] img {
+  filter: drop-shadow(0 0 0.62cqw rgba(127, 240, 228, 0.34));
 }
 
 .celecard-face[data-compact="true"] .celecard-origin-plate {
-  margin-top: 0.28cqw;
-  height: 14.6cqw;
-  width: 14.6cqw;
+  margin-top: -1cqw;
+  height: 28cqw;
+  width: 28cqw;
 }
 
 .celecard-wordmark {
@@ -1922,16 +2315,29 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding: 1.1cqw 6cqw 3.6cqw;
-  gap: 0.32cqw;
+  padding: 1.2cqw 5cqw 3.4cqw;
+  gap: 0.7cqw;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  isolation: auto;
+  mix-blend-mode: multiply;
+}
+
+.celecard-wordmark[data-paper="dark"] {
+  mix-blend-mode: screen;
 }
 
 .celecard-wordmark-name {
-  font-size: 2.5cqw;
+  font-size: 3.35cqw;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.045em;
   white-space: nowrap;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
 }
 
 .celecard-wordmark-mark {
@@ -1944,29 +2350,50 @@
 }
 
 .celecard-wordmark-slogan {
-  max-width: 74cqw;
-  font-size: 1.72cqw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.35cqw;
+  max-width: 88cqw;
+  font-size: 2.15cqw;
   font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: 0.145em;
+  line-height: 1;
+  letter-spacing: 0.055em;
   text-align: center;
   white-space: nowrap;
-  opacity: 0.92;
+  opacity: 1;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.celecard-wordmark-rule {
+  display: block;
+  height: 0.22cqw;
+  width: 5.8cqw;
+  min-width: 4.2cqw;
+  border-radius: 99px;
+  opacity: 0.95;
 }
 
 .celecard-face[data-compact="true"] .celecard-wordmark {
-  padding: 0.85cqw 5cqw 3.2cqw;
-  gap: 0.22cqw;
+  padding: 0.9cqw 4.5cqw 3cqw;
+  gap: 0.55cqw;
 }
 
 .celecard-face[data-compact="true"] .celecard-wordmark-name {
-  font-size: 2.3cqw;
+  font-size: 3.05cqw;
 }
 
 .celecard-face[data-compact="true"] .celecard-wordmark-slogan {
-  font-size: 1.48cqw;
-  letter-spacing: 0.08em;
-  max-width: 78cqw;
+  font-size: 2.4cqw;
+  letter-spacing: 0.035em;
+  max-width: 92cqw;
+  gap: 1.1cqw;
+}
+
+.celecard-face[data-compact="true"] .celecard-wordmark-rule {
+  width: 4.4cqw;
 }
 
 .celecard-enter {
@@ -2061,11 +2488,11 @@
   background-size: 240% 100%;
   animation: celecard-foil-sheen 7.2s ease-in-out infinite;
   -webkit-mask-image:
-    radial-gradient(ellipse 15cqw 8.4cqw at 50% 0%, transparent 0 72%, #000 73%),
-    radial-gradient(ellipse 84cqw 10cqw at 50% 100%, transparent 0 72%, #000 73%);
+    radial-gradient(ellipse 28cqw 17cqw at 50% 0%, transparent 0 74%, #000 75%),
+    radial-gradient(ellipse 54cqw 8cqw at 50% 100%, transparent 0 72%, #000 73%);
   mask-image:
-    radial-gradient(ellipse 15cqw 8.4cqw at 50% 0%, transparent 0 72%, #000 73%),
-    radial-gradient(ellipse 84cqw 10cqw at 50% 100%, transparent 0 72%, #000 73%);
+    radial-gradient(ellipse 28cqw 17cqw at 50% 0%, transparent 0 74%, #000 75%),
+    radial-gradient(ellipse 54cqw 8cqw at 50% 100%, transparent 0 72%, #000 73%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
@@ -2297,6 +2724,12 @@
   }
 }
 
+.celecard-live-bio {
+  color: inherit;
+  opacity: 1;
+  -webkit-font-smoothing: antialiased;
+}
+
 .celecard-term-ribbon::after {
   content: "";
   pointer-events: none;
@@ -2313,23 +2746,43 @@
 }
 
 .celecard-term-flow {
-  height: 3px;
+  position: relative;
+  height: 7px;
   overflow: hidden;
   border-radius: 999px;
 }
 
 .celecard-term-flow-fill {
+  position: relative;
+  z-index: 1;
   transition: width 0.9s linear;
+  box-shadow: 0 0 16px color-mix(in srgb, currentColor 35%, transparent);
 }
 
 .celecard-term-flow-glint {
   position: absolute;
+  z-index: 2;
   top: 0;
   bottom: 0;
   left: 0;
-  width: 34%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.78), transparent);
-  animation: celecard-term-glint 2.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.82), transparent);
+  animation: celecard-term-glint 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.celecard-term-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.celecard-term-chip {
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .celecard-term-counter {

@@ -5,109 +5,55 @@ import { ImagePlus, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   BANK_ACCOUNT_TYPES,
-  DIGITAL_CARD_PAY_FAMILIES,
   DIGITAL_CARD_REACH_MAX,
-  DIGITAL_CARD_SOCIAL_NETWORKS,
-  isPayWalletOpenOnDesk,
   parseBankAccount,
   serializeBankAccount,
   type BankAccount,
   type DigitalCardSocialForm,
+  type DigitalCardSocialKey,
+  type DigitalCardSocialNetwork,
 } from "@/lib/digital-business-card/socials";
 import { DigitalCardBrandMark } from "@/components/digital-business-card/digital-card-brand-mark";
+import { DigitalCardReachCatalog } from "@/components/digital-business-card/digital-card-reach-catalog";
 import {
   DigitalCardReachNotice,
   reachReviewInputStyle,
   useVisibleReachReview,
 } from "@/components/digital-business-card/digital-card-reach-notice";
 
-const PAY_NETWORKS = DIGITAL_CARD_SOCIAL_NETWORKS.filter((network) => network.group === "pay");
-
 export function DigitalCardPayGroup({
   socials,
   payQr,
   onAdd,
+  onRemove,
   accent,
   intro,
   className,
-  gridClassName,
   children,
 }: {
   socials: DigitalCardSocialForm;
   payQr: Record<string, string>;
-  onAdd: (key: string) => void;
+  onAdd: (key: DigitalCardSocialKey) => void;
+  onRemove: (key: DigitalCardSocialKey) => void;
   accent?: string;
   intro?: ReactNode;
   className?: string;
   gridClassName?: string;
-  children: (network: (typeof PAY_NETWORKS)[number]) => ReactNode;
+  children: (network: DigitalCardSocialNetwork) => ReactNode;
 }) {
   return (
     <div className={className}>
       {intro}
-      <div className="space-y-5">
-        {DIGITAL_CARD_PAY_FAMILIES.map((family) => {
-          const networks = family.keys
-            .map((key) => PAY_NETWORKS.find((network) => network.key === key))
-            .filter((network): network is (typeof PAY_NETWORKS)[number] => Boolean(network));
-          const open = networks.filter((network) => isPayWalletOpenOnDesk(socials[network.key], payQr, network.key));
-          const hidden = networks.filter((network) => !open.some((row) => row.key === network.key));
-          return (
-            <div key={family.id}>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">{family.label}</p>
-              {open.length ? (
-                <div className={cn("grid grid-cols-1 gap-4", gridClassName)}>
-                  {open.map((network) => (
-                    <div key={network.key}>{children(network)}</div>
-                  ))}
-                </div>
-              ) : null}
-              <DigitalCardPayWalletPicker
-                keys={hidden.map((network) => network.key)}
-                onAdd={onAdd}
-                accent={accent}
-                className={open.length ? "mt-3" : undefined}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function DigitalCardPayWalletPicker({
-  keys,
-  onAdd,
-  accent,
-  className,
-}: {
-  keys: string[];
-  onAdd: (key: string) => void;
-  accent?: string;
-  className?: string;
-}) {
-  const networks = keys
-    .map((key) => PAY_NETWORKS.find((network) => network.key === key))
-    .filter((network): network is (typeof PAY_NETWORKS)[number] => Boolean(network));
-  if (!networks.length) return null;
-  return (
-    <div className={className}>
-      <div className="grid min-w-0 grid-cols-3 gap-2 sm:grid-cols-4">
-        {networks.map((network) => (
-          <button
-            key={network.key}
-            type="button"
-            onClick={() => onAdd(network.key)}
-            className="flex min-w-0 flex-col items-center gap-1.5 rounded-2xl border border-black/10 bg-white/80 px-1.5 py-3 text-center shadow-[0_4px_12px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-black/20 hover:shadow-[0_8px_18px_rgba(15,23,42,0.1)] sm:px-2"
-          >
-            <DigitalCardBrandMark id={network.key} className="h-11 w-11 rounded-[13px]" />
-            <span className="w-full break-words text-[10px] font-semibold uppercase leading-tight tracking-[0.08em]" style={{ color: accent }}>
-              {network.label}
-            </span>
-          </button>
-        ))}
-      </div>
+      <DigitalCardReachCatalog
+        groupId="pay"
+        socials={socials}
+        payQr={payQr}
+        onAdd={onAdd}
+        onRemove={onRemove}
+        accent={accent}
+      >
+        {children}
+      </DigitalCardReachCatalog>
     </div>
   );
 }

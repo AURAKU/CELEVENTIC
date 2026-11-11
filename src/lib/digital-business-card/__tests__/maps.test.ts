@@ -18,8 +18,8 @@ describe("CeleYou location places", () => {
     assert.equal(google?.label, "Ridge Hospital");
     assert.equal(google?.lat, 5.56);
     assert.equal(google?.lng, -0.196);
-    assert.match(google?.embedUrl ?? "", /maps\.google\.com\/maps\?q=/);
-    assert.match(google?.embedUrl ?? "", /output=embed/);
+    assert.match(google?.embedUrl ?? "", /openstreetmap\.org\/export\/embed/);
+    assert.match(google?.embedUrl ?? "", /marker=5\.56/);
 
     const shortGoogle = parseCeleCardPlace("https://maps.app.goo.gl/folioHouse");
     assert.equal(shortGoogle?.provider, "Google Maps");
@@ -40,6 +40,12 @@ describe("CeleYou location places", () => {
     assert.equal(street?.label, "Oxford Street, Accra");
     assert.match(street?.href ?? "", /google\.com\/maps\/search/);
     assert.match(street?.embedUrl ?? "", /output=embed/);
+
+    const bing = parseCeleCardPlace("https://www.bing.com/maps?cp=5.56~-0.196");
+    assert.equal(bing?.provider, "Bing Maps");
+    assert.equal(bing?.lat, 5.56);
+    assert.equal(bing?.lng, -0.196);
+    assert.match(bing?.embedUrl ?? "", /openstreetmap\.org\/export\/embed/);
   });
 
   it("reads Waze, OSM, Bing, Baidu, and geo pins", () => {
@@ -49,6 +55,7 @@ describe("CeleYou location places", () => {
       "OpenStreetMap"
     );
     assert.equal(parseCeleCardPlace("https://www.bing.com/maps?cp=5.56~-0.19")?.provider, "Bing Maps");
+    assert.equal(parseCeleCardPlace("https://ditu.amap.com/?q=5.56,-0.196")?.provider, "Amap");
     assert.equal(parseCeleCardPlace("https://map.baidu.com/search")?.provider, "Baidu Maps");
     const geo = parseCeleCardPlace("geo:5.56,-0.196");
     assert.equal(geo?.lat, 5.56);

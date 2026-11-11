@@ -11,6 +11,43 @@ import {
   useVisibleReachReview,
 } from "@/components/digital-business-card/digital-card-reach-notice";
 
+export function DigitalCardOtherReservation({
+  values,
+  onChange,
+  accent,
+  inputClassName,
+  inputStyle,
+}: {
+  values: string[];
+  onChange: (next: string[]) => void;
+  accent?: string;
+  inputClassName?: string;
+  inputStyle?: CSSProperties;
+}) {
+  return (
+    <div
+      id="celecard-other-links"
+      className="rounded-2xl border border-black/10 bg-white/80 p-4"
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: accent || "#0B8A83" }}>
+        Other links
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-stone-500">
+        App or category not listed? Add any page, shop, booking link, or profile. Guests see the name you give it and can open it.
+      </p>
+      <div className="mt-3">
+        <DigitalCardOtherFields
+          values={values.length ? values : [""]}
+          onChange={onChange}
+          inputClassName={inputClassName}
+          inputStyle={inputStyle}
+          addStyle={{ color: accent || "#0B8A83" }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function DigitalCardOtherFields({
   values,
   onChange,
@@ -118,7 +155,7 @@ function OtherLinkRow({
             type="url"
             value={href}
             onChange={(event) => onHref(event.target.value)}
-            placeholder="https:// the page or app link"
+            placeholder="https:// any app or page link"
             aria-invalid={review.invalid}
             className={cn("min-w-0 w-full", inputClassName)}
             style={{ ...inputStyle, ...reachReviewInputStyle(review.invalid) }}

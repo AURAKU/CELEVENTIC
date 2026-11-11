@@ -246,6 +246,19 @@ export function formatMeetingDay(iso: string, timeZone: string): { key: string; 
   };
 }
 
+export function groupMeetingDays(slots: CeleCardMeetingSlot[]) {
+  const days: Array<{ key: string; weekday: string; label: string; slots: CeleCardMeetingSlot[] }> = [];
+  for (const slot of slots) {
+    const current = days[days.length - 1];
+    if (!current || current.key !== slot.dayKey) {
+      days.push({ key: slot.dayKey, weekday: slot.weekday, label: slot.dayLabel, slots: [slot] });
+    } else {
+      current.slots.push(slot);
+    }
+  }
+  return days;
+}
+
 export function listOpenMeetingSlots(
   desk: CeleCardMeetingDesk,
   takenStarts: string[] = [],
@@ -366,4 +379,39 @@ export function downloadMeetingIcs(filename: string, ics: string) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(href), 800);
+}
+
+export function firstGivenName(value: string | null | undefined, fallback = "there"): string {
+  const first = String(value ?? "")
+    .trim()
+    .split(/\s+/)[0];
+  return first || fallback;
+}
+
+export function meetingReplyCopy(input: {
+  kind: "confirm" | "decline";
+  ownerName: string;
+  guestName: string;
+  booking: CeleCardMeetingBooking;
+}): { subject: string; body: string } {
+  const owner = firstGivenName(input.ownerName, "They");
+  const guest = firstGivenName(input.guestName);
+  const when = formatMeetingWhen(input.booking.start, input.booking.timezone);
+  const place = input.booking.place ? ` ${input.booking.place}.` : ".";
+  if (input.kind === "confirm") {
+    return {
+      subject: `${owner} confirmed your time`,
+      body: `Hello ${guest}, ${owner} confirmed ${input.booking.title} on ${when}.${place} See you then.`,
+    };
+  }
+  return {
+    subject: `${owner} asked you to pick another time`,
+    body: `Hello ${guest}, ${owner} cannot make ${when}. Open the card and pick another time.`,
+  };
+}
+
+export function whatsappComposeHref(phone: string | null | undefined, text: string): string | null {
+  const digits = String(phone ?? "").replace(/[^\d]/g, "");
+  if (digits.length < 7) return null;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }

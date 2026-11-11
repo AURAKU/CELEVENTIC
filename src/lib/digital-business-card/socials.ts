@@ -890,7 +890,7 @@ export type DigitalCardSocials = Partial<Record<DigitalCardSocialKey, DigitalCar
   portraitFrame?: "circle" | "square" | "rounded";
   /** Cropped company mark that sits beside the house name. */
   companyLogoUrl?: string;
-  /** Owner layout, atmosphere, ornament, and blended paper. Missing keys keep the template. */
+  /** Owner layout, atmosphere, ornament, blended paper, lettering, and ink. Missing keys keep the template. */
   design?: CeleCardDesign;
   /** Guest book-a-time desk. Missing or disabled stays off the card. */
   meeting?: import("@/lib/digital-business-card/meetings").CeleCardMeetingDesk;
@@ -2171,7 +2171,7 @@ const GROUP_NOUN: Record<string, { title: string; unit: string }> = {
   website: { title: "Website", unit: "sites" },
   location: { title: "Location", unit: "places" },
   other: { title: "Pages", unit: "pages" },
-  meeting: { title: "Meet", unit: "times" },
+  meeting: { title: "Meetings", unit: "times" },
   whatsapp: { title: "WhatsApp", unit: "chats" },
   bank: { title: "Bank", unit: "accounts" },
 };
@@ -2560,6 +2560,14 @@ export const digitalCardSocialsSchema = z
         paperUrl: z.string().max(2000).optional(),
         paperWeight: z.enum(["subtle", "balanced", "rich"]).optional(),
         paperTone: z.enum(["light", "dark"]).optional(),
+        nameScale: z.enum(["quiet", "balanced", "statement"]).optional(),
+        faceLead: z.enum(["photo", "name", "code"]).optional(),
+        lettering: z.enum(["letterhead", "credit", "stamp", "neon", "masthead", "carved"]).optional(),
+        ink: z.enum(["light", "dark"]).optional(),
+        accent: z.enum(["teal", "gold", "ivory", "rose", "sky", "ink"]).optional(),
+        qrFinish: z.enum(["foil", "quiet"]).optional(),
+        grain: z.enum(["paper", "linen", "none"]).optional(),
+        motion: z.enum(["atelier", "cinema", "pulse", "earth", "linen"]).optional(),
       })
       .optional(),
   })

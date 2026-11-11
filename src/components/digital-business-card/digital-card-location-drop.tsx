@@ -1,11 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MapPin, Navigation } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseCeleCardPlace, type CeleCardPlace } from "@/lib/digital-business-card/maps";
 import type { DigitalCardReachItem } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
+
+export function locationPreviewItems(values: string[]): DigitalCardReachItem[] {
+  const items: DigitalCardReachItem[] = [];
+  values.forEach((value, index) => {
+    const place = parseCeleCardPlace(value);
+    if (!place) return;
+    items.push({
+      id: `location-preview-${index}`,
+      brand: "location",
+      title: place.label,
+      subtitle: place.provider,
+      href: place.href,
+      copyValue: value,
+      surface: "stack",
+    });
+  });
+  return items;
+}
 
 export function DigitalCardLocationDrop({
   items,
@@ -38,21 +56,26 @@ function PlacePreview({
   compact?: boolean;
   preview?: boolean;
 }) {
-  const place = parseCeleCardPlace(item.copyValue || item.href) || {
-    href: item.href,
-    embedUrl: null,
-    label: item.title,
-    provider: item.subtitle || "Maps",
-    lat: null,
-    lng: null,
-    geoHref: null,
-  };
-  const mapHeight = compact ? "h-36" : "h-44";
+  const place = useMemo<CeleCardPlace>(
+    () =>
+      parseCeleCardPlace(item.copyValue || item.href) || {
+        href: item.href,
+        embedUrl: null,
+        label: item.title,
+        provider: item.subtitle || "Maps",
+        lat: null,
+        lng: null,
+        geoHref: null,
+      },
+    [item.copyValue, item.href, item.subtitle, item.title]
+  );
+  const mapHeight = compact ? "h-40" : "h-52";
   const [mapReady, setMapReady] = useState(false);
+  const openLabel = `Open in ${place.provider}`;
 
   return (
     <article className="overflow-hidden rounded-[1.2rem] ring-1 ring-black/8">
-      <div className={cn("relative overflow-hidden", mapHeight)}>
+      <div className={cn("relative overflow-hidden bg-stone-100", mapHeight)}>
         <MapStage place={place} theme={theme} hidden={mapReady} />
         {place.embedUrl ? (
           <iframe
@@ -62,21 +85,14 @@ function PlacePreview({
               "absolute inset-0 h-full w-full border-0 transition-opacity duration-300",
               mapReady ? "opacity-100" : "pointer-events-none opacity-0"
             )}
-            loading="lazy"
+            loading="eager"
             referrerPolicy="no-referrer-when-downgrade"
             allowFullScreen
-            onLoad={(event) => {
-              try {
-                const href = event.currentTarget.contentDocument?.location.href ?? "";
-                if (!href || href === "about:blank") return;
-              } catch {
-                setMapReady(true);
-              }
-            }}
+            onLoad={() => setMapReady(true)}
           />
         ) : null}
       </div>
-      <div className={cn("grid gap-2 bg-white/70", compact ? "px-3 py-2.5" : "px-3.5 py-3")}>
+      <div className={cn("grid gap-2 bg-white/80", compact ? "px-3 py-2.5" : "px-3.5 py-3")}>
         <div className="min-w-0">
           <p className={cn("truncate font-semibold tracking-tight", compact ? "text-[13px]" : "text-[15px]")}>
             {place.label}
@@ -97,11 +113,11 @@ function PlacePreview({
             style={{ background: theme.accentSoft, color: theme.accent }}
           >
             <Navigation className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
-            Open in {place.provider}
+            {openLabel}
           </span>
         ) : (
           <a
-            href={place.href}
+            href={place.geoHref || place.href}
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
@@ -111,7 +127,7 @@ function PlacePreview({
             style={{ background: theme.accent, color: "#fffef8" }}
           >
             <Navigation className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
-            Open in {place.provider}
+            {openLabel}
           </a>
         )}
       </div>

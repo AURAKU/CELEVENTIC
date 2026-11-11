@@ -70,7 +70,7 @@ export function DigitalCardPresentView({
   proximityDiscoverable?: boolean;
 }) {
   const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), card.socials.design);
-  const motionMood = celecardMotionMood(theme);
+  const motionMood = celecardMotionMood(theme, card.socials.design?.motion);
   const router = useRouter();
   const rootRef = useRef<HTMLElement>(null);
   const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
@@ -253,6 +253,7 @@ export function DigitalCardPresentView({
                 qrBadgeHref={profileUrl}
                 className="max-w-none shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
                 portraitFrame={card.socials.portraitFrame}
+                companyLogo
                 companyLogoUrl={card.socials.companyLogoUrl}
                 design={card.socials.design}
               />

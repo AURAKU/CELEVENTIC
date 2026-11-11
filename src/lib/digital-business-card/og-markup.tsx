@@ -1,5 +1,5 @@
 import { CELECARD_CARD_ASPECT, CELECARD_OG_HEIGHT, CELECARD_OG_WIDTH } from "@/lib/digital-business-card/share";
-import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
+import { SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
 import {
   celecardPortraitFrameRadius,
@@ -222,26 +222,13 @@ export function CeleCardOgMarkup({
           style={{
             height: 58,
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: -0.4, color: theme.accent }}>
+          <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.4, color: theme.accent }}>
             {SMARTCARD_PRODUCT_SHORT_NAME}
-          </div>
-          <div
-            style={{
-              marginTop: 4,
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: 1.4,
-              color: theme.accent,
-              opacity: 0.88,
-            }}
-          >
-            {SMARTCARD_BRAND_TAGLINE}
           </div>
         </div>
       </div>
