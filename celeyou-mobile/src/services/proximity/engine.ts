@@ -8,4 +8,4 @@ export {
   rssiIsPhysicalTouchProof,
   type NearbyPeer,
   type NativeDiscoverResult,
-} from "../../../src/lib/celeyou-proximity/native-engine";
+} from "../../../../src/lib/celeyou-proximity/native-engine";

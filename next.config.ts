@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Native January 2027 app. Keep it out of the web typecheck and webpack graph.
+  eslint: {
+    dirs: ["src", "scripts"],
+  },
   // Cursor preview uses localhost; Playwright and some tabs use 127.0.0.1.
   // Without this, Next 15 blocks cross-origin /_next chunks and paints the red portal.
   allowedDevOrigins: ["127.0.0.1", "localhost"],

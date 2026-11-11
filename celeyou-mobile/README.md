@@ -4,6 +4,8 @@ Phase B foundation only. **Does not advertise BLE from this folder yet.** Do not
 
 The website remains the November web MVP. Recipients without this app still open `https://www.celeventic.com/card/{slug}`.
 
+This folder is excluded from the Next.js web build. Do not import it from `src/`.
+
 ## What exists
 
 - Shared protocol in `../src/lib/celeyou-proximity/`
