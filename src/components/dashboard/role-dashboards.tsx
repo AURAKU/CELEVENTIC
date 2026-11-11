@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  Calendar, Mail, Ticket, DollarSign, Users, QrCode, Plus, Sparkles, Heart,
+  Calendar, Mail, Ticket, DollarSign, Users, QrCode, Plus, Sparkles, Heart, Smartphone, Share2,
 } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PrimaryAction } from "@/components/layout/primary-action";
@@ -47,6 +47,8 @@ export function EventOwnerDashboard({
         subtitle="Here's progress on your events, guests, invitations, and next steps."
         primaryHref="/dashboard/events/create"
         primaryLabel="Create Event"
+        secondaryHref="/dashboard/business-card/tap"
+        secondaryLabel="Tap to Connect"
       />
       {!isAdmin && <FreePlanReminder />}
       <StatsRow stats={stats} />
@@ -61,6 +63,8 @@ export function EventOwnerDashboard({
         />
         <QuickActions
           actions={[
+            { href: "/dashboard/business-card/tap", label: "Tap to Connect", icon: Smartphone },
+            { href: "/dashboard/business-card#share", label: "Share my CeleYou", icon: Share2 },
             { href: "/dashboard/events/create", label: "Create Event", icon: Calendar },
             { href: "/dashboard/guests", label: "Add Guests", icon: Users },
             { href: "/dashboard/invitations", label: "Create Invitation", icon: Mail },
@@ -89,6 +93,8 @@ export function OrganizerDashboard({
         subtitle="Client events, deadlines, and vendor coordination at a glance."
         primaryHref="/dashboard/events/create"
         primaryLabel="Create Event"
+        secondaryHref="/dashboard/business-card/tap"
+        secondaryLabel="Tap to Connect"
       />
       {!isAdmin && <FreePlanReminder />}
       <StatsRow stats={stats} />
@@ -105,6 +111,8 @@ export function OrganizerDashboard({
         />
         <QuickActions
           actions={[
+            { href: "/dashboard/business-card/tap", label: "Tap to Connect", icon: Smartphone },
+            { href: "/dashboard/business-card#share", label: "Share my CeleYou", icon: Share2 },
             { href: "/dashboard/events/create", label: "Create Event", icon: Calendar },
             { href: "/dashboard/organizers", label: "Organizer Directory", icon: Users },
             { href: "/dashboard/events", label: "Invite Client", icon: Mail },
@@ -133,6 +141,8 @@ export function OrganizationDashboard({
         subtitle="Manage your organization's events, team, and permissions."
         primaryHref="/dashboard/events/create"
         primaryLabel="Create Event"
+        secondaryHref="/dashboard/business-card/tap"
+        secondaryLabel="Tap to Connect"
       />
       {!isAdmin && <FreePlanReminder />}
       <StatsRow stats={stats} />
@@ -147,6 +157,8 @@ export function OrganizationDashboard({
         />
         <QuickActions
           actions={[
+            { href: "/dashboard/business-card/tap", label: "Tap to Connect", icon: Smartphone },
+            { href: "/dashboard/business-card#share", label: "Share my CeleYou", icon: Share2 },
             { href: "/dashboard/settings?tab=team", label: "Invite Team", icon: Users },
             { href: "/dashboard/settings?tab=organization", label: "Organization Settings", icon: Calendar },
             { href: "/dashboard/events/create", label: "Create Event", icon: Plus },
@@ -190,11 +202,15 @@ function HeroBanner({
   subtitle,
   primaryHref,
   primaryLabel,
+  secondaryHref,
+  secondaryLabel,
 }: {
   firstName: string;
   subtitle: string;
   primaryHref: string;
   primaryLabel: string;
+  secondaryHref?: string;
+  secondaryLabel?: string;
 }) {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-600 via-brand-500 to-accent-500 p-6 sm:p-8 text-white shadow-[0_12px_40px_rgba(11,138,131,0.3)]">
@@ -210,11 +226,24 @@ function HeroBanner({
           </h1>
           <p className="text-white/70 mt-1">{subtitle}</p>
         </div>
-        <PrimaryAction size="lg" asChild>
-          <Link href={primaryHref}>
-            <Plus className="h-4 w-4" /> {primaryLabel}
-          </Link>
-        </PrimaryAction>
+        <div className="flex flex-col gap-2 sm:items-end">
+          <PrimaryAction size="lg" asChild>
+            <Link href={primaryHref}>
+              <Plus className="h-4 w-4" /> {primaryLabel}
+            </Link>
+          </PrimaryAction>
+          {secondaryHref && secondaryLabel ? (
+            <Button
+              asChild
+              variant="outline"
+              className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+            >
+              <Link href={secondaryHref}>
+                <Smartphone className="h-4 w-4" /> {secondaryLabel}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
     </div>
   );

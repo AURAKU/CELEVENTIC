@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const joinSchema = z.object({
   cardId: z.string().min(8).max(40),
   joinCode: z.string().min(4).max(12),
+  transport: z.enum(["qr", "code", "ble", "nfc-card"]).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
       cardId: parsed.data.cardId,
       joinCode: parsed.data.joinCode,
+      transport: parsed.data.transport,
       ip,
     });
     return NextResponse.json({ success: true, data: view });

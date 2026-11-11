@@ -1,13 +1,28 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it } from "node:test";
-import { detectSmartShareCapability } from "@/lib/celeyou-share/engine";
+import {
+  CeleYouSmartShareEngine,
+  detectSmartShareCapability,
+} from "@/lib/celeyou-share/engine";
 import {
   ZERO_INSTALL_RECIPIENT_MATRIX,
   recipientMatrixNeverClaimsPhoneNfcP2P,
 } from "@/lib/celeyou-share/recipient-matrix";
 import { guestPrimaryActions } from "@/lib/celeyou-share/guest-actions";
 import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
-import { isAutomatedPreviewAgent, isCeleYouPublicEventKind } from "@/lib/celeyou-share/events";
+import { celeYouShareIdentity } from "@/lib/digital-business-card/share-identity";
+import {
+  buildCeleYouWalletPass,
+  walletPassClaimsPhoneNfc,
+  walletPassGuidance,
+} from "@/lib/celeyou-share/wallet-pass";
+import {
+  celeYouActivityLabel,
+  isAutomatedPreviewAgent,
+  isCeleYouPublicEventKind,
+} from "@/lib/celeyou-share/events";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 
 describe("CeleYou Smart Share Engine", () => {
@@ -19,6 +34,10 @@ describe("CeleYou Smart Share Engine", () => {
     }
     const iphone = ZERO_INSTALL_RECIPIENT_MATRIX.find((row) => row.id === "iphone-no-app");
     assert.ok(iphone?.today.includes("No CeleYou install"));
+    assert.equal(
+      ZERO_INSTALL_RECIPIENT_MATRIX.filter((row) => row.id !== "celeyou-app").every((row) => row.appRequired === false),
+      true
+    );
   });
 
   it("recommends QR or a link when the browser cannot open a share sheet", () => {
@@ -28,6 +47,28 @@ describe("CeleYou Smart Share Engine", () => {
     assert.equal(capability.airDropInShareSheet, false);
     assert.equal(capability.alternatives.includes("https-link") || capability.recommended === "https-link", true);
     assert.equal(/cannot start AirDrop or Quick Share by touching/i.test(capability.nearbyGuidance), true);
+    const engine = new CeleYouSmartShareEngine(null);
+    assert.equal(engine.route()[0], engine.capability.recommended);
+    assert.equal(engine.route().includes("qr"), true);
+    assert.equal(engine.route().includes("https-link"), true);
+    assert.equal(celeYouActivityLabel("nfc_tap"), "NFC card opened");
+    assert.equal(celeYouActivityLabel("qr_open"), "QR opened");
+    const identity = celeYouShareIdentity({
+      slug: "kojo-mensah",
+      publicToken: "cmqr_kojo",
+      nfcToken: "cmnfc_kojo",
+      origin: "https://www.celeventic.com",
+    });
+    assert.equal(engine.landsOnSameProfile(identity), true);
+    assert.equal(walletPassClaimsPhoneNfc(), false);
+    assert.match(walletPassGuidance({}), /no CeleYou app/i);
+    const pass = buildCeleYouWalletPass({
+      displayName: "Kojo Mensah",
+      profileUrl: identity.profileUrl,
+      qrUrl: identity.qrUrl,
+    });
+    assert.equal(pass.phoneNfcTransfer, false);
+    assert.equal(pass.qrUrl, identity.qrUrl);
   });
 
   it("offers Call and WhatsApp only from published unlocked details", () => {
@@ -74,6 +115,28 @@ describe("CeleYou Smart Share Engine", () => {
       actions.some((action) => action.href === "tel:+233200000000"),
       false
     );
+    assert.equal(actions.find((action) => action.id === "whatsapp")?.label, "WhatsApp");
+  });
+
+  it("uses WhatsApp Business as the guest chat tap when personal WhatsApp is missing", () => {
+    const card = {
+      slug: "ama-serwaa",
+      guestReach: [
+        {
+          id: "whatsappbusiness-0",
+          brand: "whatsappbusiness",
+          title: "WhatsApp Business",
+          subtitle: null,
+          href: "https://wa.me/233240000000",
+          appHref: "whatsapp://send?phone=233240000000",
+          surface: "stack",
+        },
+      ],
+    } as DigitalCardPublicPayload;
+    const actions = guestPrimaryActions(card);
+    const chat = actions.find((action) => action.id === "whatsapp");
+    assert.equal(chat?.label, "WhatsApp Business");
+    assert.equal(chat?.href, "whatsapp://send?phone=233240000000");
   });
 
   it("groups published details into guest identity sections", () => {
@@ -92,6 +155,28 @@ describe("CeleYou Smart Share Engine", () => {
       ["about", "contact", "portfolio"]
     );
     assert.equal(sections[0]?.body, "Creative director in Accra.");
+  });
+
+  it("keeps SHARE MY CELEYOU actions on the studio desk without claiming phone NFC", () => {
+    const desk = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-share-desk.tsx"),
+      "utf8"
+    );
+    assert.match(desk, /SHARE_MY_CARD_CTA/);
+    assert.match(desk, /NEARBY_SHARE_CTA/);
+    assert.match(desk, /same public profile/);
+    assert.match(desk, /WALLET_PASS_CTA/);
+    assert.match(desk, /SAVE_CONTACT_CTA/);
+    assert.match(desk, /SHARE_CONTACT_FILE_CTA/);
+    assert.match(desk, /CeleYouNameDropSetup/);
+    assert.match(desk, /shareDeskActionOrder/);
+    assert.match(desk, /Load more|fallbackGuidance/);
+    const analytics = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-analytics-panel.tsx"),
+      "utf8"
+    );
+    assert.match(analytics, /Load more/);
+    assert.match(analytics, /A nearby phone is not a tap/);
   });
 
   it("accepts only public guest events and ignores crawlers", () => {

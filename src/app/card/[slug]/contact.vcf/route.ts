@@ -11,9 +11,10 @@ import {
 import { resolveCeleYouPublicShare, toGuestPublicPayload } from "@/lib/digital-business-card/access";
 import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
 import { isCeleCardPhotoUrl } from "@/lib/digital-business-card/portraits";
-import { digitalCardIdentityUrl, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
+import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import {
   buildVCard,
+  celeYouContactProfileUrl,
   vcardContentDisposition,
   vcardDelivery,
   vcardFileName,
@@ -47,7 +48,7 @@ export async function GET(
   const origin = celeYouGuestOrigin(await getServerAppUrl());
   const photo = await readVCardPhoto(card.avatarUrl);
   const vcf = buildVCard(card, {
-    cardUrl: digitalCardIdentityUrl(card.slug, origin),
+    cardUrl: celeYouContactProfileUrl(card.slug, origin),
     photo,
   });
   const filename = vcardFileName(card);
@@ -87,7 +88,14 @@ async function resolveGuestCard(slug: string): Promise<DigitalCardPublicPayload 
   const jar = await cookies();
   const grant = await resolveCeleCardGrant(card.id, jar.get(celeCardGrantCookieName(card.id))?.value);
   const payload = toGuestPublicPayload(card, grant?.itemKeys ?? [], policy);
-  if (!payload.isLive) return null;
+  if (!payload.isLive) {
+    const denied = resolveCeleYouPublicShare({ card, channel: "vcard", policy });
+    void recordSmartCardInteraction(card.id, "vcard_denied", {
+      surface: "vcf",
+      reason: denied.reason,
+    }).catch(() => undefined);
+    return null;
+  }
   return payload;
 }
 

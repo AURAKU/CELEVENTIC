@@ -29,6 +29,11 @@ export function digitalCardPresentPath(slug: string, options?: { immersive?: boo
   return options?.immersive ? `${path}?immersive=1` : path;
 }
 
+/** Cardholder Wallet card. QR opens the same public profile. Not phone to phone NFC. */
+export function digitalCardWalletPath(slug: string): string {
+  return `${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(slug)}/wallet`;
+}
+
 export function digitalCardPresentUrl(slug: string, origin?: string): string {
   const path = digitalCardPresentPath(slug);
   if (!origin) return path;

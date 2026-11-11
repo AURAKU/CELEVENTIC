@@ -17,6 +17,7 @@ describe("CeleYou Tap-to-Connect capabilities", () => {
     const capability = detectTapCapability(null);
     assert.equal(capability.bleAdvertise, false);
     assert.equal(capability.nativeBlePeer, false);
+    assert.equal(capability.phoneToPhoneReady, false);
     assert.equal(capability.sessionQr, true);
     assert.equal(capability.nfcCardTapToOpen, true);
   });

@@ -3,18 +3,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, QrCode, ScanLine, X } from "lucide-react";
+import { ArrowLeft, Copy, Nfc, QrCode, ScanLine, Share2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getClientAppUrl } from "@/lib/app-url";
-import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
+import { digitalCardIdentityUrl, digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
+import { celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
+import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
+import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { detectTapCapability } from "@/lib/celeyou-proximity/capabilities";
 import { parseTapJoinScan } from "@/lib/celeyou-proximity/join-code";
+import {
+  CeleYouProximityEngine,
+  nearbySignalHint,
+  rssiIsPhysicalTouchProof,
+  type NearbyPeer,
+  type NativeDiscoverReason,
+} from "@/lib/celeyou-proximity/native-engine";
 import {
   TAP_DISCOVERY_TIMEOUT_MS,
   TAP_POLL_MS,
   TAP_TO_CONNECT_CTA,
+  TAP_TO_CONNECT_NATIVE_REQUIREMENT,
   TAP_TO_CONNECT_TAGLINE,
+  TAP_TO_OPEN_NAME,
   tapJoinPath,
 } from "@/lib/celeyou-proximity/product";
 import { screenForProximityStatus, type ProximityStatus } from "@/lib/celeyou-proximity/state-machine";
@@ -41,6 +53,7 @@ type SessionView = {
   role: "host" | "peer";
   status: ProximityStatus;
   joinCode: string | null;
+  discoveryId: string;
   verifyCode: string | null;
   expiresAt: string;
   peer: { displayName: string; title: string | null; company: string | null; avatarUrl: string | null } | null;
@@ -71,7 +84,13 @@ export function CeleYouTapConnect({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
+  const [showProfileQr, setShowProfileQr] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [nearby, setNearby] = useState<NearbyPeer[]>([]);
+  const [discoverReason, setDiscoverReason] = useState<NativeDiscoverReason | null>(null);
   const autoJoined = useRef(false);
+  const redeeming = useRef(false);
+  const engineRef = useRef<CeleYouProximityEngine | null>(null);
 
   const card = cards.find((row) => row.id === cardId) ?? cards[0] ?? null;
 
@@ -130,6 +149,83 @@ export function CeleYouTapConnect({
     return () => window.clearTimeout(timer);
   }, [session?.id, session?.status]);
 
+  useEffect(() => {
+    if (!session || session.status !== "DISCOVERING" || !session.discoveryId || !session.joinCode) {
+      void engineRef.current?.stopDiscovering();
+      engineRef.current = null;
+      setNearby([]);
+      setDiscoverReason(null);
+      return;
+    }
+    const engine = new CeleYouProximityEngine();
+    engineRef.current = engine;
+    let cancelled = false;
+    void engine
+      .startDiscovering({
+        v: 1,
+        type: "hello",
+        discoveryId: session.discoveryId,
+        joinCode: session.joinCode,
+      })
+      .then((result) => {
+        if (cancelled) return;
+        setDiscoverReason(result.reason);
+        setNearby(engine.listPeers());
+      });
+    const timer = window.setInterval(() => {
+      if (!cancelled) setNearby(engine.listPeers());
+    }, 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      void engine.stopDiscovering();
+      if (engineRef.current === engine) engineRef.current = null;
+    };
+  }, [session?.id, session?.status, session?.discoveryId, session?.joinCode]);
+
+  useEffect(() => {
+    const token = session?.share?.token;
+    if (!session || session.status !== "APPROVED" || !token || redeeming.current) return;
+    redeeming.current = true;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/digital-business-cards/proximity/exchange", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!res.ok) {
+          setError(typeof json.error === "string" ? json.error : "CeleYou could not verify this share.");
+          return;
+        }
+        setSession((current) =>
+          current
+            ? {
+                ...current,
+                status: "COMPLETED",
+                share: {
+                  token: "",
+                  profilePath: json.data?.profilePath || current.share?.profilePath || "",
+                  vcardPath: json.data?.vcardPath || current.share?.vcardPath || "",
+                  preview: json.data?.preview || current.share?.preview || current.self,
+                },
+              }
+            : current
+        );
+      } catch {
+        if (!cancelled) setError("CeleYou could not verify this share.");
+      } finally {
+        redeeming.current = false;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.id, session?.status, session?.share?.token]);
+
   async function startHost() {
     if (!card) return;
     setBusy(true);
@@ -154,7 +250,7 @@ export function CeleYouTapConnect({
     }
   }
 
-  async function joinWithCode(code: string) {
+  async function joinWithCode(code: string, transport: "code" | "ble" = "code") {
     if (!card) return;
     setBusy(true);
     setError(null);
@@ -162,7 +258,7 @@ export function CeleYouTapConnect({
       const res = await fetch("/api/digital-business-cards/proximity/sessions/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cardId: card.id, joinCode: code }),
+        body: JSON.stringify({ cardId: card.id, joinCode: code, transport }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -176,6 +272,26 @@ export function CeleYouTapConnect({
     } finally {
       setBusy(false);
     }
+  }
+
+  const origin = getClientAppUrl();
+  const profileUrl = card?.slug ? digitalCardIdentityUrl(card.slug, origin) : "";
+  const profileQrSrc = profileUrl ? digitalCardQrImageSrc(profileUrl, { size: 720, format: "png" }) : "";
+
+  async function copyProfileLink() {
+    if (!profileUrl) return;
+    await navigator.clipboard.writeText(profileUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  async function shareProfile() {
+    if (!profileUrl || !card) return;
+    await shareCeleYouProfile({
+      title: celeCardShareTitle({ displayName: card.displayName, title: card.title }),
+      text: celeCardShareMessage({ displayName: card.displayName }),
+      url: profileUrl,
+    });
   }
 
   async function act(action: "request" | "approve" | "decline" | "cancel") {
@@ -201,7 +317,6 @@ export function CeleYouTapConnect({
     }
   }
 
-  const origin = getClientAppUrl();
   const joinUrl = session?.joinCode ? `${origin}${tapJoinPath(session.joinCode)}` : "";
   const qrSrc = joinUrl ? digitalCardQrImageSrc(joinUrl, { size: 720, format: "png" }) : "";
   const screen = session ? screenForProximityStatus(session.status, session.role) : "ready";
@@ -228,7 +343,7 @@ export function CeleYouTapConnect({
         <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">{TAP_TO_CONNECT_TAGLINE}</h1>
       </div>
 
-      <ProximityOrbs aligned={screen === "success" || screen === "found"} />
+      <ProximityOrbs aligned={screen === "success" || screen === "found" || screen === "verifying"} />
 
       <div className="relative z-10 mt-2 flex flex-col items-center">
         <Portrait name={session?.self.displayName || card?.displayName || "You"} src={session?.self.avatarUrl || card?.avatarUrl} />
@@ -257,19 +372,73 @@ export function CeleYouTapConnect({
               </select>
             </label>
           ) : null}
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7FF0E4]">
+            Ready to Connect
+          </p>
           <button
             type="button"
             disabled={busy || !card || card.proximityDiscoverable === false}
             onClick={() => void startHost()}
             className="h-12 w-full rounded-full bg-[#0B8A83] text-sm font-semibold text-white disabled:opacity-50"
           >
-            Ready to Connect
+            {TAP_TO_CONNECT_CTA}
           </button>
           {card?.proximityDiscoverable === false ? (
             <p className="text-center text-xs text-amber-200">
               Tap-to-Connect is turned off on this CeleYou. Turn it on from Share on the studio.
             </p>
           ) : null}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setShowProfileQr((open) => !open)}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
+            >
+              <QrCode className="h-4 w-4" />
+              Share QR
+            </button>
+            <button
+              type="button"
+              disabled={!profileUrl}
+              onClick={() => void copyProfileLink()}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
+            >
+              <Copy className="h-4 w-4" />
+              {copied ? "Copied" : "Copy Link"}
+            </button>
+            <button
+              type="button"
+              disabled={!profileUrl}
+              onClick={() => void shareProfile()}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
+            >
+              <Share2 className="h-4 w-4" />
+              Share Profile
+            </button>
+            <Link
+              href={card ? nfcStudioPath(card.id) : "/dashboard/business-card/nfc"}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
+            >
+              <Nfc className="h-4 w-4" />
+              NFC Card
+            </Link>
+          </div>
+          {showProfileQr && profileQrSrc ? (
+            <div className="mx-auto w-fit rounded-[1.5rem] bg-white p-3">
+              <CeleCardQrBadge
+                qrSrc={profileQrSrc}
+                theme={resolveDigitalCardTheme("gold-folio")}
+                avatarUrl={card?.avatarUrl}
+                displayName={card?.displayName || "CeleYou"}
+                sizeClass="h-40 w-40"
+                padClass="p-0"
+              />
+            </div>
+          ) : null}
+          <p className="text-center text-[11px] leading-relaxed text-white/45">{TAP_TO_CONNECT_NATIVE_REQUIREMENT}</p>
+          <p className="text-center text-[11px] text-white/40">
+            {TAP_TO_OPEN_NAME}: a physical NFC card still opens the public profile with no app.
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -317,8 +486,31 @@ export function CeleYouTapConnect({
           ) : null}
           <p className="text-center font-mono text-3xl tracking-[0.35em] text-white">{session.joinCode}</p>
           <p className="text-center text-xs text-white/55">
-            Open Tap Mode on the other phone and scan this QR, or type the code. Nearby Bluetooth discovery needs the native CeleYou app.
+            {discoverCopy(discoverReason)}
           </p>
+          {nearby.length ? (
+            <ul className="space-y-2" aria-label="Nearby CeleYou devices">
+              {nearby.map((peer) => (
+                <li key={peer.discoveryId}>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void joinWithCode(peer.joinCode, "ble")}
+                    className="flex h-12 w-full items-center justify-between rounded-2xl border border-white/15 bg-white/5 px-4 text-left text-sm"
+                  >
+                    <span>CeleYou nearby · {peer.discoveryId.slice(-4)}</span>
+                    <span className="text-[11px] uppercase tracking-[0.14em] text-white/50">
+                      {rssiIsPhysicalTouchProof(peer.rssi) ? "Touch" : nearbyLabel(peer)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-center text-[11px] text-white/45">
+              No CeleYou app nearby yet. Use the QR or code. This list stays empty in a browser.
+            </p>
+          )}
           {timedOut ? (
             <div className="space-y-2 text-center">
               <p className="text-sm text-amber-200">No nearby CeleYou joined yet. Scan the QR again or start a fresh session.</p>
@@ -336,9 +528,20 @@ export function CeleYouTapConnect({
             <button type="button" onClick={() => setScanning(true)} className="h-11 flex-1 rounded-full border border-white/15 text-sm">
               Scan instead
             </button>
-            <Link href="/dashboard/business-card" className="grid h-11 flex-1 place-items-center rounded-full border border-white/15 text-sm">
-              Share QR
-            </Link>
+            <button
+              type="button"
+              disabled={!joinUrl}
+              onClick={() => {
+                if (!joinUrl) return;
+                void navigator.clipboard.writeText(joinUrl).then(() => {
+                  setCopied(true);
+                  window.setTimeout(() => setCopied(false), 1800);
+                });
+              }}
+              className="h-11 flex-1 rounded-full border border-white/15 text-sm"
+            >
+              {copied ? "Copied" : "Copy session"}
+            </button>
           </div>
         </div>
       ) : null}
@@ -365,6 +568,15 @@ export function CeleYouTapConnect({
               Accept
             </button>
           </div>
+        </div>
+      ) : null}
+
+      {session && screen === "verifying" ? (
+        <div className="relative z-10 mt-6 space-y-3 text-center">
+          <p className="text-base font-semibold">Confirming this share with CeleYou</p>
+          <p className="text-sm text-white/65">
+            Connected Successfully appears only after the one-time token is verified. Keep this screen open.
+          </p>
         </div>
       ) : null}
 
@@ -415,8 +627,26 @@ function statusCopy(screen: ReturnType<typeof screenForProximityStatus>, session
   if (screen === "searching") return "Looking for nearby CeleYou devices…";
   if (screen === "found") return session?.role === "host" ? "Someone is nearby" : "Confirm the matching code, then wait for Connect.";
   if (screen === "request") return "Approve only if this is the person in front of you.";
+  if (screen === "verifying") return "Verifying the share. This is not a completed connection yet.";
   if (screen === "success") return "Connected Successfully";
   return "Session closed";
+}
+
+function discoverCopy(reason: NativeDiscoverReason | null) {
+  if (reason === "bluetooth-off") {
+    return "Turn on Bluetooth, then Retry. Or scan the session QR. This website cannot advertise Bluetooth.";
+  }
+  if (reason === "permission-denied") {
+    return "Allow Bluetooth for CeleYou in Settings, keep Tap Mode open, then Retry. Or scan the session QR.";
+  }
+  return "Open Tap Mode on the other phone and scan this QR, or type the code. Nearby Bluetooth discovery needs the native CeleYou app.";
+}
+
+function nearbyLabel(peer: NearbyPeer) {
+  const hint = nearbySignalHint(peer.rssi);
+  if (hint === "closer") return "Closer signal";
+  if (hint === "nearby") return "Nearby";
+  return "Select";
 }
 
 function Portrait({ name, src }: { name: string; src?: string | null }) {

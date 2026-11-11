@@ -124,6 +124,23 @@ export function celeYouAbsoluteGuestPayload(raw: string, origin?: string): strin
   return null;
 }
 
+/** Profile, Smart QR, and NFC card use different URLs and the same public identity. */
+export function shareArtifactsLandOnSameProfile(identity: CeleYouShareIdentity): boolean {
+  const slug = identity.slug.trim();
+  if (!slug) return false;
+  const encoded = encodeURIComponent(slug);
+  try {
+    return (
+      identity.profileUrl.includes(`/u/${encoded}`) &&
+      /\/c\/[^/]+$/.test(new URL(identity.qrUrl).pathname) &&
+      /\/n\/[^/]+$/.test(new URL(identity.nfcUrl).pathname) &&
+      celeYouScanLandingUrl(slug).includes(`/card/${encoded}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function celeYouShareIdentity(input: CeleYouShareIdentityInput): CeleYouShareIdentity {
   const origin = celeYouGuestOrigin(input.origin);
   return {

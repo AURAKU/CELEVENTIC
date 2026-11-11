@@ -23,23 +23,28 @@ export type TapCapability = {
 export const TAP_CAPABILITY_MATRIX = [
   {
     pair: "iPhone to iPhone",
-    technology: "Native BLE when the CeleYou app ships. Web uses session QR.",
-    today: "Session QR or code in Tap Mode. Safari cannot advertise BLE or do phone to phone NFC.",
+    technology: "BLE proximity in the CeleYou app, plus Apple-supported sharing in the system sheet.",
+    today: "Web Tap Mode uses session QR or code. Safari cannot advertise BLE or do phone to phone NFC.",
   },
   {
     pair: "Samsung to Samsung",
-    technology: "Native BLE, optional Android NFC Reader Mode. Web uses session QR.",
-    today: "Session QR or code. Chrome can write a physical NFC card. It cannot advertise BLE.",
+    technology: "BLE proximity in the CeleYou app, plus Android NFC Reader Mode where the OS allows it.",
+    today: "Web Tap Mode uses session QR or code. Chrome can write a physical NFC card. It cannot advertise BLE.",
   },
   {
     pair: "Android to Android",
-    technology: "Vendor-neutral BLE in the native app. Web uses session QR.",
-    today: "Session QR or code. Do not depend on Android Beam. It is obsolete.",
+    technology: "Vendor-neutral BLE in the CeleYou app. Runtime checks decide what this phone can do.",
+    today: "Web Tap Mode uses session QR or code. Do not depend on Android Beam. It is obsolete.",
   },
   {
     pair: "iPhone to Android",
-    technology: "Shared BLE protocol in native apps. Same service UUID and token exchange.",
-    today: "Session QR or code. This is the working cross-platform handshake in the website.",
+    technology: "Shared BLE protocol in both apps. Same service UUID, GATT hello, and token exchange.",
+    today: "Web Tap Mode uses session QR or code. That is the working cross-platform handshake in the browser.",
+  },
+  {
+    pair: "Samsung to iPhone",
+    technology: "The same shared BLE protocol as iPhone to Android.",
+    today: "Web Tap Mode uses session QR or code. No manufacturer shortcut is required.",
   },
   {
     pair: "Any phone to NFC card",
@@ -100,6 +105,6 @@ export function detectTapCapability(
     nfcCardTapToOpen: true,
     cameraScan,
     guidance,
-    phoneToPhoneReady: true,
+    phoneToPhoneReady: false,
   };
 }

@@ -126,6 +126,34 @@ describe("CeleYou public share resolver", () => {
     assert.doesNotMatch(celeYouShareGuestMessage(draft.reason), /pay|Paystack|GH₵|subscribe/i);
   });
 
+  it("blocks vCard export for unpublished, suspended, and expired cards", () => {
+    const unpublished = resolveCeleYouPublicShare({
+      card: card({ isPublished: false }),
+      channel: "vcard",
+      now,
+    });
+    assert.equal(unpublished.channelAllowed, false);
+    assert.equal(unpublished.recordOpen, false);
+    const suspended = resolveCeleYouPublicShare({
+      card: card({ adminSuspendedAt: now }),
+      channel: "vcard",
+      now,
+    });
+    assert.equal(suspended.channelAllowed, false);
+    const trial = resolveCeleYouPublicShare({
+      card: card({
+        subscriptionStatus: "TRIAL",
+        lastActivatedAt: null,
+        subscriptionExpiresAt: new Date(now.getTime() + 10 * 86_400_000),
+      }),
+      channel: "vcard",
+      now,
+    });
+    assert.equal(trial.channelAllowed, true);
+    const paid = resolveCeleYouPublicShare({ card: card(), channel: "vcard", now });
+    assert.equal(paid.channelAllowed, true);
+  });
+
   it("does not consult a payment module for public eligibility", () => {
     const source = readFileSync(join(process.cwd(), "src/lib/digital-business-card/access.ts"), "utf8");
     assert.doesNotMatch(source, /PAYSTACK|payment\.service|fulfillCeleYouFromPayment/);

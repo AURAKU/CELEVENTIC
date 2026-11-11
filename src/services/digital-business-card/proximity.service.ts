@@ -2,6 +2,9 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notificationService } from "@/services/notifications/notification.service";
 import {
+  TAP_DECLINE_COOLDOWN_LIMIT,
+  TAP_DECLINE_COOLDOWN_MS,
+  TAP_SESSION_PURGE_AFTER_MS,
   TAP_SESSION_TTL_MS,
   TAP_SHARE_TOKEN_TTL_MS,
   TAP_STUDIO_PATH,
@@ -70,6 +73,29 @@ function previewFromCard(card: {
   };
 }
 
+type PendingShare = { token: string; fromCardId: string; expiresAt: string };
+
+function capabilityRecord(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return { ...(value as Record<string, unknown>) };
+}
+
+function pendingSharesFromCapability(value: Prisma.JsonValue | null | undefined): Record<string, PendingShare> {
+  const pending = capabilityRecord(value).pendingShares;
+  if (!pending || typeof pending !== "object" || Array.isArray(pending)) return {};
+  const next: Record<string, PendingShare> = {};
+  for (const [userId, row] of Object.entries(pending as Record<string, unknown>)) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+    const record = row as Record<string, unknown>;
+    const token = String(record.token ?? "").trim();
+    const fromCardId = String(record.fromCardId ?? "").trim();
+    const expiresAt = String(record.expiresAt ?? "").trim();
+    if (!token || !fromCardId || !expiresAt) continue;
+    next[userId] = { token, fromCardId, expiresAt };
+  }
+  return next;
+}
+
 async function securityEvent(input: {
   sessionId?: string | null;
   userId?: string | null;
@@ -88,6 +114,36 @@ async function securityEvent(input: {
       },
     })
     .catch(() => undefined);
+}
+
+export async function purgeExpiredProximityRecords(now = new Date()) {
+  const staleBefore = new Date(now.getTime() - TAP_SESSION_PURGE_AFTER_MS);
+  await prisma.celeYouProximitySession.updateMany({
+    where: {
+      expiresAt: { lte: now },
+      status: { in: ["DISCOVERING", "PEER_FOUND", "REQUEST_PENDING", "APPROVED"] },
+    },
+    data: { status: "EXPIRED" },
+  });
+  await prisma.celeYouProximityShareToken.deleteMany({
+    where: {
+      OR: [{ expiresAt: { lte: now }, redeemedAt: null }, { redeemedAt: { lte: staleBefore } }],
+    },
+  });
+  await prisma.celeYouProximitySecurityEvent.deleteMany({
+    where: { createdAt: { lte: staleBefore } },
+  });
+}
+
+async function recentDeclinesBetween(hostUserId: string, peerUserId: string) {
+  return prisma.celeYouProximityHistory.count({
+    where: {
+      hostUserId,
+      peerUserId,
+      outcome: "DECLINED",
+      createdAt: { gte: new Date(Date.now() - TAP_DECLINE_COOLDOWN_MS) },
+    },
+  });
 }
 
 async function expireIfNeeded<T extends { id: string; status: string; expiresAt: Date }>(
@@ -141,6 +197,7 @@ async function toView(
     status: string;
     transport: string;
     expiresAt: Date;
+    capabilityJson?: Prisma.JsonValue | null;
     hostCard: {
       displayName: string;
       title: string | null;
@@ -169,16 +226,25 @@ async function toView(
         : null
       : previewFromCard(session.hostCard);
   const otherCard = role === "host" ? session.peerCard : session.hostCard;
+  const pending = pendingSharesFromCapability(session.capabilityJson ?? null)[userId];
+  const pendingLive = pending && Date.parse(pending.expiresAt) > Date.now() ? pending : null;
   const verifiedShare =
     share ||
-    ((status === "APPROVED" || status === "COMPLETED") && otherCard
+    (status === "COMPLETED" && otherCard
       ? {
           token: "",
           profilePath: digitalCardPublicUrl(otherCard.slug),
           vcardPath: digitalCardVcardPath(otherCard.slug),
           preview: previewFromCard(otherCard),
         }
-      : null);
+      : status === "APPROVED" && otherCard
+        ? {
+            token: pendingLive?.token || "",
+            profilePath: digitalCardPublicUrl(otherCard.slug),
+            vcardPath: digitalCardVcardPath(otherCard.slug),
+            preview: previewFromCard(otherCard),
+          }
+        : null);
   return {
     id: session.id,
     role,
@@ -193,7 +259,7 @@ async function toView(
     self,
     share: verifiedShare,
     phoneToPhoneClaim:
-      "Phone to phone NFC is not used. Bring both phones into Tap Mode, then scan the session QR or enter the code.",
+      "Phone to phone NFC is not used. Nearby Bluetooth discovery needs the CeleYou app on both phones. In this browser, scan the session QR or enter the code.",
   };
 }
 
@@ -240,6 +306,7 @@ export async function createProximitySession(input: {
   const card = await loadCardForUser(input.userId, input.cardId);
   if (!card) throw new Error("CeleYou not found");
   assertShareable(card);
+  await purgeExpiredProximityRecords();
 
   await prisma.celeYouProximitySession.updateMany({
     where: {
@@ -284,6 +351,7 @@ export async function joinProximitySession(input: {
   userId: string;
   cardId: string;
   joinCode: string;
+  transport?: ProximityTransport;
   ip?: string | null;
 }) {
   const code = normalizeJoinCode(input.joinCode);
@@ -312,6 +380,25 @@ export async function joinProximitySession(input: {
     throw new Error("Pick a different CeleYou on this phone.");
   }
 
+  const declined = await recentDeclinesBetween(session.hostUserId, input.userId);
+  if (declined >= TAP_DECLINE_COOLDOWN_LIMIT) {
+    await securityEvent({
+      sessionId: session.id,
+      userId: input.userId,
+      kind: "JOIN_COOLDOWN",
+      ip: input.ip,
+    });
+    throw new Error("This person is not accepting nearby requests right now.");
+  }
+
+  await prisma.celeYouProximitySession.updateMany({
+    where: {
+      hostUserId: input.userId,
+      status: { in: ["DISCOVERING", "PEER_FOUND", "REQUEST_PENDING"] },
+    },
+    data: { status: "CANCELLED", cancelledAt: new Date() },
+  });
+
   const verifyCode = newProximityVerifyCode();
   const updated = await prisma.celeYouProximitySession.update({
     where: { id: session.id },
@@ -320,7 +407,7 @@ export async function joinProximitySession(input: {
       peerCardId: card.id,
       verifyCode,
       status: "PEER_FOUND",
-      transport: "code",
+      transport: input.transport === "ble" ? "ble" : "code",
     },
     include: {
       hostCard: {
@@ -394,16 +481,37 @@ export async function requestProximityConnect(userId: string, sessionId: string,
 
 async function issueShareToken(sessionId: string, fromCardId: string, toUserId: string) {
   const issued = newProximityShareToken();
+  const expiresAt = new Date(Date.now() + TAP_SHARE_TOKEN_TTL_MS);
   await prisma.celeYouProximityShareToken.create({
     data: {
       sessionId,
       fromCardId,
       toUserId,
       tokenHash: issued.tokenHash,
-      expiresAt: new Date(Date.now() + TAP_SHARE_TOKEN_TTL_MS),
+      expiresAt,
     },
   });
-  return issued.token;
+  return { token: issued.token, fromCardId, toUserId, expiresAt: expiresAt.toISOString() };
+}
+
+async function storePendingShares(
+  sessionId: string,
+  current: Prisma.JsonValue | null | undefined,
+  shares: Array<{ token: string; fromCardId: string; toUserId: string; expiresAt: string }>
+) {
+  const capability = capabilityRecord(current);
+  const pending = pendingSharesFromCapability(current);
+  for (const share of shares) {
+    pending[share.toUserId] = {
+      token: share.token,
+      fromCardId: share.fromCardId,
+      expiresAt: share.expiresAt,
+    };
+  }
+  await prisma.celeYouProximitySession.update({
+    where: { id: sessionId },
+    data: { capabilityJson: { ...capability, pendingShares: pending } as Prisma.InputJsonValue },
+  });
 }
 
 export async function approveProximityConnect(userId: string, sessionId: string, ip?: string | null) {
@@ -422,10 +530,11 @@ export async function approveProximityConnect(userId: string, sessionId: string,
   const peerLive = Boolean(peerCard && !peerCard.deletedAt && !peerCard.adminSuspendedAt);
 
   const hostToPeer = await issueShareToken(session.id, session.hostCardId, session.peerUserId);
-  let peerToHost: string | null = null;
-  if (peerLive) {
+  let peerToHost: Awaited<ReturnType<typeof issueShareToken>> | null = null;
+  if (peerLive && session.peerCardId) {
     peerToHost = await issueShareToken(session.id, session.peerCardId, session.hostUserId);
   }
+  await storePendingShares(session.id, session.capabilityJson, [hostToPeer, ...(peerToHost ? [peerToHost] : [])]);
 
   const updated = await prisma.celeYouProximitySession.update({
     where: { id: session.id },
@@ -460,13 +569,13 @@ export async function approveProximityConnect(userId: string, sessionId: string,
   await securityEvent({ sessionId: session.id, userId, kind: "CONNECT_APPROVED", ip });
 
   const share: ProximitySharePayload = {
-    token: hostToPeer,
+    token: hostToPeer.token,
     profilePath: digitalCardPublicUrl(session.hostCard.slug),
     vcardPath: digitalCardVcardPath(session.hostCard.slug),
     preview: previewFromCard(session.hostCard),
   };
   const view = await toView(updated, userId, share);
-  return { view, peerToHostToken: peerToHost };
+  return { view, peerToHostToken: peerToHost?.token ?? null };
 }
 
 export async function declineProximityConnect(userId: string, sessionId: string, ip?: string | null) {
@@ -556,10 +665,17 @@ export async function redeemProximityShareToken(input: {
   });
 
   const session = await prisma.celeYouProximitySession.findUnique({ where: { id: row.sessionId } });
-  if (session && isProximityStatus(session.status) && canTransitionProximity(session.status, "COMPLETED")) {
+  if (session) {
+    const capability = capabilityRecord(session.capabilityJson);
+    const pending = pendingSharesFromCapability(session.capabilityJson);
+    delete pending[input.userId];
+    const complete = isProximityStatus(session.status) && canTransitionProximity(session.status, "COMPLETED");
     await prisma.celeYouProximitySession.update({
       where: { id: session.id },
-      data: { status: "COMPLETED" },
+      data: {
+        capabilityJson: { ...capability, pendingShares: pending } as Prisma.InputJsonValue,
+        ...(complete ? { status: "COMPLETED" } : {}),
+      },
     });
   }
 

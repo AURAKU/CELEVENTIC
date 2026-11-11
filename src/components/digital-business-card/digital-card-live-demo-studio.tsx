@@ -27,9 +27,9 @@ import { digitalCardPublicUrl, digitalCardQrImageSrc } from "@/lib/digital-busin
 import { celeCardShareClipboard, celeCardShareMessage, celeCardShareTitle, digitalCardExportImagePath } from "@/lib/digital-business-card/share";
 import {
   DIGITAL_CARD_SOCIAL_GROUPS,
-  chatKindsForBrand,
-  compactAlignedChatKinds,
+  chatKindsMapForSocials,
   compactAlignedTags,
+  compactChatLinkKindsFromForm,
   compactDigitalCardSocials,
   usesChatLinkKinds,
   collectCardEmails,
@@ -145,10 +145,7 @@ function publishedDesk(): DeskState {
     stackOrder: DEMO_CARD.socials.stackOrder ?? [],
     dockOrder: DEMO_CARD.socials.dockOrder ?? [],
     payQr: toPayQrMap(DEMO_CARD.socials),
-    linkKinds: {
-      whatsapp: chatKindsForBrand(DEMO_CARD.socials, "whatsapp"),
-      telegram: chatKindsForBrand(DEMO_CARD.socials, "telegram"),
-    },
+    linkKinds: chatKindsMapForSocials(DEMO_CARD.socials),
     portraitFrame: resolveCeleCardPortraitFrame(
       resolveDigitalCardTheme(DEMO_CARD.themeId),
       DEMO_CARD.socials.portraitFrame
@@ -277,10 +274,7 @@ export function DigitalCardLiveDemoStudio({
           emailTags: compactAlignedTags(desk.emails, desk.emailTags),
           phones: desk.phones.map((value) => value.trim()).filter(Boolean),
           phoneTags: compactAlignedTags(desk.phones, desk.phoneTags),
-          linkKinds: {
-            whatsapp: compactAlignedChatKinds(desk.socials.whatsapp, desk.linkKinds.whatsapp, "whatsapp"),
-            telegram: compactAlignedChatKinds(desk.socials.telegram, desk.linkKinds.telegram, "telegram"),
-          },
+          linkKinds: compactChatLinkKindsFromForm(desk.socials, desk.linkKinds),
           stackOrder: desk.stackOrder,
           dockOrder: desk.dockOrder,
           meeting: persistMeetingDesk(desk.meeting),

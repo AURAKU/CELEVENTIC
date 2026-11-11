@@ -27,7 +27,8 @@ describe("CeleYou Tap-to-Connect state machine", () => {
   it("shows the recipient the approval screen only after Connect", () => {
     assert.equal(screenForProximityStatus("REQUEST_PENDING", "peer"), "request");
     assert.equal(screenForProximityStatus("REQUEST_PENDING", "host"), "found");
-    assert.equal(screenForProximityStatus("APPROVED", "host"), "success");
+    assert.equal(screenForProximityStatus("APPROVED", "host"), "verifying");
+    assert.equal(screenForProximityStatus("COMPLETED", "host"), "success");
     assert.equal(screenForProximityStatus("DISCOVERING", "host"), "searching");
   });
 });

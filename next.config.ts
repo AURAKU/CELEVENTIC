@@ -48,6 +48,7 @@ const nextConfig: NextConfig = {
       { source: "/api/v1/proximity/exchange", destination: "/api/digital-business-cards/proximity/exchange" },
       { source: "/api/v1/proximity/history", destination: "/api/digital-business-cards/proximity/history" },
       { source: "/u/:slug/contact.vcf", destination: "/card/:slug/contact.vcf" },
+      { source: "/u/:slug/wallet", destination: "/card/:slug/wallet" },
       { source: "/u/:slug", destination: "/card/:slug" },
     ];
   },

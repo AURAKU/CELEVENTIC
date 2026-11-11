@@ -25,11 +25,13 @@ export function guestPrimaryActions(card: DigitalCardPublicPayload): GuestPrimar
     actions.push({ id: "call", label: "Call", href: phone.href, event: "call_tap" });
   }
 
-  const whatsapp = reach.find((item) => item.brand === "whatsapp");
+  const whatsapp =
+    reach.find((item) => item.brand === "whatsapp") ||
+    reach.find((item) => item.brand === "whatsappbusiness");
   if (whatsapp) {
     actions.push({
       id: "whatsapp",
-      label: "WhatsApp",
+      label: whatsapp.brand === "whatsappbusiness" ? "WhatsApp Business" : "WhatsApp",
       href: whatsapp.appHref || whatsapp.href,
       event: "whatsapp_tap",
     });

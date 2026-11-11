@@ -1,5 +1,6 @@
+import { celeYouGuestOrigin } from "@/lib/app-url";
 import type { DigitalCardPublicPayload } from "./types";
-import { DIGITAL_CARD_PUBLIC_PATH } from "./types";
+import { DIGITAL_CARD_PUBLIC_PATH, digitalCardPublicUrl } from "./types";
 import {
   brandReachLabel,
   collectCardWebsites,
@@ -36,6 +37,41 @@ export function digitalCardVcardPath(slug: string): string {
   return `${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(slug)}/contact.vcf`;
 }
 
+const MAX_VCARD_PHOTO_CHARS = 60_000;
+const PROFILE_PATH = /^\/(card|u)\/([^/]+)$/i;
+
+/**
+ * Permanent guest profile URL encoded into Contacts.
+ * Always HTTPS on a Celeventic host. Never localhost, tokens, or private codes.
+ */
+export function celeYouContactProfileUrl(slug: string, origin?: string | null): string {
+  return digitalCardPublicUrl(slug, celeYouGuestOrigin(origin));
+}
+
+/** Accept only a public /card/{slug} or /u/{slug} URL. Rewrite onto /card/{slug}. */
+export function sanitizeCeleYouVcardUrl(value?: string | null, slug?: string | null): string | null {
+  const fallback = slug?.trim() ? celeYouContactProfileUrl(slug) : null;
+  if (!value?.trim()) return fallback;
+  try {
+    const parsed = new URL(value.trim());
+    if (parsed.username || parsed.password) return fallback;
+    const match = parsed.pathname.replace(/\/+$/, "").match(PROFILE_PATH);
+    if (!match) return fallback;
+    const pathSlug = decodeURIComponent(match[2] || "").trim();
+    if (!pathSlug || /^(api|dashboard|admin|login|c|n)$/i.test(pathSlug)) return fallback;
+    if (slug?.trim() && pathSlug !== slug.trim()) return fallback;
+    if (parsed.search || parsed.hash) {
+      return celeYouContactProfileUrl(pathSlug, parsed.origin);
+    }
+    if (parsed.protocol !== "https:") {
+      return celeYouContactProfileUrl(pathSlug, parsed.origin);
+    }
+    return celeYouContactProfileUrl(pathSlug, parsed.origin);
+  } catch {
+    return fallback;
+  }
+}
+
 /** How the .vcf should be handed to this browser. */
 export function vcardDelivery(userAgent: string): {
   contentType: string;
@@ -67,6 +103,7 @@ const SOCIAL_PROFILE_TYPE: Record<string, string> = {
   snapchat: "snapchat",
   pinterest: "pinterest",
   whatsapp: "whatsapp",
+  whatsappbusiness: "whatsapp",
   telegram: "telegram",
   signal: "signal",
   wechat: "wechat",
@@ -105,7 +142,7 @@ export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOp
 
   let item = 1;
   const seenUrls = new Set<string>();
-  const cardUrl = options.cardUrl?.trim() || "";
+  const cardUrl = sanitizeCeleYouVcardUrl(options.cardUrl, card.slug);
   if (cardUrl) {
     seenUrls.add(cardUrl);
     lines.push(`URL;TYPE=PREF:${escapeVCard(cardUrl)}`);
@@ -154,8 +191,11 @@ export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOp
   }
 
   if (options.photo?.base64 && isCeleCardPhotoUrl(card.avatarUrl)) {
-    const type = options.photo.type === "PNG" ? "PNG" : "JPEG";
-    lines.push(`PHOTO;ENCODING=b;TYPE=${type}:${options.photo.base64.replace(/\s+/g, "")}`);
+    const data = options.photo.base64.replace(/\s+/g, "");
+    if (data.length > 0 && data.length <= MAX_VCARD_PHOTO_CHARS) {
+      const type = options.photo.type === "PNG" ? "PNG" : "JPEG";
+      lines.push(`PHOTO;ENCODING=b;TYPE=${type}:${data}`);
+    }
   }
 
   if (notes.length) lines.push(`NOTE:${escapeVCard(notes.join("\n"))}`);
@@ -219,12 +259,20 @@ function vcardRev(): string {
 }
 
 function foldVCardLine(line: string): string {
-  if (line.length <= 75) return line;
-  let out = line.slice(0, 75);
-  let rest = line.slice(75);
-  while (rest.length) {
-    out += `\r\n ${rest.slice(0, 74)}`;
-    rest = rest.slice(74);
+  const bytes = new TextEncoder().encode(line);
+  if (bytes.length <= 75) return line;
+  const decoder = new TextDecoder();
+  let out = "";
+  let offset = 0;
+  let first = true;
+  while (offset < bytes.length) {
+    const budget = first ? 75 : 74;
+    let take = Math.min(budget, bytes.length - offset);
+    while (take > 1 && offset + take < bytes.length && (bytes[offset + take] & 0xc0) === 0x80) take -= 1;
+    out += first ? "" : "\r\n ";
+    out += decoder.decode(bytes.slice(offset, offset + take));
+    offset += take;
+    first = false;
   }
   return out;
 }

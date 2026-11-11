@@ -639,9 +639,58 @@ export async function recordSmartCardInteraction(cardId: string, kind: string, m
     .catch(() => undefined);
 }
 
-export async function getDigitalCardAnalyticsForUser(userId: string, cardId: string) {
+function sanitizeActivityMeta(meta: unknown): { surface?: string; reason?: string } {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return {};
+  const row = meta as Record<string, unknown>;
+  const surface = typeof row.surface === "string" && row.surface.length <= 40 ? row.surface : undefined;
+  const allowedReason = ["unpublished", "suspended", "inactive", "deleted"];
+  const reason = typeof row.reason === "string" && allowedReason.includes(row.reason) ? row.reason : undefined;
+  return { ...(surface ? { surface } : {}), ...(reason ? { reason } : {}) };
+}
+
+export async function listDigitalCardActivityForUser(
+  userId: string,
+  cardId: string,
+  input?: { cursor?: string | null; take?: number }
+) {
   const card = await getDigitalCardForUser(userId, cardId);
   if (!card) return null;
+  const take = Math.min(50, Math.max(1, input?.take ?? 20));
+  const rows = await prisma.smartCardInteraction.findMany({
+    where: { cardId },
+    orderBy: { createdAt: "desc" },
+    take: take + 1,
+    ...(input?.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+    select: { id: true, kind: true, createdAt: true, meta: true },
+  });
+  const hasMore = rows.length > take;
+  const page = rows.slice(0, take);
+  return {
+    items: page.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      createdAt: row.createdAt.toISOString(),
+      meta: sanitizeActivityMeta(row.meta),
+    })),
+    nextCursor: hasMore ? page[page.length - 1]?.id ?? null : null,
+  };
+}
+
+export async function getDigitalCardAnalyticsForUser(
+  userId: string,
+  cardId: string,
+  input?: { cursor?: string | null; take?: number }
+) {
+  const card = await getDigitalCardForUser(userId, cardId);
+  if (!card) return null;
+  const activity = await listDigitalCardActivityForUser(userId, cardId, input);
+  if (input?.cursor) {
+    return {
+      viewCount: card.viewCount,
+      activity: activity?.items ?? [],
+      nextCursor: activity?.nextCursor ?? null,
+    };
+  }
   const grouped = await prisma.smartCardInteraction.groupBy({
     by: ["kind"],
     where: { cardId },
@@ -664,5 +713,7 @@ export async function getDigitalCardAnalyticsForUser(userId: string, cardId: str
     connects: byKind.connect ?? 0,
     reconnects: byKind.courtesy_reconnect ?? 0,
     byKind,
+    activity: activity?.items ?? [],
+    nextCursor: activity?.nextCursor ?? null,
   };
 }

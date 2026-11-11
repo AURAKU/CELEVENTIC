@@ -52,10 +52,11 @@ export function isFailureProximityStatus(status: string): status is ProximityFai
 export function screenForProximityStatus(
   status: ProximityStatus,
   role: "host" | "peer"
-): "ready" | "searching" | "found" | "request" | "success" | "ended" {
+): "ready" | "searching" | "found" | "request" | "verifying" | "success" | "ended" {
   if (status === "DISCOVERING") return "searching";
   if (status === "PEER_FOUND") return "found";
   if (status === "REQUEST_PENDING") return role === "peer" ? "request" : "found";
-  if (status === "APPROVED" || status === "COMPLETED") return "success";
+  if (status === "APPROVED") return "verifying";
+  if (status === "COMPLETED") return "success";
   return "ended";
 }

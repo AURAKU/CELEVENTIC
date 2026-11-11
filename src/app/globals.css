@@ -1667,40 +1667,145 @@ a.inline-flex,
   position: relative;
   z-index: 1;
   display: flex;
-  width: 100%;
-  max-width: 44rem;
+  width: min(100%, 36rem);
+  max-width: none;
   margin-left: auto;
   margin-right: auto;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 2rem 1rem 8rem;
+  gap: 1.05rem;
+  padding: max(1.15rem, env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    7.25rem
+    max(1rem, env(safe-area-inset-left, 0px));
 }
 
 .celecard-hold-frame {
+  width: min(100%, 22.75rem);
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.celecard-guest-rest {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1.05rem;
+}
+
+.celecard-guest-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  text-align: center;
+}
+
+.celecard-guest-intro p {
+  max-width: 34ch;
+  text-wrap: pretty;
+}
+
+.celecard-guest-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 1.1rem;
+}
+
+.celecard-guest-section {
   width: 100%;
   min-width: 0;
 }
 
-@media (max-width: 640px) {
-  .celecard-guest-column {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 2rem;
-  }
+.celecard-guest-mark {
+  width: 3rem;
+  height: 3rem;
+}
+
+.celecard-dock-stage {
+  width: min(100%, 36rem);
+  margin-inline: auto;
 }
 
 @media (min-width: 640px) {
   .celecard-guest-column {
+    width: min(100%, 42rem);
+    gap: 1.2rem;
+    padding-top: 2.25rem;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
-    padding-top: 3rem;
+  }
+
+  .celecard-hold-frame {
+    width: min(100%, 26rem);
+  }
+
+  .celecard-guest-mark {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .celecard-dock-stage {
+    width: min(100%, 42rem);
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 960px) {
   .celecard-guest-column {
-    padding-left: 2rem;
-    padding-right: 2rem;
+    width: 100%;
+    max-width: min(72rem, 1120px);
+    display: grid;
+    grid-template-columns: minmax(20rem, 26.5rem) minmax(18rem, 1fr);
+    align-items: start;
+    column-gap: 2.75rem;
+    row-gap: 1.5rem;
+    padding: 3rem 2rem 8rem;
+  }
+
+  .celecard-guest-column .celecard-hold-frame {
+    width: 100%;
+    margin-inline: 0;
+    position: sticky;
+    top: 1.35rem;
+  }
+
+  .celecard-guest-rest {
+    gap: 1.35rem;
+    padding-top: 0.15rem;
+  }
+
+  .celecard-guest-intro {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .celecard-guest-intro p {
+    max-width: 42ch;
+    margin-inline: 0;
+  }
+
+  .celecard-guest-links {
+    justify-content: flex-start;
+  }
+
+  .celecard-guest-brand {
+    margin-inline: 0;
+    align-items: flex-start;
+  }
+
+  .celecard-guest-section h2,
+  .celecard-guest-section p {
+    text-align: left;
+  }
+
+  .celecard-guest-mark {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .celecard-dock-stage {
+    width: min(100%, 1120px);
   }
 }
 
@@ -1725,10 +1830,12 @@ a.inline-flex,
   }
 
   .celecard-guest-column {
+    width: 100%;
     max-width: none;
     height: 100%;
     min-height: 100dvh;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     place-items: center;
     gap: 0;
     padding: max(0.35rem, env(safe-area-inset-top, 0px))
@@ -1737,7 +1844,10 @@ a.inline-flex,
       max(0.45rem, env(safe-area-inset-left, 0px));
   }
 
-  .celecard-hold-frame {
+  .celecard-hold-frame,
+  .celecard-guest-column .celecard-hold-frame {
+    position: static;
+    margin-inline: auto;
     width: min(
       calc(100dvw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 0.7rem),
       calc(
@@ -1769,10 +1879,12 @@ a.inline-flex,
 }
 
 .celecard-stage[data-celecard-hold="true"] .celecard-guest-column {
+  width: 100%;
   max-width: none;
   height: 100%;
   min-height: 100dvh;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   gap: 0;
   padding: max(0.35rem, env(safe-area-inset-top, 0px))
@@ -1781,7 +1893,10 @@ a.inline-flex,
     max(0.45rem, env(safe-area-inset-left, 0px));
 }
 
-.celecard-stage[data-celecard-hold="true"] .celecard-hold-frame {
+.celecard-stage[data-celecard-hold="true"] .celecard-hold-frame,
+.celecard-stage[data-celecard-hold="true"] .celecard-guest-column .celecard-hold-frame {
+  position: static;
+  margin-inline: auto;
   width: min(
     calc(100dvw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 0.7rem),
     calc(
@@ -2018,18 +2133,18 @@ a.inline-flex,
   min-height: 0;
   align-items: center;
   gap: 3.4cqw;
-  padding: 10.4cqw 4.4cqw 10.6cqw;
+  padding: 11.2cqw 4.4cqw 10.6cqw;
 }
 
 .celecard-face[data-compact="true"] .celecard-face-row {
   gap: 3cqw;
-  padding: 9.2cqw 3.6cqw 8cqw;
+  padding: 9.8cqw 3.6cqw 8cqw;
 }
 
 .celecard-face-row.is-portrait {
   justify-content: space-between;
   gap: 2.4cqw;
-  padding: 10.4cqw 3.6cqw 7.2cqw;
+  padding: 11.2cqw 3.6cqw 7.2cqw;
 }
 
 .celecard-face[data-composition="portrait-led"] .celecard-face-qr,
@@ -2110,12 +2225,12 @@ a.inline-flex,
   height: 100%;
   width: 100%;
   min-width: 0;
-  padding: 11cqw 4.4cqw 8.6cqw;
+  padding: 11.4cqw 4.4cqw 8.6cqw;
   gap: 2.2cqw;
 }
 
 .celecard-face[data-compact="true"] .celecard-face-grid {
-  padding: 9.6cqw 3.6cqw 7.8cqw;
+  padding: 10cqw 3.6cqw 7.8cqw;
 }
 
 .celecard-face-grid-media {
@@ -2173,8 +2288,8 @@ a.inline-flex,
 }
 
 .celecard-company-mark {
-  width: 9.2cqw;
-  height: 9.2cqw;
+  width: 6cqw;
+  height: 6cqw;
   flex-shrink: 0;
   position: relative;
   z-index: 2;
@@ -2185,8 +2300,8 @@ a.inline-flex,
 }
 
 .celecard-face[data-compact="true"] .celecard-company-mark {
-  width: 7.8cqw;
-  height: 7.8cqw;
+  width: 5.2cqw;
+  height: 5.2cqw;
 }
 
 .celecard-face[data-composition="iconic"] .celecard-company-mark,
@@ -2194,8 +2309,8 @@ a.inline-flex,
 .celecard-face[data-composition="media-first"] .celecard-company-mark,
 .celecard-face[data-composition="grid"] .celecard-company-mark,
 .celecard-face[data-composition="type-first"] .celecard-company-mark {
-  width: 8.6cqw;
-  height: 8.6cqw;
+  width: 5.6cqw;
+  height: 5.6cqw;
 }
 
 .celecard-face[data-compact="true"][data-composition="iconic"] .celecard-company-mark,
@@ -2203,14 +2318,14 @@ a.inline-flex,
 .celecard-face[data-compact="true"][data-composition="media-first"] .celecard-company-mark,
 .celecard-face[data-compact="true"][data-composition="grid"] .celecard-company-mark,
 .celecard-face[data-compact="true"][data-composition="type-first"] .celecard-company-mark {
-  width: 7.4cqw;
-  height: 7.4cqw;
+  width: 4.8cqw;
+  height: 4.8cqw;
 }
 
 .celecard-origin-plate {
-  margin-top: -1.4cqw;
-  height: 32cqw;
-  width: 32cqw;
+  margin-top: 0.55cqw;
+  height: 11cqw;
+  width: 11cqw;
   border-radius: 0;
   isolation: isolate;
   overflow: visible;
@@ -2297,17 +2412,17 @@ a.inline-flex,
   object-position: center;
   mix-blend-mode: normal;
   isolation: isolate;
-  filter: drop-shadow(0 0.12cqw 0.42cqw rgba(7, 63, 60, 0.28));
+  filter: drop-shadow(0 0.08cqw 0.28cqw rgba(7, 63, 60, 0.22));
 }
 
 .celecard-origin-plate[data-paper="dark"] img {
-  filter: drop-shadow(0 0 0.62cqw rgba(127, 240, 228, 0.34));
+  filter: drop-shadow(0 0 0.36cqw rgba(127, 240, 228, 0.26));
 }
 
 .celecard-face[data-compact="true"] .celecard-origin-plate {
-  margin-top: -1cqw;
-  height: 28cqw;
-  width: 28cqw;
+  margin-top: 0.4cqw;
+  height: 9.6cqw;
+  width: 9.6cqw;
 }
 
 .celecard-wordmark {
@@ -2488,10 +2603,10 @@ a.inline-flex,
   background-size: 240% 100%;
   animation: celecard-foil-sheen 7.2s ease-in-out infinite;
   -webkit-mask-image:
-    radial-gradient(ellipse 28cqw 17cqw at 50% 0%, transparent 0 74%, #000 75%),
+    radial-gradient(ellipse 12cqw 7.5cqw at 50% 0%, transparent 0 74%, #000 75%),
     radial-gradient(ellipse 54cqw 8cqw at 50% 100%, transparent 0 72%, #000 73%);
   mask-image:
-    radial-gradient(ellipse 28cqw 17cqw at 50% 0%, transparent 0 74%, #000 75%),
+    radial-gradient(ellipse 12cqw 7.5cqw at 50% 0%, transparent 0 74%, #000 75%),
     radial-gradient(ellipse 54cqw 8cqw at 50% 100%, transparent 0 72%, #000 73%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
@@ -2574,16 +2689,24 @@ a.inline-flex,
   position: relative;
   display: flex;
   width: 100%;
-  max-width: 44rem;
+  max-width: 28rem;
   flex-wrap: nowrap;
   align-items: stretch;
-  gap: 0.32rem;
+  gap: 0.28rem;
   margin: 0 auto;
-  padding: 0.4rem;
+  padding: 0.34rem;
   border: 1px solid;
   isolation: isolate;
   backdrop-filter: blur(28px) saturate(1.35);
   -webkit-backdrop-filter: blur(28px) saturate(1.35);
+}
+
+@media (min-width: 420px) {
+  .celecard-dock-tray {
+    max-width: 34rem;
+    gap: 0.32rem;
+    padding: 0.4rem;
+  }
 }
 
 .celecard-dock-foil {
@@ -2623,17 +2746,23 @@ a.inline-flex,
   flex: 1 1 0;
   align-items: center;
   justify-content: center;
-  gap: 0.48rem;
+  gap: 0.32rem;
   overflow: hidden;
-  padding: 0 0.55rem;
+  padding: 0 0.42rem;
   border: 0;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
   touch-action: manipulation;
   cursor: pointer;
   transition: transform 0.16s ease, filter 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.celecard-action-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .celecard-action[data-kind="save"] {
@@ -2683,8 +2812,8 @@ a.inline-flex,
 
 .celecard-action-mark {
   display: grid;
-  width: 1.7rem;
-  height: 1.7rem;
+  width: 1.4rem;
+  height: 1.4rem;
   flex-shrink: 0;
   place-items: center;
   border-radius: 999px;
@@ -2701,11 +2830,41 @@ a.inline-flex,
   height: 0.92rem;
 }
 
+@media (max-width: 419px) {
+  .celecard-action-mark {
+    display: none;
+  }
+
+  .celecard-action {
+    font-size: 0.68rem;
+    letter-spacing: 0.08em !important;
+    padding: 0 0.5rem;
+  }
+}
+
 @media (min-width: 380px) {
+  .celecard-action {
+    gap: 0.48rem;
+    padding: 0 0.65rem;
+    font-size: 0.68rem;
+  }
+
+  .celecard-action-mark {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+}
+
+@media (min-width: 520px) {
   .celecard-action {
     gap: 0.55rem;
     padding: 0 0.8rem;
     font-size: 0.72rem;
+  }
+
+  .celecard-action-mark {
+    width: 1.7rem;
+    height: 1.7rem;
   }
 }
 

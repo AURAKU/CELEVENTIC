@@ -41,6 +41,7 @@ import {
   Plus,
   Gift,
   CreditCard,
+  Smartphone,
 } from "lucide-react";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 
@@ -98,6 +99,7 @@ export const ORGANIZER_NAV: NavSection[] = [
     items: [
       { href: "/dashboard/design-studio", labelKey: "dashboard.nav_design_studio", icon: Palette },
       { href: "/dashboard/business-card", labelKey: "dashboard.nav_business_card", icon: CeleYouMarkIcon },
+      { href: "/dashboard/business-card/tap", labelKey: "dashboard.nav_tap_to_connect", icon: Smartphone },
       { href: "/dashboard/business-card/billing", labelKey: "dashboard.nav_smartcard_billing", icon: Receipt },
       {
         href: "/dashboard/business-card/services",

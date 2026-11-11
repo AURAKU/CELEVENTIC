@@ -7,10 +7,28 @@ export const CELEYOU_PUBLIC_EVENT_KINDS = [
   "share_tap",
 ] as const;
 
+export const CELEYOU_ACTIVITY_LABEL: Record<string, string> = {
+  profile_open: "Profile opened",
+  qr_open: "QR opened",
+  nfc_tap: "NFC card opened",
+  vcard_save: "Contact saved",
+  vcard_denied: "Contact export blocked",
+  call_tap: "Call",
+  whatsapp_tap: "WhatsApp",
+  email_tap: "Email",
+  website_tap: "Website",
+  share_tap: "Share",
+  connect: "Connect Back",
+};
+
 export type CeleYouPublicEventKind = (typeof CELEYOU_PUBLIC_EVENT_KINDS)[number];
 
 export function isCeleYouPublicEventKind(value: string): value is CeleYouPublicEventKind {
   return (CELEYOU_PUBLIC_EVENT_KINDS as readonly string[]).includes(value);
+}
+
+export function celeYouActivityLabel(kind: string): string {
+  return CELEYOU_ACTIVITY_LABEL[kind] || "Published action";
 }
 
 export function isAutomatedPreviewAgent(userAgent: string): boolean {

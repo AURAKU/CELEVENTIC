@@ -65,7 +65,7 @@ function initialsOf(name: string) {
 
 /** Keeps frame and ornament strokes out of the origin mark and the CeleYou lockup. */
 function copySafeMask(compact?: boolean): CSSProperties {
-  const origin = compact ? "22cqw 13.5cqw" : "25cqw 15.5cqw";
+  const origin = compact ? "9cqw 6cqw" : "10.5cqw 6.8cqw";
   const lockup = compact ? "58cqw 7.2cqw" : "54cqw 8cqw";
   const top = `radial-gradient(ellipse ${origin} at 50% 0%, transparent 0 72%, #000 73%)`;
   const bottom = `radial-gradient(ellipse ${lockup} at 50% 100%, transparent 0 72%, #000 73%)`;
@@ -455,7 +455,7 @@ function FaceIdentity({
           className={cn(
             "celecard-face-company flex min-w-0 items-center font-semibold",
             compact ? "mt-[0.8cqw]" : "mt-[0.55cqw]",
-            showCompanyMark ? (compact ? "gap-[1.4cqw]" : "gap-[1.7cqw]") : null
+            showCompanyMark ? (compact ? "gap-[0.9cqw]" : "gap-[1.15cqw]") : null
           )}
         >
           {showCompanyMark ? (

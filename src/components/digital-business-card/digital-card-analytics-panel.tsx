@@ -13,20 +13,29 @@ import {
   Share2,
   Users,
 } from "lucide-react";
+import { celeYouActivityLabel } from "@/lib/celeyou-share/events";
 import styles from "./digital-card-analytics-panel.module.css";
+
+type ActivityRow = {
+  id: string;
+  kind: string;
+  createdAt: string;
+};
 
 type Analytics = {
   viewCount: number;
-  qrOpens: number;
-  nfcTaps: number;
-  vcardSaves: number;
-  callTaps: number;
-  whatsappTaps: number;
+  qrOpens?: number;
+  nfcTaps?: number;
+  vcardSaves?: number;
+  callTaps?: number;
+  whatsappTaps?: number;
   emailTaps?: number;
-  websiteTaps: number;
-  shares: number;
-  connects: number;
-  reconnects: number;
+  websiteTaps?: number;
+  shares?: number;
+  connects?: number;
+  reconnects?: number;
+  activity?: ActivityRow[];
+  nextCursor?: string | null;
 };
 
 type Metric = {
@@ -104,6 +113,7 @@ function MetricTile({
 export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null }) {
   const [data, setData] = useState<Analytics | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const reduceMotion = useReducedMotion();
   const views = useCountUp(data?.viewCount ?? 0, Boolean(data));
 
@@ -133,6 +143,30 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
     };
   }, [cardId]);
 
+  async function loadMore() {
+    if (!cardId || !data?.nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/digital-business-cards/${cardId}/analytics?cursor=${encodeURIComponent(data.nextCursor)}`
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) return;
+      const page = json.data as { activity?: ActivityRow[]; nextCursor?: string | null };
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              activity: [...(current.activity ?? []), ...(page.activity ?? [])],
+              nextCursor: page.nextCursor ?? null,
+            }
+          : current
+      );
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   const stages: Stage[] = useMemo(() => {
     if (!data) return [];
     return [
@@ -140,27 +174,27 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
         id: "arrive",
         label: "Arrive",
         items: [
-          { key: "qr", label: "QR opens", value: data.qrOpens, icon: QrCode },
-          { key: "nfc", label: "NFC taps", value: data.nfcTaps, icon: Nfc },
-          { key: "save", label: "Save contact", value: data.vcardSaves, icon: Contact },
+          { key: "qr", label: "QR opens", value: data.qrOpens ?? 0, icon: QrCode },
+          { key: "nfc", label: "NFC taps", value: data.nfcTaps ?? 0, icon: Nfc },
+          { key: "save", label: "Save contact", value: data.vcardSaves ?? 0, icon: Contact },
         ],
       },
       {
         id: "reach",
         label: "Reach",
         items: [
-          { key: "call", label: "Calls", value: data.callTaps, icon: Phone },
-          { key: "wa", label: "WhatsApp", value: data.whatsappTaps, icon: MessageCircle },
+          { key: "call", label: "Calls", value: data.callTaps ?? 0, icon: Phone },
+          { key: "wa", label: "WhatsApp", value: data.whatsappTaps ?? 0, icon: MessageCircle },
           { key: "email", label: "Email", value: data.emailTaps ?? 0, icon: Mail },
-          { key: "web", label: "Website", value: data.websiteTaps, icon: Globe },
+          { key: "web", label: "Website", value: data.websiteTaps ?? 0, icon: Globe },
         ],
       },
       {
         id: "pass",
         label: "Pass on",
         items: [
-          { key: "share", label: "Shares", value: data.shares, icon: Share2 },
-          { key: "connect", label: "Connections", value: data.connects + data.reconnects, icon: Users },
+          { key: "share", label: "Shares", value: data.shares ?? 0, icon: Share2 },
+          { key: "connect", label: "Connections", value: (data.connects ?? 0) + (data.reconnects ?? 0), icon: Users },
         ],
       },
     ];
@@ -179,7 +213,7 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
         <div>
           <p className="text-sm font-semibold text-slate-900">Activity</p>
           <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-            Public opens and published actions. These counts are not the recipient’s identity.
+            Public opens and published actions. These counts are not the recipient’s identity. QR and NFC counts only when those links are used. A nearby phone is not a tap.
           </p>
         </div>
         <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#0B8A83]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#0B8A83]">
@@ -242,6 +276,34 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
               </dl>
             </div>
           ))}
+
+          {(data.activity?.length ?? 0) > 0 ? (
+            <div className={styles.stage}>
+              <p className={styles.stageLabel}>
+                <span>Recent</span>
+              </p>
+              <ul className="space-y-1.5">
+                {data.activity?.map((row) => (
+                  <li key={row.id} className="flex items-center justify-between text-xs text-slate-600">
+                    <span>{celeYouActivityLabel(row.kind)}</span>
+                    <time dateTime={row.createdAt} className="tabular-nums text-slate-400">
+                      {new Date(row.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+              {data.nextCursor ? (
+                <button
+                  type="button"
+                  disabled={loadingMore}
+                  onClick={() => void loadMore()}
+                  className="mt-2 w-full text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#0B8A83]"
+                >
+                  {loadingMore ? "Loading…" : "Load more"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

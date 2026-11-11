@@ -276,7 +276,7 @@ export function isExactPageShare(brand: string, value: string, href = ""): boole
   if (SHORT_CONTENT_HOSTS.has(host) && url.pathname.replace(/\/+$/, "").length > 1) return true;
   const parts = url.pathname.split("/").filter(Boolean).map((part) => part.toLowerCase());
   if (brand === "youtube" && url.searchParams.has("v")) return true;
-  if (brand === "whatsapp" && url.searchParams.has("text")) return true;
+  if ((brand === "whatsapp" || brand === "whatsappbusiness") && url.searchParams.has("text")) return true;
   if (brand === "telegram" && (url.pathname.startsWith("/+") || parts[0]?.startsWith("+"))) return true;
   if (brand === "github" && parts.length >= 2) return true;
   if (brand === "bluesky" && parts.includes("post")) return true;
@@ -306,7 +306,7 @@ export const CHAT_LINK_KINDS = [
 
 export type ChatLinkKind = (typeof CHAT_LINK_KINDS)[number]["id"];
 
-export const CHAT_KIND_BRANDS = new Set(["whatsapp", "telegram"]);
+export const CHAT_KIND_BRANDS = new Set(["whatsapp", "whatsappbusiness", "telegram"]);
 
 export function usesChatLinkKinds(brand: string): boolean {
   return CHAT_KIND_BRANDS.has(brand);
@@ -340,7 +340,7 @@ export function detectChatLinkKind(brand: string, value: string): ChatLinkKind {
       host = "";
     }
   }
-  if (brand === "whatsapp") {
+  if (brand === "whatsapp" || brand === "whatsappbusiness") {
     if (host === "chat.whatsapp.com" || /chat\.whatsapp\.com/i.test(v)) return "group";
     if (path.includes("/channel/") || /whatsapp\.com\/channel\//i.test(v)) return "channel";
     if (path.includes("/message/") || /wa\.me\/message\//i.test(v)) return "username";
@@ -412,6 +412,15 @@ export const DIGITAL_CARD_SOCIAL_NETWORKS = [
     icon: "phone",
     placeholder: "number, @, group, or channel link",
     href: (v) => whatsappTapHref(v),
+  },
+  {
+    key: "whatsappbusiness",
+    label: "WhatsApp Business",
+    group: "chat",
+    icon: "phone",
+    placeholder: "business number or click-to-chat link",
+    href: (v) => whatsappTapHref(v),
+    acceptsQr: true,
   },
   {
     key: "telegram",
@@ -898,7 +907,16 @@ export type DigitalCardSocials = Partial<Record<DigitalCardSocialKey, DigitalCar
 
 export type DigitalCardReachSurface = "stack" | "dock";
 
-const FEATURED_BRANDS = new Set(["email", "phone", "website", "whatsapp", "location", "other", "meeting"]);
+const FEATURED_BRANDS = new Set([
+  "email",
+  "phone",
+  "website",
+  "whatsapp",
+  "whatsappbusiness",
+  "location",
+  "other",
+  "meeting",
+]);
 
 export type DigitalCardSocialForm = Record<DigitalCardSocialKey, string[]>;
 
@@ -1119,6 +1137,11 @@ const NATIVE_APPS: Partial<Record<string, NativeAppSpec>> = {
     appHref: (h) => `whatsapp://send?phone=${h}`,
     intentPath: (h) => `send?phone=${h}`,
   },
+  whatsappbusiness: {
+    packageName: "com.whatsapp.w4b",
+    appHref: (h) => `whatsapp://send?phone=${h}`,
+    intentPath: (h) => `send?phone=${h}`,
+  },
   telegram: {
     packageName: "org.telegram.messenger",
     appHref: (h) => `tg://resolve?domain=${encodeURIComponent(h)}`,
@@ -1218,6 +1241,7 @@ const NATIVE_APPS: Partial<Record<string, NativeAppSpec>> = {
 
 const NATIVE_SCHEME_FOR_INTENT: Partial<Record<string, string>> = {
   whatsapp: "whatsapp",
+  whatsappbusiness: "whatsapp",
   viber: "viber",
   wechat: "weixin",
   wechatpay: "weixin",
@@ -1278,6 +1302,7 @@ export function extractReachHandle(brand: string, value: string): string {
   }
   if (
     brand === "whatsapp" ||
+    brand === "whatsappbusiness" ||
     brand === "viber" ||
     brand === "signal" ||
     brand === "phone" ||
@@ -2040,6 +2065,27 @@ export function chatKindsForBrand(socials: DigitalCardSocials | null | undefined
   return values.map((value, index) => normalizeChatLinkKind(stored?.[index]) || detectChatLinkKind(brand, value));
 }
 
+export function chatKindsMapForSocials(
+  socials: DigitalCardSocials | null | undefined
+): Record<string, Array<ChatLinkKind | "">> {
+  const out: Record<string, Array<ChatLinkKind | "">> = {};
+  for (const brand of CHAT_KIND_BRANDS) {
+    out[brand] = chatKindsForBrand(socials, brand);
+  }
+  return out;
+}
+
+export function compactChatLinkKindsFromForm(
+  socials: Partial<Record<string, DigitalCardFieldValue | undefined>>,
+  kinds?: Partial<Record<string, Array<ChatLinkKind | "">>> | null
+): NonNullable<DigitalCardSocials["linkKinds"]> {
+  const out: NonNullable<DigitalCardSocials["linkKinds"]> = {};
+  for (const brand of CHAT_KIND_BRANDS) {
+    out[brand] = compactAlignedChatKinds(socialValueList(socials[brand]), kinds?.[brand], brand);
+  }
+  return out;
+}
+
 function collectTaggedValues(
   primary: string | null | undefined,
   list: string[],
@@ -2101,6 +2147,7 @@ function reachHint(key: DigitalCardSocialKey, value: string): string {
   }
   if (
     key === "whatsapp" ||
+    key === "whatsappbusiness" ||
     key === "viber" ||
     key === "signal" ||
     key === "momo" ||
@@ -2173,6 +2220,7 @@ const GROUP_NOUN: Record<string, { title: string; unit: string }> = {
   other: { title: "Pages", unit: "pages" },
   meeting: { title: "Meetings", unit: "times" },
   whatsapp: { title: "WhatsApp", unit: "chats" },
+  whatsappbusiness: { title: "WhatsApp Business", unit: "chats" },
   bank: { title: "Bank", unit: "accounts" },
 };
 
@@ -2499,6 +2547,7 @@ export function listDigitalCardReachItems(card: {
 
 const PHONE_LIKE = new Set<DigitalCardSocialKey>([
   "whatsapp",
+  "whatsappbusiness",
   "viber",
   "signal",
   "momo",

@@ -1,6 +1,13 @@
 {
   "name": "celeyou-mobile",
   "private": true,
-  "version": "0.0.0",
-  "description": "CeleYou native foundation. BLE is not claimed working until Phase C hardware tests pass."
+  "version": "0.1.0",
+  "description": "CeleYou native foundation. Phone-to-phone BLE is not claimed working until physical device tests pass.",
+  "celeyouProximity": {
+    "serviceUuid": "a1c3ce10-7e10-4c0e-9e10-ce1e70c0de01",
+    "sessionCharacteristicUuid": "a1c3ce11-7e10-4c0e-9e10-ce1e70c0de01",
+    "handshakeCharacteristicUuid": "a1c3ce12-7e10-4c0e-9e10-ce1e70c0de01",
+    "phoneToPhoneReady": false,
+    "backgroundDiscovery": false
+  }
 }

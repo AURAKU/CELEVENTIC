@@ -42,9 +42,9 @@ import {
 } from "@/lib/digital-business-card/types";
 import {
   DIGITAL_CARD_SOCIAL_GROUPS,
-  chatKindsForBrand,
-  compactAlignedChatKinds,
+  chatKindsMapForSocials,
   compactAlignedTags,
+  compactChatLinkKindsFromForm,
   collectTaggedEmails,
   collectTaggedPhones,
   emptyDigitalCardSocialForm,
@@ -366,10 +366,7 @@ export function DigitalCardStudioClient() {
       companyLogoUrl: socials.companyLogoUrl ?? null,
       design: compactCeleCardDesign(socials.design) ?? {},
       meeting: compactMeetingDesk(socials.meeting) ?? defaultMeetingDesk(),
-      linkKinds: {
-        whatsapp: chatKindsForBrand(socials, "whatsapp"),
-        telegram: chatKindsForBrand(socials, "telegram"),
-      },
+      linkKinds: chatKindsMapForSocials(socials),
     });
   }
 
@@ -398,10 +395,7 @@ export function DigitalCardStudioClient() {
           emailTags: compactAlignedTags(form.emails, form.emailTags),
           phones: form.phones.map((value) => value.trim()).filter(Boolean),
           phoneTags: compactAlignedTags(form.phones, form.phoneTags),
-          linkKinds: {
-            whatsapp: compactAlignedChatKinds(form.socials.whatsapp, form.linkKinds.whatsapp, "whatsapp"),
-            telegram: compactAlignedChatKinds(form.socials.telegram, form.linkKinds.telegram, "telegram"),
-          },
+          linkKinds: compactChatLinkKindsFromForm(form.socials, form.linkKinds),
           stackOrder: form.stackOrder,
           dockOrder: form.dockOrder,
           meeting: persistMeetingDesk(form.meeting),
@@ -435,10 +429,7 @@ export function DigitalCardStudioClient() {
       ...(emailTags.some(Boolean) ? { emailTags } : {}),
       ...(phones.length ? { phones } : {}),
       ...(phoneTags.some(Boolean) ? { phoneTags } : {}),
-      linkKinds: {
-        whatsapp: compactAlignedChatKinds(form.socials.whatsapp, form.linkKinds.whatsapp, "whatsapp"),
-        telegram: compactAlignedChatKinds(form.socials.telegram, form.linkKinds.telegram, "telegram"),
-      },
+      linkKinds: compactChatLinkKindsFromForm(form.socials, form.linkKinds),
       ...(form.stackOrder.length ? { stackOrder: form.stackOrder } : {}),
       ...(form.dockOrder.length ? { dockOrder: form.dockOrder } : {}),
       portraitFrame: form.portraitFrame,

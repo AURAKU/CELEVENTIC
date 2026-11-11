@@ -12,6 +12,7 @@ import {
   isCeleYouCameraScanUrl,
   isCeleYouProductionGuestUrl,
   isReservedCeleYouShareToken,
+  shareArtifactsLandOnSameProfile,
   shareIdentityArtifactsAreUnique,
 } from "@/lib/digital-business-card/share-identity";
 import { demoCardPreviewQrSrc } from "@/lib/digital-business-card/demo-card";
@@ -29,6 +30,7 @@ describe("CeleYou unique share identity", () => {
     assert.equal(identity.qrUrl, "https://www.celeventic.com/c/cmqr_kojo");
     assert.equal(identity.nfcUrl, "https://www.celeventic.com/n/cmnfc_kojo");
     assert.equal(shareIdentityArtifactsAreUnique(identity), true);
+    assert.equal(shareArtifactsLandOnSameProfile(identity), true);
   });
 
   it("rejects shared or reserved dummy tokens for real cardholders", () => {

@@ -156,7 +156,11 @@ describe("digital business card themes", () => {
     assert.match(originPlate[0], /background:\s*transparent/);
     assert.match(originPlate[0], /isolation:\s*isolate/);
     assert.match(originPlate[0], /mix-blend-mode:\s*normal/);
-    assert.match(originPlate[0], /height:\s*32cqw/);
+    assert.match(originPlate[0], /height:\s*11cqw/);
+    assert.match(css, /\.celecard-face\[data-compact="true"\] \.celecard-origin-plate \{[^}]*height:\s*9\.6cqw/);
+    const companyMark = css.match(/\.celecard-company-mark \{[^}]+\}/);
+    assert.ok(companyMark);
+    assert.match(companyMark[0], /width:\s*6cqw/);
     assert.doesNotMatch(originPlate[0], /isolation:\s*auto/);
     assert.doesNotMatch(originPlate[0], /mix-blend-mode:\s*multiply/);
     assert.doesNotMatch(originPlate[0], /border-radius:\s*999px/);
@@ -480,6 +484,7 @@ describe("vcard export", () => {
     assert.match(vcf, /X-SOCIALPROFILE;TYPE=linkedin:/);
     assert.match(vcf, /CATEGORIES:CeleYou/);
     assert.match(vcf, /NOTE:Hello/);
+    assert.match(vcf, /URL;TYPE=PREF:https:\/\/www\.celeventic\.com\/card\/ama/);
     assert.match(vcf, /END:VCARD/);
   });
 
@@ -507,7 +512,7 @@ describe("vcard export", () => {
       },
       { cardUrl: "https://www.celeventic.com/u/ama" }
     );
-    assert.match(vcf, /URL;TYPE=PREF:https:\/\/www\.celeventic\.com\/u\/ama/);
+    assert.match(vcf, /URL;TYPE=PREF:https:\/\/www\.celeventic\.com\/card\/ama/);
     assert.match(vcf, /X-ABLabel:CeleYou/);
     assert.match(vcf, /NOTE:she\/her\\nHello/);
   });
@@ -536,6 +541,12 @@ describe("celecard social catalog", () => {
       "@/lib/digital-business-card/socials"
     );
     assert.equal(digitalCardSocialHref("whatsapp", "233240000000"), "https://wa.me/233240000000");
+    assert.equal(digitalCardSocialHref("whatsappbusiness", "233240000000"), "https://wa.me/233240000000");
+    assert.equal(
+      digitalCardSocialHref("whatsappbusiness", "https://wa.me/message/ABC123XYZ"),
+      "https://wa.me/message/ABC123XYZ"
+    );
+    assert.ok(DIGITAL_CARD_SOCIAL_NETWORKS.some((n) => n.key === "whatsappbusiness" && n.label === "WhatsApp Business"));
     assert.equal(digitalCardSocialHref("telegram", "amaserwaa"), "https://t.me/amaserwaa");
     assert.equal(digitalCardSocialHref("threads", "@amaserwaa"), "https://www.threads.net/@amaserwaa");
     assert.equal(digitalCardSocialHref("x", "amaserwaa"), "https://x.com/amaserwaa");
@@ -551,7 +562,10 @@ describe("celecard social catalog", () => {
     const missing = DIGITAL_CARD_SOCIAL_NETWORKS.filter((n) => !hasOfficialBrandMark(n.key));
     assert.deepEqual(missing.map((n) => n.key), []);
     assert.equal(hasOfficialBrandMark("signal"), true);
+    assert.equal(hasOfficialBrandMark("whatsappbusiness"), true);
     const { DIGITAL_CARD_BRAND_PATHS } = await import("@/lib/digital-business-card/brand-paths");
+    assert.equal(DIGITAL_CARD_BRAND_PATHS.whatsapp.color, "#25D366");
+    assert.equal(DIGITAL_CARD_BRAND_PATHS.whatsappbusiness.color, "#128C7E");
     assert.match(DIGITAL_CARD_BRAND_PATHS.signal.paths[0], /^M12 2\.25a9\.75/);
     assert.match(DIGITAL_CARD_BRAND_PATHS.signal.paths[0], /M12 6\.72A5\.28/);
     assert.equal(DIGITAL_CARD_BRAND_PATHS.signal.evenodd, true);
@@ -1157,6 +1171,11 @@ describe("celecard multiple reach", () => {
     assert.match(instagram?.androidIntent ?? "", /S\.browser_fallback_url=/);
     const whatsapp = listDigitalCardReachItems(DEMO_CARD).find((item) => item.brand === "whatsapp");
     assert.match(whatsapp?.androidIntent ?? "", /com\.whatsapp/);
+    assert.doesNotMatch(whatsapp?.androidIntent ?? "", /com\.whatsapp\.w4b/);
+    const business = nativeOpenFor("whatsappbusiness", "233240000000", "https://wa.me/233240000000");
+    assert.equal(business.appHref, "whatsapp://send?phone=233240000000");
+    assert.match(business.androidIntent ?? "", /com\.whatsapp\.w4b/);
+    assert.match(business.androidIntent ?? "", /scheme=whatsapp/);
     const linkedin = nativeOpenFor("linkedin", "ama-serwaa", "https://www.linkedin.com/in/ama-serwaa");
     assert.match(linkedin.appHref ?? "", /linkedin:\/\/in\/ama-serwaa/);
   });
@@ -1366,5 +1385,22 @@ describe("CeleYou landscape hold", () => {
     assert.match(view, /data-celecard-hold=\{hold \? "true" : undefined\}/);
     assert.match(view, /readCelecardHoldViewport/);
     assert.match(view, /qrHref=\{hold \? undefined : digitalCardPublicUrl/);
+  });
+});
+
+describe("CeleYou guest public layout", () => {
+  it("keeps the ID-1 plate card-sized and opens a two-column desk on large screens", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    const view = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-public-view.tsx"),
+      "utf8"
+    );
+    assert.match(css, /width: min\(100%, 22\.75rem\)/);
+    assert.match(css, /@media \(min-width: 960px\)/);
+    assert.match(css, /max-width: min\(72rem, 1120px\)/);
+    assert.match(css, /grid-template-columns: minmax\(20rem, 26\.5rem\) minmax\(18rem, 1fr\)/);
+    assert.match(view, /celecard-guest-intro/);
+    assert.match(view, /celecard-guest-section/);
+    assert.match(view, /celecard-action-label/);
   });
 });

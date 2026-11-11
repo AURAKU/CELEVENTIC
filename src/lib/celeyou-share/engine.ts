@@ -1,12 +1,83 @@
 import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capability";
 import { detectTapPlatform, type TapPlatform } from "@/lib/celeyou-proximity/capabilities";
+import {
+  shareArtifactsLandOnSameProfile,
+  type CeleYouShareIdentity,
+} from "@/lib/digital-business-card/share-identity";
 
 export const SHARE_MY_CELEYOU = "Share my CeleYou";
 export const SHARE_MY_CARD_CTA = "Share My Card";
 export const NEARBY_SHARE_CTA = "Nearby Share";
+export const SHARE_VIA_APPS_CTA = "Share via Apps";
+export const SAVE_CONTACT_CTA = "Save Contact";
+export const SHARE_CONTACT_FILE_CTA = "Share Contact File";
+export const COPY_PROFILE_LINK_CTA = "Copy Profile Link";
+export const SHOW_QR_CTA = "Show QR";
 
 export const SMART_SHARE_METHODS = ["system-sheet", "tap-to-connect", "nfc-card", "qr", "https-link"] as const;
 export type SmartShareMethod = (typeof SMART_SHARE_METHODS)[number];
+
+export const SHARE_DESK_ACTIONS = [
+  "share-card",
+  "save-contact",
+  "share-contact-file",
+  "show-qr",
+  "copy-link",
+  "namedrop",
+  "nearby",
+  "nfc",
+  "apps",
+] as const;
+export type ShareDeskActionId = (typeof SHARE_DESK_ACTIONS)[number];
+
+/** Order actions for this device. Never drop an essential method. */
+export function shareDeskActionOrder(platform: TapPlatform): ShareDeskActionId[] {
+  if (platform === "ios-safari") {
+    return [
+      "share-card",
+      "save-contact",
+      "namedrop",
+      "share-contact-file",
+      "show-qr",
+      "copy-link",
+      "nearby",
+      "nfc",
+      "apps",
+    ];
+  }
+  if (platform === "android-chrome" || platform === "android-other") {
+    return [
+      "share-card",
+      "save-contact",
+      "share-contact-file",
+      "show-qr",
+      "nfc",
+      "copy-link",
+      "nearby",
+      "namedrop",
+      "apps",
+    ];
+  }
+  return [
+    "show-qr",
+    "copy-link",
+    "save-contact",
+    "share-contact-file",
+    "share-card",
+    "nfc",
+    "nearby",
+    "namedrop",
+    "apps",
+  ];
+}
+
+const SMART_SHARE_PRIORITY: SmartShareMethod[] = [
+  "system-sheet",
+  "tap-to-connect",
+  "nfc-card",
+  "qr",
+  "https-link",
+];
 
 export type SmartShareCapability = {
   platform: TapPlatform;
@@ -34,10 +105,12 @@ export function detectSmartShareCapability(
   const airDropInShareSheet = hasWebShare && platform === "ios-safari";
   const quickShareInShareSheet = hasWebShare && (platform === "android-chrome" || platform === "android-other");
 
-  const recommended: SmartShareMethod = hasWebShare ? "system-sheet" : platform === "desktop" ? "https-link" : "qr";
-  const alternatives: SmartShareMethod[] = ["qr", "https-link", "nfc-card", "tap-to-connect"].filter(
-    (method) => method !== recommended
-  ) as SmartShareMethod[];
+  const recommended: SmartShareMethod = hasWebShare
+    ? "system-sheet"
+    : platform === "desktop"
+      ? "https-link"
+      : "qr";
+  const alternatives = SMART_SHARE_PRIORITY.filter((method) => method !== recommended);
 
   let nearbyGuidance =
     "Nearby Share opens the phone’s own share sheet. CeleYou cannot start AirDrop or Quick Share by touching two phones.";
@@ -104,4 +177,29 @@ export async function shareCeleYouProfile(
     return "unavailable";
   }
   return "unavailable";
+}
+
+/**
+ * Unified share router. Picks the fastest supported path on this device.
+ * AirDrop and Quick Share can only appear inside the OS share sheet.
+ * CeleYou never treats a BLE advertisement or an NFC bump as a completed share.
+ */
+export class CeleYouSmartShareEngine {
+  readonly capability: SmartShareCapability;
+
+  constructor(nav: Navigator | null | undefined = typeof navigator !== "undefined" ? navigator : null) {
+    this.capability = detectSmartShareCapability(nav);
+  }
+
+  route(): SmartShareMethod[] {
+    return [this.capability.recommended, ...this.capability.alternatives];
+  }
+
+  async share(input: ShareProfileInput, nav?: Navigator | null): Promise<ShareProfileResult> {
+    return shareCeleYouProfile(input, nav);
+  }
+
+  landsOnSameProfile(identity: CeleYouShareIdentity): boolean {
+    return shareArtifactsLandOnSameProfile(identity);
+  }
 }

@@ -17,15 +17,21 @@ export type CeleYouNativeBleBridge = {
   handshakeCharacteristicUuid: typeof CELEYOU_BLE_HANDSHAKE_CHAR_UUID;
   localName: typeof CELEYOU_BLE_LOCAL_NAME;
   canAdvertise: boolean;
+  bluetoothState: () => "on" | "off" | "unknown";
   startAdvertising: (hello: ProximityBleHello) => Promise<void>;
   stopAdvertising: () => Promise<void>;
-  startScanning: (onHello: (hello: ProximityBleHello) => void) => Promise<void>;
+  startScanning: (onHello: (hello: ProximityBleHello, meta?: { rssi: number | null }) => void) => Promise<void>;
   stopScanning: () => Promise<void>;
 };
 
 export const CELEYOU_NATIVE_BLE_CONTRACT: Omit<
   CeleYouNativeBleBridge,
-  "startAdvertising" | "stopAdvertising" | "startScanning" | "stopScanning" | "canAdvertise"
+  | "startAdvertising"
+  | "stopAdvertising"
+  | "startScanning"
+  | "stopScanning"
+  | "canAdvertise"
+  | "bluetoothState"
 > = {
   serviceUuid: CELEYOU_BLE_SERVICE_UUID,
   sessionCharacteristicUuid: CELEYOU_BLE_SESSION_CHAR_UUID,
@@ -40,6 +46,7 @@ export function webNativeBleBridge(): CeleYouNativeBleBridge {
   return {
     ...CELEYOU_NATIVE_BLE_CONTRACT,
     canAdvertise: false,
+    bluetoothState: () => "unknown",
     startAdvertising: unavailable,
     stopAdvertising: async () => undefined,
     startScanning: unavailable,

@@ -52,6 +52,19 @@ describe("CeleYou Tap-to-Connect protocol", () => {
     );
   });
 
+  it("keeps the matching verify code on GATT, never in the advertisement", () => {
+    const handshake = {
+      v: 1 as const,
+      type: "handshake" as const,
+      discoveryId: "a".repeat(32),
+      verifyCode: "4821",
+      publicKey: `${"A".repeat(43)}.${"B".repeat(43)}`,
+    };
+    assert.equal(parseProximityBleMessage(handshake)?.type, "handshake");
+    assert.equal(isSafeBlePayload(handshake), true);
+    assert.equal(advertisementIsServiceUuidOnly({ ...encodeProximityBleAdvertisement(), verifyCode: "4821" }), false);
+  });
+
   it("advertises only the service UUID and keeps hello on GATT", () => {
     const hello = { v: 1 as const, type: "hello" as const, discoveryId: "a".repeat(32), joinCode: "AB3DK2" };
     const advertisement = encodeProximityBleAdvertisement();

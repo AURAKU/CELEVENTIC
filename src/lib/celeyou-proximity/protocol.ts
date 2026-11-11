@@ -36,7 +36,16 @@ export type ProximityBleAck = {
   discoveryId: string;
 };
 
-export type ProximityBleMessage = ProximityBleHello | ProximityBleAck;
+export type ProximityBleHandshake = {
+  v: typeof CELEYOU_PROTOCOL_VERSION;
+  type: "handshake";
+  discoveryId: string;
+  verifyCode: string;
+  /** ECDH P-256 public coordinates (`x.y`). Never include private `d`. */
+  publicKey?: string;
+};
+
+export type ProximityBleMessage = ProximityBleHello | ProximityBleAck | ProximityBleHandshake;
 
 export function parseProximityBleMessage(raw: unknown): ProximityBleMessage | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -53,6 +62,16 @@ export function parseProximityBleMessage(raw: unknown): ProximityBleMessage | nu
     if (discoveryId.length < 16) return null;
     return { v: 1, type: "ack", discoveryId };
   }
+  if (record.type === "handshake") {
+    const discoveryId = String(record.discoveryId ?? "").trim();
+    const verifyCode = String(record.verifyCode ?? "").replace(/\D/g, "");
+    if (discoveryId.length < 16 || verifyCode.length !== 4) return null;
+    const publicKey = typeof record.publicKey === "string" ? record.publicKey.trim() : "";
+    if (publicKey && (publicKey.includes("\"d\"") || publicKey.split(".").length !== 2)) return null;
+    return publicKey
+      ? { v: 1, type: "handshake", discoveryId, verifyCode, publicKey }
+      : { v: 1, type: "handshake", discoveryId, verifyCode };
+  }
   return null;
 }
 
@@ -62,7 +81,7 @@ export function encodeProximityBleMessage(message: ProximityBleMessage): string 
 
 export function isSafeBlePayload(message: ProximityBleMessage): boolean {
   const blob = encodeProximityBleMessage(message);
-  return !/"userId"|"email"|"phone"|"password"|"refreshToken"|"accessToken"/i.test(blob);
+  return !/"userId"|"email"|"phone"|"password"|"refreshToken"|"accessToken"|"d":/i.test(blob);
 }
 
 export function encodeProximityBleAdvertisement(): ProximityBleAdvertisement {

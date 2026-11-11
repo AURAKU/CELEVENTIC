@@ -1,5 +1,6 @@
 import type { CeleYouNativeBleBridge } from "@/lib/celeyou-proximity/native-bridge";
 import { webNativeBleBridge } from "@/lib/celeyou-proximity/native-bridge";
+import { TAP_PEER_STALE_MS } from "@/lib/celeyou-proximity/product";
 import type { ProximityBleHello } from "@/lib/celeyou-proximity/protocol";
 
 export type NearbyPeer = {
@@ -10,10 +11,17 @@ export type NearbyPeer = {
   reportedAt: number;
 };
 
+export type NativeDiscoverReason =
+  | "started"
+  | "native-unavailable"
+  | "bluetooth-off"
+  | "permission-denied"
+  | "cancelled";
+
 export type NativeDiscoverResult = {
   ok: boolean;
   peers: NearbyPeer[];
-  reason: "started" | "native-unavailable" | "bluetooth-off" | "permission-denied" | "cancelled";
+  reason: NativeDiscoverReason;
 };
 
 /**
@@ -26,8 +34,20 @@ export class CeleYouProximityEngine {
 
   constructor(private readonly bridge: CeleYouNativeBleBridge = webNativeBleBridge()) {}
 
-  listPeers(): NearbyPeer[] {
-    return [...this.peers.values()];
+  listPeers(now = Date.now()): NearbyPeer[] {
+    this.pruneStalePeers(now);
+    return [...this.peers.values()].sort((left, right) => (right.rssi ?? -999) - (left.rssi ?? -999));
+  }
+
+  selectPeer(discoveryId: string, now = Date.now()): NearbyPeer | null {
+    this.pruneStalePeers(now);
+    return this.peers.get(discoveryId) ?? null;
+  }
+
+  pruneStalePeers(now = Date.now()): void {
+    for (const [id, peer] of this.peers) {
+      if (now - peer.reportedAt > TAP_PEER_STALE_MS) this.peers.delete(id);
+    }
   }
 
   async startDiscovering(hello: ProximityBleHello): Promise<NativeDiscoverResult> {
@@ -38,18 +58,20 @@ export class CeleYouProximityEngine {
     try {
       this.scanning = true;
       await this.bridge.startAdvertising(hello);
-      await this.bridge.startScanning((incoming) => {
+      await this.bridge.startScanning((incoming, meta) => {
+        if (incoming.discoveryId === hello.discoveryId) return;
         this.peers.set(incoming.discoveryId, {
           discoveryId: incoming.discoveryId,
           joinCode: incoming.joinCode,
-          rssi: null,
+          rssi: typeof meta?.rssi === "number" ? meta.rssi : null,
           reportedAt: Date.now(),
         });
       });
       return { ok: true, peers: this.listPeers(), reason: "started" };
-    } catch {
+    } catch (error) {
       this.scanning = false;
-      return { ok: false, peers: [], reason: "native-unavailable" };
+      this.peers.clear();
+      return { ok: false, peers: [], reason: classifyDiscoverFailure(error) };
     }
   }
 
@@ -65,6 +87,20 @@ export class CeleYouProximityEngine {
   }
 }
 
+export function classifyDiscoverFailure(error: unknown): NativeDiscoverReason {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  if (/permission/i.test(message)) return "permission-denied";
+  if (/bluetooth-off|powered.?off|turn on bluetooth/i.test(message)) return "bluetooth-off";
+  if (/cancel/i.test(message)) return "cancelled";
+  return "native-unavailable";
+}
+
 export function rssiIsPhysicalTouchProof(_rssi: number | null): false {
   return false;
+}
+
+export function nearbySignalHint(rssi: number | null): "closer" | "nearby" | "unknown" {
+  if (typeof rssi !== "number") return "unknown";
+  if (rssi >= -55) return "closer";
+  return "nearby";
 }

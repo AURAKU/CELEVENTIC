@@ -36,6 +36,9 @@ import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-bran
 import { guestPrimaryActions } from "@/lib/celeyou-share/guest-actions";
 import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
 import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
+import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
+import { contactSaveHint } from "@/lib/celeyou-share/namedrop";
+import { detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
 import { readCelecardHoldViewport } from "@/lib/digital-business-card/hold-viewport";
 
 export function DigitalCardPublicView({
@@ -59,9 +62,11 @@ export function DigitalCardPublicView({
   const copyInk = darkStage ? "rgba(250,246,239,0.88)" : "rgba(28,25,23,0.8)";
   const faintInk = darkStage ? "rgba(250,246,239,0.42)" : "rgba(28,25,23,0.42)";
   const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
+  const profileUrl = digitalCardPublicUrl(card.slug, origin);
   const qrSrc = scanUrl ? digitalCardQrImageSrc(scanUrl) : "";
   const [copied, setCopied] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveHint, setSaveHint] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [connectDone, setConnectDone] = useState(false);
@@ -94,6 +99,7 @@ export function DigitalCardPublicView({
         return;
       }
       if (result !== "opened") trackCeleYouGuestEvent(card.slug, "vcard_save");
+      setSaveHint(contactSaveHint(detectTapPlatform()));
       setSaveState("saved");
       window.setTimeout(() => setSaveState("idle"), 2200);
     } catch {
@@ -102,21 +108,21 @@ export function DigitalCardPublicView({
   }, [card, origin, saveState]);
 
   const shareCard = useCallback(async () => {
-    const title = celeCardShareTitle(card);
-    const text = celeCardShareMessage(card);
     trackCeleYouGuestEvent(card.slug, "share_tap");
-    try {
-      if (navigator.share) {
-        await navigator.share({ title, text, url: scanUrl });
-        return;
+    const shareUrl = profileUrl || scanUrl;
+    const result = await shareCeleYouProfile({
+      title: celeCardShareTitle(card),
+      text: celeCardShareMessage(card),
+      url: shareUrl,
+    });
+    if (result === "copied" || result === "unavailable") {
+      if (result === "unavailable") {
+        await navigator.clipboard.writeText(celeCardShareClipboard(card, shareUrl)).catch(() => undefined);
       }
-    } catch {
-      /* fall through */
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
-    await navigator.clipboard.writeText(celeCardShareClipboard(card, scanUrl));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [card, scanUrl]);
+  }, [card, profileUrl, scanUrl]);
 
   const submitConnect = useCallback(async () => {
     setConnecting(true);
@@ -231,57 +237,70 @@ export function DigitalCardPublicView({
           />
         </div>
 
-        <div className="celecard-guest-rest flex flex-col gap-5">
-        <div className="relative z-10 flex items-center justify-center gap-4">
-          <Link
-            href={digitalCardPresentPath(card.slug, { immersive: true })}
-            className="inline-flex min-h-10 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]"
-            style={{ color: theme.accent }}
+        <div className="celecard-guest-rest">
+        <header className="celecard-guest-intro relative z-10">
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: copyInk, fontFamily: typeVoice.meta }}
           >
-            Present card
-          </Link>
-        </div>
+            Save this contact. You do not need an app or an account.
+          </p>
+          {saveHint ? (
+            <p className="text-xs leading-relaxed" style={{ color: faintInk, fontFamily: typeVoice.meta }}>
+              {saveHint}
+            </p>
+          ) : null}
+          <nav className="celecard-guest-links" aria-label="Card actions">
+            <Link
+              href={digitalCardPresentPath(card.slug, { immersive: true })}
+              className="inline-flex min-h-10 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]"
+              style={{ color: theme.accent }}
+            >
+              Present card
+            </Link>
+            <button
+              type="button"
+              onClick={() => setShowQr((value) => !value)}
+              className="inline-flex min-h-10 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]"
+              style={{ color: theme.accent }}
+            >
+              <QrCode className="h-3.5 w-3.5" />
+              {showQr ? "Hide QR" : "Show QR"}
+            </button>
+          </nav>
+        </header>
 
-        <div className="celecard-enter celecard-d3 flex flex-col gap-6">
-          {sections.map((section) => (
-            <section key={section.id} className="mx-auto w-full max-w-sm">
-              <h2
-                className="mb-2 text-center text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: theme.accent, fontFamily: typeVoice.meta }}
-              >
-                {section.label}
-              </h2>
-              {section.body ? (
-                <p
-                  className="text-center text-[15px] font-medium leading-relaxed"
-                  style={{ color: copyInk, fontFamily: typeVoice.meta }}
+        {sections.length ? (
+          <div className="celecard-enter celecard-d3 flex flex-col gap-6">
+            {sections.map((section) => (
+              <section key={section.id} className="celecard-guest-section">
+                <h2
+                  className="mb-2 text-center text-[11px] font-semibold uppercase tracking-[0.16em]"
+                  style={{ color: theme.accent, fontFamily: typeVoice.meta }}
                 >
-                  {section.body}
-                </p>
-              ) : null}
-              {section.items.length ? (
-                <DigitalCardReachGrid
-                  items={section.items}
-                  theme={theme}
-                  slug={card.slug}
-                  ownerName={card.displayName}
-                />
-              ) : null}
-            </section>
-          ))}
-        </div>
+                  {section.label}
+                </h2>
+                {section.body ? (
+                  <p
+                    className="text-center text-[15px] font-medium leading-relaxed"
+                    style={{ color: copyInk, fontFamily: typeVoice.meta }}
+                  >
+                    {section.body}
+                  </p>
+                ) : null}
+                {section.items.length ? (
+                  <DigitalCardReachGrid
+                    items={section.items}
+                    theme={theme}
+                    slug={card.slug}
+                    ownerName={card.displayName}
+                  />
+                ) : null}
+              </section>
+            ))}
+          </div>
+        ) : null}
 
-        <div className="celecard-enter celecard-d5 mb-8 flex items-center justify-center gap-4">
-          <button
-            type="button"
-            onClick={() => setShowQr((value) => !value)}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]"
-            style={{ color: theme.accent }}
-          >
-            <QrCode className="h-3.5 w-3.5" />
-            {showQr ? "Hide QR" : "Show QR"}
-          </button>
-        </div>
         {showQr ? (
           <div className="celecard-enter flex flex-col items-center gap-2">
             <CeleCardQrBadge
@@ -311,8 +330,8 @@ export function DigitalCardPublicView({
 
         <Link
           href="/digital-cards"
-          className="celecard-enter celecard-d6 mx-auto mb-6 mt-2 flex w-fit flex-col items-center gap-3 pt-4"
-          aria-label={`${SMARTCARD_PRODUCT_NAME}. See templates`}
+          className="celecard-guest-brand celecard-enter celecard-d6 mx-auto mb-6 mt-2 flex w-fit flex-col items-center gap-3 pt-4"
+          aria-label={`${SMARTCARD_PRODUCT_NAME}. Create your CeleYou`}
         >
           <span className="flex items-center gap-2" aria-hidden>
             <span
@@ -326,7 +345,7 @@ export function DigitalCardPublicView({
             />
           </span>
           <span className="inline-flex items-center gap-3">
-            <CeleYouMarkIcon className="h-16 w-16 overflow-visible" />
+            <CeleYouMarkIcon className="celecard-guest-mark overflow-visible" />
             <span className="flex flex-col items-start leading-none">
               <span
                 className="font-display text-[1.65rem] font-bold tracking-[-0.04em] sm:text-[1.85rem]"
@@ -345,6 +364,12 @@ export function DigitalCardPublicView({
                 style={{ color: theme.accent }}
               >
                 {SMARTCARD_BRAND_TAGLINE}
+              </span>
+              <span
+                className="mt-1 text-[10px] font-medium tracking-[0.08em] sm:text-[11px]"
+                style={{ color: darkStage ? "rgba(244,230,200,0.7)" : theme.muted }}
+              >
+                Create your CeleYou
               </span>
             </span>
           </span>
@@ -365,11 +390,12 @@ export function DigitalCardPublicView({
       </div>
 
       <div
-        className="celecard-dock-bar pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 sm:px-6 lg:px-8 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-10"
+        className="celecard-dock-bar pointer-events-none fixed inset-x-0 bottom-0 z-40 px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-8 sm:px-6 lg:px-8 sm:pt-10"
         style={{ background: dock.veil }}
       >
+        <div className="celecard-dock-stage">
         {contactActions.length ? (
-          <div className="celecard-dock-row pointer-events-auto mx-auto mb-2 flex w-full max-w-[44rem] gap-2 overflow-x-auto px-1">
+          <div className="celecard-dock-row pointer-events-auto mx-auto mb-2 flex w-full gap-2 overflow-x-auto px-1 sm:flex-wrap sm:justify-center sm:overflow-visible">
             {contactActions.map((action) => (
               <a
                 key={action.id}
@@ -421,7 +447,7 @@ export function DigitalCardPublicView({
             <span className="celecard-action-mark" aria-hidden>
               {saveState === "saved" ? <Check /> : <Download />}
             </span>
-            {saveState === "saved" ? "Saved" : "Save"}
+            <span className="celecard-action-label">{saveState === "saved" ? "Saved" : "Save"}</span>
           </button>
           {card.connectBackEnabled && !card.isDemo && !connectDone ? (
             <button
@@ -441,7 +467,7 @@ export function DigitalCardPublicView({
               <span className="celecard-action-mark" aria-hidden>
                 <Handshake />
               </span>
-              Connect
+              <span className="celecard-action-label">Connect</span>
             </button>
           ) : null}
           <button
@@ -461,8 +487,9 @@ export function DigitalCardPublicView({
             <span className="celecard-action-mark" aria-hidden>
               <Share2 />
             </span>
-            {copied ? "Copied" : "Share"}
+            <span className="celecard-action-label">{copied ? "Copied" : "Share"}</span>
           </button>
+        </div>
         </div>
       </div>
 

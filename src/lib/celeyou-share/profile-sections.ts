@@ -33,7 +33,16 @@ const SECTION_LABEL: Record<GuestIdentitySectionId, string> = {
   products: "Products and Services",
 };
 
-const CONTACT_BRANDS = new Set(["phone", "email", "whatsapp", "website", "telegram", "signal", "viber"]);
+const CONTACT_BRANDS = new Set([
+  "phone",
+  "email",
+  "whatsapp",
+  "whatsappbusiness",
+  "website",
+  "telegram",
+  "signal",
+  "viber",
+]);
 const BUSINESS_BRANDS = new Set(["location", "meeting"]);
 const PORTFOLIO_BRANDS = new Set(["other", "github", "behance", "dribbble"]);
 const CREDENTIAL_BRANDS = new Set(["linkedin"]);

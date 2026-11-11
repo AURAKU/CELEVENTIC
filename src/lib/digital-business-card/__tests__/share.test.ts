@@ -153,10 +153,21 @@ describe("CeleYou studio share controls", () => {
     assert.doesNotMatch(studio, /Copy share link/);
     assert.doesNotMatch(studio, /Copy \$\{demoCardQrPath/);
     assert.doesNotMatch(studio, /Smart share/);
-    assert.doesNotMatch(desk, /Share via Apps/);
     assert.doesNotMatch(desk, /Open profile/);
     assert.doesNotMatch(desk, /Download card/);
     assert.match(desk, /Hold up this card/);
+    assert.match(desk, /SHARE_MY_CARD_CTA/);
+    assert.match(desk, /NEARBY_SHARE_CTA/);
+    assert.match(desk, /COPY_PROFILE_LINK_CTA/);
+    assert.match(desk, /SAVE_CONTACT_CTA/);
+    assert.match(desk, /SHARE_CONTACT_FILE_CTA/);
+    assert.match(desk, /CeleYouNameDropSetup/);
+    assert.match(desk, /NFC Card/);
+    assert.match(desk, /SHARE_VIA_APPS_CTA/);
+    assert.match(desk, /CeleYouSmartShareEngine/);
+    assert.match(desk, /WALLET_PASS_CTA/);
+    assert.match(desk, /same public profile/);
+    assert.doesNotMatch(desk, /start AirDrop by NFC|automatic phone to phone NFC/i);
   });
 });
 

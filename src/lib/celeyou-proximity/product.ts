@@ -12,6 +12,10 @@ export const TAP_SESSION_TTL_MS = 3 * 60 * 1000;
 export const TAP_SHARE_TOKEN_TTL_MS = 2 * 60 * 1000;
 export const TAP_DISCOVERY_TIMEOUT_MS = 45 * 1000;
 export const TAP_POLL_MS = 1500;
+export const TAP_PEER_STALE_MS = 12 * 1000;
+export const TAP_SESSION_PURGE_AFTER_MS = 24 * 60 * 60 * 1000;
+export const TAP_DECLINE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+export const TAP_DECLINE_COOLDOWN_LIMIT = 3;
 
 export const TAP_STUDIO_PATH = "/dashboard/business-card/tap";
 export const TAP_JOIN_PATH = "/tap";
