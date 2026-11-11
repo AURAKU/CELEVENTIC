@@ -3,7 +3,7 @@ import {
   getDigitalCardByPublicToken,
   recordSmartCardInteraction,
 } from "@/services/digital-business-card/digital-business-card.service";
-import { isCeleCardGuestShareable } from "@/lib/digital-business-card/lifecycle";
+import { resolveCeleYouPublicShare } from "@/lib/digital-business-card/access";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { celeYouScanLandingUrl } from "@/lib/digital-business-card/share-identity";
 import { DEMO_CARD_SLUG, isDemoQrToken } from "@/lib/digital-business-card/demo-card";
@@ -29,8 +29,13 @@ export default async function SmartCardShortRedirectPage({
     redirect(celeYouScanLandingUrl(DEMO_CARD_SLUG, origin));
   }
   const card = await getDigitalCardByPublicToken(token);
-  if (!card || card.deletedAt) notFound();
-  if (isCeleCardGuestShareable(card, new Date(), await getCeleCardLifecyclePolicy())) {
+  const share = resolveCeleYouPublicShare({
+    card,
+    channel: "qr",
+    policy: await getCeleCardLifecyclePolicy(),
+  });
+  if (!share.found || !card) notFound();
+  if (share.recordOpen) {
     void recordSmartCardInteraction(card.id, "qr_open").catch(() => undefined);
   }
   redirect(celeYouScanLandingUrl(card.slug, origin));

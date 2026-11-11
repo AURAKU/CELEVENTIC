@@ -8,7 +8,7 @@ import {
   getDemoCardBySlug,
   isDemoCardSlug,
 } from "@/lib/digital-business-card/demo-card";
-import { toGuestPublicPayload } from "@/lib/digital-business-card/access";
+import { resolveCeleYouPublicShare, toGuestPublicPayload } from "@/lib/digital-business-card/access";
 import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
 import { isCeleCardPhotoUrl } from "@/lib/digital-business-card/portraits";
 import { digitalCardIdentityUrl, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
@@ -19,7 +19,6 @@ import {
   getDigitalCardBySlug,
   recordSmartCardInteraction,
 } from "@/services/digital-business-card/digital-business-card.service";
-import { isCeleCardGuestShareable } from "@/lib/digital-business-card/lifecycle";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
 import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
@@ -52,7 +51,7 @@ export async function GET(
   if (!isDemoCardSlug(slug)) {
     const live = await getDigitalCardBySlug(slug);
     const policy = await getCeleCardLifecyclePolicy();
-    if (live && !live.deletedAt && isCeleCardGuestShareable(live, new Date(), policy)) {
+    if (resolveCeleYouPublicShare({ card: live, channel: "vcard", policy }).recordOpen) {
       void recordSmartCardInteraction(live.id, "vcard_save", { surface: "vcf" }).catch(() => undefined);
     }
   }

@@ -10,7 +10,7 @@ import {
   getDigitalCardBySlug,
   recordSmartCardInteraction,
 } from "@/services/digital-business-card/digital-business-card.service";
-import { isCeleCardGuestShareable } from "@/lib/digital-business-card/lifecycle";
+import { resolveCeleYouPublicShare } from "@/lib/digital-business-card/access";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
 
@@ -38,7 +38,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
   if (!limited.success) return new NextResponse(null, { status: 204 });
 
   const card = await getDigitalCardBySlug(slug);
-  if (!card || card.deletedAt || !isCeleCardGuestShareable(card, new Date(), await getCeleCardLifecyclePolicy())) {
+  const share = resolveCeleYouPublicShare({
+    card,
+    channel: "profile",
+    policy: await getCeleCardLifecyclePolicy(),
+  });
+  if (!share.guestShareable) {
     return new NextResponse(null, { status: 204 });
   }
 

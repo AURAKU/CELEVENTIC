@@ -1,0 +1,6 @@
+{
+  "name": "celeyou-mobile",
+  "private": true,
+  "version": "0.0.0",
+  "description": "CeleYou native foundation. BLE is not claimed working until Phase C hardware tests pass."
+}

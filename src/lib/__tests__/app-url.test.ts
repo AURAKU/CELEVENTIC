@@ -3,9 +3,12 @@ import { describe, it } from "node:test";
 import {
   isLocalHost,
   isCeleventicDomain,
+  isPrivateNetworkHost,
+  isApprovedCeleYouShareOrigin,
   resolveAppUrl,
   sanitizePublicUrl,
   celeYouGuestOrigin,
+  celeYouProductionOrigin,
   getCeleYouShareOrigin,
   DEFAULT_PRODUCTION_URL,
 } from "../app-url";
@@ -83,6 +86,21 @@ describe("CeleYou share origin", () => {
     assert.equal(celeYouGuestOrigin("http://127.0.0.1:3000"), DEFAULT_PRODUCTION_URL);
     assert.equal(celeYouGuestOrigin("https://www.celeventic.com"), "https://www.celeventic.com");
     assert.match(getCeleYouShareOrigin(), /^https:\/\//);
+  });
+
+  it("rejects private IPs, preview hosts, credentials, and http for encoded guest origins", () => {
+    assert.equal(isPrivateNetworkHost("192.168.1.20:3000"), true);
+    assert.equal(isPrivateNetworkHost("10.0.0.8"), true);
+    assert.equal(isPrivateNetworkHost("172.16.4.2"), true);
+    assert.equal(isPrivateNetworkHost("www.celeventic.com"), false);
+    assert.equal(isApprovedCeleYouShareOrigin("https://www.celeventic.com"), true);
+    assert.equal(isApprovedCeleYouShareOrigin("http://www.celeventic.com"), false);
+    assert.equal(isApprovedCeleYouShareOrigin("https://celeyou-preview.vercel.app"), false);
+    assert.equal(celeYouProductionOrigin("http://192.168.1.20:3000"), DEFAULT_PRODUCTION_URL);
+    assert.equal(celeYouProductionOrigin("http://www.celeventic.com/"), "https://www.celeventic.com");
+    assert.equal(celeYouProductionOrigin("https://user:pass@www.celeventic.com"), DEFAULT_PRODUCTION_URL);
+    assert.equal(celeYouGuestOrigin("https://celeyou-preview.vercel.app"), DEFAULT_PRODUCTION_URL);
+    assert.doesNotMatch(celeYouProductionOrigin("http://localhost:3000"), /localhost|127\.0\.0\.1|192\.168/);
   });
 });
 

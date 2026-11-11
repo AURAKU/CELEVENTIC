@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  CELEYOU_BLE_IOS_FOREGROUND_ADV_BYTES,
+  CELEYOU_BLE_SERVICE_UUID,
+  advertisementIsServiceUuidOnly,
+  encodeProximityBleAdvertisement,
   encodeProximityBleMessage,
+  helloBelongsOnGattCharacteristic,
   isSafeBlePayload,
   parseProximityBleMessage,
 } from "@/lib/celeyou-proximity/protocol";
@@ -45,6 +50,16 @@ describe("CeleYou Tap-to-Connect protocol", () => {
       inspectProximityShareToken({ ...row, expiresAt: new Date("2026-11-10T11:59:00.000Z") }, "user-a", now),
       "expired"
     );
+  });
+
+  it("advertises only the service UUID and keeps hello on GATT", () => {
+    const hello = { v: 1 as const, type: "hello" as const, discoveryId: "a".repeat(32), joinCode: "AB3DK2" };
+    const advertisement = encodeProximityBleAdvertisement();
+    assert.equal(advertisement.serviceUuid, CELEYOU_BLE_SERVICE_UUID);
+    assert.equal(advertisementIsServiceUuidOnly(advertisement), true);
+    assert.equal(helloBelongsOnGattCharacteristic(hello), true);
+    assert.ok(encodeProximityBleMessage(hello).length > CELEYOU_BLE_IOS_FOREGROUND_ADV_BYTES);
+    assert.equal(advertisementIsServiceUuidOnly({ ...advertisement, joinCode: hello.joinCode }), false);
   });
 
   it("reads a session QR or a typed six character code", () => {

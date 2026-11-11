@@ -2,6 +2,9 @@
 
 export const TAP_TO_CONNECT_NAME = "CeleYou Tap-to-Connect";
 export const TAP_TO_CONNECT_TAGLINE = "Bring Closer. Connect Instantly.";
+export const TAP_TO_CONNECT_SUPPORT = "Connect securely using a QR code or sharing code.";
+export const TAP_TO_CONNECT_NATIVE_REQUIREMENT =
+  "Nearby discovery needs the CeleYou app on both phones. Without it, use QR, a link, AirDrop, Quick Share, or an NFC card.";
 export const TAP_TO_CONNECT_CTA = "Tap to Connect";
 export const TAP_TO_OPEN_NAME = "Tap to Open";
 

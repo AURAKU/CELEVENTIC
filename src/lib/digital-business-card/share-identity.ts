@@ -1,4 +1,10 @@
-import { celeYouGuestOrigin, isLocalHost } from "@/lib/app-url";
+import {
+  celeYouGuestOrigin,
+  celeYouProductionOrigin,
+  isApprovedCeleYouShareOrigin,
+  isLocalHost,
+  isPrivateNetworkHost,
+} from "@/lib/app-url";
 import { DEMO_CARD_NFC_TOKEN, DEMO_CARD_PUBLIC_TOKEN } from "@/lib/digital-business-card/demo-card";
 import { SMARTCARD_SHORT_PATH, smartCardNfcUrl, smartCardShortUrl } from "@/lib/digital-business-card/product";
 import { digitalCardIdentityUrl, digitalCardPublicUrl } from "@/lib/digital-business-card/types";
@@ -54,11 +60,16 @@ export function celeYouNfcScanUrl(nfcToken: string, origin?: string): string {
   return smartCardNfcUrl(token, celeYouGuestOrigin(origin));
 }
 
+function isCeleYouGuestPath(pathname: string): boolean {
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length !== 2 || !parts[1]) return false;
+  return parts[0] === "c" || parts[0] === "n" || parts[0] === "card" || parts[0] === "u";
+}
+
 export function isCeleYouCameraScanUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
-    if (isLocalHost(parsed.hostname)) return false;
+    if (!isApprovedCeleYouShareOrigin(url)) return false;
     const parts = parsed.pathname.split("/").filter(Boolean);
     return parts[0] === SMARTCARD_SHORT_PATH.slice(1) && parts.length === 2 && Boolean(parts[1]);
   } catch {
@@ -66,38 +77,49 @@ export function isCeleYouCameraScanUrl(url: string): boolean {
   }
 }
 
-/**
- * Where a scan should land. Stay on the host that received /c or /n so the
- * phone browser opens the public profile without a second hop to another domain.
- */
-export function celeYouScanLandingUrl(slug: string, requestOrigin?: string | null): string {
-  const host = requestOrigin?.trim().replace(/\/$/, "") || "";
-  const origin = host || celeYouGuestOrigin();
-  return digitalCardPublicUrl(slug, origin);
+/** True when a guest URL is HTTPS, on an approved host, and has no development leakage. */
+export function isCeleYouProductionGuestUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (!isApprovedCeleYouShareOrigin(url)) return false;
+    if (parsed.searchParams.has("access") || parsed.username) return false;
+    return isCeleYouGuestPath(parsed.pathname);
+  } catch {
+    return false;
+  }
 }
 
-/** If a QR generator received a relative CeleYou path, lift it onto the live origin. */
+/**
+ * Where a scan should land. Use the host that received /c or /n when it is an
+ * approved live Celeventic origin. Localhost and private IPs never leak into
+ * the next hop.
+ */
+export function celeYouScanLandingUrl(slug: string, requestOrigin?: string | null): string {
+  return digitalCardPublicUrl(slug, celeYouProductionOrigin(requestOrigin));
+}
+
+/** If a QR generator received a relative or unsafe CeleYou path, lift it onto the live origin. */
 export function celeYouAbsoluteGuestPayload(raw: string, origin?: string): string | null {
   const value = raw.trim();
   if (!value) return null;
+  const live = celeYouGuestOrigin(origin);
   if (value.startsWith("http://") || value.startsWith("https://")) {
     try {
       const parsed = new URL(value);
-      if (isLocalHost(parsed.hostname)) {
-        return `${celeYouGuestOrigin(origin)}${parsed.pathname}${parsed.search}`;
+      const path = `${parsed.pathname}${parsed.search}`;
+      if (isCeleYouGuestPath(parsed.pathname)) {
+        return `${live}${path}`;
+      }
+      if (isLocalHost(parsed.hostname) || isPrivateNetworkHost(parsed.hostname)) {
+        return `${live}${path}`;
       }
       return value;
     } catch {
       return value;
     }
   }
-  if (
-    value.startsWith("/c/") ||
-    value.startsWith("/n/") ||
-    value.startsWith("/card/") ||
-    value.startsWith("/u/")
-  ) {
-    return `${celeYouGuestOrigin(origin)}${value}`;
+  if (isCeleYouGuestPath(value.split("?")[0] ?? "") || value.startsWith("/c/") || value.startsWith("/n/") || value.startsWith("/card/") || value.startsWith("/u/")) {
+    return `${live}${value.startsWith("/") ? value : `/${value}`}`;
   }
   return null;
 }

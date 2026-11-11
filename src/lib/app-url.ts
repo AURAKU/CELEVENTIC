@@ -31,19 +31,78 @@ function isProductionDeployment(nodeEnv?: string): boolean {
   );
 }
 
+function hostnameOf(hostOrUrl: string): string {
+  const hostname = hostOrUrl.includes("://")
+    ? new URL(hostOrUrl).hostname
+    : hostOrUrl.split("/")[0].split(":")[0];
+  return hostname.replace(/^\[/, "").replace(/\]$/, "").toLowerCase();
+}
+
 export function isLocalHost(hostOrUrl: string): boolean {
   try {
-    const hostname = hostOrUrl.includes("://")
-      ? new URL(hostOrUrl).hostname
-      : hostOrUrl.split(":")[0].toLowerCase();
+    const hostname = hostnameOf(hostOrUrl);
     return (
       hostname === "localhost" ||
       hostname === "127.0.0.1" ||
+      hostname === "::1" ||
       hostname.endsWith(".local")
     );
   } catch {
     return true;
   }
+}
+
+/** Loopback, link-local, and RFC1918 hosts must never be encoded into guest QR or NFC. */
+export function isPrivateNetworkHost(hostOrUrl: string): boolean {
+  try {
+    if (isLocalHost(hostOrUrl)) return true;
+    const hostname = hostnameOf(hostOrUrl);
+    if (hostname.startsWith("fe80:") || hostname.startsWith("fc") || hostname.startsWith("fd")) return true;
+    const ipv4 = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!ipv4) return false;
+    const a = Number(ipv4[1]);
+    const b = Number(ipv4[2]);
+    if (a === 10 || a === 127 || a === 0) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+/** Guest QR, NFC, and vCard origins. HTTPS Celeventic hosts only. */
+export function isApprovedCeleYouShareOrigin(value: string): boolean {
+  try {
+    const parsed = value.includes("://") ? new URL(value) : new URL(`https://${value}`);
+    if (parsed.protocol !== "https:") return false;
+    if (parsed.username || parsed.password) return false;
+    if (isPrivateNetworkHost(parsed.hostname)) return false;
+    return isCeleventicDomain(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Origin encoded into physical QR, NFC tags, and guest vCards.
+ * Never localhost, private IPs, preview hosts, or http.
+ * Invalid production config falls back to the canonical live domain, not localhost.
+ */
+export function celeYouProductionOrigin(candidate?: string | null): string {
+  const value = candidate?.trim();
+  if (value) {
+    try {
+      const parsed = value.includes("://") ? new URL(value) : new URL(`https://${value}`);
+      if (!parsed.username && !parsed.password && isCeleventicDomain(parsed.hostname) && !isPrivateNetworkHost(parsed.hostname)) {
+        return normalizeUrl(`https://${parsed.hostname}`);
+      }
+    } catch {
+      return DEFAULT_PRODUCTION_URL;
+    }
+  }
+  return DEFAULT_PRODUCTION_URL;
 }
 
 function normalizeUrl(url: string): string {
@@ -126,18 +185,14 @@ export function getClientAppUrl(): string {
  */
 export function getCeleYouShareOrigin(): string {
   if (typeof window !== "undefined") {
-    const origin = window.location.origin;
-    if (origin && !isLocalHost(origin)) return normalizeUrl(origin);
+    return celeYouProductionOrigin(window.location.origin);
   }
-  const env = getAppUrlFromEnv();
-  if (!isLocalHost(env)) return normalizeUrl(env);
-  return DEFAULT_PRODUCTION_URL;
+  return celeYouProductionOrigin(getAppUrlFromEnv());
 }
 
-/** Prefer a live request host. Rewrite localhost onto the CeleYou share origin. */
+/** Prefer an approved live request host. Rewrite unsafe hosts onto the canonical domain. */
 export function celeYouGuestOrigin(candidate?: string | null): string {
-  const value = candidate?.trim();
-  if (value && !isLocalHost(value)) return normalizeUrl(value);
+  if (candidate?.trim()) return celeYouProductionOrigin(candidate);
   return getCeleYouShareOrigin();
 }
 

@@ -7,7 +7,7 @@ import {
   getDemoCardBySlug,
   isDemoCardSlug,
 } from "@/lib/digital-business-card/demo-card";
-import { toGuestPublicPayload } from "@/lib/digital-business-card/access";
+import { resolveCeleYouPublicShare, toGuestPublicPayload } from "@/lib/digital-business-card/access";
 import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
 import {
   buildCeleCardShareMetadata,
@@ -16,7 +16,6 @@ import {
   digitalCardOgImagePath,
   withheldCeleCardMetadata,
 } from "@/lib/digital-business-card/share";
-import { celeCardPublicPresentation } from "@/lib/digital-business-card/lifecycle";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { recordCeleCardLifecycleEvent } from "@/services/digital-business-card/digital-business-card.service";
 import { celeYouGuestOrigin, getServerAppUrl } from "@/lib/app-url";
@@ -47,7 +46,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const card = await getDigitalCardBySlug(slug);
   if (!card || card.deletedAt) return withheldCeleCardMetadata();
   const policy = await getCeleCardLifecyclePolicy();
-  const presentation = celeCardPublicPresentation(card, new Date(), policy);
+  const presentation = resolveCeleYouPublicShare({ card, channel: "profile", policy }).presentation;
   if (presentation === "live") {
     return buildCeleCardShareMetadata({
       card,
@@ -81,7 +80,7 @@ export default async function DigitalBusinessCardPage({
   if (!card || card.deletedAt) notFound();
 
   const policy = await getCeleCardLifecyclePolicy();
-  const presentation = celeCardPublicPresentation(card, new Date(), policy);
+  const presentation = resolveCeleYouPublicShare({ card, channel: "profile", policy }).presentation;
   if (presentation === "live") {
     void incrementDigitalCardView(card.id).catch(() => undefined);
   } else if (presentation === "courtesy") {

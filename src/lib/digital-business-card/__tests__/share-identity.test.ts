@@ -6,9 +6,11 @@ import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
 import {
   celeYouAbsoluteGuestPayload,
   celeYouCameraScanUrl,
+  celeYouNfcScanUrl,
   celeYouScanLandingUrl,
   celeYouShareIdentity,
   isCeleYouCameraScanUrl,
+  isCeleYouProductionGuestUrl,
   isReservedCeleYouShareToken,
   shareIdentityArtifactsAreUnique,
 } from "@/lib/digital-business-card/share-identity";
@@ -95,6 +97,25 @@ describe("CeleYou unique share identity", () => {
       `${DEFAULT_PRODUCTION_URL}/c/cmqr_kojo_live`
     );
     assert.equal(celeYouCameraScanUrl(""), "");
+  });
+
+  it("never encodes private, preview, or http origins into QR and NFC guest URLs", () => {
+    const qr = celeYouCameraScanUrl("cmqr_live", "http://192.168.0.12:3000");
+    const nfc = celeYouNfcScanUrl("cmnfc_live", "https://celeyou-preview.vercel.app");
+    assert.equal(qr, `${DEFAULT_PRODUCTION_URL}/c/cmqr_live`);
+    assert.equal(nfc, `${DEFAULT_PRODUCTION_URL}/n/cmnfc_live`);
+    assert.equal(isCeleYouProductionGuestUrl(qr), true);
+    assert.equal(isCeleYouProductionGuestUrl(nfc), true);
+    assert.equal(
+      celeYouScanLandingUrl("kojo-mensah", "http://127.0.0.1:3000"),
+      `${DEFAULT_PRODUCTION_URL}/card/kojo-mensah`
+    );
+    assert.equal(
+      celeYouAbsoluteGuestPayload("https://evil.example/c/cmqr_live"),
+      `${DEFAULT_PRODUCTION_URL}/c/cmqr_live`
+    );
+    assert.equal(isCeleYouProductionGuestUrl("http://www.celeventic.com/c/cmqr_live"), false);
+    assert.equal(isCeleYouProductionGuestUrl(`${DEFAULT_PRODUCTION_URL}/c/cmqr_live?access=secret`), false);
   });
 
   it("gives each template look its own dummy QR bitmap", () => {

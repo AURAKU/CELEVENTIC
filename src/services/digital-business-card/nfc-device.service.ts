@@ -1,21 +1,19 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { sha256Hex } from "@/lib/crypto/sha256-hex";
-import { isCeleCardGuestShareable } from "@/lib/digital-business-card/lifecycle";
+import { resolveCeleYouPublicShare } from "@/lib/digital-business-card/access";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import {
   nfcDeviceMayPause,
   nfcDeviceMayReplace,
   nfcDeviceMayReportLost,
   nfcDeviceMayResume,
-  nfcTapOutcome,
   normalizeNfcDeviceStatus,
   pickCurrentNfcDevice,
   type NfcDeviceAction,
   type NfcTapOutcome,
 } from "@/lib/digital-business-card/nfc-device";
-import { isReservedCeleYouShareToken } from "@/lib/digital-business-card/share-identity";
-import { smartCardNfcUrl } from "@/lib/digital-business-card/product";
+import { celeYouNfcScanUrl, isReservedCeleYouShareToken } from "@/lib/digital-business-card/share-identity";
 import {
   ensureDefaultNfcDevice,
   getDigitalCardForUser,
@@ -49,7 +47,7 @@ function toOwnerDevice(
     deviceType: device.deviceType,
     status: normalizeNfcDeviceStatus(device.status) ?? "DISABLED",
     publicToken: device.publicToken,
-    nfcUrl: smartCardNfcUrl(device.publicToken, origin),
+    nfcUrl: celeYouNfcScanUrl(device.publicToken, origin),
     tapCount: device.tapCount,
     lastTapAt: device.lastTapAt?.toISOString() ?? null,
     createdAt: device.createdAt.toISOString(),
@@ -64,11 +62,13 @@ export async function resolveNfcDeviceTap(publicToken: string): Promise<NfcTapRe
   if (!device?.card) return { outcome: "unknown" };
 
   const policy = await getCeleCardLifecyclePolicy();
-  const outcome = nfcTapOutcome({
-    deviceStatus: device.status,
-    nfcEnabled: device.card.nfcEnabled,
-    guestShareable: isCeleCardGuestShareable(device.card, new Date(), policy),
+  const share = resolveCeleYouPublicShare({
+    card: device.card,
+    channel: "nfc",
+    nfc: { deviceStatus: device.status },
+    policy,
   });
+  const outcome = share.nfcOutcome ?? "unknown";
 
   if (outcome === "open") {
     await prisma.smartCardNfcDevice.update({

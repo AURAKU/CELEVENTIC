@@ -7,7 +7,7 @@ import {
   getDemoCardBySlug,
   isDemoCardSlug,
 } from "@/lib/digital-business-card/demo-card";
-import { toGuestPublicPayload } from "@/lib/digital-business-card/access";
+import { resolveCeleYouPublicShare, toGuestPublicPayload } from "@/lib/digital-business-card/access";
 import { getSession } from "@/lib/auth";
 import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
 import {
@@ -17,7 +17,6 @@ import {
   digitalCardOgImagePath,
   withheldCeleCardMetadata,
 } from "@/lib/digital-business-card/share";
-import { celeCardPublicPresentation } from "@/lib/digital-business-card/lifecycle";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
@@ -50,7 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const card = await getDigitalCardBySlug(slug);
   if (!card || card.deletedAt) return withheldCeleCardMetadata();
   const policy = await getCeleCardLifecyclePolicy();
-  const presentation = celeCardPublicPresentation(card, new Date(), policy);
+  const presentation = resolveCeleYouPublicShare({ card, channel: "profile", policy }).presentation;
   if (presentation !== "live") {
     return presentation === "courtesy"
       ? courtesyCeleCardMetadata(card.displayName)

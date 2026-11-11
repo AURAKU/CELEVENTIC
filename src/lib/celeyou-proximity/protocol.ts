@@ -9,7 +9,19 @@ export const CELEYOU_BLE_HANDSHAKE_CHAR_UUID = "a1c3ce12-7e10-4c0e-9e10-ce1e70c0
 export const CELEYOU_BLE_LOCAL_NAME = "CeleYou";
 export const CELEYOU_PROTOCOL_VERSION = 1 as const;
 
+/**
+ * Apple Core Bluetooth foreground advertising budget for local name + service UUIDs.
+ * Join codes and discovery ids do not fit. They move over GATT after connect.
+ * Source: Apple “Best Practices for Setting Up Your Local Device as a Peripheral”.
+ */
+export const CELEYOU_BLE_IOS_FOREGROUND_ADV_BYTES = 28;
+
 export type ProximityTransport = "qr" | "code" | "ble" | "nfc-card";
+
+/** Broadcast on BLE. UUID only. Never account ids, join codes, or profile URLs. */
+export type ProximityBleAdvertisement = {
+  serviceUuid: typeof CELEYOU_BLE_SERVICE_UUID;
+};
 
 export type ProximityBleHello = {
   v: typeof CELEYOU_PROTOCOL_VERSION;
@@ -51,4 +63,20 @@ export function encodeProximityBleMessage(message: ProximityBleMessage): string 
 export function isSafeBlePayload(message: ProximityBleMessage): boolean {
   const blob = encodeProximityBleMessage(message);
   return !/"userId"|"email"|"phone"|"password"|"refreshToken"|"accessToken"/i.test(blob);
+}
+
+export function encodeProximityBleAdvertisement(): ProximityBleAdvertisement {
+  return { serviceUuid: CELEYOU_BLE_SERVICE_UUID };
+}
+
+export function advertisementIsServiceUuidOnly(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return Object.keys(record).length === 1 && record.serviceUuid === CELEYOU_BLE_SERVICE_UUID;
+}
+
+/** GATT hello after connect. Must not be stuffed into an iOS advertisement packet. */
+export function helloBelongsOnGattCharacteristic(message: ProximityBleHello): boolean {
+  const encoded = encodeProximityBleMessage(message);
+  return encoded.length > CELEYOU_BLE_IOS_FOREGROUND_ADV_BYTES && isSafeBlePayload(message);
 }

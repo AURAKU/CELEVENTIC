@@ -1,6 +1,8 @@
 export {
   TAP_TO_CONNECT_CTA,
   TAP_TO_CONNECT_NAME,
+  TAP_TO_CONNECT_NATIVE_REQUIREMENT,
+  TAP_TO_CONNECT_SUPPORT,
   TAP_TO_CONNECT_TAGLINE,
   TAP_TO_OPEN_NAME,
   TAP_DISCOVERY_TIMEOUT_MS,
@@ -21,16 +23,27 @@ export {
 } from "@/lib/celeyou-proximity/capabilities";
 export {
   CELEYOU_BLE_HANDSHAKE_CHAR_UUID,
+  CELEYOU_BLE_IOS_FOREGROUND_ADV_BYTES,
   CELEYOU_BLE_LOCAL_NAME,
   CELEYOU_BLE_SERVICE_UUID,
   CELEYOU_BLE_SESSION_CHAR_UUID,
   CELEYOU_PROTOCOL_VERSION,
+  advertisementIsServiceUuidOnly,
+  encodeProximityBleAdvertisement,
   encodeProximityBleMessage,
+  helloBelongsOnGattCharacteristic,
   isSafeBlePayload,
   parseProximityBleMessage,
+  type ProximityBleAdvertisement,
   type ProximityBleMessage,
   type ProximityTransport,
 } from "@/lib/celeyou-proximity/protocol";
+export { CeleYouProximityEngine, rssiIsPhysicalTouchProof } from "@/lib/celeyou-proximity/native-engine";
+export {
+  NATIVE_CONNECTION_LIFECYCLE,
+  backendStatusToNativeLifecycle,
+  nativeLifecycleAllowsConnectedCopy,
+} from "@/lib/celeyou-proximity/native-lifecycle";
 export {
   PROXIMITY_FAILURE_STATUSES,
   PROXIMITY_STATUSES,

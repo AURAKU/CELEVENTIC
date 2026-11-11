@@ -23,6 +23,7 @@ import {
 import type { ProximityTransport } from "@/lib/celeyou-proximity/protocol";
 import { digitalCardPublicUrl } from "@/lib/digital-business-card/types";
 import { digitalCardVcardPath } from "@/lib/digital-business-card/vcard";
+import { celeYouShareGuestMessage, resolveCeleYouPublicShare } from "@/lib/digital-business-card/access";
 
 export type ProximityPeerPreview = {
   displayName: string;
@@ -108,18 +109,18 @@ async function loadCardForUser(userId: string, cardId: string) {
 }
 
 function assertShareable(card: {
+  isPublished: boolean;
+  subscriptionStatus: string;
+  subscriptionExpiresAt: Date | null;
   adminSuspendedAt?: Date | null;
+  adminDeactivatedAt?: Date | null;
   deletedAt?: Date | null;
+  lastActivatedAt?: Date | null;
   proximityDiscoverable?: boolean | null;
 }) {
-  if (card.proximityDiscoverable === false) {
-    throw new Error("Tap-to-Connect is turned off on this CeleYou.");
-  }
-  if (card.deletedAt) {
-    throw new Error("This CeleYou is no longer available.");
-  }
-  if (card.adminSuspendedAt) {
-    throw new Error("This CeleYou cannot be shared right now.");
+  const share = resolveCeleYouPublicShare({ card, channel: "tap" });
+  if (!share.channelAllowed) {
+    throw new Error(celeYouShareGuestMessage(share.reason));
   }
 }
 
