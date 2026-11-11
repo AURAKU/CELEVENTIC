@@ -124,8 +124,14 @@ export function SocialPlaceCardMarkup({
   const lockup = unavailable ? null : coupleLockup(displayTitle);
   const accent = readableAccent(palette.gold);
   const showPhoto = Boolean(heroSrc) && !unavailable;
-  const dates =
-    !unavailable && (dateLines?.filter(Boolean).length ? dateLines.filter(Boolean) : dateLabel ? [dateLabel] : []);
+  const datedLines = (dateLines ?? []).map((line) => line.trim()).filter(Boolean);
+  const dates: string[] = unavailable
+    ? []
+    : datedLines.length
+      ? datedLines
+      : dateLabel?.trim()
+        ? [dateLabel.trim()]
+        : [];
   const size = unavailable
     ? 40
     : lockup

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notificationService } from "@/services/notifications/notification.service";
 import {
@@ -82,24 +83,27 @@ async function securityEvent(input: {
         sessionId: input.sessionId || null,
         userId: input.userId || null,
         kind: input.kind,
-        meta: input.meta ?? {},
+        meta: (input.meta ?? {}) as Prisma.InputJsonValue,
         ip: input.ip || null,
       },
     })
     .catch(() => undefined);
 }
 
-async function expireIfNeeded(session: { id: string; status: string; expiresAt: Date }) {
+async function expireIfNeeded<T extends { id: string; status: string; expiresAt: Date }>(
+  session: T
+): Promise<T> {
   if (!isProximityStatus(session.status)) return session;
   if (session.expiresAt.getTime() > Date.now()) return session;
   if (session.status === "COMPLETED" || session.status === "EXPIRED") return session;
   if (!canTransitionProximity(session.status, "EXPIRED") && session.status !== "APPROVED") {
     return session;
   }
-  return prisma.celeYouProximitySession.update({
+  await prisma.celeYouProximitySession.update({
     where: { id: session.id },
     data: { status: "EXPIRED" },
   });
+  return { ...session, status: "EXPIRED" };
 }
 
 async function loadCardForUser(userId: string, cardId: string) {

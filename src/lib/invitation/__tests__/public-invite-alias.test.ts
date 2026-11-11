@@ -84,8 +84,8 @@ describe("public invite alias", () => {
       "utf8"
     );
     assert.match(source, /styles\.sealWord\}>Open</);
-    assert.match(css, /\.sealWord \{[^}]*white-space:\s*nowrap/s);
-    assert.match(css, /\.widePortrait \.sealWord \{[^}]*white-space:\s*nowrap/s);
+    assert.match(css, /\.sealWord \{[^}]*white-space:\s*nowrap/);
+    assert.match(css, /\.widePortrait \.sealWord \{[^}]*white-space:\s*nowrap/);
   });
 
   it("fills the tap-to-begin portrait across the screen with no letterbox", () => {

@@ -23,7 +23,7 @@ describe("CeleYou admin permissions", () => {
     assert.equal(canPerformCeleCardAction({ role: "ADMIN" }, "complimentary"), true);
     assert.equal(canPerformCeleCardAction({ role: "SUPER_ADMIN" }, "complimentary"), true);
     assert.equal(canGrantComplimentary({ role: "ORGANIZER" }), false);
-    assert.equal(canGrantComplimentary({ role: "USER" }), false);
+    assert.equal(canGrantComplimentary({ role: "GUEST" }), false);
   });
 
   it("reserves price changes for super admins", () => {
