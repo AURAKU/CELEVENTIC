@@ -1,19 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
-import { cinzel, cormorant, playfair } from "@/lib/invitation-fonts";
+import { cinzel, cormorant, playfair, poppins } from "@/lib/invitation-fonts";
 import { Providers } from "@/components/providers";
 import { APP_NAME, APP_TAGLINE, BRAND, BRAND_MOTTO } from "@/lib/constants";
 import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
 import { INSPECTOR_ATTR_GUARD_SCRIPT } from "@/lib/dev/inspector-attr-guard";
 import { getSafeServerI18nState } from "@/lib/i18n/server-locale";
 import "./globals.css";
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(DEFAULT_PRODUCTION_URL),

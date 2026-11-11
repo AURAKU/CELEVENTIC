@@ -138,6 +138,7 @@ log "Edwin design step finished (missing original invite is a skip, not a rollba
 
 log "Building Next.js (previous .next already backed up)"
 rm -rf .next
+export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
 export CELEVENTIC_BUILD_COMMIT="$NEW_COMMIT"
 export CELEVENTIC_BUILD_BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 # Bake commit into the server bundle so a stale PM2/.env SHA cannot win.
