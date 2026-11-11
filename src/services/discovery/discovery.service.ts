@@ -34,7 +34,7 @@ export class DiscoveryService {
   async discover(filters: DiscoveryFilters): Promise<PaginatedResult<PublicDiscoverEvent>> {
     const { page, limit, skip } = parsePaginationInput(filters, { limit: PUBLIC_GRID_LIMIT });
 
-    const cacheKey = `discovery:v4:${JSON.stringify({ ...filters, page, limit })}`;
+    const cacheKey = `discovery:v5:${JSON.stringify({ ...filters, page, limit })}`;
     const cached = await cacheGet<PaginatedResult<PublicDiscoverEvent>>(cacheKey);
     if (cached) return cached;
 

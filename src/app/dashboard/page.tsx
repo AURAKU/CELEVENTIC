@@ -60,9 +60,9 @@ export default async function DashboardPage() {
   }
 }
 
-/** Home Recent Events: owner + collaborators. Full catalog is /admin/events only. */
+/** Home Recent Events: owner + collaborators, with Kojo and Edwin pinned first. */
 async function loadRecentEvents(userId: string): Promise<RecentEventSummary[]> {
-  const result = await eventService.getOrganizerEvents(userId, 1, 5);
+  const result = await eventService.getOrganizerEvents(userId, 1, 8);
   return result.items.map((e) => ({
     id: e.id,
     title: e.title,

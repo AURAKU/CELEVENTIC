@@ -2,6 +2,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/utils";
 import { eventService } from "@/services/events/event.service";
+import { mergeShowcaseEvents, showcaseTitleList } from "@/lib/events/showcase-events";
 import type { EventStatus, Prisma, UserRole, UserStatus } from "@prisma/client";
 
 export class AdminService {
@@ -331,17 +332,49 @@ export class AdminService {
         : {}),
     };
 
+    const include = {
+      organizer: { select: { id: true, name: true, email: true } },
+      package: { select: { name: true } },
+      _count: { select: { guests: true, tickets: true } },
+    } as const;
+    const showcaseTitles = showcaseTitleList();
+    const pinShowcase = page === 1 && !search;
+
+    if (pinShowcase) {
+      const restWhere: Prisma.EventWhereInput = {
+        AND: [where, { title: { notIn: showcaseTitles } }],
+      };
+      const [showcase, rest, total] = await Promise.all([
+        prisma.event.findMany({
+          where: { AND: [where, { title: { in: showcaseTitles } }] },
+          include,
+        }),
+        prisma.event.findMany({
+          where: restWhere,
+          take: Math.max(limit - showcaseTitles.length, 1),
+          orderBy: { createdAt: "desc" },
+          include,
+        }),
+        prisma.event.count({ where }),
+      ]);
+      return { events: mergeShowcaseEvents(showcase, rest, limit), total, page, limit };
+    }
+
+    const showcaseCount = await prisma.event.count({
+      where: { AND: [where, { title: { in: showcaseTitles } }] },
+    });
+    const skip = Math.max((page - 1) * limit - (search ? 0 : showcaseCount), 0);
+    const listWhere: Prisma.EventWhereInput = search
+      ? where
+      : { AND: [where, { title: { notIn: showcaseTitles } }] };
+
     const [events, total] = await Promise.all([
       prisma.event.findMany({
-        where,
-        skip: (page - 1) * limit,
+        where: listWhere,
+        skip,
         take: limit,
         orderBy: { createdAt: "desc" },
-        include: {
-          organizer: { select: { id: true, name: true, email: true } },
-          package: { select: { name: true } },
-          _count: { select: { guests: true, tickets: true } },
-        },
+        include,
       }),
       prisma.event.count({ where }),
     ]);

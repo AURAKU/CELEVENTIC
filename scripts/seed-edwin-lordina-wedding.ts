@@ -6,8 +6,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { InvitationDesignConfig } from "../src/types/invitation-design";
-import { mayCreateReplacementEdwinWedding } from "../src/lib/invitation/edwin-published-design";
-import { EDWIN_PUBLISHED_INVITE_LINK } from "../src/lib/invitation/public-invite-alias";
+import { inviteLinkIdentityKeys } from "../src/lib/invitation/public-invite-alias";
 
 const EVENT_SLUG = "edwin-and-lordina";
 const INVITE_LINK = "edwin-and-lordina";
@@ -180,69 +179,67 @@ export async function seedEdwinLordinaWedding(
   const description =
     "Together with their families, Edwin and Lordina invite you to celebrate a love written by God. Traditional 24 December, white wedding and reception 26 December 2026.";
 
-  const existingInvite = await prisma.invitation.findFirst({
-    where: { uniqueLink: { in: [EDWIN_PUBLISHED_INVITE_LINK, INVITE_LINK] } },
-    select: { id: true },
-  });
-  const existingEvent = await prisma.event.findUnique({
-    where: { slug: EVENT_SLUG },
-    select: { id: true },
-  });
-  if (!existingInvite && !existingEvent && !mayCreateReplacementEdwinWedding()) {
-    return {
-      skipped: true,
-      reason: "original Edwin invitation is missing; will not create a replacement event",
-    };
-  }
+  const listingFlags = {
+    title,
+    hostName: title,
+    description,
+    startDate,
+    endDate,
+    coverImageUrl: HERO,
+    qrCenterImageUrl: HERO,
+    qrLogoSize: "bold" as const,
+    city: "Tema",
+    region: "Greater Accra",
+    country: "GH",
+    isPublic: true,
+    isFeatured: true,
+    status: "PUBLISHED" as const,
+    organizerId: organizer.id,
+    defaultMusicTrackId: songTrack.id,
+  };
 
-  const event = await prisma.event.upsert({
+  const existingBySlug = await prisma.event.findUnique({
     where: { slug: EVENT_SLUG },
-    create: {
-      slug: EVENT_SLUG,
-      title,
-      eventType: "WEDDING",
-      hostName: title,
-      description,
-      startDate,
-      endDate,
-      venueName: "Assemblies of God Tema Community 12 TCC",
-      landmark: "Tema Community 12",
-      mapsLink:
-        "https://www.google.com/maps/place/Assemblies+of+God+Ghana+Tema+Christian+Centre/@5.670683,-0.03132,17z",
-      contactPhone: "+233243942142",
-      dressCode: "Ivory, champagne gold, and navy blue",
-      coverImageUrl: HERO,
-      qrCenterImageUrl: HERO,
-      qrLogoSize: "bold",
-      city: "Tema",
-      region: "Greater Accra",
-      country: "GH",
-      isPublic: true,
-      status: "PUBLISHED",
-      organizerId: organizer.id,
-      pricingType: "FREE",
-      defaultMusicTrackId: songTrack.id,
-    },
-    update: {
-      title,
-      hostName: title,
-      description,
-      startDate,
-      endDate,
-      coverImageUrl: HERO,
-      qrCenterImageUrl: HERO,
-      qrLogoSize: "bold",
-      isPublic: true,
-      status: "PUBLISHED",
-      organizerId: organizer.id,
-      defaultMusicTrackId: songTrack.id,
-    },
+    select: { id: true, slug: true },
   });
+  const existingByTitle = await prisma.event.findFirst({
+    where: { title: EVENT_TITLE },
+    select: { id: true, slug: true },
+  });
+  const existingByInvite = await prisma.invitation.findFirst({
+    where: { uniqueLink: { in: inviteLinkIdentityKeys(INVITE_LINK) } },
+    select: { event: { select: { id: true, slug: true } } },
+  });
+  const listing = existingBySlug ?? existingByTitle ?? existingByInvite?.event ?? null;
+
+  const event = listing
+    ? await prisma.event.update({
+        where: { id: listing.id },
+        data: listingFlags,
+      })
+    : await prisma.event.create({
+        data: {
+          slug: EVENT_SLUG,
+          eventType: "WEDDING",
+          venueName: "Assemblies of God Tema Community 12 TCC",
+          landmark: "Tema Community 12",
+          mapsLink:
+            "https://www.google.com/maps/place/Assemblies+of+God+Ghana+Tema+Christian+Centre/@5.670683,-0.03132,17z",
+          contactPhone: "+233243942142",
+          dressCode: "Ivory, champagne gold, and navy blue",
+          pricingType: "FREE",
+          ...listingFlags,
+        },
+      });
 
   const existing = await prisma.invitation.findFirst({
     where: { eventId: event.id },
     orderBy: { createdAt: "asc" },
   });
+
+  const uniqueLink = existing?.uniqueLink && inviteLinkIdentityKeys(INVITE_LINK).includes(existing.uniqueLink)
+    ? existing.uniqueLink
+    : INVITE_LINK;
 
   const invitation = existing
     ? await prisma.invitation.update({
@@ -252,7 +249,7 @@ export async function seedEdwinLordinaWedding(
           message: description,
           designConfig: designConfig as unknown as Prisma.InputJsonValue,
           status: "ACTIVE",
-          uniqueLink: INVITE_LINK,
+          uniqueLink,
         },
       })
     : await prisma.invitation.create({
@@ -262,7 +259,7 @@ export async function seedEdwinLordinaWedding(
           slug: EVENT_SLUG,
           message: description,
           designConfig: designConfig as unknown as Prisma.InputJsonValue,
-          uniqueLink: INVITE_LINK,
+          uniqueLink,
           status: "ACTIVE",
         },
       });

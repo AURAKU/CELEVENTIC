@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { slugify, generateToken } from "@/lib/utils";
 import { paginatedResult } from "@/lib/pagination";
 import { eventAccessWhere, eventListWhere } from "@/lib/workspace/event-access";
+import { mergeShowcaseEvents, showcaseTitleList } from "@/lib/events/showcase-events";
 import { getTemplateCategoriesForEventType } from "@/lib/blueprints";
 import type { EventType, EventStatus, PricingType } from "@prisma/client";
 
@@ -221,16 +222,38 @@ export class EventService {
   }
 
   async getOrganizerEvents(userId: string, page = 1, limit = 12) {
-    const skip = (page - 1) * limit;
     const where = eventListWhere(userId);
+    const showcaseTitles = showcaseTitleList();
+    const include = {
+      package: true,
+      _count: { select: { guests: true, tickets: true, invitations: true, collaborators: true } },
+    } as const;
 
+    if (page === 1) {
+      const [showcase, rest, total] = await Promise.all([
+        prisma.event.findMany({
+          where: { AND: [where, { title: { in: showcaseTitles } }] },
+          include,
+        }),
+        prisma.event.findMany({
+          where: { AND: [where, { title: { notIn: showcaseTitles } }] },
+          include,
+          orderBy: { createdAt: "desc" },
+          take: Math.max(limit - showcaseTitles.length, 1),
+        }),
+        prisma.event.count({ where }),
+      ]);
+      return paginatedResult(mergeShowcaseEvents(showcase, rest, limit), total, page, limit);
+    }
+
+    const showcaseCount = await prisma.event.count({
+      where: { AND: [where, { title: { in: showcaseTitles } }] },
+    });
+    const skip = Math.max((page - 1) * limit - showcaseCount, 0);
     const [events, total] = await Promise.all([
       prisma.event.findMany({
-        where,
-        include: {
-          package: true,
-          _count: { select: { guests: true, tickets: true, invitations: true, collaborators: true } },
-        },
+        where: { AND: [where, { title: { notIn: showcaseTitles } }] },
+        include,
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,

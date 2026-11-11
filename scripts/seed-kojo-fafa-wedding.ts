@@ -142,7 +142,11 @@ async function main() {
           coverImageUrl,
           qrCenterImageUrl: coverImageUrl,
           qrLogoSize: "bold",
+          city: "Accra",
+          region: "Greater Accra",
+          country: "GH",
           isPublic: true,
+          isFeatured: true,
           status: "PUBLISHED",
           organizerId: organizer.id,
           pricingType: "FREE",
@@ -170,6 +174,10 @@ async function main() {
         qrLogoSize: "bold",
         status: "PUBLISHED",
         isPublic: true,
+        isFeatured: true,
+        city: "Accra",
+        region: "Greater Accra",
+        country: "GH",
         startDate,
       },
     });
@@ -186,6 +194,21 @@ async function main() {
       });
     }
   }
+
+  await prisma.event.update({
+    where: { id: event.id },
+    data: {
+      title,
+      hostName,
+      status: "PUBLISHED",
+      isPublic: true,
+      isFeatured: true,
+      city: "Accra",
+      region: "Greater Accra",
+      country: "GH",
+      organizerId: organizer.id,
+    },
+  });
 
   const template = await prisma.eventTemplate.findFirst({
     where: { slug: LAYOUT_SLUG },
