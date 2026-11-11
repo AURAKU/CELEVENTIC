@@ -43,7 +43,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
     channel: "profile",
     policy: await getCeleCardLifecyclePolicy(),
   });
-  if (!share.guestShareable) {
+  if (!card || !share.guestShareable) {
     return new NextResponse(null, { status: 204 });
   }
 

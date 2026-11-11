@@ -51,7 +51,7 @@ export async function GET(
   if (!isDemoCardSlug(slug)) {
     const live = await getDigitalCardBySlug(slug);
     const policy = await getCeleCardLifecyclePolicy();
-    if (resolveCeleYouPublicShare({ card: live, channel: "vcard", policy }).recordOpen) {
+    if (live && resolveCeleYouPublicShare({ card: live, channel: "vcard", policy }).recordOpen) {
       void recordSmartCardInteraction(live.id, "vcard_save", { surface: "vcf" }).catch(() => undefined);
     }
   }
