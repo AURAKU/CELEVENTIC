@@ -132,8 +132,9 @@ npx prisma migrate status
 
 log "Seeding Kojo & Fafa"
 npx tsx scripts/seed-kojo-fafa-wedding.ts
-log "Applying the published Edwin & Lordina design and Biblical track"
+log "Applying the published Edwin & Lordina design if that invitation exists"
 npx tsx scripts/apply-edwin-live-design.ts
+log "Edwin design step finished (missing original invite is a skip, not a rollback)"
 
 log "Building Next.js (previous .next already backed up)"
 rm -rf .next

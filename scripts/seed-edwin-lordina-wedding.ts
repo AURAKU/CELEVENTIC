@@ -6,6 +6,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { InvitationDesignConfig } from "../src/types/invitation-design";
+import { mayCreateReplacementEdwinWedding } from "../src/lib/invitation/edwin-published-design";
+import { EDWIN_PUBLISHED_INVITE_LINK } from "../src/lib/invitation/public-invite-alias";
 
 const EVENT_SLUG = "edwin-and-lordina";
 const INVITE_LINK = "edwin-and-lordina";
@@ -177,6 +179,21 @@ export async function seedEdwinLordinaWedding(
   }
   const description =
     "Together with their families, Edwin and Lordina invite you to celebrate a love written by God. Traditional 24 December, white wedding and reception 26 December 2026.";
+
+  const existingInvite = await prisma.invitation.findFirst({
+    where: { uniqueLink: { in: [EDWIN_PUBLISHED_INVITE_LINK, INVITE_LINK] } },
+    select: { id: true },
+  });
+  const existingEvent = await prisma.event.findUnique({
+    where: { slug: EVENT_SLUG },
+    select: { id: true },
+  });
+  if (!existingInvite && !existingEvent && !mayCreateReplacementEdwinWedding()) {
+    return {
+      skipped: true,
+      reason: "original Edwin invitation is missing; will not create a replacement event",
+    };
+  }
 
   const event = await prisma.event.upsert({
     where: { slug: EVENT_SLUG },

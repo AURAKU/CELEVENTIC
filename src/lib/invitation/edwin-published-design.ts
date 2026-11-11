@@ -220,6 +220,18 @@ function edwinCompanionReady(invitation: {
   );
 }
 
+export function isMissingEdwinInvitationError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.startsWith("No invitation with unique link ");
+}
+
+/** Local/dev only. Production deploy must not invent a replacement Edwin wedding. */
+export function mayCreateReplacementEdwinWedding(
+  createFlag = process.env.CELEVENTIC_SEED_CREATE_EDWIN
+): boolean {
+  return createFlag === "1";
+}
+
 async function writeEdwinPublishedDesign(
   uniqueLink: string,
   client: PrismaClient

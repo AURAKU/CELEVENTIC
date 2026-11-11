@@ -7,7 +7,9 @@ import {
   edwinDesignIsCurrent,
   edwinMusicSelection,
   edwinPublishedContentIsCurrent,
+  isMissingEdwinInvitationError,
   loadEdwinPublishedDesign,
+  mayCreateReplacementEdwinWedding,
 } from "@/lib/invitation/edwin-published-design";
 import {
   EDWIN_PUBLIC_INVITE_PATH,
@@ -97,6 +99,16 @@ describe("public invite alias", () => {
       assert.match(block, /object-fit:\s*cover/);
       assert.doesNotMatch(block, /object-fit:\s*contain/);
     }
+  });
+
+  it("lets a deploy skip when the original Edwin invitation is missing", () => {
+    assert.equal(
+      isMissingEdwinInvitationError(new Error(`No invitation with unique link ${EDWIN_PUBLISHED_INVITE_LINK}`)),
+      true
+    );
+    assert.equal(isMissingEdwinInvitationError(new Error("Refusing to update")), false);
+    assert.equal(mayCreateReplacementEdwinWedding(undefined), false);
+    assert.equal(mayCreateReplacementEdwinWedding("1"), true);
   });
 
   it("replaces an older Edwin board that is missing the published maps and guest note", () => {
