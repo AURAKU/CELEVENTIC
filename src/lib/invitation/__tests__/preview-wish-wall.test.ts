@@ -63,5 +63,5 @@ test("wish id route requires an organizer or admin before mutating preview wishe
   const route = readFileSync("src/app/api/invite/wishes/[id]/route.ts", "utf8");
   assert.match(route, /isPreviewWishId/);
   assert.match(route, /roleCanModerateWishes/);
-  assert.match(route, /only the event organizer or a platform admin/);
+  assert.match(route, /only the event organizer or a platform admin/i);
 });

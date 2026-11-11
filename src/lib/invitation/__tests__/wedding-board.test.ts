@@ -147,13 +147,13 @@ describe("mergeWeddingBoard", () => {
 
   it("strips em dashes from published guest prose so copy never shows. Between phrases", () => {
     assert.equal(
-      withoutPhraseDashes("a joyful yes. We can't wait"),
+      withoutPhraseDashes("a joyful yes — we can't wait"),
       "a joyful yes, we can't wait"
     );
     assert.equal(
       mergeWeddingBoard({
         storyBody:
-          "From a first hello to this joyful yes. We can't wait to celebrate.",
+          "From a first hello to this joyful yes — we can't wait to celebrate.",
       }).storyBody,
       "From a first hello to this joyful yes, we can't wait to celebrate."
     );
