@@ -82,6 +82,15 @@ describe("digital business card themes", () => {
     }
   });
 
+  it("puts the official CeleYou lockup on the landing feature plate", () => {
+    const source = readFileSync(join(process.cwd(), "src/components/landing/celeyou-feature-tile.tsx"), "utf8");
+    const css = readFileSync(join(process.cwd(), "src/components/landing/celeyou-feature-tile.module.css"), "utf8");
+    assert.match(source, /CELEYOU_LOCKUP_SRC/);
+    assert.match(source, /CeleYouFeatureTile/);
+    assert.match(css, /object-fit: contain/);
+    assert.doesNotMatch(css, /object-fit:\s*cover/);
+  });
+
   it("ships the official CeleYou mark and lockup line", () => {
     assert.equal(SMARTCARD_PRODUCT_SHORT_NAME, "CeleYou");
     assert.equal(SMARTCARD_BRAND_TAGLINE, "One Identity. Infinite Connections.");

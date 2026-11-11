@@ -6,6 +6,7 @@ import {
   inferVideoSourceMime,
   withMediaVersion,
   isUploadedMediaUrl,
+  shouldUnoptimizeNextImage,
 } from "../media-url";
 
 describe("resolvePublicMediaUrl", () => {
@@ -61,6 +62,13 @@ describe("inferVideoSourceMime", () => {
 describe("withMediaVersion", () => {
   it("appends v= without breaking paths", () => {
     assert.equal(withMediaVersion("/uploads/a.mp4", 3), "/uploads/a.mp4?v=3");
+  });
+});
+
+describe("shouldUnoptimizeNextImage", () => {
+  it("never sends CeleYou brand files through the optimizer", () => {
+    assert.equal(shouldUnoptimizeNextImage("/digital-cards/brands/celeyou-mark.png"), true);
+    assert.equal(shouldUnoptimizeNextImage("/brand/logo-mark.png"), true);
   });
 });
 

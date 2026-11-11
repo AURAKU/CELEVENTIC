@@ -58,12 +58,7 @@ export function buildPersonalInvitationShareBody(params: {
   admissionCode?: string | null;
 }): string {
   const guest = params.guestName.replace(/\s+/g, " ").trim();
-  const lines = [`Dear ${guest},`, "", "You are personally invited."];
-  const code = params.admissionCode?.replace(/\s+/g, " ").trim();
-  if (code) {
-    lines.push("", `Your admission code: ${code}`);
-  }
-  return lines.join("\n");
+  return [`Dear ${guest},`, "", "You are personally invited."].join("\n");
 }
 
 /**
@@ -78,18 +73,14 @@ export function buildInvitationShareLetter(params: {
 }): string {
   const guest = params.guestName.replace(/\s+/g, " ").trim();
   if (params.memorial) {
-    const lines = [
+    return [
       `Dear ${guest},`,
       "",
       `Please join us as we honour and remember ${params.title.trim()}.`,
-    ];
-    const code = params.admissionCode?.replace(/\s+/g, " ").trim();
-    if (code) lines.push("", `Your admission code: ${code}`);
-    return lines.join("\n");
+    ].join("\n");
   }
   return buildPersonalInvitationShareBody({
     guestName: guest,
-    admissionCode: params.admissionCode,
   });
 }
 
@@ -103,7 +94,6 @@ export function buildInviteWhatsAppText(params: {
   return ensureSingleShareUrl(
     buildPersonalInvitationShareBody({
       guestName: params.guestName,
-      admissionCode: params.admissionCode,
     }),
     url
   );

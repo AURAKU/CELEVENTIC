@@ -262,8 +262,11 @@ export function TraditionalMarriageRespond({
         ) : null}
         {entryPassNote?.trim() ? (
           <p
-            className="font-[family-name:var(--font-cormorant)] text-sm sm:text-[0.95rem] leading-relaxed max-w-[22rem] mx-auto"
-            style={{ color: PALETTE.dress }}
+            className="mx-auto max-w-[22rem] rounded-md px-3.5 py-2.5 font-[family-name:var(--font-cormorant)] text-sm font-bold leading-relaxed sm:text-[0.95rem]"
+            style={{
+              color: PALETTE.ink,
+              background: `color-mix(in srgb, ${PALETTE.mustard} 22%, ${PALETTE.peach})`,
+            }}
             data-testid="rsvp-entry-pass-note"
           >
             {entryPassNote.trim()}

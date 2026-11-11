@@ -29,7 +29,7 @@ export function FashionShareScene({
     onShare?.();
     const result = await tryNativeInviteShare(payload);
     if (result === "unavailable") {
-      const ok = await copyInviteShareLink(payload.url);
+      const ok = await copyInviteShareLink(payload);
       setCopied(ok);
     }
   }

@@ -8,16 +8,20 @@ export type SocialPlaceCardVisual = {
   theme?: SocialVisualTheme | null;
   title: string;
   dateLabel?: string | null;
+  dateLines?: string[] | null;
   phrase?: string | null;
   heroSrc?: string | null;
   unavailable?: boolean;
   unavailablePhrase?: string | null;
   kicker?: string | null;
   guestGreeting?: string | null;
+  /** `cover-top` fills a wide panel from the heads down. Default keeps the full photo. */
+  heroFit?: "contain" | "cover-top" | null;
 };
 
 const INK = "#1C1915";
 const PAPER = "#F7F3EC";
+const PHOTO_W = 420;
 
 function titleSize(title: string, personalized: boolean): number {
   if (title.length > 42) return personalized ? 34 : 38;
@@ -38,14 +42,50 @@ function readableAccent(accent: string): string {
     .reduce((hexColor, channel) => hexColor + channel, "#");
 }
 
+function firstName(value: string): string {
+  return value.trim().split(/\s+/)[0] ?? value;
+}
+
 function coupleLockup(title: string): { one: string; two: string } | null {
-  const parts = title.split(/\s+&\s+/);
+  const parts = title.split(/\s+&\s+|\s+and\s+/i);
   if (parts.length !== 2) return null;
-  const one = parts[0]?.trim() ?? "";
-  const two = parts[1]?.trim() ?? "";
+  let one = parts[0]?.trim() ?? "";
+  let two = parts[1]?.trim() ?? "";
   if (!one || !two) return null;
-  if (one.length > 16 || two.length > 16) return null;
+  const words = (value: string) => value.split(/\s+/).filter(Boolean).length;
+  if (words(one) > 3 || words(two) > 3) return null;
+  if (one.length > 16) one = firstName(one);
+  if (two.length > 16) two = firstName(two);
+  if (!one || !two) return null;
   return { one, two };
+}
+
+function brandMark(color: string) {
+  return (
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          width: 6,
+          height: 6,
+          marginRight: 12,
+          background: color,
+          transform: "rotate(45deg)",
+        }}
+      />
+      <div
+        style={{
+          display: "flex",
+          fontSize: 12,
+          letterSpacing: "0.42em",
+          color,
+          fontFamily: "Helvetica, Arial, sans-serif",
+        }}
+      >
+        CELEVENTIC
+      </div>
+    </div>
+  );
 }
 
 export function SocialPlaceCardMarkup({
@@ -53,12 +93,14 @@ export function SocialPlaceCardMarkup({
   theme,
   title,
   dateLabel,
+  dateLines,
   phrase,
   heroSrc,
   unavailable = false,
   unavailablePhrase,
   kicker,
   guestGreeting,
+  heroFit,
 }: SocialPlaceCardVisual) {
   const palette =
     theme ??
@@ -82,11 +124,207 @@ export function SocialPlaceCardMarkup({
   const lockup = unavailable ? null : coupleLockup(displayTitle);
   const accent = readableAccent(palette.gold);
   const showPhoto = Boolean(heroSrc) && !unavailable;
-  const size = unavailable ? 40 : lockup ? (showPhoto ? 52 : 64) : titleSize(displayTitle, Boolean(greeting));
-  const showPhrase = Boolean(displayPhrase) && !showPhoto;
-  const ink = showPhoto ? "#FFF8EE" : INK;
-  const quiet = showPhoto ? "rgba(255, 248, 238, 0.82)" : "rgba(28, 25, 21, 0.62)";
-  const mark = showPhoto ? "#E6D2A2" : accent;
+  const dates =
+    !unavailable && (dateLines?.filter(Boolean).length ? dateLines.filter(Boolean) : dateLabel ? [dateLabel] : []);
+  const size = unavailable
+    ? 40
+    : lockup
+      ? showPhoto
+        ? 44
+        : 64
+      : titleSize(displayTitle, Boolean(greeting));
+
+  if (showPhoto) {
+    const ink = palette.ivory;
+    const quiet = palette.muted;
+    const mark = palette.gold;
+    const coverTop = heroFit === "cover-top";
+    const photoW = coverTop ? 700 : PHOTO_W;
+    return (
+      <div
+        style={{
+          width: "1200px",
+          height: "630px",
+          display: "flex",
+          background: "#102038",
+          fontFamily: "Georgia, 'Times New Roman', serif",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            width: photoW,
+            height: 630,
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            background: "#0B1728",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={heroSrc ?? ""}
+            alt=""
+            width={photoW}
+            height={630}
+            style={{
+              width: photoW,
+              height: 630,
+              objectFit: coverTop ? "cover" : "contain",
+              objectPosition: coverTop ? "center top" : "center",
+            }}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            width: 1200 - photoW,
+            height: 630,
+            padding: "54px 58px 48px",
+            background: "linear-gradient(165deg, #102038 0%, #1B365D 52%, #16304F 100%)",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                display: "flex",
+                fontSize: 13,
+                letterSpacing: "0.42em",
+                color: mark,
+                fontFamily: "Helvetica, Arial, sans-serif",
+              }}
+            >
+              {displayKicker}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                marginTop: 14,
+                width: 42,
+                height: 1,
+                background: mark,
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {greeting ? (
+              <div
+                style={{
+                  display: "flex",
+                  color: quiet,
+                  fontSize: 24,
+                  fontStyle: "italic",
+                  lineHeight: 1.2,
+                  marginBottom: 10,
+                }}
+              >
+                {greeting}
+              </div>
+            ) : null}
+
+            {displayPhrase ? (
+              <div
+                style={{
+                  display: "flex",
+                  color: ink,
+                  fontSize: greeting ? 26 : 22,
+                  lineHeight: 1.25,
+                  marginBottom: 18,
+                  fontWeight: 600,
+                }}
+              >
+                {displayPhrase}
+              </div>
+            ) : null}
+
+            {lockup ? (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    color: ink,
+                    fontSize: size,
+                    lineHeight: 0.94,
+                    letterSpacing: "-0.03em",
+                  }}
+                >
+                  {lockup.one}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", marginTop: 4 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      color: mark,
+                      fontSize: Math.round(size * 0.62),
+                      lineHeight: 0.9,
+                      marginRight: 14,
+                    }}
+                  >
+                    &
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      color: ink,
+                      fontSize: size,
+                      lineHeight: 0.94,
+                      letterSpacing: "-0.03em",
+                    }}
+                  >
+                    {lockup.two}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  color: ink,
+                  fontSize: size,
+                  lineHeight: 1.05,
+                  letterSpacing: "-0.03em",
+                  maxWidth: 640,
+                }}
+              >
+                {displayTitle}
+              </div>
+            )}
+
+            {dates.length ? (
+              <div style={{ display: "flex", flexDirection: "column", marginTop: 20 }}>
+                {dates.map((line) => (
+                  <div
+                    key={line}
+                    style={{
+                      display: "flex",
+                      color: mark,
+                      fontSize: dates.length > 1 ? 16 : 15,
+                      letterSpacing: "0.22em",
+                      textTransform: "uppercase",
+                      fontFamily: "Helvetica, Arial, sans-serif",
+                      marginTop: dates.length > 1 ? 6 : 0,
+                    }}
+                  >
+                    {line}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          {brandMark(mark)}
+        </div>
+      </div>
+    );
+  }
+
+  const showPhrase = Boolean(displayPhrase);
+  const ink = INK;
+  const quiet = "rgba(28, 25, 21, 0.62)";
+  const mark = accent;
 
   return (
     <div
@@ -99,53 +337,14 @@ export function SocialPlaceCardMarkup({
         fontFamily: "Georgia, 'Times New Roman', serif",
       }}
     >
-      {showPhoto ? (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "1200px",
-            height: "630px",
-            display: "flex",
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={heroSrc ?? ""}
-            alt=""
-            width={1200}
-            height={630}
-            style={{
-              width: "1200px",
-              height: "630px",
-              objectFit: "cover",
-              objectPosition: "center 22%",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              width: "1200px",
-              height: "630px",
-              display: "flex",
-              background:
-                "linear-gradient(180deg, rgba(18, 12, 8, 0.06) 0%, rgba(18, 12, 8, 0.02) 38%, rgba(18, 12, 8, 0.72) 100%)",
-            }}
-          />
-        </div>
-      ) : null}
-
       <div
         style={{
           width: "1200px",
           height: "630px",
           display: "flex",
           flexDirection: "column",
-          justifyContent: showPhoto ? "flex-end" : "space-between",
-          padding: showPhoto ? "48px 64px 46px" : "72px 88px",
+          justifyContent: "space-between",
+          padding: "72px 88px",
           position: "relative",
         }}
       >
@@ -234,26 +433,31 @@ export function SocialPlaceCardMarkup({
                 fontSize: size,
                 lineHeight: 1.05,
                 letterSpacing: "-0.03em",
-                maxWidth: showPhoto ? "540px" : "900px",
+                maxWidth: "900px",
               }}
             >
               {displayTitle}
             </div>
           )}
 
-          {dateLabel && !unavailable ? (
-            <div
-              style={{
-                display: "flex",
-                marginTop: 18,
-                color: mark,
-                fontSize: 15,
-                letterSpacing: "0.28em",
-                textTransform: "uppercase",
-                fontFamily: "Helvetica, Arial, sans-serif",
-              }}
-            >
-              {dateLabel}
+          {dates.length && !unavailable ? (
+            <div style={{ display: "flex", flexDirection: "column", marginTop: 18 }}>
+              {dates.map((line) => (
+                <div
+                  key={line}
+                  style={{
+                    display: "flex",
+                    color: mark,
+                    fontSize: 15,
+                    letterSpacing: "0.28em",
+                    textTransform: "uppercase",
+                    fontFamily: "Helvetica, Arial, sans-serif",
+                    marginTop: dates.length > 1 ? 6 : 0,
+                  }}
+                >
+                  {line}
+                </div>
+              ))}
             </div>
           ) : null}
 
@@ -265,7 +469,7 @@ export function SocialPlaceCardMarkup({
                 fontSize: 22,
                 lineHeight: 1.35,
                 color: quiet,
-                maxWidth: showPhoto ? "520px" : "760px",
+                maxWidth: "760px",
               }}
             >
               {displayPhrase}
@@ -273,29 +477,7 @@ export function SocialPlaceCardMarkup({
           ) : null}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div
-            style={{
-              display: "flex",
-              width: 6,
-              height: 6,
-              marginRight: 12,
-              background: mark,
-              transform: "rotate(45deg)",
-            }}
-          />
-          <div
-            style={{
-              display: "flex",
-              fontSize: 12,
-              letterSpacing: "0.42em",
-              color: mark,
-              fontFamily: "Helvetica, Arial, sans-serif",
-            }}
-          >
-            CELEVENTIC
-          </div>
-        </div>
+        {brandMark(mark)}
       </div>
     </div>
   );

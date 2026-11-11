@@ -57,7 +57,7 @@ export function GuestWishesPage({ context, page }: InvitePageProps) {
           <EntranceReveal>
             <p className="inv-eyebrow">Blessings</p>
             <h2 className="inv-heading">Guest wishes</h2>
-            <p className="inv-body inv-muted">Leave a blessing for the hosts.</p>
+            <p className="inv-body inv-muted">Share a blessing for the couple.</p>
           </EntranceReveal>
           <EntranceReveal delay={0.1} className="w-full">
             <GuestWishesCard

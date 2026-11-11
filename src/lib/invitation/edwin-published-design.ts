@@ -279,7 +279,7 @@ async function writeEdwinPublishedDesign(
         eventId: invitation.eventId,
         url,
         type: "image",
-        caption: "Edwin and Lordina",
+        caption: null,
         sortOrder: index,
       })),
     });

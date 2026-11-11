@@ -19,7 +19,9 @@ import {
   formatSocialDateCardLabel,
   formatSocialDescriptionDate,
   buildSocialInviteDescription,
+  shareEventDateLines,
 } from "@/lib/social/social-event-title";
+import { guestFacingInviteLink } from "@/lib/invitation/public-invite-alias";
 import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
 
 export type SocialPlaceCardImage = {
@@ -32,7 +34,7 @@ export type SocialPlaceCardImage = {
 export const SOCIAL_PLACE_CARD_WIDTH = 1200;
 export const SOCIAL_PLACE_CARD_HEIGHT = 630;
 export const SOCIAL_PLACE_CARD_TYPE = "image/jpeg";
-export const SOCIAL_PLACE_CARD_ART_VERSION = "couple-faces-1";
+export const SOCIAL_PLACE_CARD_ART_VERSION = "stool-head-waist-1";
 export {
   SOCIAL_PLACE_CARD_PHRASE,
   SOCIAL_PLACE_CARD_PERSONAL_PHRASE,
@@ -106,7 +108,8 @@ export function buildInviteCanonicalUrl(
   uniqueLink: string,
   guestToken?: string | null
 ): string {
-  const base = `${appUrl.replace(/\/$/, "")}/invite/${encodeURIComponent(uniqueLink.trim())}`;
+  const path = guestFacingInviteLink(uniqueLink.trim());
+  const base = `${appUrl.replace(/\/$/, "")}/invite/${encodeURIComponent(path)}`;
   const guest = guestToken?.trim();
   return guest ? `${base}?guest=${encodeURIComponent(guest)}` : base;
 }
@@ -153,6 +156,8 @@ export type SocialInvitationInput = {
   heroImageUrl?: string | null;
   coverImageUrl?: string | null;
   mediaHeroUrl?: string | null;
+  introImageUrl?: string | null;
+  shareImageUrl?: string | null;
   versionParts: Array<string | number | null | undefined>;
 };
 
@@ -164,6 +169,7 @@ export type SocialInvitationSurface = {
   shareText: string;
   description: string;
   dateLabel: string | null;
+  dateLines: string[];
   image: SocialPlaceCardImage;
   canonicalUrl: string;
   imageAlt: string;
@@ -219,6 +225,7 @@ export function buildSocialInvitationSurface(input: SocialInvitationInput): Soci
   const guestGreeting = formatSocialGuestGreeting(guestDisplayName);
   const dateLabel =
     formatSocialDateCardLabel(input.dateDisplay) || formatDateFromInstant(input.eventStartDate);
+  const dateLines = shareEventDateLines(dateLabel);
   const descriptionDate = formatSocialDescriptionDate({
     dateLabel: input.dateDisplay,
     weekday: input.weekday,
@@ -243,6 +250,8 @@ export function buildSocialInvitationSurface(input: SocialInvitationInput): Soci
     heroImageUrl: input.heroImageUrl,
     coverImageUrl: input.coverImageUrl,
     mediaHeroUrl: input.mediaHeroUrl,
+    introImageUrl: input.introImageUrl,
+    shareImageUrl: input.shareImageUrl,
   });
   const variant = resolveSocialPlaceCardVariant(input);
   const version = buildSocialPlaceCardVersion([
@@ -281,6 +290,7 @@ export function buildSocialInvitationSurface(input: SocialInvitationInput): Soci
     shareText,
     description: shareDescription,
     dateLabel,
+    dateLines,
     image,
     canonicalUrl: buildInviteCanonicalUrl(
       input.appUrl,

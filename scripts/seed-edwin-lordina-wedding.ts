@@ -93,7 +93,7 @@ async function replaceEventMoments(prisma: PrismaClient, eventId: string) {
       eventId,
       url,
       type: "image",
-      caption: "Edwin and Lordina",
+        caption: null,
       sortOrder: index,
     })),
   });

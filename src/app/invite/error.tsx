@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { safeSessionStorage } from "@/lib/browser/safe-storage";
+import { inviteLiveRecoveryUrl } from "@/lib/invitation/invite-error-recovery";
 
 /**
  * A chunk that fails to load means the browser is holding asset URLs from a
@@ -18,6 +19,11 @@ const STALE_ASSET_ERROR =
 function reloadKey(): string {
   const path = typeof window === "undefined" ? "" : window.location.pathname;
   return `celeventic:invite-stale-reload:${path}`;
+}
+
+function liveHandoffKey(): string {
+  const path = typeof window === "undefined" ? "" : window.location.pathname;
+  return `celeventic:invite-live-handoff:${path}`;
 }
 
 function isStaleAssetError(error: Error): boolean {
@@ -44,6 +50,67 @@ function recoverFromStaleAssets(error: Error): boolean {
   return true;
 }
 
+function beginLiveHandoff(): { url: string; navigating: boolean } | null {
+  if (typeof window === "undefined") return null;
+  const live = inviteLiveRecoveryUrl({
+    hostname: window.location.hostname,
+    pathname: window.location.pathname,
+    search: window.location.search,
+    hash: window.location.hash,
+  });
+  if (!live) return null;
+  const session = safeSessionStorage();
+  const key = liveHandoffKey();
+  let already = false;
+  try {
+    already = Boolean(session?.getItem(key));
+    if (!already) session?.setItem(key, "1");
+  } catch {
+    already = false;
+  }
+  if (!already) {
+    window.location.replace(live);
+    return { url: live, navigating: true };
+  }
+  return { url: live, navigating: false };
+}
+
+const shell: CSSProperties = {
+  display: "flex",
+  minHeight: "100dvh",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#041A22",
+  padding: "4rem 1.5rem",
+  textAlign: "center",
+};
+
+const goldButton: CSSProperties = {
+  minHeight: "3rem",
+  border: 0,
+  borderRadius: 9999,
+  background: "linear-gradient(135deg, #F0D489 0%, #D4A63A 52%, #B8892A 100%)",
+  padding: "0 2rem",
+  fontSize: "0.875rem",
+  fontWeight: 600,
+  letterSpacing: "0.18em",
+  textTransform: "uppercase",
+  color: "#0F172A",
+  cursor: "pointer",
+  textDecoration: "none",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const ghostButton: CSSProperties = {
+  ...goldButton,
+  background: "transparent",
+  border: "1px solid rgba(255, 253, 249, 0.3)",
+  color: "rgba(255, 253, 249, 0.85)",
+};
+
 /**
  * Error boundary for every `/invite/*` route.
  *
@@ -52,6 +119,10 @@ function recoverFromStaleAssets(error: Error): boolean {
  * quieter and warmer than the app-wide one. It never mentions "error",
  * "digest", or the platform's internals unless the guest opens the details, and
  * its first move is always to try to fix itself.
+ *
+ * Styles are inline on purpose. When this card appears because CSS chunks
+ * failed, Tailwind classes would not paint and guests would only see raw
+ * browser buttons.
  */
 export default function InviteError({
   error,
@@ -61,56 +132,116 @@ export default function InviteError({
   reset: () => void;
 }) {
   const [recovering, setRecovering] = useState(false);
+  const liveUrl = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return inviteLiveRecoveryUrl({
+      hostname: window.location.hostname,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash,
+    });
+  }, []);
 
   useEffect(() => {
     console.error("[invite-route-error]", error);
+    const handoff = beginLiveHandoff();
+    if (handoff?.navigating) {
+      setRecovering(true);
+      const timer = window.setTimeout(() => setRecovering(false), 2500);
+      return () => window.clearTimeout(timer);
+    }
     setRecovering(recoverFromStaleAssets(error));
   }, [error]);
 
-  // A reload is already in flight; showing a card would only flash.
   if (recovering) {
     return (
-      <main
-        aria-busy="true"
-        className="flex min-h-app-viewport items-center justify-center bg-[#041A22] px-6 text-center"
-      >
-        <p className="text-sm tracking-[0.2em] text-[#E8C56A] uppercase">
-          Refreshing your invitation…
+      <main aria-busy="true" style={{ ...shell, padding: "1.5rem" }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.875rem",
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: "#E8C56A",
+          }}
+        >
+          {liveUrl ? "Opening your invitation…" : "Refreshing your invitation…"}
         </p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-app-viewport flex-col items-center justify-center bg-[#041A22] px-6 py-16 text-center">
-      <p className="text-[0.7rem] font-medium uppercase tracking-[0.42em] text-[#E8C56A]">
+    <main style={shell}>
+      <p
+        style={{
+          margin: 0,
+          fontSize: "0.7rem",
+          fontWeight: 500,
+          letterSpacing: "0.42em",
+          textTransform: "uppercase",
+          color: "#E8C56A",
+        }}
+      >
         Celeventic
       </p>
-      <h1 className="mt-5 max-w-md text-2xl font-semibold text-[#FFFDF9] sm:text-3xl">
+      <h1
+        style={{
+          margin: "1.25rem 0 0",
+          maxWidth: "28rem",
+          fontSize: "1.75rem",
+          fontWeight: 600,
+          color: "#FFFDF9",
+        }}
+      >
         This invitation didn&rsquo;t finish loading
       </h1>
-      <p className="mt-4 max-w-sm text-sm leading-relaxed text-[#FFFDF9]/70">
-        Your invitation is still there. This is usually a connection hiccup, so
-        trying again is normally all it takes.
+      <p
+        style={{
+          margin: "1rem 0 0",
+          maxWidth: "24rem",
+          fontSize: "0.875rem",
+          lineHeight: 1.6,
+          color: "rgba(255, 253, 249, 0.7)",
+        }}
+      >
+        {liveUrl
+          ? "Your invitation is still there. Open it on celeventic.com, the same place guests receive the link."
+          : "Your invitation is still there. This is usually a connection hiccup, so trying again is normally all it takes."}
       </p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => reset()}
-          className="min-h-[3rem] rounded-full bg-gradient-to-br from-[#F0D489] via-[#D4A63A] to-[#B8892A] px-8 text-sm font-semibold uppercase tracking-[0.18em] text-[#0F172A] transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8C56A]"
-        >
-          Try again
-        </button>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="min-h-[3rem] rounded-full border border-[#FFFDF9]/30 px-8 text-sm font-medium uppercase tracking-[0.18em] text-[#FFFDF9]/85 transition hover:bg-[#FFFDF9]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8C56A]"
-        >
+      <div
+        style={{
+          marginTop: "2rem",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "0.75rem",
+        }}
+      >
+        {liveUrl ? (
+          <a href={liveUrl} style={goldButton}>
+            Open invitation
+          </a>
+        ) : (
+          <button type="button" onClick={() => reset()} style={goldButton}>
+            Try again
+          </button>
+        )}
+        <button type="button" onClick={() => window.location.reload()} style={ghostButton}>
           Reload page
         </button>
       </div>
       {error.digest ? (
-        <p className="mt-10 font-mono text-[10px] tracking-wider text-[#FFFDF9]/35">
+        <p
+          style={{
+            margin: "2.5rem 0 0",
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            fontSize: 10,
+            letterSpacing: "0.08em",
+            color: "rgba(255, 253, 249, 0.35)",
+          }}
+        >
           Ref {error.digest}
         </p>
       ) : null}

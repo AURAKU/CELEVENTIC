@@ -3,7 +3,10 @@ import { describe, it } from "node:test";
 import {
   buildInviteShareChannelHref,
   buildInviteSharePayload,
+  inviteShareClipboardHtml,
+  inviteShareClipboardPlain,
   resolveInviteShareUrl,
+  socialPlaceCardUrlFromInviteUrl,
 } from "@/lib/invitation/invite-share";
 
 describe("invite share", () => {
@@ -143,7 +146,7 @@ describe("invite share", () => {
     assert.doesNotMatch(`${payload.title} ${payload.text} ${payload.url}`, /Seraphine|Aurelia/i);
   });
 
-  it("includes the admission code in the family share letter without duplicating the URL", () => {
+  it("keeps the admission code off the family share letter", () => {
     const payload = buildInviteSharePayload({
       category: "wedding",
       uniqueLink: "9qsZeEvYS6k08i78n67WHelxMHK65oVE",
@@ -168,12 +171,56 @@ describe("invite share", () => {
     assert.match(payload.text, /Dear Pastor Christopher Fiave,/);
     assert.match(payload.text, /You are personally invited\./);
     assert.doesNotMatch(payload.text, /Open your invitation:/);
-    assert.match(payload.text, /Your admission code: 9180/);
+    assert.doesNotMatch(payload.text, /admission code|9180/i);
     assert.doesNotMatch(payload.text, /https?:\/\//);
     assert.equal(
       payload.url,
       "https://www.celeventic.com/invite/9qsZeEvYS6k08i78n67WHelxMHK65oVE?guest=cmusgwbyy00n0lag9ozdkhgmj"
     );
+  });
+
+  it("shares Edwin and Lordina on the pretty public path", () => {
+    const payload = buildInviteSharePayload({
+      category: "wedding",
+      uniqueLink: "ihJPaMQxfFCRK21YPJwgGvhxFzqqP7oK",
+      origin: "https://www.celeventic.com",
+      catalogSlug: "forever-afaris-wedding",
+      layoutSlug: "forever-afaris-wedding",
+      guestDisplayName: "Ama",
+      guestToken: "ama-token",
+      admissionCode: "9180",
+      event: {
+        title: "Edwin and Lordina",
+        hostName: "Edwin Ebow Blankson",
+        description: null,
+        startDate: "",
+        venueName: null,
+        landmark: null,
+        mapsLink: null,
+        contactPhone: null,
+        dressCode: null,
+      },
+      partnerOneName: "Edwin",
+      partnerTwoName: "Lordina",
+    });
+    assert.equal(payload.url, "https://www.celeventic.com/invite/edwin-and-lordina?guest=ama-token");
+    assert.match(payload.text, /Dear Ama,/);
+    assert.match(payload.text, /You are personally invited\./);
+    assert.doesNotMatch(payload.text, /admission code|9180|ihJPaMQxfFCRK21YPJwgGvhxFzqqP7oK/i);
+    const card = socialPlaceCardUrlFromInviteUrl(payload.url);
+    assert.equal(
+      card,
+      "https://www.celeventic.com/api/social/invite/edwin-and-lordina/image?guest=ama-token"
+    );
+    const plain = inviteShareClipboardPlain(payload);
+    assert.match(plain, /Dear Ama,/);
+    assert.match(plain, /You are personally invited\./);
+    assert.match(plain, /edwin-and-lordina/);
+    const html = inviteShareClipboardHtml(payload, card);
+    assert.match(html, /07-stool|edwin-and-lordina\/image/);
+    assert.match(html, /Dear Ama,/);
+    assert.match(html, /You are personally invited/);
+    assert.match(html, /<img /);
   });
 
   it("uses the same letter for every template, without printing the link", () => {

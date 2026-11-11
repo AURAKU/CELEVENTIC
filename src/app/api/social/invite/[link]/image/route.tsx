@@ -3,7 +3,6 @@ import path from "path";
 import { ImageResponse } from "next/og";
 import React, { type ReactElement } from "react";
 import sharp from "sharp";
-import { coupleShareCrop, COUPLE_SHARE_HEIGHT, COUPLE_SHARE_WIDTH } from "@/lib/social/social-hero-frame";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { getServerAppUrl } from "@/lib/app-url";
 import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
@@ -20,6 +19,10 @@ import {
 } from "@/lib/social/social-place-card";
 import { SocialPlaceCardMarkup } from "@/lib/social/social-place-card-image";
 import { buildLiveSocialInvitationInput } from "@/lib/social/social-live-input";
+import {
+  coupleHeadToWaistExtract,
+  isHeadToWaistSharePhoto,
+} from "@/lib/social/social-hero-frame";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -84,24 +87,30 @@ async function loadImageBuffer(src: string): Promise<Buffer | null> {
   return null;
 }
 
-/** Face-weighted 1200×630 JPEG so a standing portrait is not cropped at the torso. */
-async function frameCoupleSharePhoto(src: string): Promise<string | null> {
+/** Keep the couple photograph sharp. Head-to-waist crops stay at native resolution. */
+async function prepareCoupleSharePhoto(
+  src: string,
+  options: { headToWaist?: boolean } = {}
+): Promise<string | null> {
   const buffer = await loadImageBuffer(src);
-  if (!buffer) return null;
+  if (!buffer) return src.startsWith("data:") ? src : null;
   try {
-    const oriented = sharp(buffer).rotate();
-    const meta = await oriented.metadata();
-    const crop = coupleShareCrop(meta.width ?? 0, meta.height ?? 0);
-    if (!crop) return null;
-    const framed = await sharp(buffer)
-      .rotate()
-      .extract(crop)
-      .resize(COUPLE_SHARE_WIDTH, COUPLE_SHARE_HEIGHT, { fit: "fill" })
-      .jpeg({ quality: 84, mozjpeg: true })
+    const oriented = await sharp(buffer).rotate().toBuffer();
+    const meta = await sharp(oriented).metadata();
+    const extract =
+      options.headToWaist && meta.width && meta.height
+        ? coupleHeadToWaistExtract(meta.width, meta.height)
+        : null;
+    const framed = await (extract ? sharp(oriented).extract(extract) : sharp(oriented))
+      .jpeg({
+        quality: options.headToWaist ? 92 : 86,
+        mozjpeg: true,
+        chromaSubsampling: "4:4:4",
+      })
       .toBuffer();
     return `data:image/jpeg;base64,${framed.toString("base64")}`;
   } catch {
-    return null;
+    return src.startsWith("data:") ? src : null;
   }
 }
 
@@ -126,9 +135,9 @@ async function jpegResponse(
     height: SOCIAL_PLACE_CARD_HEIGHT,
   });
   const source = Buffer.from(await png.arrayBuffer());
-  let quality = 78;
-  let jpeg = await sharp(source).jpeg({ quality, mozjpeg: true }).toBuffer();
-  while (jpeg.length > WHATSAPP_IMAGE_BUDGET && quality > 46) {
+  let quality = 90;
+  let jpeg = await sharp(source).jpeg({ quality, mozjpeg: true, chromaSubsampling: "4:4:4" }).toBuffer();
+  while (jpeg.length > WHATSAPP_IMAGE_BUDGET && quality > 62) {
     quality -= 8;
     jpeg = await sharp(source).jpeg({ quality, mozjpeg: true }).toBuffer();
   }
@@ -215,17 +224,22 @@ export async function GET(
     }
 
     const rawHero = await heroToImageSrc(surface.heroUrl, origin);
-    const heroSrc = rawHero ? (await frameCoupleSharePhoto(rawHero)) ?? rawHero : null;
+    const headToWaist = isHeadToWaistSharePhoto(surface.heroUrl);
+    const heroSrc = rawHero
+      ? (await prepareCoupleSharePhoto(rawHero, { headToWaist })) ?? rawHero
+      : null;
     return jpegResponse(
       <SocialPlaceCardMarkup
         theme={surface.theme}
         variant={surface.variant}
         title={surface.title}
         dateLabel={surface.dateLabel}
+        dateLines={surface.dateLines}
         phrase={surface.phrase}
         kicker={surface.kicker}
         guestGreeting={surface.guestGreeting}
         heroSrc={heroSrc}
+        heroFit={headToWaist ? "cover-top" : "contain"}
       />,
       { personalized: Boolean(socialGuest) }
     );

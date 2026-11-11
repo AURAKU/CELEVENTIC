@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Minimize2, Play, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
 import {
   orderCoupleAlbumForPlayback,
   type AureliaCoupleAlbumItem,
@@ -241,10 +241,6 @@ function CoupleAlbumStage({
         <p>
           {index + 1} / {items.length}
         </p>
-        <button type="button" onClick={onClose} aria-label="Minimize">
-          <Minimize2 size={18} />
-          Minimize
-        </button>
         <button type="button" className={styles.coupleStageClose} onClick={onClose} aria-label="Close">
           <X size={20} />
         </button>

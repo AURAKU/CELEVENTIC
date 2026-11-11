@@ -3,6 +3,8 @@ import {
   renewalBaseDate,
   type CeleCardLifecycleInput,
 } from "@/lib/digital-business-card/lifecycle";
+import { ghsToPesewas } from "@/lib/digital-business-card/plans";
+import { paystackAmountsMatch } from "@/lib/payments/paystack";
 
 /** Paystack checkout here is one-time. Do not invent a recurring mandate. */
 export const CELECARD_CHECKOUT_IS_RECURRING_MANDATE = false;
@@ -23,6 +25,26 @@ export function renewalMustNotShorten(currentExpiry: Date | null, nextExpiry: Da
 
 export function paymentFailureShouldActivate(): boolean {
   return false;
+}
+
+/**
+ * Provider-verified evidence required before a prepaid CeleYou goes live.
+ * Compare integer pesewas and ISO currency. A success page or unsigned
+ * webhook must not activate the card.
+ */
+export function celeYouPaymentEvidenceMatches(input: {
+  storedAmountGhs: number;
+  storedCurrency: string;
+  providerAmountMinor: number;
+  providerCurrency: string;
+  providerStatus: string;
+}): boolean {
+  if (input.providerStatus !== "success") return false;
+  if (!Number.isFinite(input.storedAmountGhs) || input.storedAmountGhs <= 0) return false;
+  const storedCurrency = String(input.storedCurrency || "").trim().toUpperCase();
+  const providerCurrency = String(input.providerCurrency || "").trim().toUpperCase();
+  if (!storedCurrency || storedCurrency !== providerCurrency) return false;
+  return paystackAmountsMatch(ghsToPesewas(input.storedAmountGhs), input.providerAmountMinor);
 }
 
 export function refundShouldDeleteIdentity(): boolean {

@@ -34,8 +34,8 @@ describe("whatsapp-share", () => {
     assert.match(text, /Dear Pastor Christopher Fiave,/);
     assert.match(text, /You are personally invited\./);
     assert.doesNotMatch(text, /Open your invitation:/);
-    assert.match(text, /Your admission code: 9180/);
-    assert.ok(text.indexOf("Your admission code: 9180") < text.indexOf(url));
+    assert.doesNotMatch(text, /admission code|9180/i);
+    assert.ok(text.indexOf("You are personally invited.") < text.indexOf(url));
     assert.doesNotMatch(text, /You are personally invited to /);
   });
 

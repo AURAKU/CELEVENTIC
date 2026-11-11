@@ -186,6 +186,10 @@ export function shouldUnoptimizeNextImage(url: string | null | undefined): boole
   if (isUploadedMediaUrl(src)) return true;
   if (/^https?:\/\//i.test(src)) return true;
   if (src.startsWith("/templates/")) return true;
+  // Same-origin public brand files. The optimizer requires an absolute URL and
+  // throws `Image source must be an absolute URL` for these relative paths,
+  // which has taken down invite and CeleYou previews on 127.0.0.1.
+  if (src.startsWith("/digital-cards/") || src.startsWith("/brand/")) return true;
   return false;
 }
 

@@ -38,8 +38,10 @@ describe("CeleYou QR center", () => {
     assert.match(overlay, /objectFit: official \? "contain"/);
   });
 
-  it("fills the tile and keeps a large center portrait", () => {
-    assert.equal(CELECARD_QR_TILE_FILL > 1.2, true);
-    assert.equal(CELECARD_QR_CENTER_WELL >= 0.4, true);
+  it("keeps finder patterns and a camera-safe center mark", () => {
+    assert.equal(CELECARD_QR_TILE_FILL <= 1.12, true);
+    assert.equal(CELECARD_QR_TILE_FILL >= 1.04, true);
+    assert.equal(CELECARD_QR_CENTER_WELL <= 0.28, true);
+    assert.equal(CELECARD_QR_CENTER_WELL >= 0.18, true);
   });
 });

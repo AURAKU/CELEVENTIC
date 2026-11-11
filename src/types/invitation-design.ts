@@ -34,8 +34,9 @@ export interface InvitationMediaAsset {
   /**
    * `intro` is the pre-invite welcome photo shown full-bleed behind the
    * soft-intro / "BEGIN" gate, never the hero, gallery, or page background.
+   * `share` is the social / copy-link portrait. It never replaces the gallery.
    */
-  role: "hero" | "background" | "reference" | "attachment" | "intro";
+  role: "hero" | "background" | "reference" | "attachment" | "intro" | "share";
   name?: string;
   /** Video-only, additive metadata from the processing pipeline (src/lib/video/video-processor.ts). */
   posterUrl?: string | null;

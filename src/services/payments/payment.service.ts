@@ -12,6 +12,8 @@ import { sharedSecretWebhookAllowed } from "@/lib/payments/webhook-guard";
 import { parsePaystackWebhook, paystackHmacValid } from "@/lib/payments/paystack";
 import { nextPaymentStatus } from "@/lib/payments/payment-status";
 import { paymentMatchesTicketOrder } from "@/services/tickets/ticket-ledger.service";
+import { SMARTCARD_PAYMENT_KIND } from "@/lib/digital-business-card/plans";
+import { celeYouPaymentEvidenceMatches } from "@/lib/digital-business-card/billing-rules";
 import type { PaymentInitRequest, PaymentInitResponse } from "@/types";
 import type { PaymentProvider, PaymentPurpose, PaymentStatus, Prisma } from "@prisma/client";
 
@@ -576,6 +578,9 @@ export class PaymentService {
     if (!existing) throw new Error("Payment not found");
     const next = nextPaymentStatus(existing.status, status);
     if (next === existing.status) {
+      if (existing.status === "SUCCESSFUL") {
+        await this.fulfillCeleYouFromPayment(existing.id);
+      }
       return existing;
     }
 
@@ -641,25 +646,113 @@ export class PaymentService {
   async confirmCheckoutReference(reference: string) {
     const payment = await prisma.payment.findUnique({ where: { reference } });
     if (!payment) throw new Error("Payment not found");
-    if (payment.status === "SUCCESSFUL" || payment.status === "FAILED") return payment;
+    if (payment.status === "FAILED") return payment;
+
+    if (payment.status !== "SUCCESSFUL") {
+      const adapter = this.adapters[payment.provider];
+      if (adapter.verifyTransactionDetailed) {
+        const detailed = await adapter.verifyTransactionDetailed(reference);
+        if (detailed.status === "success") {
+          await this.updatePaymentStatus(reference, "SUCCESSFUL");
+        } else if (detailed.status === "failed") {
+          return this.updatePaymentStatus(reference, "FAILED");
+        } else {
+          return payment;
+        }
+      } else {
+        const result = await adapter.verifyTransaction(reference);
+        if (result.status === "SUCCESSFUL") {
+          await this.updatePaymentStatus(reference, "SUCCESSFUL");
+        } else {
+          return payment;
+        }
+      }
+    }
+
+    const latest = await prisma.payment.findUniqueOrThrow({ where: { reference } });
+    if (latest.status === "SUCCESSFUL") {
+      await this.fulfillCeleYouFromPayment(latest.id);
+    }
+    return latest;
+  }
+
+  private async fulfillCeleYouFromPayment(paymentId: string) {
+    const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!payment || payment.status !== "SUCCESSFUL") return;
+    const meta = payment.metadata as Record<string, unknown> | null;
+    if (meta?.kind !== SMARTCARD_PAYMENT_KIND) return;
+
+    const cardId = typeof meta.cardId === "string" ? meta.cardId : "";
+    const planId = typeof meta.planId === "string" ? meta.planId : "";
+    const userId = typeof meta.userId === "string" ? meta.userId : payment.userId || "";
+    if (!cardId || !planId || !userId) return;
+
+    const { activateDigitalCardFromPayment, recordCeleCardLifecycleEvent } = await import(
+      "@/services/digital-business-card/digital-business-card.service"
+    );
 
     const adapter = this.adapters[payment.provider];
     if (adapter.verifyTransactionDetailed) {
-      const detailed = await adapter.verifyTransactionDetailed(reference);
-      if (detailed.status === "success") {
-        return this.updatePaymentStatus(reference, "SUCCESSFUL");
+      try {
+        const detailed = await adapter.verifyTransactionDetailed(payment.reference);
+        const matches = celeYouPaymentEvidenceMatches({
+          storedAmountGhs: Number(payment.amount),
+          storedCurrency: payment.currency,
+          providerAmountMinor: detailed.amountMinor,
+          providerCurrency: detailed.currency,
+          providerStatus: detailed.status,
+        });
+        if (!matches) {
+          console.error("[smartcard.activate] provider evidence mismatch", payment.id, detailed);
+          await recordCeleCardLifecycleEvent({
+            cardId,
+            kind: "ActivationFailed",
+            meta: {
+              paymentId: payment.id,
+              planId,
+              reason: "provider-mismatch",
+              providerStatus: detailed.status,
+              providerAmountMinor: detailed.amountMinor,
+              providerCurrency: detailed.currency,
+            },
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("[smartcard.activate] provider verify failed", payment.id, error);
+        await recordCeleCardLifecycleEvent({
+          cardId,
+          kind: "ActivationFailed",
+          meta: {
+            paymentId: payment.id,
+            planId,
+            reason: "provider-verify-failed",
+          },
+        });
+        return;
       }
-      if (detailed.status === "failed") {
-        return this.updatePaymentStatus(reference, "FAILED");
-      }
-      return payment;
     }
 
-    const result = await adapter.verifyTransaction(reference);
-    if (result.status === "SUCCESSFUL") {
-      return this.updatePaymentStatus(reference, "SUCCESSFUL");
+    const chargedPriceGhs =
+      typeof meta.priceGhs === "number" ? meta.priceGhs : Number(payment.amount);
+    const months = typeof meta.months === "number" ? meta.months : null;
+    const activated = await activateDigitalCardFromPayment({
+      userId,
+      cardId,
+      planId,
+      amountGhs: Number(payment.amount),
+      paymentId: payment.id,
+      chargedPriceGhs,
+      months,
+    });
+    if (!activated) {
+      console.error("[smartcard.activate] payment succeeded but card stayed offline", payment.id, cardId);
+      await recordCeleCardLifecycleEvent({
+        cardId,
+        kind: "ActivationFailed",
+        meta: { paymentId: payment.id, planId, amountGhs: Number(payment.amount) },
+      });
     }
-    return payment;
   }
 
   private async onPaymentSuccess(payment: {
@@ -709,35 +802,8 @@ export class PaymentService {
       }
       return;
     }
-    if (metaEarly?.kind === "smartcard-subscription") {
-      const cardId = typeof metaEarly.cardId === "string" ? metaEarly.cardId : "";
-      const planId = typeof metaEarly.planId === "string" ? metaEarly.planId : "";
-      const userId = typeof metaEarly.userId === "string" ? metaEarly.userId : "";
-      if (cardId && planId && userId) {
-        const { activateDigitalCardFromPayment, recordCeleCardLifecycleEvent } = await import(
-          "@/services/digital-business-card/digital-business-card.service"
-        );
-        const chargedPriceGhs =
-          typeof metaEarly.priceGhs === "number" ? metaEarly.priceGhs : Number(payment.amount);
-        const months = typeof metaEarly.months === "number" ? metaEarly.months : null;
-        const activated = await activateDigitalCardFromPayment({
-          userId,
-          cardId,
-          planId,
-          amountGhs: Number(payment.amount),
-          paymentId: payment.id,
-          chargedPriceGhs,
-          months,
-        });
-        if (!activated) {
-          console.error("[smartcard.activate] payment succeeded but card stayed offline", payment.id, cardId);
-          await recordCeleCardLifecycleEvent({
-            cardId,
-            kind: "ActivationFailed",
-            meta: { paymentId: payment.id, planId, amountGhs: Number(payment.amount) },
-          });
-        }
-      }
+    if (metaEarly?.kind === SMARTCARD_PAYMENT_KIND) {
+      await this.fulfillCeleYouFromPayment(payment.id);
       return;
     }
 

@@ -29,11 +29,8 @@ import {
   DigitalCardContinuityView,
   DigitalCardUnavailableView,
 } from "@/components/digital-business-card/digital-card-continuity-view";
-import {
-  SMARTCARD_BRAND_TAGLINE,
-  SMARTCARD_PRODUCT_NAME,
-  smartCardShortUrl,
-} from "@/lib/digital-business-card/product";
+import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_NAME } from "@/lib/digital-business-card/product";
+import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
 import { celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 import { guestPrimaryActions } from "@/lib/celeyou-share/guest-actions";
@@ -60,8 +57,8 @@ export function DigitalCardPublicView({
   const dock = celecardDockFinish(theme, { darkStage, stageHex });
   const copyInk = darkStage ? "rgba(250,246,239,0.88)" : "rgba(28,25,23,0.8)";
   const faintInk = darkStage ? "rgba(250,246,239,0.42)" : "rgba(28,25,23,0.42)";
-  const shortUrl = smartCardShortUrl(card.publicToken, origin);
-  const qrSrc = digitalCardQrImageSrc(shortUrl);
+  const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
+  const qrSrc = scanUrl ? digitalCardQrImageSrc(scanUrl) : "";
   const [copied, setCopied] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [showQr, setShowQr] = useState(false);
@@ -108,16 +105,16 @@ export function DigitalCardPublicView({
     trackCeleYouGuestEvent(card.slug, "share_tap");
     try {
       if (navigator.share) {
-        await navigator.share({ title, text, url: shortUrl });
+        await navigator.share({ title, text, url: scanUrl });
         return;
       }
     } catch {
       /* fall through */
     }
-    await navigator.clipboard.writeText(`${text}\n${shortUrl}`);
+    await navigator.clipboard.writeText(`${text}\n${scanUrl}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [card, shortUrl]);
+  }, [card, scanUrl]);
 
   const submitConnect = useCallback(async () => {
     setConnecting(true);
@@ -273,7 +270,7 @@ export function DigitalCardPublicView({
               padClass="p-0"
             />
             <p className="max-w-full break-all text-center text-[11px]" style={{ color: faintInk }}>
-              {shortUrl}
+              {scanUrl}
             </p>
           </div>
         ) : null}

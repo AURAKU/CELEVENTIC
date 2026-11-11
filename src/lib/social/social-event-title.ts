@@ -186,6 +186,26 @@ export function formatSocialDateCardLabel(label?: string | null): string | null 
   return value.replace(/\s+/g, " ").toUpperCase();
 }
 
+/**
+ * Two celebration days become two card lines. A single date stays one line.
+ * `DECEMBER • 24 & 26 • 2026` → `24 DECEMBER 2026` / `26 DECEMBER 2026`.
+ */
+export function shareEventDateLines(label?: string | null): string[] {
+  const value = formatSocialDateCardLabel(label);
+  if (!value) return [];
+  const dotted = value.match(
+    /^([A-Z]+)\s*[•·]\s*(\d{1,2})\s*&\s*(\d{1,2})\s*[•·]\s*(\d{4})$/
+  );
+  if (dotted) {
+    return [`${dotted[2]} ${dotted[1]} ${dotted[4]}`, `${dotted[3]} ${dotted[1]} ${dotted[4]}`];
+  }
+  const joined = value.match(/^(\d{1,2})\s*&\s*(\d{1,2})\s+([A-Z]+)\s+(\d{4})$/);
+  if (joined) {
+    return [`${joined[1]} ${joined[3]} ${joined[4]}`, `${joined[2]} ${joined[3]} ${joined[4]}`];
+  }
+  return [value];
+}
+
 export function formatSocialDescriptionDate(input: {
   dateLabel?: string | null;
   weekday?: string | null;

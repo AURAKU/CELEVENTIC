@@ -25,6 +25,7 @@ import {
   notFoundDecision,
   type AdmissionDecision,
 } from "@/lib/admission/pass-decision";
+import { operatorMayBypassAdmissionWindow } from "@/lib/admission/operator-window";
 import { applyPassAdmission } from "@/services/admission/admission.service";
 import {
   resolveSeatingContinuity,
@@ -141,6 +142,23 @@ export async function getEventAdmissionSettings(
     prisma.event.findUnique({ where: { id: eventId }, select: { startDate: true } }),
   ]);
   return resolveAdmissionSettings(row, event?.startDate ?? null);
+}
+
+/** Organiser or platform admin may admit before `validFrom` to test Event Companion. */
+export async function operatorBypassesValidityWindow(
+  userId: string | null,
+  eventId: string
+): Promise<boolean> {
+  if (!userId) return false;
+  const [user, event] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    prisma.event.findUnique({ where: { id: eventId }, select: { organizerId: true } }),
+  ]);
+  return operatorMayBypassAdmissionWindow({
+    role: user?.role ?? null,
+    userId,
+    organizerId: event?.organizerId ?? null,
+  });
 }
 
 /**
@@ -493,6 +511,8 @@ export interface AdmitResult {
   /** Which of the party's seats are live and which are still held. */
   seatingContinuity: SeatingContinuity | null;
   eventTitle: string | null;
+  /** True when this operator was allowed in before the public gate window. */
+  validityWindowBypassed?: boolean;
 }
 
 /**
@@ -529,6 +549,13 @@ export async function admitByPass(input: AdmitInput): Promise<AdmitResult> {
   }
 
   const context = await loadPassContext(pass, settings);
+  const bypassValidityWindow = await operatorBypassesValidityWindow(
+    input.scannerUserId,
+    input.eventId
+  );
+  const validityWindowBypassed = Boolean(
+    bypassValidityWindow && settings.validFrom && now < settings.validFrom
+  );
 
   const requestedQuantity =
     input.guestIds && input.guestIds.length
@@ -554,12 +581,13 @@ export async function admitByPass(input: AdmitInput): Promise<AdmitResult> {
       requestedQuantity,
       source,
       quantityConfirmed: input.quantityConfirmed,
+      bypassValidityWindow,
     }
   );
 
   if (input.dryRun || decision.admitQuantity === 0) {
     await logScan(input, pass, scanResultFor(decision));
-    return { decision, pass, ...context };
+    return { decision, pass, ...context, validityWindowBypassed };
   }
 
   const applied = await applyPassAdmission({
@@ -595,16 +623,17 @@ export async function admitByPass(input: AdmitInput): Promise<AdmitResult> {
             requestedQuantity,
             source,
             quantityConfirmed: input.quantityConfirmed,
+            bypassValidityWindow,
           }
         )
       : decision;
     await logScan(input, fresh ?? pass, "ALREADY_USED");
-    return { decision: replay, pass: fresh ?? pass, ...freshContext };
+    return { decision: replay, pass: fresh ?? pass, ...freshContext, validityWindowBypassed };
   }
 
   await logScan(input, applied.pass, "VALID");
   const refreshed = await loadPassContext(applied.pass, settings);
-  return { decision, pass: applied.pass, ...refreshed };
+  return { decision, pass: applied.pass, ...refreshed, validityWindowBypassed };
 }
 
 function scanResultFor(decision: AdmissionDecision) {

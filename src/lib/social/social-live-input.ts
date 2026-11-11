@@ -87,11 +87,19 @@ export function buildLiveSocialInvitationInput(input: {
   const designPhotos = extractDesignQrPhotoSources(input.liveDesign);
   const roleHeroUrl =
     input.liveDesign?.media?.find((asset) => asset.role === "hero")?.url ?? null;
+  const introUrl =
+    input.liveDesign?.media?.find((asset) => asset.role === "intro" && asset.type === "image")?.url ??
+    null;
+  const shareUrl =
+    input.liveDesign?.media?.find((asset) => asset.role === "share" && asset.type === "image")?.url ??
+    input.liveDesign?.media?.find((asset) => (asset.url || "").includes("/moments/07-stool"))?.url ??
+    null;
   const uploadedHeroUrl = publicMediaUrl(designPhotos.heroImageUrl);
   const roleHeroPublic = publicMediaUrl(roleHeroUrl);
   const mediaHeroUrl =
     uploadedHeroUrl ??
     (roleHeroPublic && !isAureliaFamilyPlaceholderHero(roleHeroPublic) ? roleHeroPublic : null);
+  const board = input.liveDesign?.studio?.weddingBoard;
   const colors = input.liveDesign?.colors;
   const themeColor = input.liveDesign?.theme?.color;
   const event = input.invitation.event;
@@ -126,10 +134,10 @@ export function buildLiveSocialInvitationInput(input: {
     eventTitle: event.title,
     hostName: event.hostName,
     invitationName: input.invitation.name,
-    partnerOneName: wedding?.partnerOneName,
-    partnerTwoName: wedding?.partnerTwoName,
+    partnerOneName: wedding?.partnerOneName || board?.coupleName1,
+    partnerTwoName: wedding?.partnerTwoName || board?.coupleName2,
     deceasedName,
-    dateDisplay: wedding?.dateDisplay,
+    dateDisplay: wedding?.dateDisplay || board?.displayDate,
     eventStartDate: event.startDate,
     weekday: wedding
       ? resolveCeremonyWeekdayForDate({
@@ -153,6 +161,8 @@ export function buildLiveSocialInvitationInput(input: {
     ),
     coverImageUrl: publicMediaUrl(event.coverImageUrl),
     mediaHeroUrl,
+    introImageUrl: publicMediaUrl(introUrl),
+    shareImageUrl: publicMediaUrl(shareUrl),
     versionParts: [
       input.invitation.updatedAt instanceof Date
         ? input.invitation.updatedAt.toISOString()
@@ -165,6 +175,8 @@ export function buildLiveSocialInvitationInput(input: {
       event.coverImageUrl,
       uploadedHeroUrl,
       roleHeroUrl,
+      introUrl,
+      shareUrl,
       input.liveDesign?.experience?.fashionHouse?.shareOgImageUrl,
       catalogSlug,
       layoutSlug,

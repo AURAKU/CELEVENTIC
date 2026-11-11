@@ -632,7 +632,6 @@ function WeddingHourglass({
       monogram={engraving.monogram}
       coupleLine={engraving.coupleLine}
       dateLine={engraving.dateLine}
-      tag={engraving.tag}
       dial="light"
       ink={C.ink}
       labelInk={C.cocoa}
@@ -914,14 +913,15 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   }, [design.media, props.galleryUrls]);
 
   const [openMoment, setOpenMoment] = useState<number | null>(null);
+  const hideMomentCaptions = isEdwinLordinaBook(couple1, couple2);
   const momentItems = useMemo(
     () =>
       galleryImages.map((item) => ({
         url: item.url,
         type: item.video ? ("video" as const) : ("image" as const),
-        caption: item.name?.trim() || null,
+        caption: hideMomentCaptions ? null : item.name?.trim() || null,
       })),
-    [galleryImages]
+    [galleryImages, hideMomentCaptions]
   );
   const momentTiles = galleryImages.map((item, index) => ({ ...item, index }));
 

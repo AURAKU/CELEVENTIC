@@ -21,6 +21,7 @@ import {
 import { pesewasMatch } from "@/lib/digital-business-card/plans";
 import {
   CELECARD_CHECKOUT_IS_RECURRING_MANDATE,
+  celeYouPaymentEvidenceMatches,
   classifyCeleCardRenewal,
   ownerMayRenewSubscription,
   paidTermCannotBeCancelled,
@@ -272,5 +273,24 @@ describe("CeleYou billing rules", () => {
       classifyCeleCardRenewal(card({ subscriptionStatus: "TRIAL", lastActivatedAt: null }), now),
       "new"
     );
+  });
+
+  it("requires Paystack-verified amount and currency before prepaid activation", () => {
+    const monthly = {
+      storedAmountGhs: 49,
+      storedCurrency: "GHS",
+      providerAmountMinor: 4900,
+      providerCurrency: "GHS",
+      providerStatus: "success",
+    };
+    assert.equal(celeYouPaymentEvidenceMatches(monthly), true);
+    assert.equal(celeYouPaymentEvidenceMatches({ ...monthly, storedAmountGhs: 129, providerAmountMinor: 12900 }), true);
+    assert.equal(celeYouPaymentEvidenceMatches({ ...monthly, storedAmountGhs: 239, providerAmountMinor: 23900 }), true);
+    assert.equal(celeYouPaymentEvidenceMatches({ ...monthly, storedAmountGhs: 449, providerAmountMinor: 44900 }), true);
+    assert.equal(celeYouPaymentEvidenceMatches({ ...monthly, providerAmountMinor: 1 }), false);
+    assert.equal(celeYouPaymentEvidenceMatches({ ...monthly, providerCurrency: "NGN" }), false);
+    assert.equal(celeYouPaymentEvidenceMatches({ ...monthly, providerStatus: "failed" }), false);
+    assert.equal(celeYouPaymentEvidenceMatches({ ...monthly, providerStatus: "pending" }), false);
+    assert.equal(celeYouPaymentEvidenceMatches({ ...monthly, storedAmountGhs: 0 }), false);
   });
 });

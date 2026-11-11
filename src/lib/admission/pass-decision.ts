@@ -66,6 +66,11 @@ export interface AdmissionContext {
    * Suppresses the quantity prompt so a confirmed admit writes immediately.
    */
   quantityConfirmed?: boolean;
+  /**
+   * Organiser or platform admin testing the gate before the celebration opens.
+   * Door staff and unauthenticated devices still wait for `validFrom`.
+   */
+  bypassValidityWindow?: boolean;
 }
 
 export interface AdmissionDecision {
@@ -204,7 +209,7 @@ export function decideAdmission(
   }
 
   const { from, until } = resolveValidity(pass, settings);
-  if (from && ctx.now < from) {
+  if (from && ctx.now < from && !ctx.bypassValidityWindow) {
     const opensAt = from.toLocaleString(undefined, {
       dateStyle: "medium",
       timeStyle: "short",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Minimize2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadedMedia } from "@/components/media/uploaded-media";
 import type { GalleryItem } from "@/components/invitation/invitation-gallery-display";
@@ -91,25 +91,14 @@ export function InvitationMediaLightbox({
         <p className="text-white/80 text-sm tabular-nums">
           {index + 1} / {items.length}
         </p>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-white hover:bg-white/10 transition-colors"
-            aria-label={closeLabel}
-          >
-            <Minimize2 className="h-5 w-5" />
-            <span className="text-xs uppercase tracking-[0.16em]">{closeLabel}</span>
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-2 text-white hover:bg-white/10 transition-colors"
-            aria-label="Close"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-full p-2 text-white hover:bg-white/10 transition-colors"
+          aria-label={closeLabel}
+        >
+          <X className="h-6 w-6" />
+        </button>
       </div>
 
       <div

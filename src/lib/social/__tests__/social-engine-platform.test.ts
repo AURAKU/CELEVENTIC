@@ -254,6 +254,16 @@ describe("public event-title resolver. Catalogue identity", () => {
 });
 
 describe("hero and custom override", () => {
+  it("prefers a dedicated share portrait over the tap-to-begin photo", () => {
+    const hero = resolveSocialHeroImage({
+      catalogSlug: "forever-afaris-wedding",
+      layoutSlug: "forever-afaris-wedding",
+      introImageUrl: "/templates/edwin-lordina/tap-begin.jpg",
+      shareImageUrl: "/templates/edwin-lordina/moments/07-stool.jpg",
+    });
+    assert.equal(hero.url, "/templates/edwin-lordina/moments/07-stool.jpg");
+  });
+
   it("uses an explicit social image override", () => {
     const hero = resolveSocialHeroImage({
       catalogSlug: "classic-gold",

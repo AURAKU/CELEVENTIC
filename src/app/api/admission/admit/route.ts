@@ -242,6 +242,7 @@ export async function POST(req: Request) {
       outcome: result.decision.outcome,
       reason: result.decision.reason,
       quantity: result.decision.admitQuantity,
+      validityWindowBypassed: Boolean(result.validityWindowBypassed),
     },
   });
 

@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { coupleShareCrop } from "@/lib/social/social-hero-frame";
+import {
+  coupleHeadToWaistExtract,
+  coupleShareCrop,
+  isHeadToWaistSharePhoto,
+} from "@/lib/social/social-hero-frame";
 
 describe("coupleShareCrop", () => {
   it("keeps a standing portrait's window in the upper band, where the faces are", () => {
@@ -10,6 +14,18 @@ describe("coupleShareCrop", () => {
     assert.ok(crop.top < 1024 * 0.2, `top ${crop.top} starts too low for the faces`);
     assert.ok(crop.top + crop.height < 1024 * 0.62, "window reaches the torso instead of the faces");
     assert.ok(crop.width >= 600);
+  });
+
+  it("crops a standing stool portrait from above the heads to the waist", () => {
+    const crop = coupleHeadToWaistExtract(682, 1024);
+    assert.ok(crop);
+    assert.equal(crop.left, 0);
+    assert.equal(crop.width, 682);
+    assert.ok(crop.top < 1024 * 0.05);
+    assert.ok(crop.top + crop.height < 1024 * 0.6);
+    assert.ok(crop.top + crop.height > 1024 * 0.5);
+    assert.equal(isHeadToWaistSharePhoto("/templates/edwin-lordina/moments/07-stool.jpg"), true);
+    assert.equal(isHeadToWaistSharePhoto("/templates/edwin-lordina/tap-begin.jpg"), false);
   });
 
   it("centers a landscape photograph instead of pinning it to the top", () => {

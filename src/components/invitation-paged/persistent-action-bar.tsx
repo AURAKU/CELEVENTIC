@@ -16,6 +16,7 @@ import {
   buildInviteShareChannelHref,
   buildInviteSharePayload,
   copyInviteShareLink,
+  socialPlaceCardUrlFromInviteUrl,
   tryNativeInviteShare,
   type InviteShareChannel,
 } from "@/lib/invitation/invite-share";
@@ -134,7 +135,9 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
   }
 
   async function handleCopy() {
-    const ok = await copyInviteShareLink(payload.url);
+    const ok = await copyInviteShareLink(payload, {
+      imageUrl: socialPlaceCardUrlFromInviteUrl(payload.url),
+    });
     if (!ok) return;
     track("action_bar_share_copy", "copy");
     setCopied(true);

@@ -38,7 +38,7 @@
       "inkColor": "#1B365D",
       "canvasColor": "#FBF6EF",
       "eyebrow": "TOGETHER WITH THEIR FAMILIES",
-      "scriptTitle": "The Wedding",
+      "scriptTitle": "",
       "familyHeading": "",
       "familyIntro": "The Blankson and Anderson Families, warmly welcome you to share in a love written by God.",
       "coupleName1": "Edwin Ebow Blankson",
@@ -201,46 +201,45 @@
       "name": "Edwin & Lordina"
     },
     {
-      "url": "/templates/edwin-lordina/cover-gold.jpg",
+      "url": "/templates/edwin-lordina/tap-begin.jpg",
       "type": "image",
       "role": "intro",
       "name": "Edwin & Lordina"
     },
     {
+      "url": "/templates/edwin-lordina/moments/07-stool.jpg",
+      "type": "image",
+      "role": "share"
+    },
+    {
       "url": "/templates/edwin-lordina/moments/02-gold.jpg",
       "type": "image",
-      "role": "reference",
-      "name": "Edwin and Lordina"
+      "role": "reference"
     },
     {
       "url": "/templates/edwin-lordina/moments/03-sofa.jpg",
       "type": "image",
-      "role": "reference",
-      "name": "Edwin and Lordina"
+      "role": "reference"
     },
     {
       "url": "/templates/edwin-lordina/moments/04-navy.jpg",
       "type": "image",
-      "role": "reference",
-      "name": "Edwin and Lordina"
+      "role": "reference"
     },
     {
       "url": "/templates/edwin-lordina/moments/05-close.jpg",
       "type": "image",
-      "role": "reference",
-      "name": "Edwin and Lordina"
+      "role": "reference"
     },
     {
       "url": "/templates/edwin-lordina/cover-sofa.jpg",
       "type": "image",
-      "role": "reference",
-      "name": "Edwin and Lordina"
+      "role": "reference"
     },
     {
       "url": "/templates/edwin-lordina/moments/07-stool.jpg",
       "type": "image",
-      "role": "reference",
-      "name": "Edwin and Lordina"
+      "role": "reference"
     }
   ]
 }

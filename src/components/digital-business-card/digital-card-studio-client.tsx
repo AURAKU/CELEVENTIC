@@ -28,7 +28,7 @@ import {
 } from "@/lib/digital-business-card/meetings";
 import { celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import { SMARTCARD_PLANS, type SmartCardPlan, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
-import { smartCardNfcUrl, smartCardShortUrl } from "@/lib/digital-business-card/product";
+import { celeYouCameraScanUrl, celeYouNfcScanUrl } from "@/lib/digital-business-card/share-identity";
 import {
   DIGITAL_CARD_TRIAL_DAYS,
   digitalCardIdentityUrl,
@@ -347,16 +347,8 @@ export function DigitalCardStudioClient() {
 
   const active = useMemo(() => cards.find((c) => c.id === activeId) ?? null, [cards, activeId]);
   const publicUrl = form.slug ? digitalCardIdentityUrl(form.slug, origin) : "";
-  const shareUrl =
-    active?.publicToken && origin
-      ? smartCardShortUrl(active.publicToken, origin)
-      : publicUrl.startsWith("http")
-        ? publicUrl
-        : "";
-  const nfcShareUrl =
-    active?.nfcPublicToken && origin
-      ? smartCardNfcUrl(active.nfcPublicToken, origin)
-      : shareUrl;
+  const shareUrl = active?.publicToken ? celeYouCameraScanUrl(active.publicToken, origin) : publicUrl.startsWith("http") ? publicUrl : "";
+  const nfcShareUrl = active?.nfcPublicToken ? celeYouNfcScanUrl(active.nfcPublicToken, origin) : shareUrl;
   const qrSrc = shareUrl.startsWith("http") ? digitalCardQrImageSrc(shareUrl) : null;
   const previewTheme = applyCeleCardDesign(resolveDigitalCardTheme(form.themeId), form.design);
   const previewVoice = celecardTypeVoice(previewTheme);

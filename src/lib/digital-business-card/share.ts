@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { APP_NAME } from "@/lib/constants";
 import { isLocalHost } from "@/lib/app-url";
-import { SMARTCARD_PRODUCT_SHORT_NAME, smartCardShortUrl } from "@/lib/digital-business-card/product";
+import { SMARTCARD_PRODUCT_SHORT_NAME } from "@/lib/digital-business-card/product";
+import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
 import { DIGITAL_CARD_PUBLIC_PATH } from "@/lib/digital-business-card/types";
 
 export const CELECARD_OG_WIDTH = 1200;
@@ -46,9 +47,9 @@ export function digitalCardExportImagePath(slug: string, version?: string | numb
   return `${base}?download=1&v=${encodeURIComponent(String(version))}`;
 }
 
-/** Encoded into the QR bitmap. Survives slug edits. */
-export function celeCardStableQrUrl(publicToken: string, origin: string): string {
-  return smartCardShortUrl(publicToken, origin);
+/** Encoded into the QR bitmap. Survives slug edits. Always a camera-safe guest URL. */
+export function celeCardStableQrUrl(publicToken: string, origin?: string): string {
+  return celeYouCameraScanUrl(publicToken, origin);
 }
 
 /** Live webpage tap. Canonical public profile, never the owner dashboard. */

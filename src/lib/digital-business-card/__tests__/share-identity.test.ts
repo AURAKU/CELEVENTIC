@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
 import {
+  celeYouAbsoluteGuestPayload,
+  celeYouCameraScanUrl,
+  celeYouScanLandingUrl,
   celeYouShareIdentity,
+  isCeleYouCameraScanUrl,
   isReservedCeleYouShareToken,
   shareIdentityArtifactsAreUnique,
 } from "@/lib/digital-business-card/share-identity";
@@ -71,7 +75,26 @@ describe("CeleYou unique share identity", () => {
       "utf8"
     );
     assert.match(studio, /getCeleYouShareOrigin/);
-    assert.match(studio, /smartCardShortUrl\(active\.publicToken, origin\)/);
+    assert.match(studio, /celeYouCameraScanUrl\(active\.publicToken, origin\)/);
+  });
+
+  it("encodes a camera-safe HTTPS Smart QR that lands on the public profile", () => {
+    const scan = celeYouCameraScanUrl("cmqr_kojo_live", "http://127.0.0.1:3000");
+    assert.equal(isCeleYouCameraScanUrl(scan), true);
+    assert.equal(scan, `${DEFAULT_PRODUCTION_URL}/c/cmqr_kojo_live`);
+    assert.equal(
+      celeYouScanLandingUrl("kojo-mensah", "https://www.celeventic.com"),
+      "https://www.celeventic.com/card/kojo-mensah"
+    );
+    assert.equal(
+      celeYouAbsoluteGuestPayload("/c/cmqr_kojo_live"),
+      `${DEFAULT_PRODUCTION_URL}/c/cmqr_kojo_live`
+    );
+    assert.equal(
+      celeYouAbsoluteGuestPayload("http://localhost:3000/c/cmqr_kojo_live"),
+      `${DEFAULT_PRODUCTION_URL}/c/cmqr_kojo_live`
+    );
+    assert.equal(celeYouCameraScanUrl(""), "");
   });
 
   it("gives each template look its own dummy QR bitmap", () => {

@@ -270,8 +270,7 @@ describe("social place-card markup", () => {
       .children;
     const serialized = JSON.stringify(tree);
     assert.match(serialized, /\/templates\/aurelia\/hero\.jpg/);
-    assert.match(serialized, /objectFit":"cover"/);
-    assert.match(serialized, /objectPosition":"center 22%"/);
+    assert.match(serialized, /objectFit":"contain"/);
     assert.doesNotMatch(text, /OPEN TO ENTER|https?:\/\//);
     void hero;
   });
@@ -314,6 +313,31 @@ describe("social place-card markup", () => {
     assert.match(text, /YOU'RE INVITED|YOU&apos;RE INVITED/);
     assert.doesNotMatch(text, /Dear /);
     assert.doesNotMatch(text, /PRIVATE INVITATION/);
+  });
+
+  it("shows the guest, personal invite line, and both celebration dates on the couple card", () => {
+    const tree = SocialPlaceCardMarkup({
+      variant: "platform",
+      title: "Edwin Ebow Blankson and Lordina Ewurafua Anderson",
+      dateLines: ["24 DECEMBER 2026", "26 DECEMBER 2026"],
+      guestGreeting: "Dear Ama,",
+      kicker: "PRIVATE INVITATION",
+      phrase: "You are personally invited.",
+      heroSrc: "/templates/edwin-lordina/moments/07-stool.jpg",
+      heroFit: "cover-top",
+    });
+    const text = collectText(tree);
+    assert.match(text, /Dear Ama,/);
+    assert.match(text, /You are personally invited\./);
+    assert.match(text, /Edwin/);
+    assert.match(text, /Lordina/);
+    assert.match(text, /24 DECEMBER 2026/);
+    assert.match(text, /26 DECEMBER 2026/);
+    assert.doesNotMatch(text, /admission code|https?:\/\//i);
+    const serialized = JSON.stringify(tree);
+    assert.match(serialized, /07-stool\.jpg/);
+    assert.match(serialized, /objectFit":"cover"/);
+    assert.match(serialized, /objectPosition":"center top"/);
   });
 
   it("wraps a long event title without leaking internal identifiers", () => {

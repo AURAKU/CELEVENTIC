@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
-import { getEventAdmissionSettings } from "@/services/admission/guest-pass.service";
+import {
+  getEventAdmissionSettings,
+  operatorBypassesValidityWindow,
+} from "@/services/admission/guest-pass.service";
 import { applyPassAdmission } from "@/services/admission/admission.service";
 import { decideAdmission } from "@/lib/admission/pass-decision";
 import type { ResolvedAdmissionSettings } from "@/lib/admission/admission-settings";
@@ -353,6 +356,7 @@ export async function reconcileOfflineAdmissions(
   if (!device.isAuthorized) throw new Error("This device is no longer authorised to admit guests");
 
   const settings = await getEventAdmissionSettings(eventId);
+  const bypassValidityWindow = await operatorBypassesValidityWindow(device.userId, eventId);
   const outcomes: ReconcileOutcome[] = [];
   let applied = 0;
   let duplicates = 0;
@@ -482,6 +486,7 @@ export async function reconcileOfflineAdmissions(
         now: capturedAt,
         requestedQuantity: record.quantity,
         source: record.usedManualCode ? "manual_code" : "qr",
+        bypassValidityWindow,
       }
     );
 

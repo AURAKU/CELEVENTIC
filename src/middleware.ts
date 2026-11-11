@@ -12,7 +12,11 @@ export default withAuth(
     const role = token?.role as UserRole | undefined;
 
     if (path.startsWith("/auth") && token) {
-      if (path.startsWith("/auth/onboarding/intent")) {
+      if (
+        path.startsWith("/auth/onboarding/intent") ||
+        path.startsWith("/auth/forgot-password") ||
+        path.startsWith("/auth/reset-password")
+      ) {
         return NextResponse.next();
       }
       const isVendorIncomplete =

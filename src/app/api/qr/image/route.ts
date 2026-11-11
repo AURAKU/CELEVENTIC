@@ -62,7 +62,9 @@ export async function GET(req: Request) {
     }
 
     if (rawData) {
-      const url = rawData.startsWith("http") ? rawData : buildVerifyUrl(rawData);
+      const { celeYouAbsoluteGuestPayload } = await import("@/lib/digital-business-card/share-identity");
+      const guestPayload = celeYouAbsoluteGuestPayload(rawData);
+      const url = guestPayload || (rawData.startsWith("http") ? rawData : buildVerifyUrl(rawData));
       const requestedCenter = toSafePublicQrCenterPath(searchParams.get("center"));
       const requestedLogoSize = parseQrLogoSizeQuery(searchParams.get("logoSize"));
       const pinnedCenter =

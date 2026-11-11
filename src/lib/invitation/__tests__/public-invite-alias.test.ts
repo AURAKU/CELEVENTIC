@@ -72,6 +72,33 @@ describe("public invite alias", () => {
     assert.equal(edwinDesignIsCurrent({ gateWord: "#EDWINANDLORDINA" }), false);
   });
 
+  it("writes Open in full on the tap-to-begin seal", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/invitations/tap-to-begin-experience.tsx"),
+      "utf8"
+    );
+    const css = readFileSync(
+      join(process.cwd(), "src/components/invitations/tap-to-begin-experience.module.css"),
+      "utf8"
+    );
+    assert.match(source, /styles\.sealWord\}>Open</);
+    assert.match(css, /\.sealWord \{[^}]*white-space:\s*nowrap/s);
+    assert.match(css, /\.widePortrait \.sealWord \{[^}]*white-space:\s*nowrap/s);
+  });
+
+  it("fills the tap-to-begin portrait across the screen with no letterbox", () => {
+    const css = readFileSync(
+      join(process.cwd(), "src/components/invitations/tap-to-begin-experience.module.css"),
+      "utf8"
+    );
+    const heroImg = css.match(/\.widePortrait \.heroImg \{[^}]+\}/g) ?? [];
+    assert.ok(heroImg.length >= 1);
+    for (const block of heroImg) {
+      assert.match(block, /object-fit:\s*cover/);
+      assert.doesNotMatch(block, /object-fit:\s*contain/);
+    }
+  });
+
   it("replaces an older Edwin board that is missing the published maps and guest note", () => {
     assert.equal(
       edwinPublishedContentIsCurrent({

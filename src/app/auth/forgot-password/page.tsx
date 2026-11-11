@@ -10,10 +10,30 @@ import { Label } from "@/components/ui/label";
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSent(true);
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(json.error || "Could not send a reset link.");
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError("Could not send a reset link.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -21,7 +41,7 @@ export default function ForgotPasswordPage() {
       {sent ? (
         <div className="text-center space-y-5">
           <div className="rounded-xl bg-brand-50 border border-brand-200 p-4 text-sm text-brand-700">
-            If an account exists for {email}, you will receive a password reset link shortly.
+            If an account exists for that email, a reset link is on the way.
           </div>
           <Link href="/auth/login" className="text-brand-600 text-sm font-semibold hover:underline">
             Back to sign in
@@ -37,10 +57,12 @@ export default function ForgotPasswordPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
           </div>
-          <Button type="submit" className="w-full" size="lg">
-            Send Reset Link
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <Button type="submit" className="w-full" size="lg" disabled={busy}>
+            {busy ? "Sending…" : "Send Reset Link"}
           </Button>
           <p className="text-center text-sm">
             <Link href="/auth/login" className="text-brand-600 font-semibold hover:underline">

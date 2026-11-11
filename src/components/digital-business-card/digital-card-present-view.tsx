@@ -10,7 +10,7 @@ import { DigitalCardAtmosphere } from "@/components/digital-business-card/digita
 import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { applyCeleCardDesign } from "@/lib/digital-business-card/design";
 import { digitalCardPublicUrl, digitalCardQrImageSrc, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
-import { smartCardShortUrl } from "@/lib/digital-business-card/product";
+import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
 import { sanitizePublicUrl } from "@/lib/app-url";
 import {
   DigitalCardContinuityView,
@@ -73,13 +73,13 @@ export function DigitalCardPresentView({
   const motionMood = celecardMotionMood(theme);
   const router = useRouter();
   const rootRef = useRef<HTMLElement>(null);
-  const shortUrl = smartCardShortUrl(card.publicToken, origin);
+  const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
   const profileUrl = digitalCardPublicUrl(card.slug);
   const shareUrl = sanitizePublicUrl(
     profileUrl.startsWith("http") ? profileUrl : `${origin.replace(/\/$/, "")}${profileUrl}`,
     origin
   );
-  const qrSrc = digitalCardQrImageSrc(shortUrl, 1024);
+  const qrSrc = scanUrl ? digitalCardQrImageSrc(scanUrl, 1024) : "";
   const { sharingLive, sent, sendFromCard } = useEmbeddedCardShare({
     card,
     profileUrl: shareUrl,

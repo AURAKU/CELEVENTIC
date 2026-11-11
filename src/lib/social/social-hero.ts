@@ -61,6 +61,8 @@ export function resolveSocialHeroImage(input: {
   heroImageUrl?: string | null;
   coverImageUrl?: string | null;
   mediaHeroUrl?: string | null;
+  introImageUrl?: string | null;
+  shareImageUrl?: string | null;
 }): SocialHeroResolution {
   const override = input.shareOgImageUrl?.trim();
   if (override) return { url: override, source: "override" };
@@ -92,6 +94,10 @@ export function resolveSocialHeroImage(input: {
     return { url: hero, source: input.heroImageUrl || input.coverImageUrl || input.mediaHeroUrl ? "production-hero" : "template-safe" };
   }
 
+  const sharePortrait = firstUrl(input.shareImageUrl);
+  if (sharePortrait) return { url: sharePortrait, source: "production-hero" };
+  const opening = firstUrl(input.introImageUrl);
+  if (opening) return { url: opening, source: "production-hero" };
   const production = firstUrl(input.heroImageUrl);
   if (production) return { url: production, source: "production-hero" };
   const media = firstUrl(input.mediaHeroUrl);

@@ -484,7 +484,7 @@ export function TapToBeginExperience({
     staticPreview ? styles.rootEmbedded : "",
     widePortrait ? styles.widePortrait : "",
     invitationFontVars,
-    staticPreview ? "" : "safe-area-pt safe-area-pb safe-area-pl safe-area-pr",
+    staticPreview || widePortrait ? "" : "safe-area-pt safe-area-pb safe-area-pl safe-area-pr",
     reduceMotion ? styles.static : "",
     exiting ? styles.exiting : "",
     fashionAtmosphere || layoutSlug === "luxury-fashion-flagship" ? styles.fashionRoot : "",
@@ -526,9 +526,10 @@ export function TapToBeginExperience({
             alt=""
             fill
             priority
+            quality={100}
             sizes="100vw"
             className={styles.heroImg}
-            unoptimized={shouldUnoptimizeNextImage(hero)}
+            unoptimized={shouldUnoptimizeNextImage(hero) || widePortrait}
           />
         ) : (
           <div className={styles.heroFallback} />

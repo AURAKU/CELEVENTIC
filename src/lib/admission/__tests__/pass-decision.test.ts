@@ -182,6 +182,23 @@ test("validity windows gate entry on both sides", () => {
   assert.equal(perPass.reason, "EXPIRED");
 });
 
+test("organisers and admins may admit before the gate window for companion testing", () => {
+  const early = decideAdmission(
+    pass(),
+    settings({ validFrom: new Date(NOW.getTime() + 60 * 60_000) }),
+    ctx({ bypassValidityWindow: true })
+  );
+  assert.equal(early.outcome, "ADMIT");
+  assert.equal(early.reason, "OK");
+
+  const stillExpired = decideAdmission(
+    pass(),
+    settings({ validUntil: new Date(NOW.getTime() - 60 * 60_000) }),
+    ctx({ bypassValidityWindow: true })
+  );
+  assert.equal(stillExpired.reason, "EXPIRED");
+});
+
 test("manual codes obey the event switch", () => {
   const d = decideAdmission(
     pass(),

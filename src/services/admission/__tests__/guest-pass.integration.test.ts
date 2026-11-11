@@ -206,6 +206,53 @@ describe("admission at the gate", () => {
     assert.equal(scans, 1, "every admission is written to the scan ledger");
   });
 
+  it("lets the organiser admit weeks before the celebration so they can test Event Companion", async () => {
+    const db = await loadPrisma();
+    const { ensureInvitationPass, admitByPass } = await import("../guest-pass.service");
+    const { getInvitationAdmission } = await import("../admission.service");
+
+    const farEventId = await createEvent(`Far Companion Test ${RUN}`);
+    await db.event.update({
+      where: { id: farEventId },
+      data: { startDate: new Date(Date.now() + 45 * 24 * 60 * 60_000) },
+    });
+    await enableQrAdmission(farEventId, { validityLeadHours: 12 });
+
+    const invitationId = await createInvitation(farEventId, "Far Guest");
+    const issued = await ensureInvitationPass(invitationId);
+    assert.ok(issued);
+
+    const organiser = await admitByPass({
+      eventId: farEventId,
+      token: issued.token,
+      scannerUserId: organizerId,
+    });
+    assert.equal(organiser.decision.outcome, "ADMIT");
+    assert.equal(organiser.validityWindowBypassed, true);
+
+    const unlocked = await getInvitationAdmission(invitationId);
+    assert.equal(unlocked?.canAccessPortal, true);
+
+    const staff = await db.user.create({
+      data: {
+        name: `Pass Test Staff ${RUN}`,
+        email: `pass-staff-${RUN}@example.test`,
+        role: "STAFF",
+      },
+    });
+    const laterInvite = await createInvitation(farEventId, "Far Door Guest");
+    const laterPass = await ensureInvitationPass(laterInvite);
+    assert.ok(laterPass);
+    const denied = await admitByPass({
+      eventId: farEventId,
+      code: laterPass.pass.code,
+      scannerUserId: staff.id,
+    });
+    assert.equal(denied.decision.reason, "NOT_YET_VALID");
+    assert.equal(denied.decision.admitQuantity, 0);
+    await db.user.delete({ where: { id: staff.id } }).catch(() => {});
+  });
+
   it("admits a group in stages and never exceeds the allowance", async () => {
     const { ensureInvitationPass, admitByPass } = await import("../guest-pass.service");
     const { getInvitationAdmission } = await import("../admission.service");
