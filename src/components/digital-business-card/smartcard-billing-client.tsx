@@ -358,7 +358,7 @@ export function SmartCardBillingClient() {
                       <span className="ml-1">
                         {SMARTCARD_CURRENCY} {plan.priceGhs}
                       </span>
-                      <p className="mt-1 text-[11px] text-slate-500">{plan.blurb}</p>
+                      <p className="mt-1 whitespace-normal text-[11px] text-slate-500">{plan.blurb}</p>
                     </button>
                   ))}
                 </div>

@@ -1113,6 +1113,23 @@ button:has(> p) > span {
   text-wrap: nowrap;
 }
 
+/* Labels inside buttons inherit wrapping from body unless we lock them. */
+button p {
+  white-space: nowrap;
+  text-wrap: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+button.items-start p,
+button p.leading-snug,
+button p.whitespace-normal {
+  white-space: normal;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
 /* CTA clusters: wrap the controls, never the phrase. */
 .cta-phrase-grid,
 #share .grid {

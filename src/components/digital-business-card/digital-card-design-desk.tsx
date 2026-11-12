@@ -306,7 +306,7 @@ export function DigitalCardDesignDesk({
                 )}
               >
                 <LayoutGlyph id={item.id} />
-                <p className="text-sm font-semibold text-slate-900">{item.label}</p>
+                <p className="whitespace-nowrap text-sm font-semibold text-slate-900">{item.label}</p>
                 <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{item.hint}</p>
               </button>
             );
@@ -330,7 +330,7 @@ export function DigitalCardDesignDesk({
                       active ? "border-[#0B8A83] bg-[#0B8A83]/8" : "border-slate-200 bg-white"
                     )}
                   >
-                    <p className="text-sm font-semibold text-slate-900">{item.label}</p>
+                    <p className="whitespace-nowrap text-sm font-semibold text-slate-900">{item.label}</p>
                     <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{item.hint}</p>
                   </button>
                 );
@@ -368,7 +368,7 @@ export function DigitalCardDesignDesk({
           CeleYou reads the light in the photo, fades it under the origin mark and wordmark, and keeps a quiet band behind the name so the QR and portrait stay readable.
         </p>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Paper</p>
-        <div className="mb-3 grid grid-cols-4 gap-2">
+        <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {visiblePapers.map((item) => {
             const active = design.paperUrl === item.url;
             return (
@@ -384,7 +384,7 @@ export function DigitalCardDesignDesk({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={item.url} alt="" className="h-12 w-full object-cover" />
-                <p className="px-1.5 py-1 text-[10px] font-semibold text-slate-700">{item.label}</p>
+                <p className="truncate whitespace-nowrap px-1.5 py-1 text-[10px] font-semibold text-slate-700">{item.label}</p>
               </button>
             );
           })}

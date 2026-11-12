@@ -26,5 +26,6 @@ describe("button phrases stay on one line", () => {
     assert.match(css, /\.celecard-action-label/);
     assert.match(css, /\.celecard-term-chip-label/);
     assert.match(css, /minmax\(min\(100%, 12\.5rem\), 1fr\)/);
+    assert.match(css, /button p \{/);
   });
 });
