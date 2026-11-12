@@ -945,7 +945,7 @@ export function DigitalCardLiveDemoStudio({
                 <span className="h-2 w-2 rounded-full" style={{ background: "#16a34a" }} />
                 Published
               </span>
-              <label className="inline-flex items-center gap-2">
+              <label className="inline-flex flex-nowrap items-center gap-2 whitespace-nowrap">
                 <input
                   id="nfc-ready"
                   type="checkbox"

@@ -109,7 +109,7 @@ export function MobileBottomNav() {
               aria-current={active ? "page" : undefined}
             >
               <Icon className={cn("h-4 w-4", active && "text-brand-600")} strokeWidth={active ? 2.4 : 2} />
-              <span className="mt-0.5 truncate max-w-full">{t(item.labelKey)}</span>
+              <span className="mt-0.5 max-w-full truncate whitespace-nowrap">{t(item.labelKey)}</span>
             </Link>
           );
         })}

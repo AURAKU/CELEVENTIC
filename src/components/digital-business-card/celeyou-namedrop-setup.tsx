@@ -22,11 +22,11 @@ export function CeleYouNameDropSetup({
     <div id="namedrop" className="rounded-xl border border-slate-200 bg-white p-3">
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-2 text-left"
+        className="flex w-full flex-nowrap items-center justify-between gap-2 whitespace-nowrap text-left"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+        <span className="inline-flex flex-nowrap items-center gap-2 whitespace-nowrap text-sm font-semibold text-slate-900">
           <Smartphone className="h-4 w-4 text-[#0B8A83]" />
           {SETUP_NAMEDROP_CTA}
         </span>

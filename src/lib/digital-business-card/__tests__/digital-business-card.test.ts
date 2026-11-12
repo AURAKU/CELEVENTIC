@@ -1483,7 +1483,7 @@ describe("CeleYou guest public layout", () => {
     assert.match(view, /celecard-action-label/);
     assert.match(view, /SAVE_CONTACT_CTA/);
     assert.match(view, /CONNECT_BACK_ARIA/);
-    assert.match(view, /celecard-action-hint/);
+    assert.match(view, /CONNECT_BACK_CTA/);
     assert.match(view, /<Contact/);
     assert.doesNotMatch(view, /<Download/);
     assert.doesNotMatch(view, /contactActions/);

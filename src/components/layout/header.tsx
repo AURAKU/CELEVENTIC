@@ -78,7 +78,7 @@ function NavLink({
         className={cn(
           "inline-flex items-center gap-1.5 rounded-[0.88rem] font-semibold tracking-wide transition-colors",
           mobile
-            ? "w-full justify-start px-3.5 py-3 text-sm"
+            ? "w-full justify-start px-3.5 py-3 text-sm whitespace-nowrap"
             : "px-3 py-2 text-sm whitespace-nowrap",
           active
             ? "bg-white/70 text-[#0B8A83] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] supports-[backdrop-filter]:bg-white/55 backdrop-blur-md"

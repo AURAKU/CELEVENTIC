@@ -134,7 +134,7 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
       <div className="shrink-0 px-4 pt-3 pb-2 space-y-2">
         <Link href="/dashboard/events/create" onClick={onClose} className="block">
           <span
-            className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#D4A63A] to-[#C4952E] hover:from-[#E0B44A] hover:to-[#D4A63A] text-slate-900 font-semibold shadow-md border-0 touch-manipulation px-4 text-sm"
+            className="inline-flex w-full min-h-[44px] flex-nowrap items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#D4A63A] to-[#C4952E] hover:from-[#E0B44A] hover:to-[#D4A63A] text-slate-900 font-semibold shadow-md border-0 touch-manipulation px-4 text-sm"
           >
             <Plus className="h-4 w-4" />
             {t("dashboard.create_event")}
@@ -145,15 +145,15 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
           <Link
             href="/dashboard/qr-admission"
             onClick={onClose}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white/10 px-2 py-2.5 text-xs font-medium text-white touch-manipulation"
+            className="flex flex-1 flex-nowrap items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-white/10 px-2 py-2.5 text-xs font-medium text-white touch-manipulation"
           >
-            <QrCode className="h-3.5 w-3.5" />
+            <QrCode className="h-3.5 w-3.5 shrink-0" />
             {t("dashboard.quick_scan")}
           </Link>
           <Link
             href="/dashboard/messages"
             onClick={onClose}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white/10 px-2 py-2.5 text-xs font-medium text-white touch-manipulation"
+            className="flex flex-1 flex-nowrap items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-white/10 px-2 py-2.5 text-xs font-medium text-white touch-manipulation"
           >
             <MessageSquare className="h-3.5 w-3.5" />
             {t("dashboard.nav_messages")}

@@ -152,7 +152,7 @@ export function DigitalCardShareDesk({
         {SHARE_MY_CARD_CTA}
       </Button>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="cta-phrase-grid gap-2">
         <Button type="button" variant="outline" size="sm" disabled={!ready} onClick={() => void copy("link", identityShare)}>
           <Copy className="mr-2 h-4 w-4" />
           {copied === "link" ? "Copied" : COPY_PROFILE_LINK_CTA}
@@ -219,13 +219,13 @@ export function DigitalCardShareDesk({
             onChange={() => void toggleDiscoverable()}
           />
           <span className="min-w-0 flex-1">
-            <label htmlFor="studio-tap-discoverable" className="font-medium text-slate-900">
+            <label htmlFor="studio-tap-discoverable" className="whitespace-nowrap font-medium text-slate-900">
               Allow Tap-to-Connect
             </label>
             <span className="mt-0.5 block text-xs text-slate-500">
               When you show the card, Tap-to-Connect waits on the plate. Turn this off to refuse new Tap sessions.
             </span>
-            <Link href={TAP_STUDIO_PATH} className="mt-1 inline-block text-xs font-semibold text-[#0B8A83]">
+            <Link href={TAP_STUDIO_PATH} className="mt-1 inline-block whitespace-nowrap text-xs font-semibold text-[#0B8A83]">
               Open Tap studio
             </Link>
           </span>

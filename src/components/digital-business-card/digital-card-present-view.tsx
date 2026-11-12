@@ -209,7 +209,7 @@ export function DigitalCardPresentView({
           ) : (
             <Link
               href={profileUrl}
-              className="inline-flex min-h-10 items-center rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.14em]"
+              className="inline-flex min-h-10 flex-nowrap items-center whitespace-nowrap rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.14em]"
               style={{ color: theme.accent, background: theme.accentSoft }}
             >
               Open profile

@@ -125,7 +125,7 @@ export function CeleCardNfcManager() {
       <div>
         <Link
           href="/dashboard/business-card"
-          className="inline-flex items-center gap-1 text-sm font-medium text-[#0B8A83]"
+          className="inline-flex flex-nowrap items-center gap-1 whitespace-nowrap text-sm font-medium text-[#0B8A83]"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to studio

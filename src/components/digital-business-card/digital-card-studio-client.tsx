@@ -1269,13 +1269,13 @@ export function DigitalCardStudioClient() {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
               <p className="text-sm font-semibold tracking-tight text-slate-900">Activation</p>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="cta-phrase-grid gap-1.5">
                 {plans.map((plan) => (
                   <button
                     key={plan.id}
                     type="button"
                     onClick={() => setPlanId(plan.id)}
-                    className={`rounded-lg border px-2 py-1.5 text-left text-[11px] ${
+                    className={`whitespace-nowrap rounded-lg border px-2 py-1.5 text-left text-[11px] ${
                       planId === plan.id
                         ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
                         : "border-slate-200 text-slate-600"
@@ -1289,7 +1289,7 @@ export function DigitalCardStudioClient() {
               <Button
                 type="button"
                 size="sm"
-                className="bg-[#0B8A83] hover:bg-[#097a74]"
+                className="w-full whitespace-nowrap bg-[#0B8A83] hover:bg-[#097a74]"
                 onClick={subscribe}
                 disabled={!activeId || paying || active?.canRenew === false}
               >

@@ -106,7 +106,7 @@ export function DigitalCardOtherFields({
         <button
           type="button"
           onClick={add}
-          className="inline-flex max-w-full flex-wrap items-center gap-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em]"
+          className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap text-left text-[11px] font-semibold uppercase tracking-[0.08em]"
           style={addStyle}
         >
           <Plus className="h-3.5 w-3.5" />

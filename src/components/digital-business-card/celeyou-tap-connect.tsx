@@ -388,11 +388,11 @@ export function CeleYouTapConnect({
               Tap-to-Connect is turned off on this CeleYou. Turn it on from Share on the studio.
             </p>
           ) : null}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="cta-phrase-grid gap-2">
             <button
               type="button"
               onClick={() => setShowProfileQr((open) => !open)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
+              className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/15 text-sm"
             >
               <QrCode className="h-4 w-4" />
               Share QR
@@ -401,23 +401,23 @@ export function CeleYouTapConnect({
               type="button"
               disabled={!profileUrl}
               onClick={() => void copyProfileLink()}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
+              className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/15 text-sm"
             >
-              <Copy className="h-4 w-4" />
+              <Copy className="h-4 w-4 shrink-0" />
               {copied ? "Copied" : "Copy Link"}
             </button>
             <button
               type="button"
               disabled={!profileUrl}
               onClick={() => void shareProfile()}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
+              className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/15 text-sm"
             >
-              <Share2 className="h-4 w-4" />
+              <Share2 className="h-4 w-4 shrink-0" />
               Share Profile
             </button>
             <Link
               href={card ? nfcStudioPath(card.id) : "/dashboard/business-card/nfc"}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
+              className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/15 text-sm"
             >
               <Nfc className="h-4 w-4" />
               NFC Card
@@ -439,11 +439,11 @@ export function CeleYouTapConnect({
           <p className="text-center text-[11px] text-white/40">
             {TAP_TO_OPEN_NAME}: a physical NFC card still opens the public profile with no app.
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="cta-phrase-grid gap-2">
             <button
               type="button"
               onClick={() => setScanning(true)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
+              className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/15 text-sm"
             >
               <ScanLine className="h-4 w-4" />
               Scan
@@ -744,17 +744,17 @@ function SuccessPanel({
       <p className="text-lg font-semibold">{share.preview.displayName}</p>
       <p className="text-sm text-white/65">{[share.preview.title, share.preview.company].filter(Boolean).join(" · ")}</p>
       <div className="flex flex-col gap-2">
-        <Link href={share.profilePath} className="grid h-11 place-items-center rounded-full bg-[#0B8A83] text-sm font-semibold">
+        <Link href={share.profilePath} className="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-full bg-[#0B8A83] text-sm font-semibold">
           Open Profile
         </Link>
         <button
           type="button"
           onClick={() => void saveDigitalCardContact(payload, { source: "guest" })}
-          className="h-11 rounded-full border border-white/15 text-sm"
+          className="h-11 whitespace-nowrap rounded-full border border-white/15 text-sm"
         >
           Save Contact
         </button>
-        <Link href="/dashboard/business-card" className="grid h-11 place-items-center text-sm text-white/70">
+        <Link href="/dashboard/business-card" className="inline-flex h-11 w-full items-center justify-center whitespace-nowrap text-sm text-white/70">
           Done
         </Link>
       </div>

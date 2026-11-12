@@ -27,7 +27,7 @@ import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_NAME } from "@/lib/digital-b
 import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
 import { celeCardShareClipboard, celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
-import { CONNECT_BACK_ARIA } from "@/lib/celeyou-share/guest-actions";
+import { CONNECT_BACK_ARIA, CONNECT_BACK_CTA } from "@/lib/celeyou-share/guest-actions";
 import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
 import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
 import { SAVE_CONTACT_CTA, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
@@ -425,8 +425,7 @@ export function DigitalCardPublicView({
                 <Handshake />
               </span>
               <span className="celecard-action-copy">
-                <span className="celecard-action-label">Connect</span>
-                <span className="celecard-action-hint">back</span>
+                <span className="celecard-action-label">{CONNECT_BACK_CTA}</span>
               </span>
             </button>
           ) : null}

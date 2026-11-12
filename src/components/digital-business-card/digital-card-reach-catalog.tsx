@@ -189,7 +189,7 @@ export function DigitalCardReachCatalog({
                   onClick={() => selectNetwork(network)}
                   aria-pressed={editing}
                   className={cn(
-                    "relative flex w-[5.15rem] shrink-0 snap-start flex-col items-center gap-1.5 overflow-visible rounded-2xl border bg-white px-1 py-3 text-center shadow-[0_4px_12px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(15,23,42,0.1)] sm:w-[5.85rem] sm:px-1.5",
+                    "relative flex min-w-[5.15rem] w-auto shrink-0 snap-start flex-col items-center gap-1.5 overflow-visible rounded-2xl border bg-white px-1.5 py-3 text-center shadow-[0_4px_12px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(15,23,42,0.1)] sm:min-w-[5.85rem] sm:px-2",
                     editing ? "border-transparent" : "border-black/10 hover:border-black/20"
                   )}
                   style={editing ? { boxShadow: `0 0 0 2px ${ink}` } : undefined}
@@ -205,10 +205,10 @@ export function DigitalCardReachCatalog({
                   ) : null}
                   <DigitalCardBrandMark id={network.key} className="h-11 w-11 rounded-[13px]" />
                   <span
-                    className="w-full whitespace-pre-line text-[9px] font-semibold uppercase leading-[1.15] tracking-[0.04em]"
+                    className="w-full whitespace-nowrap text-[9px] font-semibold uppercase leading-none tracking-[0.04em]"
                     style={{ color: ink }}
                   >
-                    {network.label.replace(" ", "\n")}
+                    {network.label}
                   </span>
                 </button>
               );

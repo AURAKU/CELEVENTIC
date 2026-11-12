@@ -81,19 +81,23 @@ export function DigitalCardWalletView({
         <div className="flex w-full flex-col gap-2">
           <a
             href={digitalCardExportImagePath(card.slug)}
-            className="grid h-11 place-items-center rounded-full text-sm font-semibold"
+            className="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold"
             style={{ background: theme.accent, color: "#fff" }}
           >
             Save card image
           </a>
           <Link
             href={digitalCardPresentPath(card.slug, { immersive: true })}
-            className="grid h-11 place-items-center rounded-full border text-sm"
+            className="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-full border text-sm"
             style={{ borderColor: theme.border, color: theme.text }}
           >
             Hold up this card
           </Link>
-          <Link href={profileUrl} className="grid h-11 place-items-center text-sm" style={{ color: theme.muted }}>
+          <Link
+            href={profileUrl}
+            className="inline-flex h-11 w-full items-center justify-center whitespace-nowrap text-sm"
+            style={{ color: theme.muted }}
+          >
             Open public profile
           </Link>
         </div>
