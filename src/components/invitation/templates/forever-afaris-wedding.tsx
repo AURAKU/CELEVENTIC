@@ -1344,7 +1344,9 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       ) : null,
 
     programme:
-      features.programme && guestProgrammeItems.length > 0 ? (
+      features.programme &&
+      !isEdwinLordinaBook(couple1, couple2) &&
+      guestProgrammeItems.length > 0 ? (
         <section className="mx-auto w-full min-w-0 max-w-[34rem]">
           <Reveal>
             <h2 className={`text-center ${T.scriptSm}`} style={{ color: C.goldDeep }}>
