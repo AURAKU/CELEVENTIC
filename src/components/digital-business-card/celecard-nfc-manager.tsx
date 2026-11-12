@@ -132,8 +132,8 @@ export function CeleCardNfcManager() {
         </Link>
         <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-slate-900">NFC cards</h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
-          Each physical card stores only the public tap link. Phone to phone NFC is not used. Pause, report lost, or
-          replace a card without changing your QR or profile URL.
+          Program a physical card with your public tap link. Pause, report lost, or replace a card without changing
+          your QR or profile URL.
         </p>
       </div>
 

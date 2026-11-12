@@ -17,7 +17,7 @@ export function detectNfcWriteSupport(
   if (!nav) {
     return {
       canWrite: false,
-      guidance: "Open this page on a compatible phone to write NFC tags.",
+      guidance: "Open this page on your phone to program an NFC card.",
       platformHint: "unknown",
     };
   }
@@ -30,8 +30,7 @@ export function detectNfcWriteSupport(
   if (isIos) {
     return {
       canWrite: false,
-      guidance:
-        "This iPhone can read a physical CeleYou tag. Safari cannot turn the phone into a tag for phone to phone NFC. Show the QR or share the link instead.",
+      guidance: "Copy the NFC link to program a card, or share the QR.",
       platformHint: "ios",
     };
   }
@@ -39,8 +38,7 @@ export function detectNfcWriteSupport(
   if (hasNfc && isAndroid) {
     return {
       canWrite: true,
-      guidance:
-        "Hold a blank NFC tag to the back of this phone, then tap Write. Phone to phone NFC is still device specific. QR and share stay universal.",
+      guidance: "Hold a blank NFC card to the back of this phone, then tap Write.",
       platformHint: "android-chrome",
     };
   }
@@ -48,16 +46,14 @@ export function detectNfcWriteSupport(
   if (isAndroid && !hasNfc) {
     return {
       canWrite: false,
-      guidance:
-        "This browser cannot write NFC tags. Use Chrome on Android, a pre-programmed tag, or show the QR.",
+      guidance: "Copy the NFC link to program a card, or share the QR.",
       platformHint: "android-chrome",
     };
   }
 
   return {
     canWrite: false,
-    guidance:
-      "Physical NFC cards open this same public link. Browser NFC writing works in Chrome on Android only. On this device, copy the link or show the QR.",
+    guidance: "Copy the NFC link to program a card, or share the QR.",
     platformHint: "desktop",
   };
 }

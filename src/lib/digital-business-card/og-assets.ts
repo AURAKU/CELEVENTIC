@@ -4,7 +4,7 @@ import { generateBrandedQrPng } from "@/lib/qr/branded-qr-generator";
 import { getAppUrlFromEnv, isLocalHost } from "@/lib/app-url";
 import { isCeleCardPhotoUrl } from "@/lib/digital-business-card/portraits";
 
-const SAFE_PUBLIC_PREFIXES = ["/digital-cards/", "/brand/", "/uploads/"];
+const SAFE_PUBLIC_PREFIXES = ["/digital-cards/", "/brand/", "/uploads/", "/smartcard/"];
 
 export async function localCeleCardPhotoDataUrl(rel: string): Promise<string | null> {
   if (!SAFE_PUBLIC_PREFIXES.some((prefix) => rel.startsWith(prefix))) return null;

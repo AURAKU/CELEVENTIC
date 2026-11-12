@@ -49,37 +49,23 @@ type CeleYouThemedMarkProps = {
   theme?: CeleYouThemeInk;
   className?: string;
   style?: CSSProperties;
-  /** Stamp the orb onto the plate with a local halo. The PNG stays true teal. */
-  stamp?: boolean;
-  paper?: "light" | "dark";
 };
 
 /**
  * Official CeleYou orb at true color, shown in full.
- * On a card face (`stamp`), a soft paper knockout keeps the orbit readable
- * without a sticker tile. Theme foil stays under the PNG and never tints it.
- * Elsewhere it stays a true-color mark: never cropped to fill a square.
+ * Never cropped to fill a square. Theme foil never tints the PNG.
  */
 export function CeleYouThemedMark({
   theme: _theme,
   className,
   style,
-  stamp = false,
-  paper = "light",
 }: CeleYouThemedMarkProps) {
   return (
     <span
-      className={cn(
-        "relative inline-grid shrink-0 overflow-visible bg-transparent",
-        stamp ? "celecard-origin-stamp" : "isolate",
-        className
-      )}
-      data-paper={stamp ? paper : undefined}
+      className={cn("relative inline-grid shrink-0 overflow-visible bg-transparent isolate", className)}
       style={{ mixBlendMode: "normal", opacity: 1, ...style }}
       aria-hidden
     >
-      {stamp ? <span className="celecard-origin-knockout" aria-hidden /> : null}
-      {stamp ? <span className="celecard-origin-foil" aria-hidden /> : null}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={CELEYOU_MARK_SRC}

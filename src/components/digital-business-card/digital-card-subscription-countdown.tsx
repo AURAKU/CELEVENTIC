@@ -248,40 +248,40 @@ export function DigitalCardLiveTermRibbon({
       aria: `${liveViews.toLocaleString("en-GB")} profile views`,
       target: "studio-activity",
     },
-    qrLive
-      ? {
-          id: "qr",
-          kind: "qr" as const,
-          value: "Live",
-          label: "Smart QR",
-          aria: "QR live",
-          target: "studio-preview",
-          live: true,
-        }
-      : null,
-    nfcEnabled
-      ? {
-          id: "nfc",
-          kind: "nfc" as const,
-          value: "Ready",
-          label: "NFC",
-          aria: "NFC ready",
-          target: "studio-live",
-          live: true,
-        }
-      : null,
-    live
-      ? {
-          id: "guest",
-          kind: "guest" as const,
-          value: "Live",
-          label: "Guest page",
-          aria: "Guest page live",
-          target: "studio-live-published",
-          live: true,
-        }
-      : null,
-  ].filter((chip): chip is TermChip => Boolean(chip));
+  ];
+  if (qrLive) {
+    chips.push({
+      id: "qr",
+      kind: "qr",
+      value: "Live",
+      label: "Smart QR",
+      aria: "QR live",
+      target: "studio-preview",
+      live: true,
+    });
+  }
+  if (nfcEnabled) {
+    chips.push({
+      id: "nfc",
+      kind: "nfc",
+      value: "Ready",
+      label: "NFC",
+      aria: "NFC ready",
+      target: "studio-live",
+      live: true,
+    });
+  }
+  if (live) {
+    chips.push({
+      id: "guest",
+      kind: "guest",
+      value: "Live",
+      label: "Guest page",
+      aria: "Guest page live",
+      target: "studio-live-published",
+      live: true,
+    });
+  }
 
   useEffect(() => {
     setLiveViews(viewCount);

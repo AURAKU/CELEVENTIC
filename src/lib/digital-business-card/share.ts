@@ -29,7 +29,7 @@ export function digitalCardPresentPath(slug: string, options?: { immersive?: boo
   return options?.immersive ? `${path}?immersive=1` : path;
 }
 
-/** Cardholder Wallet card. QR opens the same public profile. Not phone to phone NFC. */
+/** Guest Wallet card. Uploaded payment channels only. Access codes still apply. */
 export function digitalCardWalletPath(slug: string): string {
   return `${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(slug)}/wallet`;
 }
@@ -176,6 +176,7 @@ export function buildCeleCardShareMetadata(input: {
           width: CELECARD_OG_WIDTH,
           height: CELECARD_OG_HEIGHT,
           alt: `${input.card.displayName} ${SMARTCARD_PRODUCT_SHORT_NAME}`,
+          type: "image/png",
         },
       ],
     },

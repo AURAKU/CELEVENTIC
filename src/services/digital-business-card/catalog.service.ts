@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import {
+  CELECARD_CATALOG_EFFECTIVE_DATE_POLICY,
   DEFAULT_CELECARD_CONCIERGE_PRICE_GHS,
+  defaultCatalogPlanPrices,
   overlaySmartCardPlanPrices,
   type CeleCardPlanPriceMap,
   type SmartCardPlanId,
@@ -11,14 +13,11 @@ export type CeleCardCatalog = {
   conciergePriceGhs: number;
   conciergeBundledPlanId: SmartCardPlanId;
   plans: ReturnType<typeof overlaySmartCardPlanPrices>;
+  effectiveDatePolicy: string;
+  publishedAt: string | null;
 };
 
-const DEFAULT_PRICES: Record<SmartCardPlanId, number> = {
-  monthly: 49,
-  quarter: 129,
-  half: 239,
-  yearly: 449,
-};
+const DEFAULT_PRICES = defaultCatalogPlanPrices();
 
 function asPriceMap(value: unknown): CeleCardPlanPriceMap {
   if (!value || typeof value !== "object") return {};
@@ -39,15 +38,31 @@ export async function getCeleCardCatalog(): Promise<CeleCardCatalog> {
   const planPrices = { ...DEFAULT_PRICES, ...overlay };
   const conciergePriceGhs =
     Number(row?.conciergePriceGhs) > 0 ? Number(row?.conciergePriceGhs) : DEFAULT_CELECARD_CONCIERGE_PRICE_GHS;
-  const bundled = row?.conciergeBundledPlanId === "monthly" || row?.conciergeBundledPlanId === "quarter" || row?.conciergeBundledPlanId === "half"
-    ? row.conciergeBundledPlanId
-    : "yearly";
+  const bundled =
+    row?.conciergeBundledPlanId === "monthly" ||
+    row?.conciergeBundledPlanId === "quarter" ||
+    row?.conciergeBundledPlanId === "half"
+      ? row.conciergeBundledPlanId
+      : "yearly";
   return {
     planPrices,
     conciergePriceGhs,
     conciergeBundledPlanId: bundled,
     plans: overlaySmartCardPlanPrices(planPrices),
+    effectiveDatePolicy: CELECARD_CATALOG_EFFECTIVE_DATE_POLICY,
+    publishedAt: row?.updatedAt?.toISOString() ?? null,
   };
+}
+
+export function isMaterialCeleCardPricingChange(
+  previous: Pick<CeleCardCatalog, "planPrices" | "conciergePriceGhs" | "conciergeBundledPlanId">,
+  next: Pick<CeleCardCatalog, "planPrices" | "conciergePriceGhs" | "conciergeBundledPlanId">
+) {
+  if (previous.conciergePriceGhs !== next.conciergePriceGhs) return true;
+  if (previous.conciergeBundledPlanId !== next.conciergeBundledPlanId) return true;
+  return (["monthly", "quarter", "half", "yearly"] as const).some(
+    (id) => previous.planPrices[id] !== next.planPrices[id]
+  );
 }
 
 export async function upsertCeleCardCatalog(
@@ -82,4 +97,19 @@ export async function upsertCeleCardCatalog(
     },
   });
   return getCeleCardCatalog();
+}
+
+export async function listCeleCardPricingHistory(limit = 12) {
+  const rows = await prisma.auditLog.findMany({
+    where: { entity: "celecard_catalog" },
+    orderBy: { createdAt: "desc" },
+    take: Math.min(40, Math.max(1, limit)),
+    select: { id: true, createdAt: true, userId: true, details: true },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    at: row.createdAt.toISOString(),
+    userId: row.userId,
+    details: row.details,
+  }));
 }

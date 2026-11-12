@@ -179,7 +179,8 @@ export async function listCardConnections(
   userId: string,
   cardId: string,
   page = 1,
-  status?: string | null
+  status?: string | null,
+  query?: string | null
 ) {
   const card = await prisma.digitalBusinessCard.findFirst({
     where: { id: cardId, userId },
@@ -189,9 +190,11 @@ export async function listCardConnections(
   const take = 20;
   const skip = Math.max(0, (page - 1) * take);
   const statusFilter = parseCeleCardLeadStatus(status);
+  const needle = (query || "").trim().toLowerCase().slice(0, 80);
   const where = {
     cardId,
     ...(statusFilter ? { status: statusFilter } : {}),
+    ...(needle ? { searchText: { contains: needle } } : {}),
   };
   const [items, total] = await Promise.all([
     prisma.smartCardConnection.findMany({
@@ -226,5 +229,18 @@ export async function updateCardConnectionStatus(
     where: { id: existing.id },
     data: { status: nextStatus },
   });
+  if (existing.status !== nextStatus) {
+    await prisma.celeYouConnectEvent
+      .create({
+        data: {
+          connectionId: updated.id,
+          cardId,
+          kind: "STATUS_CHANGED",
+          actorUserId: userId,
+          meta: { from: existing.status, to: nextStatus },
+        },
+      })
+      .catch(() => undefined);
+  }
   return { connection: updated };
 }

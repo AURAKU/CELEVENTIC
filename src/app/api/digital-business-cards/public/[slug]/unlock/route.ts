@@ -3,7 +3,12 @@ import { z } from "zod";
 import { isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
 import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-business-card.service";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
-import { grantCookieOptions, unlockCeleCardWithCode } from "@/services/digital-business-card/celecard-access.service";
+import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
+import {
+  grantCookieOptions,
+  resolveCeleCardGrant,
+  unlockCeleCardWithCode,
+} from "@/services/digital-business-card/celecard-access.service";
 import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
 import { isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
@@ -41,7 +46,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
     return NextResponse.json({ error: "Card unavailable" }, { status: 404 });
   }
 
-  const result = await unlockCeleCardWithCode(card.id, parsed.data.code);
+  const existing = await resolveCeleCardGrant(
+    card.id,
+    req.cookies.get(celeCardGrantCookieName(card.id))?.value
+  );
+  const result = await unlockCeleCardWithCode(card.id, parsed.data.code, existing?.itemKeys ?? []);
   if (!result.ok) {
     return NextResponse.json({ error: "That code did not unlock anything" }, { status: 401 });
   }

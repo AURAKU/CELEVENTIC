@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { getClientAppUrl } from "@/lib/app-url";
 import { digitalCardIdentityUrl, digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
-import { celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
+import { celeCardShareMessage, celeCardShareTitle, digitalCardOgImagePath } from "@/lib/digital-business-card/share";
 import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
 import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { detectTapCapability } from "@/lib/celeyou-proximity/capabilities";
@@ -289,8 +289,9 @@ export function CeleYouTapConnect({
     if (!profileUrl || !card) return;
     await shareCeleYouProfile({
       title: celeCardShareTitle({ displayName: card.displayName, title: card.title }),
-      text: celeCardShareMessage({ displayName: card.displayName }),
+      text: celeCardShareMessage({ displayName: card.displayName }, profileUrl),
       url: profileUrl,
+      imageUrl: card.slug ? digitalCardOgImagePath(card.slug, card.id) : null,
     });
   }
 

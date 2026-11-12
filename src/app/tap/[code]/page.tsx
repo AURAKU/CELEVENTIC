@@ -6,7 +6,7 @@ import { tapStudioPath } from "@/lib/celeyou-proximity/product";
 
 export const metadata = {
   title: "Join Tap-to-Connect · CeleYou",
-  description: "Open Tap Mode to approve a nearby CeleYou share. Phone to phone NFC is not used.",
+  description: "Open Tap Mode to approve a nearby CeleYou share.",
 };
 
 export default async function TapJoinPage({

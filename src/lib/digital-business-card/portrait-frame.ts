@@ -1,11 +1,11 @@
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
 
-export const CELECARD_PORTRAIT_FRAMES = ["circle", "square", "rounded"] as const;
+export const CELECARD_PORTRAIT_FRAMES = ["circle", "square", "rounded", "arch"] as const;
 export type CeleCardPortraitFrame = (typeof CELECARD_PORTRAIT_FRAMES)[number];
 
 export function parseCeleCardPortraitFrame(raw: unknown): CeleCardPortraitFrame | null {
   const value = String(raw ?? "").trim().toLowerCase();
-  if (value === "circle" || value === "square" || value === "rounded") return value;
+  if (value === "circle" || value === "square" || value === "rounded" || value === "arch") return value;
   return null;
 }
 
@@ -31,12 +31,14 @@ export function resolveCeleCardPortraitFrame(
 export function celecardPortraitFrameClass(frame: CeleCardPortraitFrame): string {
   if (frame === "square") return "rounded-[3px]";
   if (frame === "rounded") return "rounded-[0.85rem]";
+  if (frame === "arch") return "rounded-t-[50%] rounded-b-[0.85rem]";
   return "rounded-full";
 }
 
 export function celecardPortraitFrameRadius(frame: CeleCardPortraitFrame, size: number): number {
   if (frame === "circle") return Math.round(size / 2);
   if (frame === "rounded") return Math.round(size * 0.18);
+  if (frame === "arch") return Math.round(size * 0.42);
   return Math.max(3, Math.round(size * 0.04));
 }
 
@@ -44,6 +46,6 @@ export function celecardPortraitCropAspect(
   frame: CeleCardPortraitFrame
 ): "circle" | "1:1" | "rounded-square" {
   if (frame === "square") return "1:1";
-  if (frame === "rounded") return "rounded-square";
+  if (frame === "rounded" || frame === "arch") return "rounded-square";
   return "circle";
 }

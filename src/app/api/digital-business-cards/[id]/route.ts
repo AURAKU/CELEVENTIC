@@ -13,7 +13,7 @@ import {
   softDeleteDigitalCard,
   updateDigitalCard,
 } from "@/services/digital-business-card/digital-business-card.service";
-import type { DigitalCardSocials } from "@/lib/digital-business-card/types";
+import { CELECARD_BIO_MAX_CHARS, type DigitalCardSocials } from "@/lib/digital-business-card/types";
 
 const socialsSchema = digitalCardSocialsSchema;
 
@@ -21,7 +21,7 @@ const updateSchema = z.object({
   displayName: z.string().min(2).max(80).optional(),
   title: z.string().max(120).nullable().optional(),
   company: z.string().max(120).nullable().optional(),
-  bio: z.string().max(600).nullable().optional(),
+  bio: z.string().max(CELECARD_BIO_MAX_CHARS).nullable().optional(),
   email: z.string().email().nullable().optional().or(z.literal("")),
   phone: z.string().max(40).nullable().optional(),
   website: z.string().max(300).nullable().optional(),

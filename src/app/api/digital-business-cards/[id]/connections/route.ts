@@ -17,7 +17,8 @@ export const dynamic = "force-dynamic";
 
 const patchSchema = z.object({
   connectionId: z.string().min(8).max(80),
-  status: z.enum(CELECARD_LEAD_STATUSES),
+  status: z.enum(CELECARD_LEAD_STATUSES).optional(),
+  ownerNote: z.string().max(1000).nullable().optional(),
   meetingReply: z.enum(["confirm", "decline"]).optional(),
 });
 
@@ -27,11 +28,13 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const { id } = await ctx.params;
   const page = Number(req.nextUrl.searchParams.get("page") || "1");
   const status = req.nextUrl.searchParams.get("status");
+  const q = req.nextUrl.searchParams.get("q");
   const data = await listCardConnections(
     session.user.id,
     id,
     Number.isFinite(page) ? page : 1,
-    status
+    status,
+    q
   );
   if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ success: true, data });
@@ -65,14 +68,48 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       : parsed.data.meetingReply === "decline"
         ? "ARCHIVED"
         : parsed.data.status;
-  const result = await updateCardConnectionStatus(
-    session.user.id,
-    id,
-    parsed.data.connectionId,
-    nextStatus
-  );
-  if (!result) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
+  let result: Awaited<ReturnType<typeof updateCardConnectionStatus>> = null;
+  if (nextStatus) {
+    result = await updateCardConnectionStatus(
+      session.user.id,
+      id,
+      parsed.data.connectionId,
+      nextStatus
+    );
+    if (!result) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
+  }
+  if (parsed.data.ownerNote !== undefined) {
+    const owned = await prisma.digitalBusinessCard.findFirst({
+      where: { id, userId: session.user.id },
+      select: { id: true },
+    });
+    if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const updated = await prisma.smartCardConnection.updateMany({
+      where: { id: parsed.data.connectionId, cardId: id },
+      data: { ownerNote: parsed.data.ownerNote?.trim() || null },
+    });
+    if (!updated.count) return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    const connection = await prisma.smartCardConnection.findFirst({
+      where: { id: parsed.data.connectionId, cardId: id },
+    });
+    if (connection) {
+      await prisma.celeYouConnectEvent
+        .create({
+          data: {
+            connectionId: connection.id,
+            cardId: id,
+            kind: "NOTE_ADDED",
+            actorUserId: session.user.id,
+          },
+        })
+        .catch(() => undefined);
+      result = { connection };
+    }
+  }
+  if (!result || !("connection" in result)) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
 
   if (parsed.data.meetingReply) {
     const connection = result.connection;

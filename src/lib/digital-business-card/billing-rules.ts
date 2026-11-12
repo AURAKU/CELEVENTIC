@@ -57,7 +57,15 @@ export function paidTermCannotBeCancelled(): boolean {
 }
 
 export const CELEYOU_RENEWAL_WAIT_MESSAGE =
-  "This CeleYou is already paid through the current term. You can renew after it ends.";
+  "This CeleYou is already paid through the current term. You can renew or change plan after it ends.";
+
+export const CELEYOU_TERM_LOCKED_CTA = "Paid through this term";
+
+export const CELEYOU_TERM_LOCKED_HINT =
+  "You cannot renew or upgrade until this term ends. Extra cards you save stay on this same subscription, each with a unique QR, link, and NFC.";
+
+export const CELEYOU_TERM_OPEN_HINT =
+  "Live activation uses Paystack. A paid term runs until expiry and cannot be cancelled. You cannot renew or upgrade until that term ends. Extra cards share that term.";
 
 /** Owners may start or resume payment only after the paid window ends. Extra cards share that term. */
 export function ownerMayRenewSubscription(

@@ -27,7 +27,7 @@ const intakeSchema = z.object({
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (new URL(req.url).searchParams.get("quote") === "1") {
-    const include = new URL(req.url).searchParams.get("includeSubscription") !== "0";
+    const include = new URL(req.url).searchParams.get("includeSubscription") === "1";
     const planId = new URL(req.url).searchParams.get("planId");
     const data = await quoteConciergeOrder({ includeSubscription: include, planId });
     return NextResponse.json({ success: true, data });

@@ -14,6 +14,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SMARTCARD_CURRENCY, SMARTCARD_PLANS, type SmartCardPlan, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
+import {
+  CELEYOU_TERM_LOCKED_CTA,
+  CELEYOU_TERM_LOCKED_HINT,
+  CELEYOU_TERM_OPEN_HINT,
+} from "@/lib/digital-business-card/billing-rules";
 import { celeCardCheckoutUi } from "@/lib/digital-business-card/checkout-outcome";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
 
@@ -219,10 +224,11 @@ export function SmartCardBillingClient() {
             Keep the public card live
           </h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Paid activation turns on QR, NFC, and the public page through Paystack. A paid term cannot
-            be cancelled or renewed early. Extra cards you create stay on this same subscription, each
-            with its own QR, link, and NFC. We remind you 14, 7, 3, and 1 days before it ends, then
-            again after, by email and in-app notification.
+            CeleYou Pro is a prepaid term for hosted identity: QR, NFC, and the public page. A paid
+            term cannot be cancelled or renewed early. When it ends, your approved design, URL, and QR
+            stay saved. Premium hosting needs a new term. Concierge design is a separate one-time fee
+            and is not charged again on renewal. Reminders go out 14, 7, and 1 days before expiry, on
+            the day, then 3 and 14 days after.
           </p>
         </div>
         <Button asChild variant="outline">
@@ -347,12 +353,16 @@ export function SmartCardBillingClient() {
                     <button
                       key={plan.id}
                       type="button"
-                      onClick={() => setPlanId(plan.id)}
+                      disabled={active.canRenew === false}
+                      onClick={() => {
+                        if (active.canRenew === false) return;
+                        setPlanId(plan.id);
+                      }}
                       className={`rounded-xl border px-3 py-2.5 text-left text-xs transition ${
                         planId === plan.id
                           ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
                           : "border-slate-200 text-slate-600 hover:border-slate-300"
-                      }`}
+                      } ${active.canRenew === false ? "cursor-not-allowed opacity-60" : ""}`}
                     >
                       <span className="font-semibold">{plan.label}</span>
                       <span className="ml-1">
@@ -364,7 +374,7 @@ export function SmartCardBillingClient() {
                 </div>
                 <Button
                   type="button"
-                  className="mt-4 w-full bg-[#0B8A83] hover:bg-[#097a74]"
+                  className="mt-4 w-full whitespace-nowrap bg-[#0B8A83] hover:bg-[#097a74]"
                   onClick={() => void renew()}
                   disabled={paying || active.canRenew === false}
                 >
@@ -374,13 +384,13 @@ export function SmartCardBillingClient() {
                     <ShieldCheck className="mr-2 h-4 w-4" />
                   )}
                   {active.canRenew === false
-                    ? "Renewal opens after this term ends"
+                    ? CELEYOU_TERM_LOCKED_CTA
                     : `Activate ${selectedPlan.label} · ${SMARTCARD_CURRENCY} ${selectedPlan.priceGhs}`}
                 </Button>
                 <p className="mt-2 text-[11px] text-slate-500">
                   {active.canRenew === false
-                    ? "Your paid term is still running. Extra cards you create stay on this same subscription."
-                    : "Checkout opens Paystack. The card stays live only after payment succeeds. Paid terms cannot be ended early."}
+                    ? CELEYOU_TERM_LOCKED_HINT
+                    : `${CELEYOU_TERM_OPEN_HINT} Checkout opens Paystack. The card stays live only after payment succeeds.`}
                 </p>
               </div>
             ) : null}

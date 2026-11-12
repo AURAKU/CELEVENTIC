@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
+import { shouldCountCeleYouGuestStat } from "@/lib/celeyou-share/events";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
@@ -58,7 +60,16 @@ export async function GET(
   if (!skipCount && !isDemoCardSlug(slug)) {
     const live = await getDigitalCardBySlug(slug);
     const policy = await getCeleCardLifecyclePolicy();
-    if (live && resolveCeleYouPublicShare({ card: live, channel: "vcard", policy }).recordOpen) {
+    const session = await getSession();
+    if (
+      live &&
+      resolveCeleYouPublicShare({ card: live, channel: "vcard", policy }).recordOpen &&
+      shouldCountCeleYouGuestStat({
+        ownerUserId: live.userId,
+        viewerUserId: session?.user?.id,
+        userAgent: request.headers.get("user-agent") || "",
+      })
+    ) {
       void recordSmartCardInteraction(live.id, "vcard_save", { surface: "vcf" }).catch(() => undefined);
     }
   }

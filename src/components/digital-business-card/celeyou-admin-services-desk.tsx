@@ -341,20 +341,10 @@ export function CeleYouAdminServicesDesk({ canEditPrices = false }: { canEditPri
 
           {tab === "billing" ? (
             <div className="space-y-6">
-              <section className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h2 className="text-sm font-semibold text-slate-900">Catalog</h2>
-                <p className="mt-1 text-xs text-slate-500">{data.overview.prepaidNote}</p>
-                <ul className="mt-3 space-y-1 text-sm">
-                  {data.plans.map((plan) => (
-                    <li key={plan.id}>
-                      {plan.label}: GH₵{plan.priceGhs} · {plan.months} months
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              <p className="text-sm text-slate-600">{data.overview.prepaidNote}</p>
               <CeleCardPricingForm canEdit={canEditPrices} />
               <section id="celeyou-policy" className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h2 className="text-sm font-semibold text-slate-900">Policy</h2>
+                <h2 className="text-sm font-semibold text-slate-900">Current policy</h2>
                 <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
                   <div>
                     <dt className="text-slate-500">Timezone</dt>

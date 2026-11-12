@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { getSession } from "@/lib/auth";
 import { requestClientIp } from "@/lib/http/client-ip";
 import { rateLimit } from "@/lib/rate-limit";
-import {
-  isAutomatedPreviewAgent,
-  isCeleYouPublicEventKind,
-} from "@/lib/celeyou-share/events";
+import { isCeleYouPublicEventKind, shouldCountCeleYouGuestStat } from "@/lib/celeyou-share/events";
 import {
   getDigitalCardBySlug,
   recordSmartCardInteraction,
@@ -20,16 +18,24 @@ const bodySchema = z.object({
   kind: z.string().min(3).max(40),
 });
 
+async function readEventBody(req: NextRequest) {
+  const raw = await req.text().catch(() => "");
+  if (!raw.trim()) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
-  const body = await req.json().catch(() => null);
-  const parsed = bodySchema.safeParse(body);
+  const parsed = bodySchema.safeParse(await readEventBody(req));
   if (!parsed.success || !isCeleYouPublicEventKind(parsed.data.kind)) {
     return NextResponse.json({ error: "Unknown event" }, { status: 400 });
   }
 
-  const ua = req.headers.get("user-agent") || "";
-  if (isAutomatedPreviewAgent(ua) || isDemoCardSlug(slug)) {
+  if (isDemoCardSlug(slug)) {
     return new NextResponse(null, { status: 204 });
   }
 
@@ -44,6 +50,17 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
     policy: await getCeleCardLifecyclePolicy(),
   });
   if (!card || !share.guestShareable) {
+    return new NextResponse(null, { status: 204 });
+  }
+
+  const session = await getSession();
+  if (
+    !shouldCountCeleYouGuestStat({
+      ownerUserId: card.userId,
+      viewerUserId: session?.user?.id,
+      userAgent: req.headers.get("user-agent") || "",
+    })
+  ) {
     return new NextResponse(null, { status: 204 });
   }
 

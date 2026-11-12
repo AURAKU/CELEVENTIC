@@ -9,7 +9,12 @@ import { writeCeleCardNfcUrl } from "@/lib/digital-business-card/nfc-write";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
 import { CeleYouNameDropSetup } from "@/components/digital-business-card/celeyou-namedrop-setup";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
-import { celeCardShareMessage, celeCardShareTitle, digitalCardWalletPath } from "@/lib/digital-business-card/share";
+import {
+  celeCardShareMessage,
+  celeCardShareTitle,
+  digitalCardOgImagePath,
+  digitalCardWalletPath,
+} from "@/lib/digital-business-card/share";
 import { getCeleYouShareOrigin, sanitizePublicUrl } from "@/lib/app-url";
 import { TAP_STUDIO_PATH } from "@/lib/celeyou-proximity/product";
 import {
@@ -94,8 +99,9 @@ export function DigitalCardShareDesk({
   async function shareProfile() {
     const result = await engine.share({
       title: celeCardShareTitle({ displayName: vcard.displayName, title: vcard.title }),
-      text: celeCardShareMessage({ displayName: vcard.displayName }),
+      text: celeCardShareMessage({ displayName: vcard.displayName }, identityShare),
       url: identityShare,
+      imageUrl: vcard.slug ? digitalCardOgImagePath(vcard.slug, vcard.id || undefined) : null,
     });
     if (result === "copied") {
       setShareNote("Link copied.");
@@ -186,7 +192,7 @@ export function DigitalCardShareDesk({
           NFC
         </p>
         <p className="mt-1 text-xs leading-relaxed text-slate-600">
-          A programmed NFC card opens this same profile. Phone to phone NFC is not used. {nfc.guidance}
+          A programmed NFC card opens this CeleYou. {nfc.guidance}
         </p>
         {nfc.canWrite ? (
           <button
@@ -223,7 +229,7 @@ export function DigitalCardShareDesk({
               Allow Tap-to-Connect
             </label>
             <span className="mt-0.5 block text-xs text-slate-500">
-              When you show the card, Tap-to-Connect waits on the plate. Turn this off to refuse new Tap sessions.
+              Let nearby guests start Tap-to-Connect when you show your card.
             </span>
             <Link href={TAP_STUDIO_PATH} className="mt-1 inline-block whitespace-nowrap text-xs font-semibold text-[#0B8A83]">
               Open Tap studio

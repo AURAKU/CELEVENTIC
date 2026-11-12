@@ -111,6 +111,61 @@ export const MINI_TOURS: MiniTour[] = [
       { id: "distribute", title: "Distribute", body: "When ready, send links and track opens from your guest list.", targetSelector: "[data-tour='invitation-distribute']" },
     ],
   },
+  {
+    id: "celeyou-studio",
+    title: "CeleYou Studio walkthrough",
+    guideSlug: "celeyou",
+    steps: [
+      {
+        id: "activity",
+        title: "Activity",
+        body: "Live counts from people who open this CeleYou. Filter with Today, 7 days, 30 days, This month, All time, or pick dates on the calendar.",
+        targetSelector: "#studio-activity",
+      },
+      {
+        id: "activation",
+        title: "Activation",
+        body: "A paid plan keeps the public page live. You cannot renew or upgrade until the current term ends.",
+        targetSelector: "#studio-activation",
+      },
+      {
+        id: "identity",
+        title: "Identity",
+        body: "Name, portrait, and company. Save to publish. Guests see the saved plate.",
+        targetSelector: "#studio-identity",
+      },
+      {
+        id: "look",
+        title: "Design",
+        body: "Choose a look, then save it. Every template on the platform uses this same Studio.",
+        targetSelector: "#studio-look",
+      },
+      {
+        id: "reach",
+        title: "Contact and Reach",
+        body: "Add mail, numbers, sites, chat, and wallets. Guests only see what you fill.",
+        targetSelector: "#studio-contact, #studio-reach",
+      },
+      {
+        id: "privacy",
+        title: "Access codes",
+        body: "Mark a detail Public, Code, or Ask. Code stays hidden on the public page until the guest enters that code.",
+        targetSelector: "#studio-privacy",
+      },
+      {
+        id: "share",
+        title: "Share",
+        body: "Share My Card sends the live public link with the plate. Copy Profile Link copies that URL. Wallet card opens the payment channels you uploaded. Hold up this card fills the screen with only the plate.",
+        targetSelector: "#share",
+      },
+      {
+        id: "nfc",
+        title: "NFC",
+        body: "A programmed NFC card opens this CeleYou. Copy the NFC link to program a card, or share the QR.",
+        targetSelector: "#studio-live",
+      },
+    ],
+  },
 ];
 
 export function getMiniTour(id: string): MiniTour | null {

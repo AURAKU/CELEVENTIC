@@ -18,6 +18,7 @@ export function DigitalCardDesignVault({ cardId }: { cardId: string | null }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async (nextPage = 1, signal?: AbortSignal) => {
     if (!cardId) return;
@@ -50,8 +51,15 @@ export function DigitalCardDesignVault({ cardId }: { cardId: string | null }) {
 
   async function act(action: string, versionId?: string) {
     if (!cardId) return;
+    if (action === "archive") {
+      const confirmed = window.confirm(
+        "Remove this saved look? Your name, contacts, and public link stay the same."
+      );
+      if (!confirmed) return;
+    }
     setMessage(null);
     setError(null);
+    setBusyId(versionId || "save");
     try {
       const res = await fetch(`/api/digital-business-cards/${cardId}/designs`, {
         method: "POST",
@@ -63,11 +71,19 @@ export function DigitalCardDesignVault({ cardId }: { cardId: string | null }) {
         setError(typeof json.error === "string" ? json.error : "Could not update design");
         return;
       }
-      setMessage(action === "restore" ? "Design restored. Identity and sharing link are unchanged." : "Saved.");
+      setMessage(
+        action === "restore"
+          ? "Design restored. Identity and sharing link are unchanged."
+          : action === "archive"
+            ? "Saved look removed. Your CeleYou identity is unchanged."
+            : "Saved."
+      );
       await load(page);
       if (action === "restore") window.location.reload();
     } catch {
       setError("Could not update design.");
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -95,12 +111,36 @@ export function DigitalCardDesignVault({ cardId }: { cardId: string | null }) {
                 {item.themeId} · {new Date(item.createdAt).toLocaleDateString()}
               </p>
             </div>
-            <div className="flex gap-1">
-              <Button type="button" size="sm" variant="ghost" onClick={() => void act("duplicate", item.id)}>
+            <div className="flex flex-wrap gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="whitespace-nowrap"
+                disabled={busyId !== null}
+                onClick={() => void act("duplicate", item.id)}
+              >
                 Duplicate
               </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => void act("restore", item.id)}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="whitespace-nowrap"
+                disabled={busyId !== null}
+                onClick={() => void act("restore", item.id)}
+              >
                 Restore
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="whitespace-nowrap text-slate-600 hover:text-red-700"
+                disabled={busyId !== null}
+                onClick={() => void act("archive", item.id)}
+              >
+                Delete
               </Button>
             </div>
           </li>

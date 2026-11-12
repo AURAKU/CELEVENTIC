@@ -42,8 +42,10 @@ export function CeleCardAdminPolicyForm({ policy }: { policy: CeleCardLifecycleP
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 className="text-sm font-semibold text-slate-900">Update policy</h2>
-      <p className="mt-1 text-xs text-slate-500">Grace, reminders, and reconnect batching. Payments and plan history stay read-only.</p>
+      <h2 className="text-sm font-semibold text-slate-900">4. Subscription Policies</h2>
+      <p className="mt-1 text-xs text-slate-500">
+        Grace keeps the public card live after expiry. Designs, URL, and QR stay even after courtesy. Payments stay read-only.
+      </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="text-sm text-slate-700">
           Grace period (days)
@@ -62,7 +64,7 @@ export function CeleCardAdminPolicyForm({ policy }: { policy: CeleCardLifecycleP
           />
         </label>
         <label className="text-sm text-slate-700 sm:col-span-2">
-          Reminder offsets (days, comma separated)
+          5. Renewal Reminders (days before expiry, 0 is expiry day, negative is after)
           <input
             className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             value={reminderOffsetsDays}

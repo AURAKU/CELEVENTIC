@@ -14,6 +14,7 @@ import {
   type NfcTapOutcome,
 } from "@/lib/digital-business-card/nfc-device";
 import { celeYouNfcScanUrl, isReservedCeleYouShareToken } from "@/lib/digital-business-card/share-identity";
+import { shouldCountCeleYouGuestStat } from "@/lib/celeyou-share/events";
 import {
   ensureDefaultNfcDevice,
   getDigitalCardForUser,
@@ -63,7 +64,10 @@ export async function peekNfcDeviceCard(publicToken: string) {
   return device?.card ?? null;
 }
 
-export async function resolveNfcDeviceTap(publicToken: string): Promise<NfcTapResolution> {
+export async function resolveNfcDeviceTap(
+  publicToken: string,
+  input?: { viewerUserId?: string | null; userAgent?: string | null }
+): Promise<NfcTapResolution> {
   const device = await prisma.smartCardNfcDevice.findUnique({
     where: { publicToken },
     include: { card: true },
@@ -80,20 +84,27 @@ export async function resolveNfcDeviceTap(publicToken: string): Promise<NfcTapRe
   const outcome = share.nfcOutcome ?? "unknown";
 
   if (outcome === "open") {
-    await prisma.smartCardNfcDevice.update({
-      where: { id: device.id },
-      data: { tapCount: { increment: 1 }, lastTapAt: new Date() },
+    const record = shouldCountCeleYouGuestStat({
+      ownerUserId: device.card.userId,
+      viewerUserId: input?.viewerUserId,
+      userAgent: input?.userAgent,
     });
-    await prisma.smartCardInteraction
-      .create({
-        data: {
-          cardId: device.cardId,
-          campaignId: device.campaignId,
-          kind: "nfc_tap",
-          meta: { deviceId: device.id, deviceType: device.deviceType },
-        },
-      })
-      .catch(() => undefined);
+    if (record) {
+      await prisma.smartCardNfcDevice.update({
+        where: { id: device.id },
+        data: { tapCount: { increment: 1 }, lastTapAt: new Date() },
+      });
+      await prisma.smartCardInteraction
+        .create({
+          data: {
+            cardId: device.cardId,
+            campaignId: device.campaignId,
+            kind: "nfc_tap",
+            meta: { deviceId: device.id, deviceType: device.deviceType },
+          },
+        })
+        .catch(() => undefined);
+    }
     return { outcome: "open", slug: device.card.slug };
   }
 

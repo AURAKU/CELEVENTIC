@@ -39,6 +39,7 @@ export {
   CONNECT_BACK_ARIA,
   CONNECT_BACK_CTA,
   guestPrimaryActions,
+  guestReachEventKind,
   type GuestPrimaryAction,
   type GuestPrimaryActionId,
 } from "@/lib/celeyou-share/guest-actions";
@@ -54,6 +55,7 @@ export {
   celeYouActivityLabel,
   isAutomatedPreviewAgent,
   isCeleYouPublicEventKind,
+  shouldCountCeleYouGuestStat,
   trackCeleYouGuestEvent,
   type CeleYouPublicEventKind,
 } from "@/lib/celeyou-share/events";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { DigitalCardBrandMark } from "@/components/digital-business-card/digital-card-brand-mark";
 import {
@@ -13,7 +13,7 @@ import type { ReachVisibility } from "@/lib/digital-business-card/privacy-previe
 
 const MODES: Array<{ id: ReachVisibility; label: string }> = [
   { id: "PUBLIC", label: "Public" },
-  { id: "CODE_PROTECTED", label: "Hide" },
+  { id: "CODE_PROTECTED", label: "Code" },
   { id: "REQUEST_ACCESS", label: "Ask" },
 ];
 
@@ -41,24 +41,43 @@ export function DigitalCardPrivacyDesk({
   }>>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const persistReady = useRef(false);
+  const persistTimer = useRef<number | null>(null);
 
   const lockable = items.filter((item) => !item.locked);
   const hiddenForCode = useMemo(
     () => lockable.filter((item) => (visibility[item.id] || "PUBLIC") === "CODE_PROTECTED"),
     [lockable, visibility]
   );
-  const hiddenIds = useMemo(() => hiddenForCode.map((item) => item.id), [hiddenForCode]);
-  const hiddenKey = hiddenIds.join("|");
+  const liveCodes = codes.filter((row) => !row.revokedAt);
 
   useEffect(() => {
-    const ids = hiddenKey ? hiddenKey.split("|") : [];
-    setSelected((current) => {
-      const kept = current.filter((id) => ids.includes(id));
-      const extra = ids.filter((id) => !kept.includes(id));
-      if (!extra.length && kept.length === current.length) return current;
-      return [...kept, ...extra];
-    });
-  }, [hiddenKey]);
+    persistReady.current = false;
+  }, [cardId]);
+
+  useEffect(() => {
+    if (!cardId || !lockable.length) return;
+    if (!persistReady.current) {
+      persistReady.current = true;
+      return;
+    }
+    if (persistTimer.current) window.clearTimeout(persistTimer.current);
+    persistTimer.current = window.setTimeout(() => {
+      void fetch(`/api/digital-business-cards/${cardId}/reach-visibility`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibility }),
+      }).then(async (res) => {
+        if (!res.ok) {
+          const json = await res.json().catch(() => null);
+          setError(json?.error || "Could not save which details stay public.");
+        }
+      });
+    }, 400);
+    return () => {
+      if (persistTimer.current) window.clearTimeout(persistTimer.current);
+    };
+  }, [cardId, lockable.length, visibility]);
 
   useEffect(() => {
     if (!cardId) return;
@@ -87,15 +106,34 @@ export function DigitalCardPrivacyDesk({
     if (mode === "PUBLIC") delete next[id];
     else next[id] = mode;
     onVisibilityChange(next);
+    if (mode === "CODE_PROTECTED") {
+      setSelected((current) => (current.includes(id) ? current : [...current, id]));
+    } else {
+      setSelected((current) => current.filter((itemId) => itemId !== id));
+    }
+  }
+
+  function toggleCodeItem(id: string) {
+    const on = selected.includes(id);
+    if (on) {
+      setSelected((current) => current.filter((itemId) => itemId !== id));
+      const covered = liveCodes.some((row) => row.itemKeys.includes(id));
+      if (!covered && (visibility[id] || "PUBLIC") === "CODE_PROTECTED") {
+        setMode(id, "PUBLIC");
+      }
+      return;
+    }
+    setSelected((current) => [...current, id]);
+    if ((visibility[id] || "PUBLIC") !== "CODE_PROTECTED") setMode(id, "CODE_PROTECTED");
   }
 
   async function createCode() {
     if (!cardId) return;
     setError(null);
     setMessage(null);
-    const itemKeys = (selected.length ? selected : hiddenIds).filter((id) => hiddenIds.includes(id));
+    const itemKeys = selected.filter(Boolean);
     if (!itemKeys.length) {
-      setError("Hide at least one detail, then save a code for those hidden details.");
+      setError("Select the details this code should unveil. Everything else stays public.");
       return;
     }
     if (!/^[0-9]{4}$|^[A-Z]{4}$/.test(code.trim().toUpperCase())) {
@@ -114,7 +152,7 @@ export function DigitalCardPrivacyDesk({
         return;
       }
       setCode("");
-      setMessage("Code saved. Guests who enter it only unveil the hidden details you assigned.");
+      setMessage("Code saved. Guests with this code only unveil the details you selected.");
       const list = await fetch(`/api/digital-business-cards/${cardId}/access-codes`);
       const listed = await list.json().catch(() => null);
       if (list.ok) setCodes(listed?.data ?? []);
@@ -158,13 +196,18 @@ export function DigitalCardPrivacyDesk({
     }
   }
 
+  function itemTitle(id: string) {
+    const item = lockable.find((row) => row.id === id);
+    return item ? reachAccountPreview(item).title : id;
+  }
+
   return (
-    <div className="space-y-4">
+    <div id="studio-privacy" className="space-y-4">
       <div>
         <p className="text-sm font-semibold text-slate-900">Privacy and access</p>
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Public details stay on the guest page for anyone with your QR, NFC tap, or link. Hide personal or business
-          details behind a four character code. Guests tap the eye, enter the code, and only those hidden details unveil.
+          Public details stay open on your CeleYou. Mark a detail Code if guests need the access code you share. Leave
+          a detail Public if anyone with your link should use it.
         </p>
       </div>
       <div className="space-y-2">
@@ -183,7 +226,11 @@ export function DigitalCardPrivacyDesk({
                     <p className="truncate text-sm font-medium text-slate-800">{preview.title}</p>
                     <p className="truncate text-[11px] text-slate-500">
                       {preview.hint || brandReachLabel(item.brand)}
-                      {mode === "CODE_PROTECTED" ? " · hidden" : mode === "REQUEST_ACCESS" ? " · ask first" : " · public"}
+                      {mode === "CODE_PROTECTED"
+                        ? " · needs a code"
+                        : mode === "REQUEST_ACCESS"
+                          ? " · ask first"
+                          : " · public"}
                     </p>
                   </div>
                 </div>
@@ -218,7 +265,7 @@ export function DigitalCardPrivacyDesk({
           })
         ) : (
           <p className="text-xs text-slate-500">
-            Fill a mail, number, site, chat, or wallet above, then choose which ones stay public and which stay hidden.
+            Add a mail, number, site, chat, or wallet above, then choose which stay public and which need a code.
           </p>
         )}
       </div>
@@ -227,7 +274,7 @@ export function DigitalCardPrivacyDesk({
         <div className="space-y-3 rounded-xl border border-slate-200 p-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Access codes</p>
           <p className="text-[11px] leading-snug text-slate-500">
-            Share this code only with people who should see the hidden details. Public details never need it.
+            Select the details this code unveils. Details you leave unselected stay public and never need this code.
           </p>
           <input
             value={label}
@@ -243,20 +290,16 @@ export function DigitalCardPrivacyDesk({
             autoComplete="one-time-code"
             className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm tracking-[0.2em]"
           />
-          {hiddenForCode.length ? (
+          {lockable.length ? (
             <div className="flex flex-wrap gap-1.5">
-              {hiddenForCode.map((item) => {
+              {lockable.map((item) => {
                 const on = selected.includes(item.id);
                 const preview = reachAccountPreview(item);
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() =>
-                      setSelected((current) =>
-                        on ? current.filter((id) => id !== item.id) : [...current, item.id]
-                      )
-                    }
+                    onClick={() => toggleCodeItem(item.id)}
                     className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]"
                     style={{ background: on ? "#0B8A83" : "#e2e8f0", color: on ? "#fff" : "#334155" }}
                   >
@@ -266,7 +309,7 @@ export function DigitalCardPrivacyDesk({
               })}
             </div>
           ) : (
-            <p className="text-[11px] text-slate-500">Hide at least one detail above, then save a code for it.</p>
+            <p className="text-[11px] text-slate-500">Add details above, then select which ones this code unveils.</p>
           )}
           <button
             type="button"
@@ -275,22 +318,25 @@ export function DigitalCardPrivacyDesk({
           >
             Save code
           </button>
-          {codes.map((row) => (
-            <div key={row.id} className="flex items-center justify-between text-xs text-slate-600">
-              <span>
-                {row.label} · {row.itemKeys.length} details{row.revokedAt ? " · revoked" : ""}
+          {liveCodes.map((row) => (
+            <div key={row.id} className="flex items-center justify-between gap-3 text-xs text-slate-600">
+              <span className="min-w-0 truncate">
+                {row.label} · {row.itemKeys.map(itemTitle).join(", ") || `${row.itemKeys.length} details`}
               </span>
-              {row.revokedAt ? null : (
-                <button type="button" className="text-slate-500" onClick={() => void revoke(row.id)}>
-                  Revoke
-                </button>
-              )}
+              <button type="button" className="shrink-0 text-slate-500" onClick={() => void revoke(row.id)}>
+                Revoke
+              </button>
             </div>
           ))}
+          {codes.some((row) => row.revokedAt) ? (
+            <p className="text-[11px] text-slate-400">
+              {codes.filter((row) => row.revokedAt).length} revoked
+            </p>
+          ) : null}
         </div>
       ) : (
         <p className="text-xs text-slate-500">
-          Hide details now to preview the eye on the card. Save the card to issue a guest code.
+          Mark details Code to preview the lock on the card. Save the card to issue a guest code.
         </p>
       )}
 
@@ -322,11 +368,8 @@ export function DigitalCardPrivacyDesk({
         </div>
       ) : null}
 
-      {hiddenForCode.length && cardId && !codes.some((row) => !row.revokedAt) ? (
-        <p className="text-xs text-amber-800">Hidden details stay closed until you save a code.</p>
-      ) : null}
-      {hiddenForCode.length && cardId ? (
-        <p className="text-xs text-slate-500">Save the card so guests see the hidden eyes on the QR, NFC tap, and link.</p>
+      {hiddenForCode.length && cardId && !liveCodes.length ? (
+        <p className="text-xs text-amber-800">Hidden details stay closed until you save a code for them.</p>
       ) : null}
 
       {message ? <p className="text-xs text-teal-800">{message}</p> : null}

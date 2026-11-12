@@ -229,6 +229,7 @@ export function PublicDigitalCardsShowcase({
   const [filter, setFilter] = useState<"all" | DigitalCardThemeCategory>("all");
   const [planId, setPlanId] = useState<SmartCardPlanId>("yearly");
   const [plans, setPlans] = useState<SmartCardPlan[]>(SMARTCARD_PLANS);
+  const [conciergePriceGhs, setConciergePriceGhs] = useState(800);
   const themes = useMemo(
     () =>
       filter === "all"
@@ -247,6 +248,9 @@ export function PublicDigitalCardsShowcase({
         const json = await res.json();
         if (!cancelled && Array.isArray(json.data?.plans) && json.data.plans.length) {
           setPlans(json.data.plans as SmartCardPlan[]);
+        }
+        if (!cancelled && Number(json.data?.conciergePriceGhs) > 0) {
+          setConciergePriceGhs(Number(json.data.conciergePriceGhs));
         }
       } catch {
         /* keep catalog fallback */
@@ -350,13 +354,13 @@ export function PublicDigitalCardsShowcase({
 
       <div id="smartcard-plans" className="mt-12 scroll-mt-24">
         <div className="mb-6 max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0B8A83]">Live plans</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0B8A83]">CeleYou Pro</p>
           <h3 className="mt-1 font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Activate only while you pay.
+            Prepaid hosting. Not lifetime access.
           </h3>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Design in the studio for free. The public CeleYou. QR, NFC, Wallet, Connect Back. Stays
-            offline until a plan is paid. Lapse, and the page goes dark for everyone you meet.
+            Pay for the months you want the public card, QR, NFC, and Connect Back live. When the term
+            ends, your design, URL, and QR stay saved. Premium hosting needs a new term.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -367,26 +371,32 @@ export function PublicDigitalCardsShowcase({
                 key={plan.id}
                 type="button"
                 onClick={() => setPlanId(plan.id)}
-                className={`relative rounded-2xl border p-5 text-left transition ${
+                className={`relative flex h-full min-w-0 flex-col items-start whitespace-normal rounded-2xl border p-5 text-left transition ${
                   active
                     ? "border-[#0B8A83] bg-[#0B8A83]/6 shadow-[0_16px_40px_rgba(11,138,131,0.12)]"
                     : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
               >
                 {plan.badge ? (
-                  <span className="absolute right-4 top-4 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                  <span className="absolute right-3 top-3 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                     {plan.badge}
                   </span>
                 ) : null}
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{plan.label}</p>
-                <p className="mt-2 font-display text-3xl font-bold text-slate-900">₵{plan.priceGhs}</p>
-                <p className="text-xs text-slate-500">₵{plan.perMonthGhs}/mo</p>
-                {plan.saveGhs > 0 ? (
-                  <p className="mt-1 text-[11px] font-semibold text-[#0B8A83]">Save ₵{plan.saveGhs}</p>
+                <p className={`text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 ${plan.badge ? "pr-24" : ""}`}>
+                  {plan.label}
+                </p>
+                <p className="mt-2 font-display text-3xl font-bold text-slate-900">GH₵{plan.priceGhs}</p>
+                <p className="whitespace-normal text-xs leading-snug text-slate-500">
+                  {plan.durationLabel ?? `${plan.months} months`} · GH₵{plan.perMonthGhs}/mo
+                </p>
+                {plan.savePercent > 0 ? (
+                  <p className="mt-1 whitespace-normal text-[11px] font-semibold leading-snug text-[#0B8A83]">
+                    Save about {plan.savePercent}% · GH₵{plan.saveGhs}
+                  </p>
                 ) : (
-                  <p className="mt-1 text-[11px] text-slate-400">Flexible start</p>
+                  <p className="mt-1 whitespace-normal text-[11px] leading-snug text-slate-400">Flexible start</p>
                 )}
-                <p className="mt-3 text-xs leading-relaxed text-slate-600">{plan.blurb}</p>
+                <p className="mt-3 whitespace-normal text-xs leading-snug text-slate-600">{plan.blurb}</p>
                 <span className={`mt-4 inline-flex items-center gap-1 text-xs font-semibold ${active ? "text-[#0B8A83]" : "text-slate-400"}`}>
                   {active ? <Check className="h-3.5 w-3.5" /> : null}
                   {active ? "Selected" : "Select"}
@@ -398,15 +408,26 @@ export function PublicDigitalCardsShowcase({
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button asChild className="bg-[#0B8A83] hover:bg-[#097a74]">
             <Link href={registerHref}>
-              Continue with {selectedPlan.label} · ₵{selectedPlan.priceGhs}
+              Continue with {selectedPlan.label} · GH₵{selectedPlan.priceGhs}
               <ArrowUpRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
-          <Button asChild variant="outline">
-            <Link href="/celecard/concierge">Have our team design it for you</Link>
-          </Button>
-          <p className="text-xs text-slate-500">Paystack checkout in the studio. Card goes live the moment payment clears.</p>
+          <p className="text-xs text-slate-500">Paystack checkout in the studio. The card goes live when payment clears.</p>
         </div>
+        <article className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0B8A83]">Concierge</p>
+          <h4 className="mt-1 font-display text-lg font-semibold text-slate-900">
+            Professional Concierge Design — GH₵{conciergePriceGhs} one-time
+          </h4>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+            One-time design and setup fee. Your approved design remains saved to your account. An
+            active CeleYou subscription is required for premium hosting and subscription-dependent
+            features. Subscription sold separately.
+          </p>
+          <Button asChild variant="outline" className="mt-4">
+            <Link href="/celecard/concierge">Request concierge design</Link>
+          </Button>
+        </article>
       </div>
 
       <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

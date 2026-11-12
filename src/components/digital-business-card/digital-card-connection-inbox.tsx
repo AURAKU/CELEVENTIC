@@ -24,9 +24,12 @@ type ConnectionRow = {
   visitorName: string;
   visitorEmail: string | null;
   visitorPhone: string | null;
+  visitorCompany: string | null;
+  visitorTitle: string | null;
   source: string;
   status: string;
   note: string | null;
+  ownerNote: string | null;
   createdAt: string;
 };
 
@@ -39,15 +42,18 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
   const [filter, setFilter] = useState<CeleCardLeadStatus | "ALL">("ALL");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
 
   const load = useCallback(
-    async (nextPage = 1, nextFilter = filter, signal?: AbortSignal) => {
+    async (nextPage = 1, nextFilter = filter, nextSearch = search, signal?: AbortSignal) => {
       if (!cardId) return;
       setLoading(true);
       setError(null);
       try {
         const params = new URLSearchParams({ page: String(nextPage) });
         if (nextFilter !== "ALL") params.set("status", nextFilter);
+        if (nextSearch.trim()) params.set("q", nextSearch.trim());
         const res = await fetch(`/api/digital-business-cards/${cardId}/connections?${params}`, { signal });
         const json = await res.json().catch(() => ({}));
         if (signal?.aborted) return;
@@ -66,7 +72,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [cardId, filter]
+    [cardId, filter, search]
   );
 
   async function saveStatus(
@@ -96,11 +102,40 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
     }
   }
 
+  async function saveNote(connectionId: string, ownerNote: string) {
+    if (!cardId) return;
+    setBusyId(connectionId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/digital-business-cards/${cardId}/connections`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId, ownerNote }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Could not save that note.");
+      setItems((current) =>
+        current.map((item) =>
+          item.id === connectionId ? { ...item, ownerNote: json.data?.ownerNote ?? ownerNote } : item
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save that note.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(query.trim()), 280);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
   useEffect(() => {
     const ac = new AbortController();
-    void load(1, filter, ac.signal);
+    void load(1, filter, search, ac.signal);
     return () => ac.abort();
-  }, [load, filter]);
+  }, [load, filter, search]);
 
   if (!cardId) return null;
 
@@ -108,16 +143,25 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
 
   return (
     <section id="studio-inbox" className="scroll-mt-16 rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-sm font-semibold text-slate-900">Requests</p>
+      <p className="text-sm font-semibold text-slate-900">Connections</p>
       <p className="text-xs text-slate-500">
-        Connect Back, courtesy reconnects, and meeting times. Contact details appear only when the visitor chose to share them.
+        Connect Back, card exchanges, courtesy reconnects, and meeting times. Contact details appear only when the visitor chose to share them.
       </p>
+      <label className="sr-only" htmlFor="studio-inbox-search">
+        Search connections
+      </label>
+      <input
+        id="studio-inbox-search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search name, email, company"
+        className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+      />
       <div className="mt-3 flex flex-wrap gap-1.5">
         <button
           type="button"
           onClick={() => {
             setFilter("ALL");
-            void load(1, "ALL");
           }}
           className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
             filter === "ALL" ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]" : "border-slate-200 text-slate-500"
@@ -131,7 +175,6 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
             type="button"
             onClick={() => {
               setFilter(status);
-              void load(1, status);
             }}
             className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
               filter === status ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]" : "border-slate-200 text-slate-500"
@@ -191,6 +234,11 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                   {meeting.place ? ` · ${meeting.place}` : ""}
                 </p>
               ) : null}
+              {[item.visitorTitle, item.visitorCompany].filter(Boolean).length ? (
+                <p className="text-[11px] text-slate-600">
+                  {[item.visitorTitle, item.visitorCompany].filter(Boolean).join(" · ")}
+                </p>
+              ) : null}
               {contact ? <p className="text-[11px] text-slate-600">{contact}</p> : (
                 <p className="text-[11px] text-slate-500">Anonymous request</p>
               )}
@@ -217,10 +265,28 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                     ? "Courtesy reconnect"
                     : item.source === "meeting"
                       ? "Meeting request"
-                      : "Connect Back"}{" "}
+                      : item.source === "exchange"
+                        ? "Card exchange"
+                        : "Connect Back"}{" "}
                   · {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                 </p>
               </div>
+              <label className="sr-only" htmlFor={`lead-note-${item.id}`}>
+                Private note
+              </label>
+              <textarea
+                id={`lead-note-${item.id}`}
+                defaultValue={item.ownerNote || ""}
+                disabled={busyId === item.id}
+                placeholder="Private note"
+                rows={2}
+                onBlur={(event) => {
+                  const next = event.target.value.trim();
+                  if (next === (item.ownerNote || "").trim()) return;
+                  void saveNote(item.id, next);
+                }}
+                className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] text-slate-700"
+              />
               {meeting ? (
                 <div className="mt-1.5 flex flex-wrap gap-2">
                   {meetingOpen ? (
@@ -307,7 +373,9 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
         })}
       </ul>
       {items.length === 0 && !loading ? (
-        <p className="mt-3 text-xs text-slate-500">No requests yet.</p>
+        <p className="mt-3 text-xs text-slate-500">
+          {search ? "No connections match that search." : "No connections yet. Share your CeleYou card to start building your network."}
+        </p>
       ) : null}
       {total > pageSize ? (
         <div className="mt-3 flex items-center justify-between gap-2">

@@ -37,6 +37,7 @@ export function CeleCardQrBadge({
   const wellPct = `${Math.round(CELECARD_QR_CENTER_WELL * 100)}%`;
   const mark = qrSrc ? (
     <span
+      data-celecard-qr=""
       className={cn(
         "relative z-10 block shrink-0 overflow-hidden rounded-[0.7rem] bg-white shadow-[0_10px_22px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-2px_3px_rgba(0,0,0,0.12)]",
         padClass,

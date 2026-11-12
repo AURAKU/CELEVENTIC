@@ -19,6 +19,7 @@ import {
 } from "@/lib/digital-business-card/meetings";
 import type { DigitalCardReachItem } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
+import { CELECARD_REACH_INK, CELECARD_REACH_MUTED } from "@/lib/digital-business-card/type-voice";
 
 function deskFromItem(item: DigitalCardReachItem): CeleCardMeetingDesk {
   try {
@@ -128,7 +129,7 @@ function MeetingBooker({
   const days = groupMeetingDays(slots);
   const day = days.find((row) => row.key === dayKey) ?? days[0];
   const inputClass = "w-full rounded-xl border px-3 py-2.5 text-sm outline-none";
-  const inputStyle = { borderColor: `${theme.border}`, background: "#fff", color: theme.text };
+  const inputStyle = { borderColor: `${theme.border}`, background: "#fff", color: CELECARD_REACH_INK };
   const step = done ? "done" : picked ? "details" : "time";
 
   async function submit() {
@@ -184,7 +185,7 @@ function MeetingBooker({
           <Check className="h-4 w-4" />
           Request sent
         </p>
-        <p className="text-sm leading-relaxed" style={{ color: theme.text }}>
+        <p className="text-sm leading-relaxed" style={{ color: CELECARD_REACH_INK }}>
           {formatMeetingWhen(done.start, desk.timezone)}
           {guestZone !== desk.timezone ? ` · your ${formatMeetingWhen(done.start, guestZone)}` : ""}.{" "}
           {ownerName ? `${ownerName.split(" ")[0]} gets a message to confirm.` : "They get a message to confirm this time."}
@@ -221,10 +222,10 @@ function MeetingBooker({
   return (
     <div className={cn("grid gap-3", compact ? "p-3" : "p-3.5")}>
       <div>
-        <p className="text-sm font-semibold" style={{ color: theme.text }}>
+        <p className="text-sm font-semibold" style={{ color: CELECARD_REACH_INK }}>
           {desk.title}
         </p>
-        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: theme.muted }}>
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: CELECARD_REACH_MUTED }}>
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
             {meetingDurationCopy(desk.durationMin)}
@@ -235,16 +236,16 @@ function MeetingBooker({
           </span>
         </p>
         {desk.note ? (
-          <p className="mt-1 text-xs leading-relaxed" style={{ color: theme.muted }}>
+          <p className="mt-1 text-xs leading-relaxed" style={{ color: CELECARD_REACH_MUTED }}>
             {desk.note}
           </p>
         ) : null}
       </div>
 
-      <p className="flex flex-wrap gap-x-3 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: theme.muted }}>
-        <span style={{ color: !picked ? theme.accent : theme.muted }}>1 Day</span>
-        <span style={{ color: !picked ? theme.accent : theme.muted }}>2 Time</span>
-        <span style={{ color: picked ? theme.accent : theme.muted }}>3 Your details</span>
+      <p className="flex flex-wrap gap-x-3 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: CELECARD_REACH_MUTED }}>
+        <span style={{ color: !picked ? theme.accent : CELECARD_REACH_MUTED }}>1 Day</span>
+        <span style={{ color: !picked ? theme.accent : CELECARD_REACH_MUTED }}>2 Time</span>
+        <span style={{ color: picked ? theme.accent : CELECARD_REACH_MUTED }}>3 Your details</span>
       </p>
 
       {step !== "details" ? (
@@ -265,7 +266,7 @@ function MeetingBooker({
                   style={{
                     borderColor: on ? theme.accent : theme.border,
                     background: on ? theme.accent : "#fff",
-                    color: on ? "#fff" : theme.text,
+                    color: on ? "#fff" : CELECARD_REACH_INK,
                   }}
                 >
                   <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">{row.weekday}</span>
@@ -278,7 +279,7 @@ function MeetingBooker({
             })}
           </div>
         ) : (
-          <p className="text-xs" style={{ color: theme.muted }}>
+          <p className="text-xs" style={{ color: CELECARD_REACH_MUTED }}>
             No open times in the next {desk.horizonDays} days.
           </p>
         )
@@ -318,17 +319,17 @@ function MeetingBooker({
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: theme.accent }}>
             You picked
           </p>
-          <p className="mt-0.5 text-sm font-semibold" style={{ color: theme.text }}>
+          <p className="mt-0.5 text-sm font-semibold" style={{ color: CELECARD_REACH_INK }}>
             {formatMeetingWhen(picked.start, desk.timezone)}
           </p>
           {guestZone !== desk.timezone ? (
-            <p className="text-[11px]" style={{ color: theme.muted }}>
+            <p className="text-[11px]" style={{ color: CELECARD_REACH_MUTED }}>
               Your time {formatMeetingClockSafe(picked.start, guestZone)}
             </p>
           ) : null}
         </div>
       ) : (
-        <p className="text-xs" style={{ color: theme.muted }}>
+        <p className="text-xs" style={{ color: CELECARD_REACH_MUTED }}>
           Pick a day, then a time. They get a message in their CeleYou inbox.
         </p>
       )}

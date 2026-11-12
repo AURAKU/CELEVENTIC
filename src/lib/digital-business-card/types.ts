@@ -50,6 +50,13 @@ export { DIGITAL_CARD_MONTHLY_PRICE_GHS } from "./plans";
 /** Studio design window. Published profiles stay guest-shareable during this window. */
 export const DIGITAL_CARD_TRIAL_DAYS = 14;
 
+/** About line on the plate and in studio. Server and browser share this cap. */
+export const CELECARD_BIO_MAX_CHARS = 300;
+
+export function clipCeleCardBio(value: string | null | undefined): string {
+  return String(value ?? "").slice(0, CELECARD_BIO_MAX_CHARS);
+}
+
 export const DIGITAL_CARD_PUBLIC_PATH = "/card";
 export const DIGITAL_CARD_IDENTITY_PATH = "/u";
 

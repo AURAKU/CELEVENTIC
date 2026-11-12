@@ -1,6 +1,7 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { getSession } from "@/lib/auth";
 import { DigitalCardPublicView } from "@/components/digital-business-card/digital-card-public-view";
 import {
   DEMO_CARD_SLUG,
@@ -22,7 +23,7 @@ import { recordCeleCardLifecycleEvent } from "@/services/digital-business-card/d
 import { celeYouGuestOrigin, getServerAppUrl } from "@/lib/app-url";
 import {
   getDigitalCardBySlug,
-  incrementDigitalCardView,
+  recordDigitalCardGuestOpen,
 } from "@/services/digital-business-card/digital-business-card.service";
 import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
 import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
@@ -86,7 +87,14 @@ export default async function DigitalBusinessCardPage({
   const presentation = resolveCeleYouPublicShare({ card, channel: "profile", policy }).presentation;
   if (presentation === "live") {
     if (!(await isCeleYouUnfurlRequest())) {
-      void incrementDigitalCardView(card.id).catch(() => undefined);
+      const session = await getSession();
+      const ua = (await headers()).get("user-agent") || "";
+      void recordDigitalCardGuestOpen({
+        cardId: card.id,
+        ownerUserId: card.userId,
+        viewerUserId: session?.user?.id,
+        userAgent: ua,
+      }).catch(() => undefined);
     }
   } else if (presentation === "courtesy") {
     void recordCeleCardLifecycleEvent({ cardId: card.id, kind: "CourtesyPageViewed" }).catch(() => undefined);

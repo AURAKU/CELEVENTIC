@@ -95,6 +95,7 @@ public/uploads/**
 .next-ship-check/
 .next-verify/
 .next-live-ready/
+.next-github-verify/
 
 # Root SQLite copies (Prisma file:./dev.db also resolves under prisma/)
 /dev.db

@@ -27,6 +27,15 @@ import {
   type DigitalCardReachItem,
 } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
+import { CELECARD_REACH_MUTED, celecardReachPlate } from "@/lib/digital-business-card/type-voice";
+import { guestReachEventKind } from "@/lib/celeyou-share/guest-actions";
+import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
+
+function trackGuestReach(item: DigitalCardReachItem, slug?: string, preview?: boolean) {
+  if (!slug || preview) return;
+  const kind = guestReachEventKind(item);
+  if (kind) trackCeleYouGuestEvent(slug, kind);
+}
 
 function isLocationGroup(group: DigitalCardReachGroup) {
   return group.brand === "location";
@@ -58,11 +67,7 @@ function stageIsDark(stageBackground: string) {
 }
 
 function plateStyle(theme: DigitalCardTheme, darkStage: boolean) {
-  return {
-    borderColor: theme.border,
-    background: darkStage ? "rgba(255,251,245,0.96)" : "rgba(255,255,255,0.92)",
-    color: darkStage ? "#1c1917" : theme.text,
-  };
+  return celecardReachPlate(theme, darkStage);
 }
 
 export function DigitalCardReachGrid({
@@ -81,6 +86,7 @@ export function DigitalCardReachGrid({
   const groups = groupReachByBrand(items);
   const dock = groups.filter((group) => group.surface === "dock");
   const stack = groups.filter((group) => group.surface === "stack");
+  const trackSlug = compact ? undefined : slug;
   const [openId, setOpenId] = useState<string | null>(null);
   const [qrItem, setQrItem] = useState<DigitalCardReachItem | null>(null);
   const [accessItem, setAccessItem] = useState<DigitalCardReachItem | null>(null);
@@ -143,6 +149,7 @@ export function DigitalCardReachGrid({
                   onToggle={() => toggle(group.id)}
                   onOpenQr={setQrItem}
                   onOpenAccess={setAccessItem}
+                  trackSlug={trackSlug}
                 />
               </span>
             ))}
@@ -154,10 +161,10 @@ export function DigitalCardReachGrid({
               style={plate}
             >
               <div className="px-3.5 pt-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-50">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: CELECARD_REACH_MUTED }}>
                   {reachGroupCopy(openDock).title}
                 </p>
-                <p className={cn("mt-0.5 font-medium opacity-70", compact ? "text-[11px]" : "text-[12px]")}>
+                <p className={cn("mt-0.5 font-medium", compact ? "text-[11px]" : "text-[12px]")} style={{ color: CELECARD_REACH_MUTED }}>
                   {isLocationGroup(openDock)
                     ? "See the place, then open it in maps"
                     : usesChatLinkKinds(openDock.brand)
@@ -175,8 +182,8 @@ export function DigitalCardReachGrid({
               ) : isMeetingGroup(openDock) ? (
                 <>
                   <div className="px-3.5 pt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-50">Meetings</p>
-                    <p className={cn("mt-0.5 font-medium opacity-70", compact ? "text-[11px]" : "text-[12px]")}>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: CELECARD_REACH_MUTED }}>Meetings</p>
+                    <p className={cn("mt-0.5 font-medium", compact ? "text-[11px]" : "text-[12px]")} style={{ color: CELECARD_REACH_MUTED }}>
                       Pick a day and time. They get a message to confirm.
                     </p>
                   </div>
@@ -197,6 +204,7 @@ export function DigitalCardReachGrid({
                 onOpenQr={setQrItem}
                 onOpenAccess={setAccessItem}
                 accent={theme.accent}
+                trackSlug={trackSlug}
               />
               )}
             </div>
@@ -219,12 +227,15 @@ export function DigitalCardReachGrid({
                 onOpenAccess={setAccessItem}
                 slug={slug}
                 ownerName={ownerName}
+                trackSlug={trackSlug}
               />
             </div>
           ))}
         </div>
       ) : null}
-      {qrItem ? <PayQrSheet item={qrItem} theme={theme} preview={compact} onClose={() => setQrItem(null)} /> : null}
+      {qrItem ? (
+        <PayQrSheet item={qrItem} theme={theme} preview={compact} trackSlug={trackSlug} onClose={() => setQrItem(null)} />
+      ) : null}
       {accessItem ? (
         <AccessSheet
           item={accessItem}
@@ -245,6 +256,7 @@ function ChoiceList({
   onOpenQr,
   onOpenAccess,
   accent,
+  trackSlug,
 }: {
   group: DigitalCardReachGroup;
   compact?: boolean;
@@ -252,6 +264,7 @@ function ChoiceList({
   onOpenQr?: (item: DigitalCardReachItem) => void;
   onOpenAccess?: (item: DigitalCardReachItem) => void;
   accent?: string;
+  trackSlug?: string;
 }) {
   const sections = usesChatLinkKinds(group.brand) ? arrangeChatChoices(group.items) : [{ id: "all", label: null, items: group.items }];
   return (
@@ -259,7 +272,7 @@ function ChoiceList({
       {sections.map((section) => (
         <div key={section.id} className="grid gap-1">
           {section.label ? (
-            <p className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] opacity-45">
+            <p className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#44403c" }}>
               {section.label}
             </p>
           ) : null}
@@ -270,6 +283,7 @@ function ChoiceList({
             key={item.id}
             item={item}
             preview={preview}
+            trackSlug={trackSlug}
             onOpenQr={onOpenQr}
             onOpenAccess={onOpenAccess}
             aria-label={choice.hint ? `${choice.title} ${choice.hint}` : choice.title}
@@ -300,13 +314,14 @@ function ChoiceList({
               {choice.hint ? (
                 <span
                   className={cn(
-                    "mt-0.5 block truncate font-medium opacity-55",
+                    "mt-0.5 block truncate font-medium",
                     item.kindTag || item.linkKind
                       ? "text-[9px] uppercase tracking-[0.14em]"
                       : compact
                         ? "text-[10px]"
                         : "text-[11px]"
                   )}
+                  style={{ color: "#44403c" }}
                 >
                   {choice.hint}
                 </span>
@@ -339,6 +354,7 @@ function DockTap({
   onToggle,
   onOpenQr,
   onOpenAccess,
+  trackSlug,
 }: {
   group: DigitalCardReachGroup;
   theme: DigitalCardTheme;
@@ -348,6 +364,7 @@ function DockTap({
   onToggle: () => void;
   onOpenQr?: (item: DigitalCardReachItem) => void;
   onOpenAccess?: (item: DigitalCardReachItem) => void;
+  trackSlug?: string;
 }) {
   const one = group.items.length === 1;
   const placeLocked = isLocationGroup(group) && group.items.every((item) => item.locked);
@@ -393,6 +410,7 @@ function DockTap({
       <ReachTarget
         item={item}
         preview={compact}
+        trackSlug={trackSlug}
         onOpenQr={onOpenQr}
         onOpenAccess={onOpenAccess}
         aria-label={`${item.title}${item.subtitle ? ` ${item.subtitle}` : ""}`}
@@ -433,6 +451,7 @@ function StackTap({
   onOpenAccess,
   slug,
   ownerName,
+  trackSlug,
 }: {
   group: DigitalCardReachGroup;
   theme: DigitalCardTheme;
@@ -444,6 +463,7 @@ function StackTap({
   onOpenAccess?: (item: DigitalCardReachItem) => void;
   slug?: string;
   ownerName?: string;
+  trackSlug?: string;
 }) {
   const menuId = useId();
   const copy = reachGroupCopy(group);
@@ -453,7 +473,7 @@ function StackTap({
     (!isLocationGroup(group) || placeLocked) &&
     !isMeetingGroup(group);
   const rowClass = cn(
-    "group relative flex items-center overflow-hidden border shadow-[0_16px_36px_rgba(0,0,0,0.16)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.22)]",
+    "celecard-reach-row group relative flex items-center overflow-hidden border shadow-[0_16px_36px_rgba(0,0,0,0.16)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.22)]",
     compact ? "min-h-12 gap-2.5 rounded-2xl px-2.5 py-2" : "min-h-[4.35rem] gap-3.5 rounded-[1.7rem] px-3.5 py-3"
   );
 
@@ -470,7 +490,10 @@ function StackTap({
           {copy.title}
         </span>
         {copy.subtitle ? (
-          <span className={cn("mt-0.5 block truncate font-medium opacity-55", compact ? "text-[10px]" : "text-[12px]")}>
+          <span
+            className={cn("mt-0.5 block truncate font-medium", compact ? "text-[10px]" : "text-[12px]")}
+            style={{ color: CELECARD_REACH_MUTED }}
+          >
             {copy.subtitle}
           </span>
         ) : null}
@@ -506,6 +529,7 @@ function StackTap({
       <ReachTarget
         item={group.items[0]}
         preview={compact}
+        trackSlug={trackSlug}
         className={rowClass}
         style={plate}
         onOpenQr={onOpenQr}
@@ -538,10 +562,10 @@ function StackTap({
               {isLocationGroup(group) ? (
                 <>
                   <div className="px-3.5 pt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-50">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: CELECARD_REACH_MUTED }}>
                       Location
                     </p>
-                    <p className={cn("mt-0.5 font-medium opacity-70", compact ? "text-[11px]" : "text-[12px]")}>
+                    <p className={cn("mt-0.5 font-medium", compact ? "text-[11px]" : "text-[12px]")} style={{ color: CELECARD_REACH_MUTED }}>
                       See the place, then open it in maps
                     </p>
                   </div>
@@ -555,10 +579,10 @@ function StackTap({
               ) : isMeetingGroup(group) ? (
                 <>
                   <div className="px-3.5 pt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-50">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: CELECARD_REACH_MUTED }}>
                       Meetings
                     </p>
-                    <p className={cn("mt-0.5 font-medium opacity-70", compact ? "text-[11px]" : "text-[12px]")}>
+                    <p className={cn("mt-0.5 font-medium", compact ? "text-[11px]" : "text-[12px]")} style={{ color: CELECARD_REACH_MUTED }}>
                       Pick a day and time. They get a message to confirm.
                     </p>
                   </div>
@@ -579,6 +603,7 @@ function StackTap({
                 onOpenQr={onOpenQr}
                 onOpenAccess={onOpenAccess}
                 accent={theme.accent}
+                trackSlug={trackSlug}
               />
               )}
         </div>
@@ -595,6 +620,7 @@ function ReachTarget({
   children,
   onOpenQr,
   onOpenAccess,
+  trackSlug,
   "aria-label": ariaLabel,
 }: {
   item: DigitalCardReachItem;
@@ -604,6 +630,7 @@ function ReachTarget({
   children: ReactNode;
   onOpenQr?: (item: DigitalCardReachItem) => void;
   onOpenAccess?: (item: DigitalCardReachItem) => void;
+  trackSlug?: string;
   "aria-label"?: string;
 }) {
   if (item.locked && onOpenAccess) {
@@ -625,6 +652,7 @@ function ReachTarget({
         style={style}
         aria-label={ariaLabel}
         onClick={() => {
+          trackGuestReach(item, trackSlug, preview);
           openInstalledReachApp(item, preview);
           onOpenQr(item);
         }}
@@ -634,7 +662,14 @@ function ReachTarget({
     );
   }
   return (
-    <DigitalCardSmartLink item={item} preview={preview} className={className} style={style} aria-label={ariaLabel}>
+    <DigitalCardSmartLink
+      item={item}
+      preview={preview}
+      className={className}
+      style={style}
+      aria-label={ariaLabel}
+      onActivate={() => trackGuestReach(item, trackSlug, preview)}
+    >
       {children}
     </DigitalCardSmartLink>
   );
@@ -644,11 +679,13 @@ function PayQrSheet({
   item,
   theme,
   preview,
+  trackSlug,
   onClose,
 }: {
   item: DigitalCardReachItem;
   theme: DigitalCardTheme;
   preview?: boolean;
+  trackSlug?: string;
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -727,6 +764,7 @@ function PayQrSheet({
               item={item}
               preview={preview}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#0B8A83] text-sm font-semibold text-white"
+              onActivate={() => trackGuestReach(item, trackSlug, preview)}
             >
               {qrShare ? `Open ${item.title}` : "Open wallet"}
               <ArrowUpRight className="h-4 w-4" />
@@ -765,7 +803,7 @@ function AccessSheet({
     setError(null);
     if (preview || !slug) {
       setBusy(false);
-      setError("Guests on your live card enter the code here. Save the card, then save a code, to unveil this.");
+      setError("Guests enter the code on your live CeleYou. Save a code in Privacy, then they can unveil this.");
       return;
     }
     const res = await fetch(`/api/digital-business-cards/public/${encodeURIComponent(slug)}/unlock`, {
@@ -825,8 +863,8 @@ function AccessSheet({
               <p className="text-[15px] font-semibold tracking-tight">{item.title}</p>
               <p className="text-[12px] opacity-55">
                 {needsCode
-                  ? "This is hidden. Enter the code the cardholder shared with you."
-                  : "Request access. The cardholder decides whether to unveil it."}
+                  ? "This stays private until you enter the code they shared. Public details on this CeleYou stay open."
+                  : "Request access. They decide whether to unveil this. Public details stay open."}
               </p>
             </div>
           </div>
@@ -857,7 +895,7 @@ function AccessSheet({
               className="inline-flex min-h-11 items-center justify-center rounded-xl text-sm font-semibold text-white"
               style={{ background: "#0B8A83" }}
             >
-              View details
+              Unveil
             </button>
           </form>
         ) : (

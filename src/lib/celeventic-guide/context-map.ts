@@ -1,10 +1,21 @@
 import { CELEVENTIC_GUIDE_CATALOG } from "./catalog";
+import {
+  CELEYOU_GUEST_HELP_INTRO,
+  CELEYOU_GUEST_HELP_TOPICS,
+  CELEYOU_STUDIO_HELP_INTRO,
+  CELEYOU_STUDIO_HELP_TOPICS,
+  type ContextHelpTopic,
+} from "./celeyou-help";
+
+export type { ContextHelpTopic };
 
 export interface ContextHelpMapping {
   routePrefix: string;
   guideSlugs: string[];
   tourId?: string;
   label: string;
+  intro?: string;
+  topics?: ContextHelpTopic[];
 }
 
 /**
@@ -132,17 +143,24 @@ export const CONTEXT_HELP_MAP: ContextHelpMapping[] = [
   {
     routePrefix: "/dashboard/business-card",
     guideSlugs: ["celeyou", "open-a-celeyou"],
+    tourId: "celeyou-studio",
     label: "CeleYou help",
+    intro: CELEYOU_STUDIO_HELP_INTRO,
+    topics: CELEYOU_STUDIO_HELP_TOPICS,
   },
   {
     routePrefix: "/digital-cards",
     guideSlugs: ["celeyou", "open-a-celeyou"],
     label: "CeleYou help",
+    intro: CELEYOU_STUDIO_HELP_INTRO,
+    topics: CELEYOU_STUDIO_HELP_TOPICS,
   },
   {
     routePrefix: "/card",
     guideSlugs: ["open-a-celeyou", "celeyou"],
     label: "CeleYou help",
+    intro: CELEYOU_GUEST_HELP_INTRO,
+    topics: CELEYOU_GUEST_HELP_TOPICS,
   },
   {
     routePrefix: "/admission",

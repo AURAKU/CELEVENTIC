@@ -895,8 +895,8 @@ export type DigitalCardSocials = Partial<Record<DigitalCardSocialKey, DigitalCar
   dockOrder?: string[];
   /** Per reach-item visibility. Missing key is PUBLIC. */
   reachVisibility?: Record<string, "PUBLIC" | "CODE_PROTECTED" | "REQUEST_ACCESS">;
-  /** Circle, square, or soft-square portrait plate. Missing key uses the theme default. */
-  portraitFrame?: "circle" | "square" | "rounded";
+  /** Circle, square, soft-square, or arch portrait plate. Missing key uses the theme default. */
+  portraitFrame?: "circle" | "square" | "rounded" | "arch";
   /** Cropped company mark that sits beside the house name. */
   companyLogoUrl?: string;
   /** Owner layout, atmosphere, ornament, blended paper, lettering, and ink. Missing keys keep the template. */
@@ -1620,7 +1620,7 @@ export function normalizeSocials(raw: unknown): DigitalCardSocials {
     if (Object.keys(reachVisibility).length) out.reachVisibility = reachVisibility;
   }
   const portraitFrame = String(record.portraitFrame ?? "").trim().toLowerCase();
-  if (portraitFrame === "circle" || portraitFrame === "square" || portraitFrame === "rounded") {
+  if (portraitFrame === "circle" || portraitFrame === "square" || portraitFrame === "rounded" || portraitFrame === "arch") {
     out.portraitFrame = portraitFrame;
   }
   const companyLogoUrl = persistCompanyLogoUrl(record.companyLogoUrl);
@@ -2307,7 +2307,7 @@ export function reachAccountPreview(item: DigitalCardReachItem): {
   if (item.locked) {
     return {
       title: item.title,
-      hint: item.subtitle || (item.visibility === "CODE_PROTECTED" ? "Tap to view" : "Request access"),
+      hint: item.subtitle || (item.visibility === "CODE_PROTECTED" ? "Needs a code" : "Request access"),
       monogram: "••",
     };
   }
@@ -2545,6 +2545,45 @@ export function listDigitalCardReachItems(card: {
   return arrangeReachItems(items, card.socials.stackOrder, card.socials.dockOrder);
 }
 
+export function isPayReachItem(item: Pick<DigitalCardReachItem, "brand">): boolean {
+  return isPayNetwork(item.brand);
+}
+
+export type DigitalCardPayFamilyId = (typeof DIGITAL_CARD_PAY_FAMILIES)[number]["id"];
+
+export type DigitalCardPayFamilyGroup = {
+  id: DigitalCardPayFamilyId;
+  label: string;
+  items: DigitalCardReachItem[];
+};
+
+/** Guest Wallet card. Uploaded payment channels only. Access codes still apply. */
+export function listDigitalCardPayItems(card: {
+  email?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  socials?: DigitalCardSocials | null;
+  guestReach?: DigitalCardReachItem[] | null;
+}): DigitalCardReachItem[] {
+  const source = Array.isArray(card.guestReach)
+    ? card.guestReach
+    : listDigitalCardReachItems({
+        email: card.email,
+        phone: card.phone,
+        website: card.website,
+        socials: card.socials ?? {},
+      });
+  return source.filter(isPayReachItem);
+}
+
+export function groupDigitalCardPayItems(items: DigitalCardReachItem[]): DigitalCardPayFamilyGroup[] {
+  return DIGITAL_CARD_PAY_FAMILIES.map((family) => ({
+    id: family.id,
+    label: family.label,
+    items: items.filter((item) => (family.keys as readonly string[]).includes(item.brand)),
+  })).filter((group) => group.items.length > 0);
+}
+
 const PHONE_LIKE = new Set<DigitalCardSocialKey>([
   "whatsapp",
   "whatsappbusiness",
@@ -2583,7 +2622,7 @@ export const digitalCardSocialsSchema = z
     reachVisibility: z
       .record(z.enum(["PUBLIC", "CODE_PROTECTED", "REQUEST_ACCESS"]))
       .optional(),
-    portraitFrame: z.enum(["circle", "square", "rounded"]).optional(),
+    portraitFrame: z.enum(["circle", "square", "rounded", "arch"]).optional(),
     companyLogoUrl: z.string().max(2000).optional(),
     meeting: z
       .object({
@@ -2605,18 +2644,37 @@ export const digitalCardSocialsSchema = z
       .object({
         composition: z.enum(["classic", "portrait-led", "type-first", "media-first", "grid", "iconic"]).optional(),
         atmosphere: z.string().max(40).optional(),
-        ornament: z.enum(["none", "foil", "halftone", "wave", "grid", "marquee", "cel", "crest", "kente", "sunburst", "neon"]).optional(),
+        ornament: z
+          .enum([
+            "none",
+            "foil",
+            "double",
+            "filigree",
+            "bead",
+            "inset",
+            "ribbon",
+            "halftone",
+            "wave",
+            "grid",
+            "marquee",
+            "cel",
+            "crest",
+            "kente",
+            "sunburst",
+            "neon",
+          ])
+          .optional(),
         paperUrl: z.string().max(2000).optional(),
         paperWeight: z.enum(["subtle", "balanced", "rich"]).optional(),
         paperTone: z.enum(["light", "dark"]).optional(),
         nameScale: z.enum(["quiet", "balanced", "statement"]).optional(),
         faceLead: z.enum(["photo", "name", "code"]).optional(),
-        lettering: z.enum(["letterhead", "credit", "stamp", "neon", "masthead", "carved"]).optional(),
+        lettering: z.enum(["letterhead", "credit", "stamp", "neon", "masthead", "carved", "script", "mono"]).optional(),
         ink: z.enum(["light", "dark"]).optional(),
-        accent: z.enum(["teal", "gold", "ivory", "rose", "sky", "ink"]).optional(),
-        qrFinish: z.enum(["foil", "quiet"]).optional(),
-        grain: z.enum(["paper", "linen", "none"]).optional(),
-        motion: z.enum(["atelier", "cinema", "pulse", "earth", "linen"]).optional(),
+        accent: z.enum(["teal", "gold", "ivory", "rose", "sky", "ink", "copper", "emerald", "wine", "sand"]).optional(),
+        qrFinish: z.enum(["foil", "quiet", "inset", "stamp"]).optional(),
+        grain: z.enum(["paper", "linen", "silk", "speckle", "canvas", "none"]).optional(),
+        motion: z.enum(["atelier", "cinema", "pulse", "earth", "linen", "still", "spotlight"]).optional(),
       })
       .optional(),
   })

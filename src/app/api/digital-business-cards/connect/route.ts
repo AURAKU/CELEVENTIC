@@ -10,6 +10,8 @@ import { DEMO_CARD, isDemoCardSlug } from "@/lib/digital-business-card/demo-card
 import { dummyLiveNotFoundJson } from "@/lib/digital-business-card/demo-live-access";
 import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
+import { prisma } from "@/lib/prisma";
+import { finalizeGuestConnectBack } from "@/services/celeyou-connect/connect.service";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +23,10 @@ const bodySchema = z.object({
   visitorCompany: z.string().max(160).optional().nullable(),
   visitorTitle: z.string().max(120).optional().nullable(),
   note: z.string().max(500).optional().nullable(),
+  consent: z.boolean(),
+  followupConsent: z.boolean().optional(),
   /** Honeypot. Bots fill this; humans leave blank */
-  website: z.string().max(0).optional().nullable(),
+  website: z.string().max(200).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -38,9 +42,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid connection details" }, { status: 400 });
   }
 
-  // Honeypot tripped
   if (parsed.data.website) {
     return NextResponse.json({ ok: true });
+  }
+  if (parsed.data.consent !== true) {
+    return NextResponse.json({ error: "Consent is required" }, { status: 400 });
   }
 
   const ip = requestClientIp(req);
@@ -80,6 +86,20 @@ export async function POST(req: NextRequest) {
       note: parsed.data.note,
       formMode: "Instant",
     });
+    const owner = await prisma.user.findUnique({
+      where: { id: card.userId },
+      select: { email: true },
+    });
+    await finalizeGuestConnectBack({
+      connectionId: connection.id,
+      cardId: card.id,
+      ownerUserId: card.userId,
+      ownerDisplayName: card.displayName,
+      ownerEmail: owner?.email,
+      visitorName: parsed.data.visitorName,
+      visitorEmail: parsed.data.visitorEmail,
+      followupConsent: parsed.data.followupConsent === true,
+    }).catch(() => undefined);
     return NextResponse.json({
       ok: true,
       connectionId: connection.id,

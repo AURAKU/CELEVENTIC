@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
   DEFAULT_CELECARD_LIFECYCLE_POLICY,
@@ -21,6 +23,8 @@ import {
 import { pesewasMatch } from "@/lib/digital-business-card/plans";
 import {
   CELECARD_CHECKOUT_IS_RECURRING_MANDATE,
+  CELEYOU_RENEWAL_WAIT_MESSAGE,
+  CELEYOU_TERM_LOCKED_HINT,
   celeYouPaymentEvidenceMatches,
   classifyCeleCardRenewal,
   ownerMayRenewSubscription,
@@ -169,7 +173,8 @@ describe("CeleYou lifecycle", () => {
   it("selects reminder offsets without double-firing short terms", () => {
     assert.equal(dueReminderOffsetDays(new Date(now.getTime() + 20 * 86_400_000), now), null);
     assert.equal(dueReminderOffsetDays(new Date(now.getTime() + 10 * 86_400_000), now), 14);
-    assert.equal(dueReminderOffsetDays(new Date(now.getTime() + 2 * 86_400_000), now), 3);
+    assert.equal(dueReminderOffsetDays(new Date(now.getTime() + 2 * 86_400_000), now), 7);
+    assert.equal(dueReminderOffsetDays(new Date(now.getTime() + 1 * 86_400_000), now), 1);
     assert.equal(dueReminderOffsetDays(now, now), 0);
     assert.equal(dueReminderOffsetDays(new Date(now.getTime() - 4 * 86_400_000), now), -3);
     assert.equal(dueReminderOffsetDays(new Date(now.getTime() - 16 * 86_400_000), now), -14);
@@ -191,6 +196,27 @@ describe("courtesy copy", () => {
 });
 
 describe("design vault identity split", () => {
+  it("lets the cardholder remove a saved look without touching identity", () => {
+    const vault = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-design-vault.tsx"),
+      "utf8"
+    );
+    const route = readFileSync(
+      join(process.cwd(), "src/app/api/digital-business-cards/[id]/designs/route.ts"),
+      "utf8"
+    );
+    const service = readFileSync(
+      join(process.cwd(), "src/services/digital-business-card/design-vault.service.ts"),
+      "utf8"
+    );
+    assert.match(vault, />\s*Delete\s*</);
+    assert.match(vault, /act\("archive"/);
+    assert.match(vault, /public link stay the same/);
+    assert.match(route, /archiveDesignVersion/);
+    assert.match(service, /status: "ARCHIVED"/);
+    assert.match(service, /publishedDesignVersionId: null/);
+  });
+
   it("keeps canonical identity off the design config", () => {
     const identity = identityFromCard({
       displayName: "Ama Serwaa",
@@ -242,6 +268,8 @@ describe("CeleYou billing rules", () => {
     assert.equal(ownerMayRenewSubscription(trial, now), true);
     assert.equal(ownerMayRenewSubscription(ended, now), true);
     assert.equal(ownerMayRenewSubscription(null, now), true);
+    assert.match(CELEYOU_TERM_LOCKED_HINT, /cannot renew or upgrade until this term ends/);
+    assert.match(CELEYOU_RENEWAL_WAIT_MESSAGE, /renew or change plan after it ends/);
     const household = pickAccountPaidEntitlement([trial, paid, ended], now);
     assert.equal(household, paid);
     assert.equal(pickAccountPaidEntitlement([trial], now), null);

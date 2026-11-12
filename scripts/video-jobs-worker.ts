@@ -35,6 +35,7 @@ import {
   GUEST_IMPORT_DELIVERY_QUEUE,
   GUEST_IMPORT_QUEUE,
 } from "@/services/guest-import/queues";
+import { CELEYOU_CONNECT_QUEUE } from "@/lib/celeyou-connect/queues";
 
 const QUEUES = [
   "video-process",
@@ -45,6 +46,7 @@ const QUEUES = [
   GUEST_IMPORT_QUEUE,
   GUEST_IMPORT_DELIVERY_QUEUE,
   GENERAL_PASS_QUEUE,
+  CELEYOU_CONNECT_QUEUE,
 ] as const;
 const TICK_MS = Number(process.env.JOB_WORKER_TICK_MS) || 15_000;
 const CLEANUP_EVERY_N_TICKS = 20; // ~5 minutes at the default 15s tick

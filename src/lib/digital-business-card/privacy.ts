@@ -15,7 +15,9 @@ import {
 export {
   applyReachVisibilityPreview,
   lockedReachPlaceholder,
+  mergeReachVisibility,
   normalizeReachVisibility,
+  protectReachItemKeys,
   readReachVisibilityMap,
   REACH_VISIBILITY,
   visibilityForItem,
