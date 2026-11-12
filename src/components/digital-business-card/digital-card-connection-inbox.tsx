@@ -107,7 +107,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
   const lastPage = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4">
+    <section id="studio-inbox" className="scroll-mt-16 rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-sm font-semibold text-slate-900">Requests</p>
       <p className="text-xs text-slate-500">
         Connect Back, courtesy reconnects, and meeting times. Contact details appear only when the visitor chose to share them.

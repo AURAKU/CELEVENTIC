@@ -35,7 +35,13 @@ export {
   type RecipientCapabilityRow,
   type RecipientCategory,
 } from "@/lib/celeyou-share/recipient-matrix";
-export { guestPrimaryActions, type GuestPrimaryAction, type GuestPrimaryActionId } from "@/lib/celeyou-share/guest-actions";
+export {
+  CONNECT_BACK_ARIA,
+  CONNECT_BACK_CTA,
+  guestPrimaryActions,
+  type GuestPrimaryAction,
+  type GuestPrimaryActionId,
+} from "@/lib/celeyou-share/guest-actions";
 export {
   guestIdentitySections,
   GUEST_IDENTITY_SECTION_ORDER,

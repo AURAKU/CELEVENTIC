@@ -8,7 +8,6 @@ import {
   Nfc,
   Plus,
   Save,
-  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +88,7 @@ import { DigitalCardConnectionInbox } from "@/components/digital-business-card/d
 import { DigitalCardShareDesk } from "@/components/digital-business-card/digital-card-share-desk";
 import { DigitalCardTileActions } from "@/components/digital-business-card/digital-card-tile-actions";
 import { DigitalCardAnalyticsPanel } from "@/components/digital-business-card/digital-card-analytics-panel";
+import { DigitalCardStudioNotice } from "@/components/digital-business-card/digital-card-studio-notice";
 import { celeCardCheckoutUi } from "@/lib/digital-business-card/checkout-outcome";
 import { applyReachVisibilityPreview, type ReachVisibility } from "@/lib/digital-business-card/privacy-preview";
 import {
@@ -103,10 +103,8 @@ import {
   digitalCardPresentPath,
 } from "@/lib/digital-business-card/share";
 import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
-import { TAP_TO_CONNECT_CTA, tapStudioPath } from "@/lib/celeyou-proximity/product";
 import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { getCeleYouShareOrigin } from "@/lib/app-url";
-import { celeCardHouseAvatarId, celeCardHouseAvatarMeta } from "@/lib/digital-business-card/portraits";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 
 type CardRow = {
@@ -127,6 +125,8 @@ type CardRow = {
   proximityDiscoverable?: boolean;
   subscriptionStatus: string;
   subscriptionExpiresAt: string | null;
+  lastActivatedAt?: string | null;
+  createdAt?: string | null;
   viewCount: number;
   isLive: boolean;
   guestShareable?: boolean;
@@ -166,7 +166,8 @@ const STUDIO_JUMP = [
   { href: "#studio-look", label: "Design" },
   { href: "#studio-contact", label: "Contact" },
   { href: "#studio-reach", label: "Reach" },
-  { href: "#studio-preview", label: "Preview" },
+  { href: "#studio-inbox", label: "Inbox" },
+  { href: "#studio-preview", label: "Share" },
 ] as const;
 
 const emptyForm = {
@@ -212,7 +213,19 @@ export function DigitalCardStudioClient() {
   const [slugCustomized, setSlugCustomized] = useState(false);
   const themeFromQuery = useRef<DigitalCardThemeId | null>(null);
   const activeIdRef = useRef<string | null>(null);
+  const noticeTimer = useRef<number>(0);
   activeIdRef.current = activeId;
+
+  const note = useCallback((text: string) => {
+    setError(null);
+    setMessage(text);
+    window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => {
+      setMessage((current) => (current === text ? null : current));
+    }, 3800);
+  }, []);
+
+  useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
 
   const origin = getCeleYouShareOrigin();
 
@@ -482,7 +495,7 @@ export function DigitalCardStudioClient() {
         setSlug(savedSlug);
         setSlugCustomized(true);
       }
-      setMessage(
+      note(
         activeId
           ? "Card updated."
           : `Card saved. Design for ${DIGITAL_CARD_TRIAL_DAYS} days. Pay a plan to go live.`
@@ -515,12 +528,12 @@ export function DigitalCardStudioClient() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Checkout failed");
       if (json.data?.inherited) {
-        setMessage("This card now uses your current subscription. It has its own QR, link, and NFC.");
+        note("This card now uses your current subscription. It has its own QR, link, and NFC.");
         await load();
         return;
       }
       if (json.data?.free) {
-        setMessage("Plan activated. Your CeleYou is live.");
+        note("Plan activated. Your CeleYou is live.");
         await load();
         return;
       }
@@ -579,68 +592,56 @@ export function DigitalCardStudioClient() {
     setActiveId(null);
     setSlugCustomized(false);
     setForm(emptyForm);
-    setMessage(null);
+    note("New card ready. Add a name, then save.");
   }
 
   return (
     <div className="celecard-studio space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-2xl">
+      <div className="celecard-studio-masthead">
+        <div className="celecard-studio-masthead-copy">
           <CeleYouBrandMark variant="chip" tone="light" className="mb-3" markClassName="h-8 w-8" />
-          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            One link for every contact
-          </h1>
-          <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Design a premium identity, then share via QR, NFC, Wallet or link. The Design desk
-            uses the same paper, light, foil, lettering, and layout as every house template. Upload
-            a background and CeleYou blends it into the plate. Recipients open your profile in any
-            browser with no app and no account. Extra cards stay on the same subscription, each
-            with its own QR, link, and NFC.
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              One link for every contact
+            </h1>
+            {active ? (
+              <Badge variant="secondary">
+                {active.isLive ? "Live" : active.guestShareable ? "Shareable" : "Offline"}
+              </Badge>
+            ) : null}
+          </div>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
+            Design the plate, fill Reach, then share. Guests open it in any browser. No app, no account.
           </p>
         </div>
-        <div className="action-row">
-          <Button asChild>
-            <Link href={tapStudioPath(activeId || undefined)}>
-              <Smartphone className="mr-2 h-4 w-4" />
-              {TAP_TO_CONNECT_CTA}
-            </Link>
-          </Button>
-          <Button type="button" variant="outline" onClick={startNew}>
+        <div className="celecard-studio-toolbar">
+          <Button type="button" variant="outline" className="celecard-studio-new" onClick={startNew}>
             <Plus className="mr-2 h-4 w-4" />
             New card
           </Button>
-          <Button type="button" onClick={save} disabled={saving || form.displayName.trim().length < 2}>
+          <Button
+            type="button"
+            className="celecard-studio-save"
+            onClick={save}
+            disabled={saving || form.displayName.trim().length < 2}
+          >
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save
           </Button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
-        Studio design is open for {DIGITAL_CARD_TRIAL_DAYS} days.{" "}
-        <strong>Publish to share. Recipients do not need CeleYou or an account.</strong> A paid plan
-        keeps every card on this account live until the term ends. You can add more cards on that
-        same subscription. Renewal opens only after expiry.
-        {active ? (
-          <span className="ml-2 inline-flex flex-wrap items-center gap-2">
-            Status:{" "}
-            <Badge variant="secondary" className="align-middle">
-              {active.subscriptionStatus}
-              {active.isLive ? " · live" : active.guestShareable ? " · shareable" : " · offline"}
-            </Badge>
-          </span>
-        ) : null}
-      </div>
-
       {active?.subscriptionExpiresAt ? (
         <DigitalCardLiveTermRibbon
+          cardId={active.id}
           themeName={previewTheme.name}
-          planLabel={(active.subscriptionStatus || "").toUpperCase() === "TRIAL" ? "Trial" : "Yearly"}
+          planLabel={(active.subscriptionStatus || "").toUpperCase() === "TRIAL" ? "Trial" : "Paid"}
           endsAt={active.subscriptionExpiresAt}
+          startsAt={active.lastActivatedAt || active.createdAt}
           status={active.subscriptionStatus}
           viewCount={active.viewCount}
           nfcEnabled={active.nfcEnabled}
-          qrLive={Boolean(active.publicToken)}
+          qrLive={Boolean(active.publicToken && (active.guestShareable || active.isLive))}
           accent={previewTheme.accent}
           border={previewTheme.border}
           fg="#1c1917"
@@ -666,8 +667,7 @@ export function DigitalCardStudioClient() {
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {message ? <p className="text-sm text-[#0B8A83]">{message}</p> : null}
+      <DigitalCardStudioNotice message={message} error={error} />
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -714,14 +714,7 @@ export function DigitalCardStudioClient() {
                 <Label>Portrait</Label>
                 <DigitalCardPortraitField
                   value={form.avatarUrl}
-                  onChange={(url) => {
-                    setForm((f) => ({ ...f, avatarUrl: url }));
-                    setMessage(
-                      url && url.startsWith("house:")
-                        ? `${celeCardHouseAvatarMeta(celeCardHouseAvatarId(url)).kind === "avatar" ? "Avatar" : "House mark"} selected. Save the card to keep it.`
-                        : "Portrait cropped. Save the card to keep it on the guest page."
-                    );
-                  }}
+                  onChange={(url) => setForm((f) => ({ ...f, avatarUrl: url }))}
                   theme={resolveDigitalCardTheme(form.themeId)}
                   displayName={form.displayName}
                   onError={setError}
@@ -755,8 +748,9 @@ export function DigitalCardStudioClient() {
                     value={form.companyLogoUrl}
                     onChange={(url) => {
                       setForm((f) => ({ ...f, companyLogoUrl: url }));
-                      setMessage(url ? "Company logo cropped. Save the card to keep it beside the company name." : null);
+                      if (url) note("Company logo selected.");
                     }}
+                    onAction={note}
                     company={form.company}
                     theme={resolveDigitalCardTheme(form.themeId)}
                     onError={setError}
@@ -816,6 +810,7 @@ export function DigitalCardStudioClient() {
                   onError={setError}
                 />
               </div>
+              <DigitalCardDesignVault cardId={activeId} />
             <StudioPanel
               id="studio-contact"
               title="Contact"
@@ -1132,55 +1127,57 @@ export function DigitalCardStudioClient() {
               cardId={activeId}
             />
 
-            <DigitalCardDesignVault cardId={activeId} />
-
-            <DigitalCardConnectionInbox cardId={activeId} />
-
             <StudioPanel
+              id="studio-arrange"
               title="Guest page arrangement"
-              hint="Reorder live taps. Empty fields never appear on the public page."
+              hint="Drag to set the order guests see. Empty fields stay off the public page."
             >
               <DigitalCardReachOrderEditor
                 items={reachPreview}
                 onChange={({ stackOrder, dockOrder }) => setForm((f) => ({ ...f, stackOrder, dockOrder }))}
               />
-              <div className="flex flex-wrap items-center gap-4 text-sm">
-              <label className="inline-flex items-center gap-2">
+            </StudioPanel>
+
+            <DigitalCardConnectionInbox cardId={activeId} />
+          </div>
+
+          <aside id="studio-preview" className="celecard-studio-preview space-y-4">
+            <section id="studio-live" className="celecard-studio-live scroll-mt-16" aria-label="Live sharing">
+              <div className="celecard-studio-live-row">
+                <label htmlFor="studio-live-published" className="min-w-0 flex-1 cursor-pointer">
+                  <span className="celecard-studio-live-title">Published</span>
+                  <span className="celecard-studio-live-hint">Guests can open this CeleYou</span>
+                </label>
                 <input
+                  id="studio-live-published"
                   type="checkbox"
                   checked={form.isPublished}
                   onChange={(e) => setForm((f) => ({ ...f, isPublished: e.target.checked }))}
                 />
-                Published
-              </label>
-              <label className="inline-flex items-center gap-2">
+              </div>
+              <div className="celecard-studio-live-row">
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="studio-live-nfc" className="celecard-studio-live-title cursor-pointer">
+                    <Nfc className="h-3.5 w-3.5" aria-hidden />
+                    NFC ready
+                  </label>
+                  {activeId ? (
+                    <Link href={nfcStudioPath(activeId)} className="celecard-studio-live-link">
+                      Manage cards
+                    </Link>
+                  ) : (
+                    <span className="celecard-studio-live-hint">Save first, then program a card</span>
+                  )}
+                </div>
                 <input
+                  id="studio-live-nfc"
                   type="checkbox"
                   checked={form.nfcEnabled}
                   onChange={(e) => setForm((f) => ({ ...f, nfcEnabled: e.target.checked }))}
                 />
-                <Nfc className="h-4 w-4 text-slate-500" />
-                NFC ready
-              </label>
-              {activeId ? (
-                <Link href={nfcStudioPath(activeId)} className="text-xs font-semibold text-[#0B8A83]">
-                  Manage NFC cards
-                </Link>
-              ) : null}
-              <label className="inline-flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={form.proximityDiscoverable}
-                  onChange={(e) => setForm((f) => ({ ...f, proximityDiscoverable: e.target.checked }))}
-                />
-                <Smartphone className="h-4 w-4 text-slate-500" />
-                Tap-to-Connect
-              </label>
-            </div>
-            </StudioPanel>
-          </div>
+              </div>
+            </section>
 
-          <aside id="studio-preview" className="celecard-studio-preview space-y-4">
             <div
               className="rounded-2xl p-4"
               style={{
@@ -1268,48 +1265,50 @@ export function DigitalCardStudioClient() {
               ) : (
                 <p className="text-xs text-slate-500">Save the card to show, share, and download QR files.</p>
               )}
-              <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
-                <p className="text-sm font-semibold text-slate-900">Activation</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {plans.map((plan) => (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      onClick={() => setPlanId(plan.id)}
-                      className={`rounded-lg border px-2 py-1.5 text-left text-[11px] ${
-                        planId === plan.id
-                          ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
-                          : "border-slate-200 text-slate-600"
-                      }`}
-                    >
-                      <span className="font-semibold">{plan.label}</span>
-                      <span className="ml-1">₵{plan.priceGhs}</span>
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="bg-[#0B8A83] hover:bg-[#097a74]"
-                  onClick={subscribe}
-                  disabled={!activeId || paying || active?.canRenew === false}
-                >
-                  {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-                  {active?.canRenew === false
-                    ? "Paid through this term"
-                    : `Activate ${plans.find((p) => p.id === planId)?.label} · ₵${plans.find((p) => p.id === planId)?.priceGhs}`}
-                </Button>
-                <p className="text-[11px] leading-relaxed text-slate-500">
-                  {active?.canRenew === false
-                    ? "Renewal opens after this term ends. New cards you save stay on this same subscription, each with a unique QR, link, and NFC."
-                    : "Live activation uses Paystack. A paid term runs until expiry and cannot be cancelled. Extra cards share that term."}
-                </p>
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/dashboard/business-card/billing">Manage billing</Link>
-                </Button>
-              </div>
-              <DigitalCardAnalyticsPanel cardId={activeId} />
             </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+              <p className="text-sm font-semibold tracking-tight text-slate-900">Activation</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {plans.map((plan) => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setPlanId(plan.id)}
+                    className={`rounded-lg border px-2 py-1.5 text-left text-[11px] ${
+                      planId === plan.id
+                        ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
+                        : "border-slate-200 text-slate-600"
+                    }`}
+                  >
+                    <span className="font-semibold">{plan.label}</span>
+                    <span className="ml-1">₵{plan.priceGhs}</span>
+                  </button>
+                ))}
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                className="bg-[#0B8A83] hover:bg-[#097a74]"
+                onClick={subscribe}
+                disabled={!activeId || paying || active?.canRenew === false}
+              >
+                {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                {active?.canRenew === false
+                  ? "Paid through this term"
+                  : `Activate ${plans.find((p) => p.id === planId)?.label} · ₵${plans.find((p) => p.id === planId)?.priceGhs}`}
+              </Button>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                {active?.canRenew === false
+                  ? "Renewal opens after this term ends. New cards you save stay on this same subscription, each with a unique QR, link, and NFC."
+                  : "Live activation uses Paystack. A paid term runs until expiry and cannot be cancelled. Extra cards share that term."}
+              </p>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/dashboard/business-card/billing">Manage billing</Link>
+              </Button>
+            </div>
+
+            <DigitalCardAnalyticsPanel cardId={activeId} />
           </aside>
         </div>
         </>

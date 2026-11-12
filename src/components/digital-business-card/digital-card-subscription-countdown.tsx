@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+import { Eye, Globe, Nfc, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   countdownFlowDelayMs,
@@ -11,16 +12,17 @@ import {
 
 function useSubscriptionSnap(
   endsAt: Date | string | number | null | undefined,
-  status?: string | null
+  status?: string | null,
+  startsAt?: Date | string | number | null
 ): SubscriptionCountdown | null {
   const [now, setNow] = useState(() => Date.now());
-  const snap = subscriptionCountdown(endsAt, status, now);
+  const snap = subscriptionCountdown(endsAt, status, now, startsAt);
 
   useEffect(() => {
     if (!endsAt) return;
     let timer = 0;
     function arm() {
-      const current = subscriptionCountdown(endsAt, status, Date.now());
+      const current = subscriptionCountdown(endsAt, status, Date.now(), startsAt);
       const delay = current
         ? current.remainingMs > 0
           ? countdownFlowDelayMs()
@@ -33,7 +35,7 @@ function useSubscriptionSnap(
     }
     arm();
     return () => window.clearTimeout(timer);
-  }, [endsAt, status]);
+  }, [endsAt, status, startsAt]);
 
   return snap;
 }
@@ -118,17 +120,19 @@ function DigitalCardTermFlowCounter({
 export function DigitalCardSubscriptionCountdown({
   endsAt,
   status,
+  startsAt,
   className,
   showPaidThrough = false,
   tone = "onDark",
 }: {
   endsAt: Date | string | number | null | undefined;
   status?: string | null;
+  startsAt?: Date | string | number | null;
   className?: string;
   showPaidThrough?: boolean;
   tone?: "onDark" | "onLight";
 }) {
-  const snap = useSubscriptionSnap(endsAt, status);
+  const snap = useSubscriptionSnap(endsAt, status, startsAt);
   if (!snap) return null;
 
   const pill =
@@ -146,12 +150,7 @@ export function DigitalCardSubscriptionCountdown({
 
   return (
     <span className={cn("inline-flex flex-wrap items-center gap-x-2 gap-y-1", className)}>
-      {showPaidThrough ? (
-        <span>
-          {snap.kind === "ended" ? "Ended" : snap.kind === "expiry" ? "Open through" : "Paid through"}{" "}
-          {snap.paidThrough}
-        </span>
-      ) : null}
+      {showPaidThrough ? <span>{snap.termCopy}</span> : null}
       <span
         className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-tight", pill)}
         aria-live="polite"
@@ -166,6 +165,32 @@ function cleanTermLabel(label: string) {
   return label.replace(/\s*[·•|,]\s*(GH)?₵?\s*\d[\d,.]*.*$/i, "").trim() || "Paid";
 }
 
+type TermChipKind = "views" | "qr" | "nfc" | "guest";
+
+type TermChip = {
+  id: string;
+  kind: TermChipKind;
+  value: string;
+  label: string;
+  aria: string;
+  target: string | null;
+  live?: boolean;
+};
+
+const TERM_CHIP_ICONS: Record<TermChipKind, ComponentType<{ className?: string }>> = {
+  views: Eye,
+  qr: QrCode,
+  nfc: Nfc,
+  guest: Globe,
+};
+
+function jumpToStudio(id: string | null) {
+  if (!id || typeof document === "undefined") return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function inkIsDark(color: string) {
   const hex = color.replace("#", "");
   if (hex.length < 6) return true;
@@ -176,22 +201,26 @@ function inkIsDark(color: string) {
 }
 
 export function DigitalCardLiveTermRibbon({
+  cardId,
   themeName,
   planLabel,
   endsAt,
+  startsAt,
   status,
   viewCount,
   nfcEnabled,
-  qrLive = true,
+  qrLive = false,
   accent,
   border,
   fg,
   muted,
   faint,
 }: {
+  cardId?: string | null;
   themeName: string;
   planLabel: string;
   endsAt: Date | string | number | null | undefined;
+  startsAt?: Date | string | number | null;
   status?: string | null;
   viewCount: number;
   nfcEnabled?: boolean;
@@ -202,21 +231,83 @@ export function DigitalCardLiveTermRibbon({
   muted: string;
   faint: string;
 }) {
-  const snap = useSubscriptionSnap(endsAt, status);
+  const snap = useSubscriptionSnap(endsAt, status, startsAt);
+  const [liveViews, setLiveViews] = useState(viewCount);
   const live = (status ?? "").toUpperCase() === "ACTIVE" && snap?.kind === "renewal";
   const fill = snap ? Math.max(0.08, snap.remainingRatio) : 0.08;
   const remainingPct = Math.round(fill * 100);
-  const throughWord =
-    snap?.kind === "ended" ? "Ended" : snap?.kind === "expiry" ? "Open through" : "Paid through";
   const statusLabel = live ? "Active · Live" : snap?.kind === "ended" ? "Ended" : "Studio open";
   const termLabel = cleanTermLabel(planLabel);
   const onDark = !inkIsDark(fg);
-  const chips = [
-    `${viewCount.toLocaleString("en-GB")} profile views`,
-    qrLive ? "QR live" : null,
-    nfcEnabled ? "NFC ready" : null,
-    live ? "Guest page live" : null,
-  ].filter(Boolean) as string[];
+  const chips: TermChip[] = [
+    {
+      id: "views",
+      kind: "views",
+      value: liveViews.toLocaleString("en-GB"),
+      label: "Profile views",
+      aria: `${liveViews.toLocaleString("en-GB")} profile views`,
+      target: "studio-activity",
+    },
+    qrLive
+      ? {
+          id: "qr",
+          kind: "qr" as const,
+          value: "Live",
+          label: "Smart QR",
+          aria: "QR live",
+          target: "studio-preview",
+          live: true,
+        }
+      : null,
+    nfcEnabled
+      ? {
+          id: "nfc",
+          kind: "nfc" as const,
+          value: "Ready",
+          label: "NFC",
+          aria: "NFC ready",
+          target: "studio-live",
+          live: true,
+        }
+      : null,
+    live
+      ? {
+          id: "guest",
+          kind: "guest" as const,
+          value: "Live",
+          label: "Guest page",
+          aria: "Guest page live",
+          target: "studio-live-published",
+          live: true,
+        }
+      : null,
+  ].filter((chip): chip is TermChip => Boolean(chip));
+
+  useEffect(() => {
+    setLiveViews(viewCount);
+  }, [viewCount]);
+
+  useEffect(() => {
+    if (!cardId) return;
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch(`/api/digital-business-cards/${cardId}/analytics`, { cache: "no-store" });
+        const json = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok) return;
+        const next = Number((json as { data?: { viewCount?: number } }).data?.viewCount);
+        if (Number.isFinite(next)) setLiveViews(next);
+      } catch {
+        /* keep the last live count */
+      }
+    }
+    void load();
+    const timer = window.setInterval(() => void load(), 20000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [cardId]);
 
   return (
     <div
@@ -276,7 +367,7 @@ export function DigitalCardLiveTermRibbon({
       {snap ? (
         <div className="relative z-[1] mt-3 flex flex-col gap-2.5">
           <p className="text-[13px] font-medium" style={{ color: fg }}>
-            {throughWord} {snap.paidThrough}
+            {snap.termCopy}
           </p>
           <DigitalCardTermFlowCounter
             snap={snap}
@@ -286,16 +377,36 @@ export function DigitalCardLiveTermRibbon({
             muted={muted}
           />
           {chips.length ? (
-            <div className="celecard-term-chips">
-              {chips.map((chip) => (
-                <span
-                  key={chip}
-                  className="celecard-term-chip"
-                  style={{ borderColor: border, color: muted }}
-                >
-                  {chip}
-                </span>
-              ))}
+            <div
+              className="celecard-term-chips"
+              data-tone={onDark ? "dark" : "light"}
+              role="group"
+              aria-label="Live card status"
+              style={{ ["--chip-accent" as string]: accent, ["--chip-line" as string]: border }}
+            >
+              {chips.map((chip) => {
+                const Icon = TERM_CHIP_ICONS[chip.kind];
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    className="celecard-term-chip"
+                    data-kind={chip.kind}
+                    data-live={chip.live ? "true" : "false"}
+                    aria-label={chip.aria}
+                    onClick={() => jumpToStudio(chip.target)}
+                  >
+                    <span className="celecard-term-chip-icon" aria-hidden>
+                      <Icon className="h-4 w-4" />
+                      {chip.live ? <span className="celecard-term-chip-pip celecard-live-pip" /> : null}
+                    </span>
+                    <span className="celecard-term-chip-copy">
+                      <span className="celecard-term-chip-value">{chip.value}</span>
+                      <span className="celecard-term-chip-label">{chip.label}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           ) : null}
         </div>

@@ -2,6 +2,9 @@ import { listDigitalCardReachItems, type DigitalCardReachItem } from "@/lib/digi
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import type { CeleYouPublicEventKind } from "@/lib/celeyou-share/events";
 
+export const CONNECT_BACK_CTA = "Connect back";
+export const CONNECT_BACK_ARIA = "Send your details back to this person";
+
 export type GuestPrimaryActionId = "save" | "call" | "whatsapp" | "email" | "website" | "share";
 
 export type GuestPrimaryAction = {

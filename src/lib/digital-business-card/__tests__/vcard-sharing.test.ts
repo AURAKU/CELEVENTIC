@@ -163,7 +163,7 @@ describe("CeleYou vCard sharing", () => {
       join(process.cwd(), "src/components/digital-business-card/digital-card-share-desk.tsx"),
       "utf8"
     );
-    assert.match(desk, /shareDeskActionOrder/);
+    assert.match(desk, /SAVE_CONTACT_CTA/);
     assert.match(desk, /contactSaveHint/);
     const save = readFileSync(join(process.cwd(), "src/lib/digital-business-card/save-contact.ts"), "utf8");
     assert.match(save, /shareDigitalCardContactFile/);

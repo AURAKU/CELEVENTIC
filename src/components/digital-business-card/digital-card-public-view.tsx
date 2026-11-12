@@ -4,18 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Check,
-  Download,
-  Globe,
+  Contact,
   Handshake,
-  Mail,
-  MessageCircle,
-  Phone,
-  QrCode,
   Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
-import { CeleCardQrBadge } from "@/components/digital-business-card/celecard-qr-badge";
 import { DigitalCardReachGrid } from "@/components/digital-business-card/digital-card-reach-grid";
 import { DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
 import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
@@ -33,10 +27,10 @@ import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_NAME } from "@/lib/digital-b
 import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
 import { celeCardShareClipboard, celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
-import { guestPrimaryActions } from "@/lib/celeyou-share/guest-actions";
+import { CONNECT_BACK_ARIA } from "@/lib/celeyou-share/guest-actions";
 import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
 import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
-import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
+import { SAVE_CONTACT_CTA, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
 import { contactSaveHint } from "@/lib/celeyou-share/namedrop";
 import { detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
 import { readCelecardHoldViewport } from "@/lib/digital-business-card/hold-viewport";
@@ -67,7 +61,6 @@ export function DigitalCardPublicView({
   const [copied, setCopied] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [saveHint, setSaveHint] = useState<string | null>(null);
-  const [showQr, setShowQr] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [connectDone, setConnectDone] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
@@ -85,8 +78,6 @@ export function DigitalCardPublicView({
     () => (Array.isArray(card.guestReach) ? card.guestReach : listDigitalCardReachItems(card)),
     [card]
   );
-  const primaryActions = useMemo(() => guestPrimaryActions(card), [card]);
-  const contactActions = primaryActions.filter((action) => action.href);
   const sections = useMemo(() => guestIdentitySections(card, reach), [card, reach]);
 
   const downloadVCard = useCallback(async () => {
@@ -221,7 +212,23 @@ export function DigitalCardPublicView({
       </div>
 
       <div className="celecard-guest-column">
-        <div className="celecard-hold-frame celecard-enter celecard-d2">
+        <div
+          className="celecard-hold-frame celecard-enter celecard-d2"
+          role={hold ? "button" : undefined}
+          tabIndex={hold ? 0 : undefined}
+          aria-label={hold ? "Tap this plate to share from this phone. The QR stays ready to scan." : undefined}
+          onClick={hold ? () => void shareCard() : undefined}
+          onKeyDown={
+            hold
+              ? (event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    void shareCard();
+                  }
+                }
+              : undefined
+          }
+        >
           <DigitalCardFace
             themeId={card.themeId}
             displayName={card.displayName}
@@ -239,12 +246,6 @@ export function DigitalCardPublicView({
 
         <div className="celecard-guest-rest">
         <header className="celecard-guest-intro relative z-10">
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: copyInk, fontFamily: typeVoice.meta }}
-          >
-            Save this contact. You do not need an app or an account.
-          </p>
           {saveHint ? (
             <p className="text-xs leading-relaxed" style={{ color: faintInk, fontFamily: typeVoice.meta }}>
               {saveHint}
@@ -258,15 +259,6 @@ export function DigitalCardPublicView({
             >
               Present card
             </Link>
-            <button
-              type="button"
-              onClick={() => setShowQr((value) => !value)}
-              className="inline-flex min-h-10 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]"
-              style={{ color: theme.accent }}
-            >
-              <QrCode className="h-3.5 w-3.5" />
-              {showQr ? "Hide QR" : "Show QR"}
-            </button>
           </nav>
         </header>
 
@@ -298,23 +290,6 @@ export function DigitalCardPublicView({
                 ) : null}
               </section>
             ))}
-          </div>
-        ) : null}
-
-        {showQr ? (
-          <div className="celecard-enter flex flex-col items-center gap-2">
-            <CeleCardQrBadge
-              qrSrc={qrSrc}
-              href={digitalCardPublicUrl(card.slug)}
-              theme={theme}
-              avatarUrl={card.avatarUrl}
-              displayName={card.displayName}
-              sizeClass="h-60 w-60"
-              padClass="p-0"
-            />
-            <p className="max-w-full break-all text-center text-[11px]" style={{ color: faintInk }}>
-              {scanUrl}
-            </p>
           </div>
         ) : null}
 
@@ -394,29 +369,6 @@ export function DigitalCardPublicView({
         style={{ background: dock.veil }}
       >
         <div className="celecard-dock-stage">
-        {contactActions.length ? (
-          <div className="celecard-dock-row pointer-events-auto mx-auto mb-2 flex w-full gap-2 overflow-x-auto px-1 sm:flex-wrap sm:justify-center sm:overflow-visible">
-            {contactActions.map((action) => (
-              <a
-                key={action.id}
-                href={action.href}
-                className="celecard-dock-item inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.12em]"
-                style={{
-                  backgroundColor: dock.ghostBg,
-                  color: dock.ghostFg,
-                  fontFamily: dock.font,
-                }}
-                onClick={() => trackCeleYouGuestEvent(card.slug, action.event)}
-              >
-                {action.id === "call" ? <Phone className="h-3.5 w-3.5" /> : null}
-                {action.id === "whatsapp" ? <MessageCircle className="h-3.5 w-3.5" /> : null}
-                {action.id === "email" ? <Mail className="h-3.5 w-3.5" /> : null}
-                {action.id === "website" ? <Globe className="h-3.5 w-3.5" /> : null}
-                {action.label}
-              </a>
-            ))}
-          </div>
-        ) : null}
         <div
           className="celecard-dock-tray pointer-events-auto"
           data-celecard-origin={dock.originStyle}
@@ -432,7 +384,7 @@ export function DigitalCardPublicView({
             type="button"
             onClick={downloadVCard}
             data-kind="save"
-            aria-label="Save all details to contacts on this device"
+            aria-label="Save this contact to your device"
             aria-busy={saveState === "saving"}
             className="celecard-action"
             style={{
@@ -445,14 +397,19 @@ export function DigitalCardPublicView({
             }}
           >
             <span className="celecard-action-mark" aria-hidden>
-              {saveState === "saved" ? <Check /> : <Download />}
+              {saveState === "saved" ? <Check /> : <Contact />}
             </span>
-            <span className="celecard-action-label">{saveState === "saved" ? "Saved" : "Save"}</span>
+            <span className="celecard-action-copy">
+              <span className="celecard-action-label">
+                {saveState === "saved" ? "Saved" : SAVE_CONTACT_CTA}
+              </span>
+            </span>
           </button>
           {card.connectBackEnabled && !card.isDemo && !connectDone ? (
             <button
               type="button"
               data-kind="ghost"
+              aria-label={CONNECT_BACK_ARIA}
               className="celecard-action"
               style={{
                 backgroundColor: dock.ghostBg,
@@ -467,7 +424,10 @@ export function DigitalCardPublicView({
               <span className="celecard-action-mark" aria-hidden>
                 <Handshake />
               </span>
-              <span className="celecard-action-label">Connect</span>
+              <span className="celecard-action-copy">
+                <span className="celecard-action-label">Connect</span>
+                <span className="celecard-action-hint">back</span>
+              </span>
             </button>
           ) : null}
           <button

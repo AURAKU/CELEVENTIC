@@ -74,13 +74,13 @@ export function DigitalCardDesignVault({ cardId }: { cardId: string | null }) {
   if (!cardId) return null;
 
   return (
-    <section id="celecard-design-vault" className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
+    <section id="celecard-design-vault" className="scroll-mt-16 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900">Design Vault</p>
           <p className="text-xs text-slate-500">Saved looks only. Name, contacts, and your public link stay the same.</p>
         </div>
-        <Button type="button" size="sm" variant="outline" onClick={() => void act("save")} disabled={loading}>
+        <Button type="button" size="sm" variant="outline" className="shrink-0 self-start" onClick={() => void act("save")} disabled={loading}>
           Save current look
         </Button>
       </div>

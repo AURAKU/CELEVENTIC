@@ -31,7 +31,7 @@ describe("CeleYou NameDrop guidance", () => {
       "utf8"
     );
     assert.match(desk, /CeleYouNameDropSetup/);
-    assert.match(desk, /SHARE_CONTACT_FILE_CTA/);
+    assert.doesNotMatch(desk, /SHARE_CONTACT_FILE_CTA/);
     assert.doesNotMatch(desk, /force AirDrop|automatic NameDrop|pick a nearby/i);
   });
 });

@@ -157,7 +157,7 @@ export function DigitalCardPresentView({
     );
   }
 
-  const chromePad = landscape ? "2.75rem" : "8.5rem";
+  const chromePad = landscape ? "0px" : "8.5rem";
   const stageWidth = landscape
     ? `min(100%, calc((100dvh - ${chromePad}) * 85.6 / 54))`
     : `min(100%, 46rem, calc((100dvh - ${chromePad}) * 85.6 / 54))`;
@@ -168,12 +168,13 @@ export function DigitalCardPresentView({
       className="relative flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto"
       data-celecard-mood={motionMood}
       data-celecard-present="true"
+      data-celecard-hold={landscape ? "true" : undefined}
       style={{
         background: theme.stageBackground,
-        paddingTop: "max(0.75rem, env(safe-area-inset-top))",
-        paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
-        paddingLeft: "max(0.75rem, env(safe-area-inset-left))",
-        paddingRight: "max(0.75rem, env(safe-area-inset-right))",
+        paddingTop: landscape ? "env(safe-area-inset-top)" : "max(0.75rem, env(safe-area-inset-top))",
+        paddingBottom: landscape ? "env(safe-area-inset-bottom)" : "max(0.75rem, env(safe-area-inset-bottom))",
+        paddingLeft: landscape ? "env(safe-area-inset-left)" : "max(0.75rem, env(safe-area-inset-left))",
+        paddingRight: landscape ? "env(safe-area-inset-right)" : "max(0.75rem, env(safe-area-inset-right))",
       }}
     >
       <div className="pointer-events-none absolute inset-0 opacity-[0.2]" aria-hidden>
@@ -237,10 +238,14 @@ export function DigitalCardPresentView({
                 void sendFromCard();
               }}
               aria-label="Tap this card to send the profile from this phone"
-              className={`block cursor-pointer rounded-[1.35rem] ${
-                sharingLive
-                  ? "ring-2 ring-[#7FF0E4]/80 ring-offset-2 ring-offset-transparent"
-                  : "ring-2 ring-white/25 ring-offset-2 ring-offset-transparent"
+              className={`block cursor-pointer ${
+                landscape
+                  ? sharingLive
+                    ? "ring-2 ring-[#7FF0E4]/80"
+                    : ""
+                  : sharingLive
+                    ? "rounded-[1.35rem] ring-2 ring-[#7FF0E4]/80 ring-offset-2 ring-offset-transparent"
+                    : "rounded-[1.35rem] ring-2 ring-white/25 ring-offset-2 ring-offset-transparent"
               }`}
             >
               <DigitalCardFace
@@ -260,10 +265,9 @@ export function DigitalCardPresentView({
             </div>
           </div>
         </div>
+        {landscape ? null : (
         <p
-          className={`max-w-sm text-center text-[11px] font-medium leading-relaxed motion-reduce:transition-none ${
-            landscape ? "mt-2" : "mt-4"
-          }`}
+          className="mt-4 max-w-sm text-center text-[11px] font-medium leading-relaxed motion-reduce:transition-none"
           style={{ color: theme.muted }}
         >
           {sent === "shared"
@@ -274,6 +278,7 @@ export function DigitalCardPresentView({
                 ? "Keep the plate facing their camera. They scan and the profile opens."
                 : "Bring their phone to this card. They scan the plate and the profile opens. They do not need CeleYou. Tap the card to send it from this phone."}
         </p>
+        )}
         {landscape ? null : (
           <ScanPlate
             qrSrc={qrSrc}

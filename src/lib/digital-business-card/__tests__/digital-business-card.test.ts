@@ -258,6 +258,26 @@ describe("digital business card themes", () => {
     }
   });
 
+  it("confirms identity button presses with a live studio notice", () => {
+    const portrait = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-portrait-field.tsx"),
+      "utf8"
+    );
+    const studio = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-studio-client.tsx"),
+      "utf8"
+    );
+    const notice = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-studio-notice.tsx"),
+      "utf8"
+    );
+    assert.match(portrait, /frame selected/);
+    assert.match(portrait, /DigitalCardStudioNotice/);
+    assert.match(notice, /aria-live="polite"/);
+    assert.match(studio, /DigitalCardStudioNotice/);
+    assert.match(studio, /New card ready/);
+  });
+
   it("keeps portrait masters large enough for retina present and portrait-led plates", () => {
     assert.equal(CELECARD_PORTRAIT_MAX_EDGE >= 2048, true);
     assert.equal(CELECARD_PORTRAIT_WEBP_QUALITY >= 92, true);
@@ -320,12 +340,15 @@ describe("digital business card themes", () => {
 
 describe("subscription countdown", () => {
   it("counts down to renewal, studio end, and an ended window", async () => {
-    const { DEMO_CARD_PAID_THROUGH } = await import("@/lib/digital-business-card/demo-card");
+    const { DEMO_CARD_ACTIVATED_AT, DEMO_CARD_PAID_THROUGH } = await import(
+      "@/lib/digital-business-card/demo-card"
+    );
     const {
       countdownFlowDelayMs,
       countdownParts,
       countdownTickMs,
       formatPaidThrough,
+      formatTermDatesCopy,
       subscriptionCountdown,
     } = await import("@/lib/digital-business-card/subscription-countdown");
     const now = new Date("2026-11-09T16:20:00.000Z");
@@ -352,6 +375,29 @@ describe("subscription countdown", () => {
     assert.equal(ended?.kind, "ended");
     assert.match(ended?.label ?? "", /^Ended 2 days/);
     assert.equal(countdownTickMs(ended?.remainingMs ?? -1), 60_000);
+    const named = subscriptionCountdown(DEMO_CARD_PAID_THROUGH, "ACTIVE", now, DEMO_CARD_ACTIVATED_AT);
+    assert.equal(named?.activatedOn, formatPaidThrough(DEMO_CARD_ACTIVATED_AT));
+    assert.equal(
+      named?.termCopy,
+      `Activated ${formatPaidThrough(DEMO_CARD_ACTIVATED_AT)}. Expires ${formatPaidThrough(DEMO_CARD_PAID_THROUGH)}.`
+    );
+    assert.equal(
+      formatTermDatesCopy(DEMO_CARD_PAID_THROUGH, DEMO_CARD_ACTIVATED_AT, "renewal"),
+      named?.termCopy
+    );
+    const trialNamed = subscriptionCountdown(trialEnd, "TRIAL", now, now);
+    assert.equal(trialNamed?.termCopy, `Activated ${formatPaidThrough(now)}. Expires ${formatPaidThrough(trialEnd)}.`);
+    const endedAt = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+    const endedStart = new Date(now.getTime() - 16 * 24 * 60 * 60 * 1000);
+    const endedNamed = subscriptionCountdown(endedAt, "ACTIVE", now, endedStart);
+    assert.equal(
+      endedNamed?.termCopy,
+      `Activated ${formatPaidThrough(endedStart)}. Expired ${formatPaidThrough(endedAt)}.`
+    );
+    assert.equal(
+      formatTermDatesCopy(DEMO_CARD_PAID_THROUGH, null, "expiry"),
+      `Expires ${formatPaidThrough(DEMO_CARD_PAID_THROUGH)}.`
+    );
   });
 
   it("keeps the live term plate free of a listed price", () => {
@@ -363,11 +409,28 @@ describe("subscription countdown", () => {
       join(process.cwd(), "src/components/digital-business-card/digital-card-live-demo-studio.tsx"),
       "utf8"
     );
+    const studio = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-studio-client.tsx"),
+      "utf8"
+    );
     assert.doesNotMatch(ribbon, /priceGhs/);
     assert.doesNotMatch(ribbon, /₵\{/);
     assert.match(ribbon, /celecard-term-flow/);
     assert.match(ribbon, /profile views/);
+    assert.match(ribbon, /celecard-term-chip-icon/);
+    assert.match(ribbon, /QrCode/);
+    assert.match(ribbon, /studio-activity/);
+    assert.match(ribbon, /cardId/);
+    assert.match(ribbon, /cache: "no-store"/);
+    assert.match(ribbon, /\/analytics/);
+    assert.match(ribbon, /snap\.termCopy/);
+    assert.doesNotMatch(ribbon, /Open through/);
+    assert.doesNotMatch(ribbon, /Paid through/);
+    assert.match(studio, /cardId=\{active\.id\}/);
+    assert.match(studio, /guestShareable \|\| active\.isLive/);
+    assert.match(studio, /lastActivatedAt \|\| active\.createdAt/);
     assert.match(demo, /planLabel="Yearly"/);
+    assert.match(demo, /DEMO_CARD_ACTIVATED_AT/);
     assert.doesNotMatch(demo, /yearly\?\.priceGhs/);
     assert.match(demo, /<FolioField label="Company"/);
     assert.doesNotMatch(demo, /<FolioField label="House"/);
@@ -1295,8 +1358,19 @@ describe("CeleYou device frame", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
     assert.match(studio, /celecard-studio-desk/);
     assert.match(studio, /celecard-studio-jump/);
+    assert.match(studio, /celecard-studio-toolbar/);
+    assert.match(studio, /celecard-studio-live/);
+    assert.match(studio, /#studio-inbox/);
+    assert.doesNotMatch(studio, /action-row/);
+    const lookAt = studio.indexOf('id="studio-look"');
+    const vaultAt = studio.indexOf("<DigitalCardDesignVault");
+    const arrangeAt = studio.indexOf("Guest page arrangement");
+    const inboxAt = studio.indexOf("<DigitalCardConnectionInbox");
+    assert.equal(lookAt > 0 && vaultAt > lookAt && arrangeAt > vaultAt && inboxAt > arrangeAt, true);
     assert.doesNotMatch(studio, /lg:grid-cols-\[1fr_360px\]/);
     assert.match(css, /@media \(min-width: 1180px\)/);
+    assert.match(css, /\.celecard-studio-toolbar/);
+    assert.match(css, /\.celecard-studio-live/);
     assert.match(css, /\.celecard-reach-open/);
     assert.match(css, /\.celecard-reach-chips/);
   });
@@ -1317,6 +1391,8 @@ describe("CeleYou activity flow", () => {
     assert.match(source, /label: "Save contact"/);
     assert.match(source, /label: "Reach"/);
     assert.match(source, /label: "Pass on"/);
+    assert.doesNotMatch(source, /span>Recent/);
+    assert.doesNotMatch(source, /Load more/);
     assert.match(source, /useReducedMotion/);
     assert.match(css, /@keyframes flow-ring/);
     assert.match(css, /prefers-reduced-motion: reduce/);
@@ -1382,9 +1458,11 @@ describe("CeleYou landscape hold", () => {
     assert.match(css, /data-celecard-hold="true"/);
     assert.match(css, /\(orientation: landscape\) and \(max-height: 740px\)/);
     assert.match(css, /85\.6 \/\s*54/);
+    assert.doesNotMatch(css, /0\.7rem\) \* 85\.6/);
     assert.match(view, /data-celecard-hold=\{hold \? "true" : undefined\}/);
     assert.match(view, /readCelecardHoldViewport/);
     assert.match(view, /qrHref=\{hold \? undefined : digitalCardPublicUrl/);
+    assert.match(view, /Tap this plate to share from this phone/);
   });
 });
 
@@ -1400,7 +1478,17 @@ describe("CeleYou guest public layout", () => {
     assert.match(css, /max-width: min\(72rem, 1120px\)/);
     assert.match(css, /grid-template-columns: minmax\(20rem, 26\.5rem\) minmax\(18rem, 1fr\)/);
     assert.match(view, /celecard-guest-intro/);
+    assert.doesNotMatch(view, /You do not need an app or an account/);
     assert.match(view, /celecard-guest-section/);
     assert.match(view, /celecard-action-label/);
+    assert.match(view, /SAVE_CONTACT_CTA/);
+    assert.match(view, /CONNECT_BACK_ARIA/);
+    assert.match(view, /celecard-action-hint/);
+    assert.match(view, /<Contact/);
+    assert.doesNotMatch(view, /<Download/);
+    assert.doesNotMatch(view, /contactActions/);
+    assert.doesNotMatch(view, /Show QR/);
+    assert.match(view, /Present card/);
+    assert.doesNotMatch(view, /Tap to Connect/);
   });
 });

@@ -30,6 +30,7 @@ interface ImageUploadCropperProps {
   /** Custom upload handler (e.g. event QR logo), skips default endpoint */
   onCustomUpload?: (blob: Blob, fileName: string) => Promise<UploadedImageResult>;
   onError?: (message: string) => void;
+  onPickerOpen?: (source: "gallery" | "camera") => void;
   disabled?: boolean;
   className?: string;
   previewUrl?: string | null;
@@ -61,6 +62,7 @@ export function ImageUploadCropper({
   onUploaded,
   onCustomUpload,
   onError,
+  onPickerOpen,
   disabled,
   className,
   previewUrl,
@@ -157,7 +159,10 @@ export function ImageUploadCropper({
         variant="outline"
         className="gap-2 min-h-[44px] touch-manipulation"
         disabled={disabled || uploading}
-        onClick={() => galleryRef.current?.click()}
+        onClick={() => {
+          onPickerOpen?.("gallery");
+          galleryRef.current?.click();
+        }}
       >
         {uploading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -177,7 +182,10 @@ export function ImageUploadCropper({
           type="button"
           className="gap-2 min-h-[44px] touch-manipulation bg-[#0B8A83] hover:bg-[#097a74]"
           disabled={disabled || uploading}
-          onClick={() => cameraRef.current?.click()}
+          onClick={() => {
+            onPickerOpen?.("camera");
+            cameraRef.current?.click();
+          }}
         >
           <Camera className="h-4 w-4" />
           Take photo
@@ -221,7 +229,10 @@ export function ImageUploadCropper({
               size="sm"
               className="w-full gap-2"
               disabled={disabled || uploading}
-              onClick={() => galleryRef.current?.click()}
+              onClick={() => {
+                onPickerOpen?.("gallery");
+                galleryRef.current?.click();
+              }}
             >
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               Replace image

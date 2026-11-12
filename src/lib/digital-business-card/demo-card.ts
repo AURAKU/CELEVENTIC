@@ -15,6 +15,8 @@ export const DEMO_CARD_NFC_TOKEN = "nfc-ama-serwaa";
 export const DEMO_CARD_AVATAR_PATH = "/digital-cards/demo/ama-serwaa.jpg";
 /** Dummy yearly window. Status bar counts down to this renewal. */
 export const DEMO_CARD_PAID_THROUGH = new Date("2027-11-09T23:59:59.000Z");
+/** Dummy yearly activation. Pairs with DEMO_CARD_PAID_THROUGH. */
+export const DEMO_CARD_ACTIVATED_AT = new Date("2026-11-09T16:20:00.000Z");
 export const DEMO_CARD_VIEW_COUNT = 128;
 
 const DEMO_SLUG_ALIASES = new Set(["demo", "ama-mensah", DEMO_CARD_SLUG]);

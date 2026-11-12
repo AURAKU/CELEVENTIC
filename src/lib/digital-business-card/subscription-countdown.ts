@@ -1,7 +1,10 @@
+import { DIGITAL_CARD_TRIAL_DAYS } from "@/lib/digital-business-card/types";
+
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
+const YEAR = 365 * DAY;
 
 export type SubscriptionCountdownKind = "renewal" | "expiry" | "ended";
 
@@ -15,8 +18,12 @@ export type CountdownParts = {
 export type SubscriptionCountdown = {
   kind: SubscriptionCountdownKind;
   remainingMs: number;
+  startsAt: Date | null;
   endsAt: Date;
   paidThrough: string;
+  activatedOn: string | null;
+  /** Professional term line with activation and expiry dates. */
+  termCopy: string;
   clock: string;
   label: string;
   parts: CountdownParts;
@@ -46,6 +53,27 @@ export function formatPaidThrough(date: Date): string {
     month: "short",
     year: "numeric",
   }).format(date);
+}
+
+export function resolveTermStart(
+  endsAt: Date,
+  activatedAt?: Date | string | number | null
+): Date | null {
+  const start = parseSubscriptionEnd(activatedAt);
+  if (!start) return null;
+  if (start.getTime() >= endsAt.getTime()) return null;
+  return start;
+}
+
+export function formatTermDatesCopy(
+  endsAt: Date,
+  startsAt: Date | null,
+  kind: SubscriptionCountdownKind
+): string {
+  const expiry = formatPaidThrough(endsAt);
+  const expiryVerb = kind === "ended" ? "Expired" : "Expires";
+  if (!startsAt) return `${expiryVerb} ${expiry}.`;
+  return `Activated ${formatPaidThrough(startsAt)}. ${expiryVerb} ${expiry}.`;
 }
 
 export function countdownTickMs(remainingMs: number): number {
@@ -92,7 +120,8 @@ export function formatCountdownClock(ms: number): string {
 export function subscriptionCountdown(
   expiresAt: Date | string | number | null | undefined,
   status?: string | null,
-  now: Date | number = Date.now()
+  now: Date | number = Date.now(),
+  activatedAt?: Date | string | number | null
 ): SubscriptionCountdown | null {
   const endsAt = parseSubscriptionEnd(expiresAt);
   if (!endsAt) return null;
@@ -107,13 +136,21 @@ export function subscriptionCountdown(
     : trial
       ? `Studio ends in ${clock}`
       : `Renews in ${clock}`;
-  const windowMs = trial ? 14 * DAY : 365 * DAY;
+  const startsAt = resolveTermStart(endsAt, activatedAt);
+  const windowMs = startsAt
+    ? Math.max(1, endsAt.getTime() - startsAt.getTime())
+    : trial
+      ? DIGITAL_CARD_TRIAL_DAYS * DAY
+      : YEAR;
   const remainingRatio = ended ? 0 : Math.min(1, Math.max(0, remainingMs / windowMs));
   return {
     kind,
     remainingMs,
+    startsAt,
     endsAt,
     paidThrough: formatPaidThrough(endsAt),
+    activatedOn: startsAt ? formatPaidThrough(startsAt) : null,
+    termCopy: formatTermDatesCopy(endsAt, startsAt, kind),
     clock,
     label,
     parts: countdownParts(remainingMs),

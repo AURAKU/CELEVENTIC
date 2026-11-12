@@ -16,6 +16,7 @@ import {
 } from "@/lib/digital-business-card/themes";
 import {
   DEMO_CARD,
+  DEMO_CARD_ACTIVATED_AT,
   DEMO_CARD_PAID_THROUGH,
   DEMO_CARD_SLUG,
   DEMO_CARD_VIEW_COUNT,
@@ -407,9 +408,11 @@ export function DigitalCardLiveDemoStudio({
           themeName={theme.name}
           planLabel="Yearly"
           endsAt={DEMO_CARD_PAID_THROUGH}
+          startsAt={DEMO_CARD_ACTIVATED_AT}
           status="ACTIVE"
           viewCount={DEMO_CARD_VIEW_COUNT}
           nfcEnabled={desk.nfcEnabled}
+          qrLive
           accent={theme.accent}
           border={theme.border}
           fg={stage.fg}

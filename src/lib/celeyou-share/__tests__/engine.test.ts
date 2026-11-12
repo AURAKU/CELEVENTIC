@@ -163,19 +163,21 @@ describe("CeleYou Smart Share Engine", () => {
       "utf8"
     );
     assert.match(desk, /SHARE_MY_CARD_CTA/);
-    assert.match(desk, /NEARBY_SHARE_CTA/);
-    assert.match(desk, /same public profile/);
+    assert.doesNotMatch(desk, /NEARBY_SHARE_CTA/);
+    assert.doesNotMatch(desk, /SHARE_VIA_APPS_CTA/);
+    assert.doesNotMatch(desk, /SHOW_QR_CTA/);
+    assert.doesNotMatch(desk, /same public profile/);
     assert.match(desk, /WALLET_PASS_CTA/);
     assert.match(desk, /SAVE_CONTACT_CTA/);
-    assert.match(desk, /SHARE_CONTACT_FILE_CTA/);
+    assert.match(desk, /COPY_PROFILE_LINK_CTA/);
+    assert.doesNotMatch(desk, /SHARE_CONTACT_FILE_CTA/);
     assert.match(desk, /CeleYouNameDropSetup/);
-    assert.match(desk, /shareDeskActionOrder/);
-    assert.match(desk, /Load more|fallbackGuidance/);
+    assert.doesNotMatch(desk, /shareDeskActionOrder/);
     const analytics = readFileSync(
       join(process.cwd(), "src/components/digital-business-card/digital-card-analytics-panel.tsx"),
       "utf8"
     );
-    assert.match(analytics, /Load more/);
+    assert.doesNotMatch(analytics, /Load more/);
     assert.match(analytics, /A nearby phone is not a tap/);
   });
 

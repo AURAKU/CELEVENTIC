@@ -13,14 +13,7 @@ import {
   Share2,
   Users,
 } from "lucide-react";
-import { celeYouActivityLabel } from "@/lib/celeyou-share/events";
 import styles from "./digital-card-analytics-panel.module.css";
-
-type ActivityRow = {
-  id: string;
-  kind: string;
-  createdAt: string;
-};
 
 type Analytics = {
   viewCount: number;
@@ -34,8 +27,6 @@ type Analytics = {
   shares?: number;
   connects?: number;
   reconnects?: number;
-  activity?: ActivityRow[];
-  nextCursor?: string | null;
 };
 
 type Metric = {
@@ -113,7 +104,6 @@ function MetricTile({
 export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null }) {
   const [data, setData] = useState<Analytics | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
   const reduceMotion = useReducedMotion();
   const views = useCountUp(data?.viewCount ?? 0, Boolean(data));
 
@@ -142,30 +132,6 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
       cancelled = true;
     };
   }, [cardId]);
-
-  async function loadMore() {
-    if (!cardId || !data?.nextCursor || loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const res = await fetch(
-        `/api/digital-business-cards/${cardId}/analytics?cursor=${encodeURIComponent(data.nextCursor)}`
-      );
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) return;
-      const page = json.data as { activity?: ActivityRow[]; nextCursor?: string | null };
-      setData((current) =>
-        current
-          ? {
-              ...current,
-              activity: [...(current.activity ?? []), ...(page.activity ?? [])],
-              nextCursor: page.nextCursor ?? null,
-            }
-          : current
-      );
-    } finally {
-      setLoadingMore(false);
-    }
-  }
 
   const stages: Stage[] = useMemo(() => {
     if (!data) return [];
@@ -208,7 +174,10 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
   if (!cardId) return null;
 
   return (
-    <section className={`${styles.panel} ${reduceMotion ? styles.static : ""}`}>
+    <section
+      id="studio-activity"
+      className={`${styles.panel} ${reduceMotion ? styles.static : ""} scroll-mt-16`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-slate-900">Activity</p>
@@ -276,34 +245,6 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
               </dl>
             </div>
           ))}
-
-          {(data.activity?.length ?? 0) > 0 ? (
-            <div className={styles.stage}>
-              <p className={styles.stageLabel}>
-                <span>Recent</span>
-              </p>
-              <ul className="space-y-1.5">
-                {data.activity?.map((row) => (
-                  <li key={row.id} className="flex items-center justify-between text-xs text-slate-600">
-                    <span>{celeYouActivityLabel(row.kind)}</span>
-                    <time dateTime={row.createdAt} className="tabular-nums text-slate-400">
-                      {new Date(row.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                    </time>
-                  </li>
-                ))}
-              </ul>
-              {data.nextCursor ? (
-                <button
-                  type="button"
-                  disabled={loadingMore}
-                  onClick={() => void loadMore()}
-                  className="mt-2 w-full text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#0B8A83]"
-                >
-                  {loadingMore ? "Loading…" : "Load more"}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
         </div>
       ) : null}
     </section>

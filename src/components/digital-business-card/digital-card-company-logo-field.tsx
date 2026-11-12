@@ -16,6 +16,7 @@ export function DigitalCardCompanyLogoField({
   company,
   theme,
   onError,
+  onAction,
   mode = "api",
   compact,
 }: {
@@ -24,6 +25,7 @@ export function DigitalCardCompanyLogoField({
   company?: string;
   theme: DigitalCardTheme;
   onError?: (message: string) => void;
+  onAction?: (text: string) => void;
   mode?: "api" | "local";
   compact?: boolean;
 }) {
@@ -83,6 +85,7 @@ export function DigitalCardCompanyLogoField({
     event.stopPropagation();
     if (value?.startsWith("blob:")) URL.revokeObjectURL(value);
     onChange(null);
+    onAction?.("Company logo removed.");
   }
 
   const size = compact ? "h-14 w-14" : "h-16 w-16";
@@ -104,7 +107,10 @@ export function DigitalCardCompanyLogoField({
         type="button"
         aria-label={value ? "Replace company logo" : "Upload company logo"}
         disabled={uploading}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => {
+          onAction?.("Choose a logo, then crop it.");
+          inputRef.current?.click();
+        }}
         onDragOver={(event) => {
           event.preventDefault();
         }}

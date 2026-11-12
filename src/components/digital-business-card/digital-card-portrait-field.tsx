@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
 import { DigitalCardHouseAvatar } from "@/components/digital-business-card/digital-card-house-avatar";
+import { DigitalCardStudioNotice } from "@/components/digital-business-card/digital-card-studio-notice";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
 import {
   celeCardHouseAvatarId,
@@ -59,7 +61,7 @@ function AvatarRow({
               aria-label={`${item.label}. ${item.hint}`}
               onClick={() => onPick(item.id)}
               className={cn(
-                "overflow-hidden rounded-full transition",
+                "overflow-hidden rounded-full transition duration-150 ease-out active:scale-95",
                 compact ? "min-h-9 min-w-9" : "min-h-11 min-w-11",
                 active ? "ring-2 ring-offset-2" : "opacity-80 hover:opacity-100"
               )}
@@ -91,6 +93,7 @@ export function DigitalCardPortraitField({
   compact,
   portraitFrame,
   onPortraitFrameChange,
+  onAction,
 }: {
   value: string | null;
   onChange: (url: string | null) => void;
@@ -101,6 +104,7 @@ export function DigitalCardPortraitField({
   compact?: boolean;
   portraitFrame?: CeleCardPortraitFrame | null;
   onPortraitFrameChange?: (frame: CeleCardPortraitFrame) => void;
+  onAction?: (text: string) => void;
 }) {
   const frame = resolveCeleCardPortraitFrame(theme, portraitFrame);
   const well =
@@ -112,15 +116,30 @@ export function DigitalCardPortraitField({
   const people = celeCardHouseAvatarsByGroup("people");
   const creatures = celeCardHouseAvatarsByGroup("creature");
   const studio = celeCardHouseAvatarsByGroup("studio");
+  const [notice, setNotice] = useState<string | null>(null);
+
+  function confirm(text: string) {
+    setNotice(text);
+    onAction?.(text);
+  }
+
+  function houseCopy(id: CeleCardHouseAvatarId) {
+    const meta = celeCardHouseAvatarMeta(id);
+    if (id === "celecard") return "CeleYou mark selected.";
+    if (meta.kind === "mark") return `${meta.label} mark selected.`;
+    return `${meta.label} selected.`;
+  }
 
   function pickHouse(id: CeleCardHouseAvatarId) {
     if (value?.startsWith("blob:")) URL.revokeObjectURL(value);
     onChange(celeCardHouseAvatarValue(id));
+    confirm(houseCopy(id));
   }
 
   function clearPhoto() {
     if (value?.startsWith("blob:")) URL.revokeObjectURL(value);
     onChange(celeCardHouseAvatarValue("celecard"));
+    confirm("CeleYou mark restored.");
   }
 
   return (
@@ -173,9 +192,12 @@ export function DigitalCardPortraitField({
                 key={item}
                 type="button"
                 aria-pressed={active}
-                onClick={() => onPortraitFrameChange(item)}
+                onClick={() => {
+                  onPortraitFrameChange(item);
+                  confirm(`${FRAME_LABELS[item]} frame selected.`);
+                }}
                 className={cn(
-                  "h-8 rounded-md border px-2.5 text-[11px] font-semibold",
+                  "h-8 rounded-md border px-2.5 text-[11px] font-semibold transition duration-150 ease-out active:scale-95",
                   active ? "border-current" : "border-slate-200 text-slate-600"
                 )}
                 style={active ? { color: theme.accent, borderColor: theme.accent, background: theme.accentSoft } : undefined}
@@ -186,6 +208,8 @@ export function DigitalCardPortraitField({
           })}
         </div>
       ) : null}
+
+      <DigitalCardStudioNotice message={notice} className="celecard-studio-notice-local" />
 
       <AvatarRow
         label="Marks"
@@ -234,9 +258,13 @@ export function DigitalCardPortraitField({
         hint="Phone gallery, camera, or a file from any device. Crop the part that should sit in the frame."
         dropzoneNote="JPEG, HEIC, PNG, WebP, GIF, AVIF · then crop to the frame"
         onError={onError}
+        onPickerOpen={(source) => {
+          confirm(source === "camera" ? "Take a photo, then crop it." : "Choose a photo, then crop it.");
+        }}
         onUploaded={(result) => {
           if (value?.startsWith("blob:")) URL.revokeObjectURL(value);
           onChange(result.url);
+          confirm("Portrait cropped.");
         }}
         onCustomUpload={
           mode === "local"
