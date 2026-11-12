@@ -151,7 +151,7 @@
         "heroPortrait": true,
         "countdown": true,
         "greeting": true,
-        "programme": true,
+        "programme": false,
         "location": true,
         "dressCode": true,
         "guestPolicy": true,
