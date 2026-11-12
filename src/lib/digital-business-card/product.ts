@@ -24,7 +24,7 @@
  * MISSING → CREATE (phased)
  *   Profile variants, Connect Back / connections CRM-lite, NFC device registry,
  *   /c + /n redirect tokens, signed Apple/Google Wallet issuer files,
- *   web Wallet card with the same public QR (no phone-to-phone NFC),
+ *   web Wallet card of uploaded payment channels (no Apple/Google Wallet, no phone-to-phone NFC),
  *   offline snapshot, payment hub,
  *   campaigns attribution, block system, team templates.
  *

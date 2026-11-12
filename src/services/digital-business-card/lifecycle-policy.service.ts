@@ -5,8 +5,8 @@ import {
   resolveCeleCardLifecycle,
   type CeleCardLifecyclePolicy,
 } from "@/lib/digital-business-card/lifecycle";
-import { SMARTCARD_PLANS } from "@/lib/digital-business-card/plans";
 import { recordCeleCardLifecycleEvent } from "./digital-business-card.service";
+import { getCeleCardCatalog } from "./catalog.service";
 
 let policyCache: { value: CeleCardLifecyclePolicy; at: number } | null = null;
 const POLICY_CACHE_MS = 15_000;
@@ -76,6 +76,7 @@ export async function upsertCeleCardLifecyclePolicy(
 
 export async function getCeleCardAdminOverview() {
   const policy = await getCeleCardLifecyclePolicy();
+  const catalog = await getCeleCardCatalog();
   const cards = await prisma.digitalBusinessCard.findMany({
     select: {
       id: true,
@@ -109,7 +110,7 @@ export async function getCeleCardAdminOverview() {
     registeredOwners: new Set(cards.map((c) => c.id)).size,
     cardCount: cards.length,
     courtesyReconnects: reconnects,
-    plans: SMARTCARD_PLANS.map((plan) => ({
+    plans: catalog.plans.map((plan) => ({
       id: plan.id,
       label: plan.label,
       months: plan.months,
@@ -117,7 +118,8 @@ export async function getCeleCardAdminOverview() {
       pricePesewas: plan.pricePesewas,
       currency: "GHS",
     })),
-    prepaidNote: "CeleYou plans are prepaid terms, not contractual monthly recurring revenue.",
+    conciergePriceGhs: catalog.conciergePriceGhs,
+    prepaidNote: "CeleYou Pro plans are prepaid terms, not contractual monthly recurring revenue. Concierge design is a separate one-time fee.",
   };
 }
 

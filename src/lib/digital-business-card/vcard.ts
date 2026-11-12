@@ -6,9 +6,14 @@ import {
   collectCardWebsites,
   collectTaggedEmails,
   collectTaggedPhones,
+  detectChatLinkKind,
   isLiveReachItem,
+  isPayNetwork,
   listDigitalCardReachItems,
+  parseBankAccount,
+  websiteHref,
   type ContactKindTag,
+  type DigitalCardReachItem,
 } from "./socials";
 import { parseCeleCardPlace } from "./maps";
 import { isCeleCardPhotoUrl } from "./portraits";
@@ -91,6 +96,7 @@ export function vcardContentDisposition(disposition: "inline" | "attachment", fi
   return `${disposition}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 }
 
+/** Apple Contacts service names that fill the Social Profile row. */
 const SOCIAL_PROFILE_TYPE: Record<string, string> = {
   linkedin: "linkedin",
   instagram: "instagram",
@@ -102,92 +108,179 @@ const SOCIAL_PROFILE_TYPE: Record<string, string> = {
   threads: "threads",
   snapchat: "snapchat",
   pinterest: "pinterest",
-  whatsapp: "whatsapp",
-  whatsappbusiness: "whatsapp",
-  telegram: "telegram",
-  signal: "signal",
-  wechat: "wechat",
+  reddit: "reddit",
+  discord: "discord",
+  bluesky: "bluesky",
+  trendshub: "trendshub",
+  twitch: "twitch",
+  spotify: "spotify",
+  applemusic: "applemusic",
+  behance: "behance",
+  dribbble: "dribbble",
+  medium: "medium",
 };
 
+const CHAT_IM_SERVICE: Record<string, string> = {
+  whatsapp: "WhatsApp",
+  whatsappbusiness: "WhatsApp",
+  telegram: "Telegram",
+  signal: "Signal",
+  messenger: "Facebook",
+  wechat: "WeChat",
+  line: "LINE",
+  viber: "Viber",
+};
+
+const PAY_AS_URL = new Set([
+  "paypal",
+  "cashapp",
+  "venmo",
+  "wise",
+  "revolut",
+  "paystack",
+  "flutterwave",
+  "alipay",
+  "chipper",
+]);
+
 export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOptions = {}): string {
-  const { family, given } = vcardNameParts(card.displayName);
+  const displayName = card.displayName.trim() || card.company?.trim() || "CeleYou";
+  const { family, given } = vcardNameParts(displayName);
   const lines: string[] = [
     "BEGIN:VCARD",
     "VERSION:3.0",
     "PRODID:-//Celeventic//CeleYou//EN",
     `UID:celecard:${escapeVCard(card.id || card.slug)}`,
-    `FN:${escapeVCard(card.displayName)}`,
-    `N:${escapeVCard(family)};${escapeVCard(given)};;;`,
+    `FN;CHARSET=UTF-8:${escapeVCard(displayName)}`,
+    `N;CHARSET=UTF-8:${escapeVCard(family)};${escapeVCard(given)};;;`,
   ];
-  if (card.company) lines.push(`ORG:${escapeVCard(card.company)}`);
-  if (card.title) lines.push(`TITLE:${escapeVCard(card.title)}`);
+  if (card.company?.trim()) lines.push(`ORG;CHARSET=UTF-8:${escapeVCard(card.company.trim())}`);
+  if (card.title?.trim()) lines.push(`TITLE;CHARSET=UTF-8:${escapeVCard(card.title.trim())}`);
   lines.push("CATEGORIES:CeleYou");
 
-  collectTaggedPhones(card).forEach((entry, index) => {
-    lines.push(`TEL;TYPE=${vcardTelType(entry.tag, index)}:${escapeVCard(entry.value)}`);
+  const reach = unlockedReach(card);
+  const seenTel = new Set<string>();
+  const seenMail = new Set<string>();
+  const seenUrls = new Set<string>();
+  let item = 1;
+
+  phonesForVCard(card, reach).forEach((entry, index) => {
+    const number = compactPhone(entry.value);
+    if (!number || seenTel.has(digits(number))) return;
+    seenTel.add(digits(number));
+    lines.push(`TEL;${vcardTelType(entry.tag, index)}:${escapeVCard(number)}`);
   });
-  collectTaggedEmails(card).forEach((entry) => {
-    const type = vcardEmailType(entry.tag);
-    lines.push(
-      type
-        ? `EMAIL;TYPE=INTERNET,${type}:${escapeVCard(entry.value)}`
-        : `EMAIL;TYPE=INTERNET:${escapeVCard(entry.value)}`
-    );
+
+  emailsForVCard(card, reach).forEach((entry) => {
+    const email = entry.value.trim();
+    if (!email || seenMail.has(email.toLowerCase())) return;
+    seenMail.add(email.toLowerCase());
+    lines.push(`EMAIL;${vcardEmailType(entry.tag)}:${escapeVCard(email)}`);
   });
-  collectCardWebsites(card).forEach((site, index) => {
-    const href = websiteHref(site);
-    if (!href) return;
+
+  websitesForVCard(card, reach).forEach((href, index) => {
+    if (seenUrls.has(href)) return;
+    seenUrls.add(href);
     lines.push(index === 0 ? `URL;TYPE=WORK:${escapeVCard(href)}` : `URL:${escapeVCard(href)}`);
   });
 
-  let item = 1;
-  const seenUrls = new Set<string>();
   const cardUrl = sanitizeCeleYouVcardUrl(options.cardUrl, card.slug);
-  if (cardUrl) {
+  if (cardUrl && !seenUrls.has(cardUrl)) {
     seenUrls.add(cardUrl);
-    lines.push(`URL;TYPE=PREF:${escapeVCard(cardUrl)}`);
-    lines.push(`item${item}.URL:${escapeVCard(cardUrl)}`);
+    lines.push(`item${item}.URL;TYPE=PREF:${escapeVCard(cardUrl)}`);
     lines.push(`item${item}.X-ABLabel:CeleYou`);
     item += 1;
   }
 
   const notes: string[] = [];
-  if (card.pronouns) notes.push(card.pronouns);
-  if (card.bio) notes.push(card.bio);
+  if (card.pronouns?.trim()) {
+    const pronouns = card.pronouns.trim();
+    lines.push(`X-PRONOUNS;CHARSET=UTF-8:${escapeVCard(pronouns)}`);
+    notes.push(`Pronouns: ${pronouns}`);
+  }
+  if (card.bio?.trim()) notes.push(card.bio.trim());
 
-  for (const reach of unlockedReach(card)) {
-    if (reach.brand === "email" || reach.brand === "phone" || reach.brand === "website") continue;
-    if (reach.brand === "meeting") {
-      const meeting = [reach.title, reach.subtitle].filter(Boolean).join(" · ");
+  const payNotes: string[] = [];
+
+  for (const row of reach) {
+    if (row.brand === "email" || row.brand === "phone" || row.brand === "website") continue;
+
+    if (row.brand === "meeting") {
+      const meeting = [row.title, row.subtitle].filter(Boolean).join(" · ");
       if (meeting) notes.push(meeting);
       continue;
     }
-    if (reach.brand === "bank") {
-      const bank = [reach.title, reach.subtitle, reach.copyValue].filter(Boolean).join(" · ");
-      if (bank) notes.push(bank);
+
+    if (row.brand === "location") {
+      item = pushAddress(lines, item, row);
       continue;
     }
-    if (reach.brand === "location") {
-      const place = parseCeleCardPlace(reach.copyValue || reach.href);
-      if (place?.lat != null && place.lng != null) {
-        lines.push(`GEO:${place.lat};${place.lng}`);
+
+    if (row.brand === "bank" || (isPayNetwork(row.brand) && !PAY_AS_URL.has(row.brand))) {
+      const payLine = payNoteLine(row);
+      if (payLine) payNotes.push(payLine);
+      continue;
+    }
+
+    const chatService = CHAT_IM_SERVICE[row.brand];
+    if (chatService) {
+      const kind = row.linkKind || detectChatLinkKind(row.brand, row.copyValue || row.href || row.title);
+      if (kind === "number") {
+        const number = compactPhone(row.copyValue || row.title || row.href);
+        if (number) {
+          if (!seenTel.has(digits(number))) {
+            seenTel.add(digits(number));
+            lines.push(`TEL;TYPE=CELL;TYPE=VOICE:${escapeVCard(number)}`);
+          }
+          item = pushIm(lines, item, chatService, `x-apple:${digits(number)}`);
+          continue;
+        }
       }
-      if (place?.label && !/^-?\d/.test(place.label)) {
-        lines.push(`ADR;TYPE=WORK:;;${escapeVCard(place.label)};;;;`);
+      const href = httpHref(row.href);
+      if (href && (kind === "group" || kind === "channel")) {
+        const label =
+          kind === "group" ? `${brandReachLabel(row.brand)} Group` : `${brandReachLabel(row.brand)} Channel`;
+        item = pushLabeledUrl(lines, item, seenUrls, href, label);
+        continue;
       }
-      const mapHref = (place?.href || reach.href || "").trim();
-      if (/^https?:\/\//i.test(mapHref)) {
-        item = pushReachUrl(lines, item, seenUrls, mapHref, "Location", null);
+      const imValue = imHandle(row) || httpHref(row.href);
+      if (imValue) item = pushIm(lines, item, chatService, imValue);
+      continue;
+    }
+
+    const socialType = SOCIAL_PROFILE_TYPE[row.brand];
+    if (socialType) {
+      const href = httpHref(row.href);
+      const user = profileHandle(row);
+      if (!href && !user) continue;
+      item = pushSocial(lines, item, socialType, brandReachLabel(row.brand), user, href || user);
+      continue;
+    }
+
+    if (PAY_AS_URL.has(row.brand) || row.brand === "other") {
+      const href = httpHref(row.href);
+      const label = row.brand === "other" ? row.title || "Page" : brandReachLabel(row.brand);
+      if (href) {
+        item = pushLabeledUrl(lines, item, seenUrls, href, label);
+      } else {
+        const payLine = payNoteLine(row);
+        if (payLine) payNotes.push(payLine);
       }
       continue;
     }
-    const href = (reach.href || "").trim();
-    if (!/^https?:\/\//i.test(href)) {
-      if (reach.copyValue) notes.push(`${brandReachLabel(reach.brand)} · ${reach.copyValue}`);
+
+    const href = httpHref(row.href);
+    if (href) {
+      item = pushLabeledUrl(lines, item, seenUrls, href, brandReachLabel(row.brand));
       continue;
     }
-    const label = reach.brand === "other" ? reach.title || "Page" : brandReachLabel(reach.brand);
-    item = pushReachUrl(lines, item, seenUrls, href, label, SOCIAL_PROFILE_TYPE[reach.brand] ?? null);
+    if (row.copyValue?.trim()) {
+      notes.push(`${brandReachLabel(row.brand)}: ${row.copyValue.trim()}`);
+    }
+  }
+
+  if (payNotes.length) {
+    notes.push(["Pay", ...payNotes].join("\n"));
   }
 
   if (options.photo?.base64 && isCeleCardPhotoUrl(card.avatarUrl)) {
@@ -198,34 +291,185 @@ export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOp
     }
   }
 
-  if (notes.length) lines.push(`NOTE:${escapeVCard(notes.join("\n"))}`);
+  if (notes.length) lines.push(`NOTE;CHARSET=UTF-8:${escapeVCard(notes.join("\n"))}`);
   lines.push(`REV:${vcardRev()}`);
   lines.push("END:VCARD");
   return lines.map(foldVCardLine).join("\r\n") + "\r\n";
 }
 
-function pushReachUrl(
+function unlockedReach(card: DigitalCardPublicPayload) {
+  const items = Array.isArray(card.guestReach) ? card.guestReach : listDigitalCardReachItems(card);
+  return items.filter((item) => !item.locked && isLiveReachItem(item));
+}
+
+function phonesForVCard(
+  card: DigitalCardPublicPayload,
+  reach: DigitalCardReachItem[]
+): Array<{ value: string; tag: ContactKindTag | null }> {
+  const fromReach = reach
+    .filter((item) => item.brand === "phone")
+    .map((item) => ({
+      value: item.copyValue || item.title || item.href.replace(/^tel:/i, ""),
+      tag: item.kindTag ?? null,
+    }))
+    .filter((entry) => compactPhone(entry.value));
+  if (fromReach.length) return fromReach;
+  return collectTaggedPhones(card).filter((entry) => compactPhone(entry.value));
+}
+
+function emailsForVCard(
+  card: DigitalCardPublicPayload,
+  reach: DigitalCardReachItem[]
+): Array<{ value: string; tag: ContactKindTag | null }> {
+  const fromReach = reach
+    .filter((item) => item.brand === "email")
+    .map((item) => ({
+      value: (item.copyValue || item.title || item.href.replace(/^mailto:/i, "")).trim(),
+      tag: item.kindTag ?? null,
+    }))
+    .filter((entry) => entry.value.includes("@"));
+  if (fromReach.length) return fromReach;
+  return collectTaggedEmails(card).filter((entry) => entry.value.includes("@"));
+}
+
+function websitesForVCard(card: DigitalCardPublicPayload, reach: DigitalCardReachItem[]): string[] {
+  const fromReach = reach.map((item) => (item.brand === "website" ? httpHref(item.href) : "")).filter(Boolean);
+  if (fromReach.length) return fromReach;
+  return collectCardWebsites(card).map(websiteHref).filter((href) => /^https?:\/\//i.test(href));
+}
+
+function pushSocial(
+  lines: string[],
+  item: number,
+  type: string,
+  label: string,
+  user: string,
+  href: string
+): number {
+  const value = httpHref(href) || user;
+  if (!value) return item;
+  const params = [`TYPE=${type}`];
+  if (user) params.push(`x-user=${escapeVCard(user)}`);
+  lines.push(`item${item}.X-SOCIALPROFILE;${params.join(";")}:${escapeVCard(value)}`);
+  lines.push(`item${item}.X-ABLabel:${escapeVCard(label)}`);
+  return item + 1;
+}
+
+function pushIm(lines: string[], item: number, service: string, value: string): number {
+  const handle = value.trim();
+  if (!handle) return item;
+  lines.push(`item${item}.IMPP;X-SERVICE-TYPE=${escapeVCard(service)}:${escapeVCard(handle)}`);
+  lines.push(`item${item}.X-ABLabel:${escapeVCard(service)}`);
+  return item + 1;
+}
+
+function pushLabeledUrl(
   lines: string[],
   item: number,
   seen: Set<string>,
   href: string,
-  label: string,
-  socialType: string | null
+  label: string
 ): number {
   if (seen.has(href)) return item;
   seen.add(href);
-  lines.push(`URL:${escapeVCard(href)}`);
-  if (socialType) {
-    lines.push(`X-SOCIALPROFILE;TYPE=${socialType}:${escapeVCard(href)}`);
-  }
   lines.push(`item${item}.URL:${escapeVCard(href)}`);
   lines.push(`item${item}.X-ABLabel:${escapeVCard(label)}`);
   return item + 1;
 }
 
-function unlockedReach(card: DigitalCardPublicPayload) {
-  const items = Array.isArray(card.guestReach) ? card.guestReach : listDigitalCardReachItems(card);
-  return items.filter((item) => !item.locked && isLiveReachItem(item));
+function pushAddress(lines: string[], item: number, row: DigitalCardReachItem): number {
+  const place = parseCeleCardPlace(row.copyValue || row.href);
+  if (place?.lat != null && place.lng != null) {
+    lines.push(`GEO:${place.lat};${place.lng}`);
+  }
+  const street = (place?.label && !/^-?\d/.test(place.label) ? place.label : "").trim();
+  if (street) {
+    lines.push(`ADR;CHARSET=UTF-8;TYPE=WORK:;;${escapeVCard(street)};;;;`);
+  }
+  const mapHref = httpHref(place?.href || row.href);
+  if (mapHref) {
+    lines.push(`item${item}.URL:${escapeVCard(mapHref)}`);
+    lines.push(`item${item}.X-ABLabel:Location`);
+    return item + 1;
+  }
+  return item;
+}
+
+function payNoteLine(row: DigitalCardReachItem): string | null {
+  if (row.brand === "bank") {
+    const bank = parseBankAccount(row.copyValue || "");
+    const bits = [bank.bankName, bank.accountName, bank.accountNumber, bank.accountType, bank.notes].filter(Boolean);
+    return bits.length ? `Bank: ${bits.join(" · ")}` : null;
+  }
+  const value = (row.copyValue || row.subtitle || row.title || "").trim();
+  if (!value && !row.qrUrl) return null;
+  const label = brandReachLabel(row.brand);
+  if (row.qrUrl && !value) return `${label}: scan on the CeleYou card`;
+  return `${label}: ${value}`;
+}
+
+function profileHandle(row: DigitalCardReachItem): string {
+  const copied = (row.copyValue || "").trim();
+  if (copied && !/^https?:/i.test(copied) && !copied.includes("://")) {
+    const last = copied.split("/").filter(Boolean).pop() || copied;
+    return last.replace(/^@/, "").replace(/^\$/, "").trim();
+  }
+  const href = httpHref(row.href);
+  if (!href) return (row.subtitle || "").replace(/^@/, "").trim();
+  try {
+    const url = new URL(href);
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (row.brand === "linkedin") {
+      const inAt = parts.findIndex((part) => part === "in" || part === "company");
+      return decodeURIComponent(parts[inAt >= 0 ? inAt + 1 : 0] || "").replace(/^@/, "");
+    }
+    if (row.brand === "youtube") {
+      const named = parts.find((part) => part.startsWith("@")) || parts[0] || "";
+      return decodeURIComponent(named).replace(/^@/, "");
+    }
+    const last = parts[parts.length - 1] || "";
+    return decodeURIComponent(last).replace(/^@/, "").replace(/^\$/, "");
+  } catch {
+    return "";
+  }
+}
+
+function imHandle(row: DigitalCardReachItem): string {
+  const copied = (row.copyValue || "").trim();
+  if (copied && !/^https?:/i.test(copied)) {
+    const number = digits(copied);
+    if (number.length >= 7) return `x-apple:${number}`;
+    return copied.replace(/^@/, "");
+  }
+  const href = httpHref(row.href);
+  if (!href) return "";
+  try {
+    const url = new URL(href);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const last = decodeURIComponent(parts[parts.length - 1] || "").replace(/^@/, "");
+    const number = digits(last);
+    if (number.length >= 7) return `x-apple:${number}`;
+    return last || href;
+  } catch {
+    return href;
+  }
+}
+
+function httpHref(value?: string | null): string {
+  const t = (value || "").trim();
+  if (!/^https?:\/\//i.test(t)) return "";
+  return t;
+}
+
+function compactPhone(value: string): string {
+  const t = value.replace(/^tel:/i, "").trim();
+  if (!t) return "";
+  const number = t.replace(/[^\d+]/g, "");
+  return number.replace(/(?!^)\+/g, "").length >= 7 ? t : "";
+}
+
+function digits(value: string): string {
+  return value.replace(/\D/g, "");
 }
 
 function vcardNameParts(displayName: string): { family: string; given: string } {
@@ -235,23 +479,16 @@ function vcardNameParts(displayName: string): { family: string; given: string } 
   return { family: parts[parts.length - 1]!, given: parts.slice(0, -1).join(" ") };
 }
 
-function vcardEmailType(tag: ContactKindTag | null): "WORK" | "HOME" | null {
-  if (tag === "business") return "WORK";
-  if (tag === "personal") return "HOME";
-  return null;
+function vcardEmailType(tag: ContactKindTag | null): string {
+  if (tag === "business") return "TYPE=INTERNET;TYPE=WORK";
+  if (tag === "personal") return "TYPE=INTERNET;TYPE=HOME";
+  return "TYPE=INTERNET";
 }
 
 function vcardTelType(tag: ContactKindTag | null, index: number): string {
-  if (tag === "business") return "WORK,VOICE";
-  if (tag === "personal") return "CELL,VOICE";
-  return index === 0 ? "CELL,VOICE" : "VOICE";
-}
-
-function websiteHref(value: string): string {
-  const t = value.trim();
-  if (!t) return "";
-  if (/^https?:\/\//i.test(t)) return t;
-  return `https://${t.replace(/^\/\//, "")}`;
+  if (tag === "business") return index === 0 ? "TYPE=WORK;TYPE=VOICE;TYPE=PREF" : "TYPE=WORK;TYPE=VOICE";
+  if (tag === "personal") return index === 0 ? "TYPE=CELL;TYPE=VOICE;TYPE=PREF" : "TYPE=CELL;TYPE=VOICE";
+  return index === 0 ? "TYPE=CELL;TYPE=VOICE;TYPE=PREF" : "TYPE=CELL;TYPE=VOICE";
 }
 
 function vcardRev(): string {

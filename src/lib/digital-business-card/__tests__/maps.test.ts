@@ -117,7 +117,7 @@ describe("CeleYou location places", () => {
       isLive: true,
     });
     assert.match(vcf, /GEO:5\.56;-0\.196/);
-    assert.match(vcf, /ADR;TYPE=WORK:;;Ridge Hospital;;;;/);
+    assert.match(vcf, /ADR;CHARSET=UTF-8;TYPE=WORK:;;Ridge Hospital;;;;/);
     assert.match(vcf, /X-ABLabel:Location/);
   });
 });

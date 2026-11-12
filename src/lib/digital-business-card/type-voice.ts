@@ -5,7 +5,7 @@ const cinzel = "var(--font-cinzel), Palatino, 'Palatino Linotype', serif";
 const editorial = "var(--font-cormorant), Georgia, serif";
 const sans = "var(--font-sans), system-ui, sans-serif";
 
-export type CeleCardOriginStyle = "letterhead" | "credit" | "stamp" | "neon" | "masthead" | "carved";
+export type CeleCardOriginStyle = "letterhead" | "credit" | "stamp" | "neon" | "masthead" | "carved" | "script" | "mono";
 export type CeleCardRuleStyle = "foil" | "none" | "double" | "bar";
 
 export type CeleCardTypeVoice = {
@@ -132,14 +132,181 @@ function neon(): CeleCardTypeVoice {
   };
 }
 
-/** Letterhead cards keep given names and family name on separate lines at every width. */
+function script(): CeleCardTypeVoice {
+  return {
+    heading: editorial,
+    title: editorial,
+    meta: editorial,
+    origin: cinzel,
+    nameTracking: "0.01em",
+    nameWeight: 500,
+    titleItalic: true,
+    titleTracking: "0.02em",
+    companyTracking: "0.12em",
+    companyTransform: "none",
+    rule: "foil",
+    originStyle: "script",
+    stacksDisplayName: false,
+  };
+}
+
+function mono(): CeleCardTypeVoice {
+  return {
+    heading: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+    title: sans,
+    meta: sans,
+    origin: sans,
+    nameTracking: "0.04em",
+    nameWeight: 600,
+    titleItalic: false,
+    titleTracking: "0.08em",
+    companyTracking: "0.14em",
+    companyTransform: "uppercase",
+    rule: "none",
+    originStyle: "mono",
+    stacksDisplayName: false,
+  };
+}
+
+const CELECARD_NAME_PARTICLES = new Set([
+  "van",
+  "von",
+  "der",
+  "den",
+  "de",
+  "da",
+  "del",
+  "della",
+  "di",
+  "du",
+  "la",
+  "le",
+  "bin",
+  "bint",
+  "al",
+  "el",
+  "ten",
+  "ter",
+  "st",
+  "saint",
+]);
+
+const CELECARD_NAME_SUFFIXES = new Set([
+  "jr",
+  "sr",
+  "jnr",
+  "snr",
+  "junior",
+  "senior",
+  "ii",
+  "iii",
+  "iv",
+  "v",
+  "vi",
+]);
+
+export type CeleCardSplitDisplayName = {
+  given: string;
+  middles: string[];
+  family: string;
+  suffix: string;
+};
+
+function celecardNormalizeDisplayName(name: string): string {
+  return name.replace(/\s+/g, " ").trim();
+}
+
+function celecardNameTokenKey(token: string): string {
+  return token.replace(/[.]/g, "").toLowerCase();
+}
+
+function celecardIsNameParticle(token: string): boolean {
+  return CELECARD_NAME_PARTICLES.has(celecardNameTokenKey(token));
+}
+
+function celecardIsNameSuffix(token: string): boolean {
+  return CELECARD_NAME_SUFFIXES.has(celecardNameTokenKey(token));
+}
+
+function celecardFirstLetter(token: string): string | null {
+  const match = token.match(/\p{L}/u);
+  return match ? match[0] : null;
+}
+
+/** Middle tokens become initials. Particles stay written as the cardholder typed them. */
+export function celecardAbbreviateMiddleToken(token: string): string {
+  const trimmed = token.trim();
+  if (!trimmed) return "";
+  if (celecardIsNameParticle(trimmed)) return trimmed;
+  if (trimmed.includes("-")) {
+    return trimmed
+      .split("-")
+      .filter(Boolean)
+      .map((part) => celecardAbbreviateMiddleToken(part))
+      .join("-");
+  }
+  const letter = celecardFirstLetter(trimmed);
+  if (!letter) return trimmed;
+  return `${letter.toLocaleUpperCase()}.`;
+}
+
+export function celecardSplitDisplayName(name: string): CeleCardSplitDisplayName {
+  const tokens = celecardNormalizeDisplayName(name).split(" ").filter(Boolean);
+  if (!tokens.length) return { given: "", middles: [], family: "", suffix: "" };
+  if (tokens.length === 1) return { given: tokens[0], middles: [], family: "", suffix: "" };
+
+  const suffixes: string[] = [];
+  let end = tokens.length;
+  while (end > 1 && celecardIsNameSuffix(tokens[end - 1])) {
+    suffixes.unshift(tokens[--end]);
+  }
+
+  let familyStart = Math.max(1, end - 1);
+  while (familyStart > 1 && celecardIsNameParticle(tokens[familyStart - 1])) {
+    familyStart -= 1;
+  }
+
+  const given = tokens[0] ?? "";
+  const middles = tokens.slice(1, familyStart);
+  return {
+    given,
+    middles,
+    family: tokens.slice(familyStart, end).join(" "),
+    suffix: suffixes.join(" "),
+  };
+}
+
+/**
+ * Plate presentation only. Saved identity, vCard, and share titles keep the full name.
+ * Three or more name parts abbreviate middles: Jeffery Owuraku Afari → Jeffery O. Afari.
+ */
+export function celecardPlateDisplayName(name: string): string {
+  const trimmed = celecardNormalizeDisplayName(name);
+  if (!trimmed) return "";
+  const parts = celecardSplitDisplayName(trimmed);
+  if (!parts.middles.length) return trimmed;
+  const middles = parts.middles.map(celecardAbbreviateMiddleToken);
+  return [parts.given, ...middles, parts.family, parts.suffix].filter(Boolean).join(" ");
+}
+
+function celecardJoinNameParts(...parts: Array<string | string[]>): string {
+  return parts
+    .flat()
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
+/** Letterhead cards keep given names and family name on separate lines when a single line would read too small. */
 export function celecardDisplayNameLines(name: string, stack: boolean): string[] {
-  const trimmed = name.replace(/\s+/g, " ").trim();
-  if (!trimmed) return [""];
-  if (!stack) return [trimmed];
-  const parts = trimmed.split(" ");
-  if (parts.length < 2) return [trimmed];
-  return [parts.slice(0, -1).join(" "), parts[parts.length - 1]];
+  const plate = celecardPlateDisplayName(name);
+  if (!plate) return [""];
+  if (!stack) return [plate];
+  const parts = celecardSplitDisplayName(name);
+  const givenLine = celecardJoinNameParts(parts.given, parts.middles.map(celecardAbbreviateMiddleToken));
+  const familyLine = celecardJoinNameParts(parts.family, parts.suffix);
+  if (!familyLine || !givenLine) return [plate];
+  return [givenLine, familyLine];
 }
 
 /** Container-query font size so a long name sits in the identity column without overflowing. */
@@ -159,11 +326,134 @@ export function celecardNameFitCqw(name: string, stacked: boolean, compact = fal
   return Math.round(Math.max(3.35, Math.min(cap, fitted)) * 100) / 100;
 }
 
-/** Stack given name and family name only when one line would read too small. */
+/** Stack given name and family name only when a single abbreviated line would read too small. */
 export function celecardNameShouldStack(name: string, stackedVoice: boolean, compact = false): boolean {
   if (!stackedVoice) return false;
   if (celecardDisplayNameLines(name, true).length < 2) return false;
-  return celecardNameFitCqw(name, false, compact) < 5;
+  return celecardNameFitCqw(name, false, compact) < 3.5;
+}
+
+const CELECARD_PHRASE_SMALL_WORDS = new Set([
+  "and",
+  "of",
+  "the",
+  "for",
+  "&",
+  "at",
+  "in",
+  "on",
+  "to",
+  "de",
+  "du",
+  "la",
+  "le",
+]);
+
+type CeleCardPhraseKind = "company" | "title";
+
+type CeleCardPhraseOptions = {
+  uppercase?: boolean;
+  compact?: boolean;
+};
+
+function celecardPhraseVisualLen(text: string, uppercase: boolean): number {
+  const letters = text.replace(/\s+/g, "").length;
+  const gaps = Math.max(0, text.trim().split(/\s+/).filter(Boolean).length - 1);
+  return letters + gaps * (uppercase ? 0.55 : 0.32);
+}
+
+function celecardBestPhraseBreak(words: string[], uppercase: boolean): number {
+  let best = Math.max(1, Math.ceil(words.length / 2));
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (let i = 1; i < words.length; i += 1) {
+    const left = words.slice(0, i).join(" ");
+    const right = words.slice(i).join(" ");
+    const imbalance = Math.abs(celecardPhraseVisualLen(left, uppercase) - celecardPhraseVisualLen(right, uppercase));
+    const hinge = CELECARD_PHRASE_SMALL_WORDS.has(words[i - 1].toLowerCase()) ? -1.4 : 0;
+    const orphan = right.split(" ").length === 1 && right.length <= 3 ? 5 : 0;
+    const score = imbalance + hinge + orphan;
+    if (score < bestScore) {
+      bestScore = score;
+      best = i;
+    }
+  }
+  return best;
+}
+
+function celecardPhraseLimit(kind: CeleCardPhraseKind, uppercase: boolean, compact: boolean): number {
+  if (kind === "title") return compact ? (uppercase ? 16 : 20) : uppercase ? 20 : 24;
+  return compact ? (uppercase ? 15 : 18) : uppercase ? 18 : 22;
+}
+
+function celecardPhraseDisplayLines(
+  name: string,
+  kind: CeleCardPhraseKind,
+  options?: CeleCardPhraseOptions
+): string[] {
+  const trimmed = name.replace(/\s+/g, " ").trim();
+  if (!trimmed) return [];
+  const uppercase = Boolean(options?.uppercase);
+  const compact = Boolean(options?.compact);
+  const words = trimmed.split(" ");
+  const limit = celecardPhraseLimit(kind, uppercase, compact);
+  if (words.length === 1 || celecardPhraseVisualLen(trimmed, uppercase) <= limit) {
+    return [trimmed];
+  }
+  const first = celecardBestPhraseBreak(words, uppercase);
+  const left = words.slice(0, first);
+  const right = words.slice(first);
+  const allowThree =
+    !compact && words.length >= 6 && celecardPhraseVisualLen(trimmed, uppercase) > limit * 2;
+  if (!allowThree || right.length < 3) {
+    return [left.join(" "), right.join(" ")].filter(Boolean);
+  }
+  const second = celecardBestPhraseBreak(right, uppercase);
+  return [left.join(" "), right.slice(0, second).join(" "), right.slice(second).join(" ")].filter(Boolean);
+}
+
+/**
+ * Plate presentation only. The saved company field stays in full.
+ * Long house names wrap onto two (or three) even lines instead of being squeezed onto one.
+ */
+export function celecardCompanyDisplayLines(
+  name: string,
+  options?: CeleCardPhraseOptions
+): string[] {
+  return celecardPhraseDisplayLines(name, "company", options);
+}
+
+export function celecardCompanyFitCqw(name: string, options?: CeleCardPhraseOptions): number {
+  const lines = celecardCompanyDisplayLines(name, options);
+  if (!lines.length) return 2.65;
+  const uppercase = Boolean(options?.uppercase);
+  const compact = Boolean(options?.compact);
+  const longest = Math.max(1, ...lines.map((line) => celecardPhraseVisualLen(line, uppercase)));
+  const column = compact ? 30 : 34;
+  const fitted = column / (longest * (uppercase ? 0.72 : 0.62));
+  const cap = lines.length > 1 ? (compact ? 2.25 : 2.38) : compact ? 2.45 : 2.65;
+  const floor = compact ? 1.85 : 1.95;
+  return Math.round(Math.max(floor, Math.min(cap, fitted)) * 100) / 100;
+}
+
+/**
+ * Plate presentation only. The saved title field stays in full.
+ * Long roles wrap onto two even lines instead of being compressed onto one.
+ */
+export function celecardTitleDisplayLines(name: string, options?: CeleCardPhraseOptions): string[] {
+  return celecardPhraseDisplayLines(name, "title", options);
+}
+
+export function celecardTitleFitCqw(name: string, options?: CeleCardPhraseOptions): number {
+  const lines = celecardTitleDisplayLines(name, options);
+  if (!lines.length) return 2.9;
+  const uppercase = Boolean(options?.uppercase);
+  const compact = Boolean(options?.compact);
+  const longest = Math.max(1, ...lines.map((line) => celecardPhraseVisualLen(line, uppercase)));
+  const column = compact ? 32 : 36;
+  const fitted = column / (longest * (uppercase ? 0.72 : 0.64));
+  const cap = lines.length > 1 ? (compact ? 2.4 : 2.55) : compact ? 2.7 : 2.9;
+  const floor = compact ? 2.05 : 2.15;
+  return Math.round(Math.max(floor, Math.min(cap, fitted)) * 100) / 100;
 }
 
 export function celecardTypeVoice(
@@ -176,6 +466,8 @@ export function celecardTypeVoice(
   if (lettering === "neon") return neon();
   if (lettering === "masthead") return masthead();
   if (lettering === "carved") return carved();
+  if (lettering === "script") return script();
+  if (lettering === "mono") return mono();
   const { category, ornament, atmosphere } = theme;
 
   if (ornament === "neon" || atmosphere === "cel-speed" || theme.id === "cyber-neon") {
@@ -217,6 +509,26 @@ function hexLum(hex: string) {
 
 function inkOn(hex: string) {
   return hexLum(hex) < 158 ? "#fff8ef" : "#16120e";
+}
+
+/** Reach pills are always light paper. Type is always dark, on every template. */
+export const CELECARD_REACH_INK = "#1c1917";
+export const CELECARD_REACH_MUTED = "#44403c";
+
+export function celecardReachPlate(_theme: DigitalCardTheme, darkStage: boolean) {
+  return {
+    borderColor: darkStage ? "rgba(255,255,255,0.16)" : "rgba(28,25,23,0.12)",
+    background: darkStage ? "rgba(255,251,245,0.97)" : "rgba(255,255,255,0.97)",
+    color: CELECARD_REACH_INK,
+  };
+}
+
+/** Section labels stay on-accent unless the accent would vanish on the stage. */
+export function celecardAccentOnStage(accent: string, darkStage: boolean) {
+  const lum = hexLum(accent.startsWith("#") ? accent.slice(0, 7) : accent);
+  if (darkStage && lum < 88) return "#f4e6c8";
+  if (!darkStage && lum > 186) return "#1c1917";
+  return accent;
 }
 
 export type CeleCardDockFinish = {
@@ -263,7 +575,7 @@ export function celecardDockFinish(
   const trayRadius =
     originStyle === "credit"
       ? "999px"
-      : originStyle === "stamp"
+      : originStyle === "stamp" || originStyle === "mono"
         ? "0.65rem"
         : originStyle === "neon"
           ? "0.9rem"
@@ -271,13 +583,17 @@ export function celecardDockFinish(
   const actionRadius =
     originStyle === "credit"
       ? "999px"
-      : originStyle === "stamp"
+      : originStyle === "stamp" || originStyle === "mono"
         ? "0.48rem"
         : originStyle === "neon"
           ? "0.7rem"
           : "1.1rem";
   const tracking =
-    originStyle === "credit" || originStyle === "neon" ? "0.14em" : originStyle === "stamp" ? "0.04em" : "0.12em";
+    originStyle === "credit" || originStyle === "neon"
+      ? "0.14em"
+      : originStyle === "stamp" || originStyle === "mono"
+        ? "0.04em"
+        : "0.12em";
 
   return {
     originStyle,
@@ -289,12 +605,12 @@ export function celecardDockFinish(
     actionRadius,
     saveBg: theme.accent,
     saveFg: inkOn(theme.accent),
-    ghostBg: dark ? "rgba(255,255,255,0.045)" : "rgba(255,255,255,0.55)",
-    ghostFg: dark ? "#f4e6c8" : theme.text,
-    ghostBorder: "transparent",
+    ghostBg: dark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.92)",
+    ghostFg: dark ? "#f4e6c8" : CELECARD_REACH_INK,
+    ghostBorder: dark ? "rgba(255,255,255,0.2)" : "rgba(28,25,23,0.14)",
     font: voice.origin,
     tracking,
-    labelTransform: originStyle === "stamp" ? "none" : "uppercase",
-    foil: originStyle === "letterhead" || originStyle === "carved",
+    labelTransform: originStyle === "stamp" || originStyle === "mono" ? "none" : "uppercase",
+    foil: originStyle === "letterhead" || originStyle === "carved" || originStyle === "script",
   };
 }

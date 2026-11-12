@@ -5,12 +5,13 @@ import { describe, it } from "node:test";
 import {
   CeleYouSmartShareEngine,
   detectSmartShareCapability,
+  shareCeleYouProfile,
 } from "@/lib/celeyou-share/engine";
 import {
   ZERO_INSTALL_RECIPIENT_MATRIX,
   recipientMatrixNeverClaimsPhoneNfcP2P,
 } from "@/lib/celeyou-share/recipient-matrix";
-import { guestPrimaryActions } from "@/lib/celeyou-share/guest-actions";
+import { guestPrimaryActions, guestReachEventKind } from "@/lib/celeyou-share/guest-actions";
 import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
 import { celeYouShareIdentity } from "@/lib/digital-business-card/share-identity";
 import {
@@ -22,6 +23,7 @@ import {
   celeYouActivityLabel,
   isAutomatedPreviewAgent,
   isCeleYouPublicEventKind,
+  shouldCountCeleYouGuestStat,
 } from "@/lib/celeyou-share/events";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 
@@ -61,7 +63,7 @@ describe("CeleYou Smart Share Engine", () => {
     });
     assert.equal(engine.landsOnSameProfile(identity), true);
     assert.equal(walletPassClaimsPhoneNfc(), false);
-    assert.match(walletPassGuidance({}), /no CeleYou app/i);
+    assert.match(walletPassGuidance({} as NodeJS.ProcessEnv), /no CeleYou app/i);
     const pass = buildCeleYouWalletPass({
       displayName: "Kojo Mensah",
       profileUrl: identity.profileUrl,
@@ -155,6 +157,17 @@ describe("CeleYou Smart Share Engine", () => {
       ["about", "contact", "portfolio"]
     );
     assert.equal(sections[0]?.body, "Creative director in Accra.");
+    const pay = guestIdentitySections(card, [
+      {
+        id: "bank-0",
+        brand: "bank",
+        title: "CalBank",
+        subtitle: null,
+        href: "",
+        surface: "stack",
+      },
+    ]);
+    assert.equal(pay.find((section) => section.id === "products")?.label, "Payment Channels & Wallet");
   });
 
   it("keeps SHARE MY CELEYOU actions on the studio desk without claiming phone NFC", () => {
@@ -178,7 +191,43 @@ describe("CeleYou Smart Share Engine", () => {
       "utf8"
     );
     assert.doesNotMatch(analytics, /Load more/);
-    assert.match(analytics, /A nearby phone is not a tap/);
+    assert.match(analytics, /Live counts from people who open this CeleYou/);
+    assert.doesNotMatch(analytics, /A nearby phone is not a tap/);
+  });
+
+  it("attaches the live plate PNG and public URL on the share sheet", async () => {
+    const payloads: Array<Record<string, unknown>> = [];
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(new Uint8Array(96), {
+        status: 200,
+        headers: { "content-type": "image/png" },
+      })) as typeof fetch;
+    try {
+      const result = await shareCeleYouProfile(
+        {
+          title: "Kojo Mensah on CeleYou",
+          text: "Kojo Mensah on CeleYou. One Identity. Infinite Connections.",
+          url: "https://www.celeventic.com/u/kojo-mensah",
+          imageUrl: "/card/kojo-mensah/og?v=live",
+        },
+        {
+          share: async (payload: ShareData) => {
+            payloads.push(payload as Record<string, unknown>);
+          },
+          canShare: (payload?: ShareData) => Boolean(payload?.files?.length),
+        } as Navigator
+      );
+      assert.equal(result, "shared");
+      assert.equal(payloads.length, 1);
+      assert.equal(payloads[0]?.url, "https://www.celeventic.com/u/kojo-mensah");
+      assert.match(String(payloads[0]?.text), /https:\/\/www\.celeventic\.com\/u\/kojo-mensah/);
+      const files = payloads[0]?.files as File[] | undefined;
+      assert.equal(files?.[0]?.name, "celeyou-card.png");
+      assert.equal(files?.[0]?.type, "image/png");
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
   });
 
   it("accepts only public guest events and ignores crawlers", () => {
@@ -188,5 +237,43 @@ describe("CeleYou Smart Share Engine", () => {
     assert.equal(isAutomatedPreviewAgent("WhatsApp/2.2490.2"), true);
     assert.equal(isAutomatedPreviewAgent("Twitterbot/1.0"), true);
     assert.equal(isAutomatedPreviewAgent("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"), false);
+    assert.equal(
+      isAutomatedPreviewAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 WhatsApp/24.8.0"
+      ),
+      false
+    );
+  });
+
+  it("maps guest reach taps and skips owner or crawler counts", () => {
+    assert.equal(guestReachEventKind({ brand: "phone", href: "tel:+233240000000" }), "call_tap");
+    assert.equal(
+      guestReachEventKind({ brand: "whatsappbusiness", href: "https://wa.me/233240000000" }),
+      "whatsapp_tap"
+    );
+    assert.equal(guestReachEventKind({ brand: "email", href: "mailto:ama@folio.test" }), "email_tap");
+    assert.equal(guestReachEventKind({ brand: "website", href: "https://folio.test" }), "website_tap");
+    assert.equal(guestReachEventKind({ brand: "linkedin", href: "https://linkedin.com/in/ama" }), null);
+    assert.equal(guestReachEventKind({ brand: "phone", href: "tel:+233", locked: true }), null);
+    assert.equal(
+      shouldCountCeleYouGuestStat({ ownerUserId: "owner", viewerUserId: "owner", userAgent: "Mozilla/5.0 Safari" }),
+      false
+    );
+    assert.equal(
+      shouldCountCeleYouGuestStat({ ownerUserId: "owner", viewerUserId: "guest", userAgent: "Mozilla/5.0 Safari" }),
+      true
+    );
+    const grid = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-reach-grid.tsx"),
+      "utf8"
+    );
+    assert.match(grid, /trackGuestReach/);
+    assert.match(grid, /guestReachEventKind/);
+    const analytics = readFileSync(
+      join(process.cwd(), "src/services/digital-business-card/digital-business-card.service.ts"),
+      "utf8"
+    );
+    assert.match(analytics, /smartCardConnection\.count/);
+    assert.match(analytics, /recordDigitalCardGuestOpen/);
   });
 });

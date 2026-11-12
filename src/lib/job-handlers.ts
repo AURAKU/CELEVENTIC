@@ -8,6 +8,7 @@ import {
   GUEST_IMPORT_DELIVERY_QUEUE,
   GUEST_IMPORT_QUEUE,
 } from "@/services/guest-import/queues";
+import { CELEYOU_CONNECT_QUEUE } from "@/lib/celeyou-connect/queues";
 
 export function registerAllJobHandlers() {
   registerJobHandler("inspiration-analyze", async (payload) => {
@@ -42,5 +43,12 @@ export function registerAllJobHandlers() {
   registerJobHandler(GENERAL_PASS_QUEUE, async (payload) => {
     const { runGeneralPassJob } = await import("@/services/guest-import/general-pass.service");
     await runGeneralPassJob(payload.batchId as string);
+  });
+
+  registerJobHandler(CELEYOU_CONNECT_QUEUE, async (payload) => {
+    const { processCeleYouConnectDelivery } = await import(
+      "@/services/celeyou-connect/delivery.service"
+    );
+    await processCeleYouConnectDelivery(String(payload.deliveryId || ""));
   });
 }

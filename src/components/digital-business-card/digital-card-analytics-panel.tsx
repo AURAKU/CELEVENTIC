@@ -13,6 +13,13 @@ import {
   Share2,
   Users,
 } from "lucide-react";
+import {
+  activityRangeQuery,
+  defaultActivityRange,
+  formatActivityHeroCaption,
+  type ActivityDateRange,
+} from "@/lib/digital-business-card/activity-range";
+import { DigitalCardActivityRange } from "@/components/digital-business-card/digital-card-activity-range";
 import styles from "./digital-card-analytics-panel.module.css";
 
 type Analytics = {
@@ -104,8 +111,11 @@ function MetricTile({
 export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null }) {
   const [data, setData] = useState<Analytics | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [range, setRange] = useState<ActivityDateRange>(defaultActivityRange);
+  const [switching, setSwitching] = useState(false);
   const reduceMotion = useReducedMotion();
-  const views = useCountUp(data?.viewCount ?? 0, Boolean(data));
+  const views = useCountUp(data?.viewCount ?? 0, Boolean(data) && !switching);
+  const rangeQuery = activityRangeQuery(range);
 
   useEffect(() => {
     if (!cardId) {
@@ -113,25 +123,42 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
       return;
     }
     let cancelled = false;
-    void (async () => {
-      setError(null);
+    setSwitching(true);
+    async function load(isPoll = false) {
       try {
-        const res = await fetch(`/api/digital-business-cards/${cardId}/analytics`);
+        if (!isPoll) setSwitching(true);
+        const res = await fetch(`/api/digital-business-cards/${cardId}/analytics${rangeQuery}`, {
+          cache: "no-store",
+        });
         const json = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (!res.ok) {
           setError(json.error || "Could not load analytics");
+          setSwitching(false);
           return;
         }
+        setError(null);
         setData(json.data as Analytics);
+        setSwitching(false);
       } catch {
-        if (!cancelled) setError("Could not load analytics");
+        if (!cancelled) {
+          setError("Could not load analytics");
+          setSwitching(false);
+        }
       }
-    })();
+    }
+    void load(false);
+    const timer = window.setInterval(() => void load(true), 15000);
+    const onFocus = () => void load(true);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
     };
-  }, [cardId]);
+  }, [cardId, rangeQuery]);
 
   const stages: Stage[] = useMemo(() => {
     if (!data) return [];
@@ -160,7 +187,7 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
         label: "Pass on",
         items: [
           { key: "share", label: "Shares", value: data.shares ?? 0, icon: Share2 },
-          { key: "connect", label: "Connections", value: (data.connects ?? 0) + (data.reconnects ?? 0), icon: Users },
+          { key: "connect", label: "Connections", value: data.connects ?? 0, icon: Users },
         ],
       },
     ];
@@ -182,7 +209,7 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
         <div>
           <p className="text-sm font-semibold text-slate-900">Activity</p>
           <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-            Public opens and published actions. These counts are not the recipient’s identity. QR and NFC counts only when those links are used. A nearby phone is not a tap.
+            Live counts from people who open this CeleYou and use published actions.
           </p>
         </div>
         <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#0B8A83]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#0B8A83]">
@@ -190,6 +217,7 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
           Live
         </span>
       </div>
+      <DigitalCardActivityRange value={range} onChange={setRange} />
 
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {!data && !error ? (
@@ -204,7 +232,12 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
       ) : null}
 
       {data ? (
-        <div className="mt-3 space-y-2.5">
+        <div
+          key={rangeQuery || "all"}
+          className="mt-3 space-y-2.5"
+          aria-busy={switching}
+          style={switching ? { opacity: 0.55 } : undefined}
+        >
           <motion.div
             className={styles.hero}
             initial={reduceMotion ? false : { opacity: 0, scale: 0.98 }}
@@ -220,7 +253,7 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
               Profile views
             </p>
             <p className="relative mt-1 text-3xl font-semibold tabular-nums leading-none tracking-tight">{views}</p>
-            <p className="relative mt-1.5 text-[11px] text-white/70">People opened this public profile.</p>
+            <p className="relative mt-1.5 text-[11px] text-white/70">{formatActivityHeroCaption(range)}</p>
           </motion.div>
 
           {stages.map((stage, stageIndex) => (

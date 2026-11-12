@@ -24,8 +24,7 @@ import {
   demoCardHubPath,
 } from "@/lib/digital-business-card/demo-card";
 import { smartCardShortUrl } from "@/lib/digital-business-card/product";
-import { digitalCardPublicUrl, digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
-import { celeCardShareClipboard, celeCardShareMessage, celeCardShareTitle, digitalCardExportImagePath } from "@/lib/digital-business-card/share";
+import { CELECARD_BIO_MAX_CHARS, clipCeleCardBio, digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
 import {
   DIGITAL_CARD_SOCIAL_GROUPS,
   chatKindsMapForSocials,
@@ -80,7 +79,6 @@ import { applyReachVisibilityPreview, type ReachVisibility } from "@/lib/digital
 import { DigitalCardPortraitField } from "@/components/digital-business-card/digital-card-portrait-field";
 import { DigitalCardCompanyLogoField } from "@/components/digital-business-card/digital-card-company-logo-field";
 import { DigitalCardLiveTermRibbon } from "@/components/digital-business-card/digital-card-subscription-countdown";
-import { DigitalCardTileActions } from "@/components/digital-business-card/digital-card-tile-actions";
 import { celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import {
   celecardPortraitFrame,
@@ -235,7 +233,6 @@ export function DigitalCardLiveDemoStudio({
   cardholder?: boolean;
 }) {
   const [desk, setDesk] = useState<DeskState>(publishedDesk);
-  const [copied, setCopied] = useState<string | null>(null);
   const [browseAll, setBrowseAll] = useState(false);
   const [wideStage, setWideStage] = useState(false);
 
@@ -246,10 +243,8 @@ export function DigitalCardLiveDemoStudio({
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
-  const guestUrl = digitalCardPublicUrl(DEMO_CARD.slug, origin);
   const qrUrl = smartCardShortUrl(DEMO_CARD.publicToken, origin);
   const qrSrc = qrUrl ? digitalCardQrImageSrc(qrUrl) : null;
-  const cardPng = digitalCardExportImagePath(DEMO_CARD_SLUG);
   const theme = resolveDigitalCardTheme(desk.themeId);
   const typeVoice = celecardTypeVoice(theme);
   const stage = stageInk(theme.stageBackground);
@@ -289,34 +284,14 @@ export function DigitalCardLiveDemoStudio({
   );
 
   function patch(partial: Partial<DeskState>) {
-    setDesk((prev) => ({ ...prev, ...partial }));
+    const next = partial.bio !== undefined ? { ...partial, bio: clipCeleCardBio(partial.bio) } : partial;
+    setDesk((prev) => ({ ...prev, ...next }));
   }
 
   function resetDesk() {
     if (desk.avatarUrl?.startsWith("blob:")) URL.revokeObjectURL(desk.avatarUrl);
     if (desk.companyLogoUrl?.startsWith("blob:")) URL.revokeObjectURL(desk.companyLogoUrl);
     setDesk(publishedDesk());
-  }
-
-  async function copy(label: string, value: string) {
-    if (!value) return;
-    await navigator.clipboard.writeText(value);
-    setCopied(label);
-    setTimeout(() => setCopied(null), 1800);
-  }
-
-  async function shareCard() {
-    const title = celeCardShareTitle(desk);
-    const text = celeCardShareMessage(desk);
-    try {
-      if (navigator.share) {
-        await navigator.share({ title, text, url: guestUrl });
-        return;
-      }
-    } catch {
-      /* fall through */
-    }
-    await copy("share", celeCardShareClipboard(desk, guestUrl));
   }
 
   const dirty =
@@ -389,7 +364,8 @@ export function DigitalCardLiveDemoStudio({
             <textarea
               value={desk.bio}
               onChange={(e) => patch({ bio: e.target.value })}
-              rows={3}
+              rows={4}
+              maxLength={CELECARD_BIO_MAX_CHARS}
               placeholder="A few words guests read under your name."
               className="celecard-live-bio w-full resize-y bg-transparent py-1 text-[1.2rem] font-semibold leading-[1.45] outline-none placeholder:opacity-40 sm:text-[1.45rem] sm:leading-[1.4]"
               style={{
@@ -443,7 +419,7 @@ export function DigitalCardLiveDemoStudio({
                   Dummy look. Your CeleYou keeps its own QR, link, and NFC token.
                 </p>
               ) : null}
-              <div className="relative mx-auto w-full max-w-full">
+              <div className="mx-auto w-full max-w-full">
                 <DigitalCardFace
                   themeId={theme.id}
                   displayName={desk.displayName || "Your name"}
@@ -457,13 +433,6 @@ export function DigitalCardLiveDemoStudio({
                   portraitFrame={desk.portraitFrame}
                   companyLogo
                   companyLogoUrl={desk.companyLogoUrl}
-                />
-                <DigitalCardTileActions
-                  accent={theme.accent}
-                  border={theme.border}
-                  copied={copied === "share"}
-                  downloadHref={cardPng}
-                  onShare={() => void shareCard()}
                 />
               </div>
               {desk.bio ? (
@@ -486,7 +455,7 @@ export function DigitalCardLiveDemoStudio({
                 </div>
               ) : null}
               <p className="mt-4 text-center text-[11px]" style={{ color: theme.muted }}>
-                Tap the card to open the live page. Share copies that same link.
+                Tap the card to open the live page.
               </p>
             </div>
           </div>
@@ -579,11 +548,21 @@ export function DigitalCardLiveDemoStudio({
                   </div>
                 </div>
               </FolioField>
-              <FolioField label="About" theme={theme} wide>
+              <FolioField
+                label="About"
+                theme={theme}
+                wide
+                action={
+                  <span className="text-[11px] tabular-nums" style={{ color: theme.muted }}>
+                    {desk.bio.length}/{CELECARD_BIO_MAX_CHARS}
+                  </span>
+                }
+              >
                 <textarea
                   value={desk.bio}
                   onChange={(e) => patch({ bio: e.target.value })}
-                  rows={3}
+                  rows={4}
+                  maxLength={CELECARD_BIO_MAX_CHARS}
                   className={cn(folioInputClass, "min-h-[5.5rem] py-2.5")}
                   style={folioControlStyle(theme)}
                 />

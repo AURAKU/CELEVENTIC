@@ -19,7 +19,7 @@ export function CeleCardConciergeIntake() {
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [brief, setBrief] = useState("");
-  const [includeSubscription, setIncludeSubscription] = useState(true);
+  const [includeSubscription, setIncludeSubscription] = useState(false);
   const [planId, setPlanId] = useState("yearly");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [busy, setBusy] = useState(false);
@@ -87,10 +87,13 @@ export function CeleCardConciergeIntake() {
         <section className="grid gap-3 rounded-2xl border bg-white p-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0B8A83]">CeleYou Concierge</p>
-            <h2 className="mt-1 font-display text-2xl font-bold">We design and activate it for you</h2>
+            <h2 className="mt-1 font-display text-2xl font-bold">
+              Professional Concierge Design — GH₵{quote?.catalog.conciergePriceGhs ?? quote?.quote.designFeeGhs ?? "800"}
+            </h2>
             <p className="mt-2 text-sm text-slate-600">
-              Share your details. The team prepares a ready-to-share CeleYou. Payment is recorded as a real checkout, never a fake transaction.
+              One-time design and setup fee. Your approved design remains saved to your account. An active CeleYou subscription is required for premium hosting and subscription-dependent features.
             </p>
+            <p className="mt-1 text-sm font-medium text-slate-800">Subscription sold separately.</p>
           </div>
           <div>
             <Label>Your name</Label>
@@ -122,7 +125,7 @@ export function CeleCardConciergeIntake() {
           </div>
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input type="checkbox" checked={includeSubscription} onChange={(e) => setIncludeSubscription(e.target.checked)} />
-            Include a live subscription term with this concierge order
+            Also add a CeleYou Pro prepaid term now. This is a separate subscription charge, not lifetime access.
           </label>
           {includeSubscription ? (
             <select className="rounded-md border px-3 py-2 sm:col-span-2" value={planId} onChange={(e) => setPlanId(e.target.value)}>
@@ -134,7 +137,10 @@ export function CeleCardConciergeIntake() {
             </select>
           ) : null}
           <p className="sm:col-span-2 text-sm text-slate-700">
-            Design fee GH₵{quote?.quote.designFeeGhs ?? "—"}. Subscription GH₵{quote?.quote.subscriptionFeeGhs ?? 0}. Total GH₵{quote?.quote.totalGhs ?? "—"}.
+            One-time design GH₵{quote?.quote.designFeeGhs ?? "—"}.
+            {includeSubscription
+              ? ` Subscription GH₵${quote?.quote.subscriptionFeeGhs ?? 0}. Total GH₵${quote?.quote.totalGhs ?? "—"}.`
+              : " Subscription not included."}
           </p>
           <Button type="button" onClick={submit} disabled={busy || name.length < 2 || !email.includes("@") || brief.length < 12}>
             {busy ? "Submitting…" : "Request concierge design"}

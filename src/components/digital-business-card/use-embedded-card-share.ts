@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { TAP_POLL_MS } from "@/lib/celeyou-proximity/product";
-import { celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
+import { celeCardShareMessage, celeCardShareTitle, digitalCardOgImagePath } from "@/lib/digital-business-card/share";
 import { shareCeleYouProfile, type ShareProfileResult } from "@/lib/celeyou-share/engine";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 
@@ -96,8 +96,9 @@ export function useEmbeddedCardShare({
   const sendFromCard = useCallback(async () => {
     const result = await shareCeleYouProfile({
       title: celeCardShareTitle(card),
-      text: celeCardShareMessage(card),
+      text: celeCardShareMessage(card, profileUrl),
       url: profileUrl,
+      imageUrl: card.slug ? digitalCardOgImagePath(card.slug, card.id) : null,
     });
     setSent(result);
     window.setTimeout(() => setSent(null), 2200);

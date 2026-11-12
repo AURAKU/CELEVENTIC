@@ -41,6 +41,10 @@ describe("CeleYou share metadata", () => {
       "Ama Serwaa on CeleYou. One Identity. Infinite Connections."
     );
     assert.equal(
+      celeCardShareMessage(DEMO_CARD, "https://www.celeventic.com/u/ama-serwaa"),
+      "Ama Serwaa on CeleYou. One Identity. Infinite Connections.\nhttps://www.celeventic.com/u/ama-serwaa"
+    );
+    assert.equal(
       celeCardShareClipboard(DEMO_CARD, "https://www.celeventic.com/c/demo-ama-serwaa"),
       "Ama Serwaa on CeleYou. One Identity. Infinite Connections.\nhttps://www.celeventic.com/c/demo-ama-serwaa"
     );
@@ -87,6 +91,7 @@ describe("CeleYou share metadata", () => {
     assert.equal(typeof image === "object" && image && "width" in image ? image.width : 0, 1200);
     assert.equal(typeof image === "object" && image && "height" in image ? image.height : 0, 630);
     assert.match(String(typeof image === "object" && image && "url" in image ? image.url : ""), /\/card\/ama-serwaa\/og\?v=demo/);
+    assert.equal(typeof image === "object" && image && "type" in image ? image.type : "", "image/png");
     assert.equal(String(metadata.openGraph?.url).includes("localhost"), false);
   });
 
@@ -117,6 +122,24 @@ describe("CeleYou share metadata", () => {
     assert.doesNotMatch(source, /dummyLiveNotFoundResponse|viewerMayOpenDummyLive/);
     assert.match(source, /getDemoCardBySlug/);
     assert.match(source, /CeleCardOgMarkup/);
+    assert.match(source, /applyCeleCardDesign/);
+    assert.match(source, /paperSrc/);
+    assert.match(source, /companyLogoSrc/);
+  });
+
+  it("renders only the live ID-1 plate on the share tile", () => {
+    const markup = readFileSync(join(process.cwd(), "src/lib/digital-business-card/og-markup.tsx"), "utf8");
+    const assets = readFileSync(join(process.cwd(), "src/lib/digital-business-card/og-assets.ts"), "utf8");
+    const config = readFileSync(join(process.cwd(), "next.config.ts"), "utf8");
+    const ogRoute = readFileSync(join(process.cwd(), "src/app/card/[slug]/og/route.tsx"), "utf8");
+    assert.match(markup, /1200×630 share tile: the live ID-1 plate only/);
+    assert.match(markup, /background: "#ffffff"/);
+    assert.match(markup, /paperSrc/);
+    assert.match(markup, /markSrc \?/);
+    assert.doesNotMatch(markup, /Open this CeleYou|Download this card|Share this card/);
+    assert.match(assets, /\/smartcard\//);
+    assert.match(config, /source: "\/u\/:slug\/og"/);
+    assert.match(ogRoute, /export async function HEAD/);
   });
 });
 
@@ -139,16 +162,23 @@ describe("CeleYou QR export", () => {
 });
 
 describe("CeleYou studio share controls", () => {
-  it("keeps dummy share on the card tile and drops duplicate copy chips", () => {
+  it("keeps share on the Share desk and drops duplicate tile overlays", () => {
     const studio = readFileSync(
       join(process.cwd(), "src/components/digital-business-card/digital-card-live-demo-studio.tsx"),
+      "utf8"
+    );
+    const ownerStudio = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-studio-client.tsx"),
       "utf8"
     );
     const desk = readFileSync(
       join(process.cwd(), "src/components/digital-business-card/digital-card-share-desk.tsx"),
       "utf8"
     );
-    assert.match(studio, /DigitalCardTileActions/);
+    assert.doesNotMatch(studio, /DigitalCardTileActions/);
+    assert.doesNotMatch(ownerStudio, /DigitalCardTileActions/);
+    assert.doesNotMatch(ownerStudio, /Share this card/);
+    assert.doesNotMatch(ownerStudio, /Download this card/);
     assert.doesNotMatch(studio, /Open live page/);
     assert.doesNotMatch(studio, /Copy share link/);
     assert.doesNotMatch(studio, /Copy \$\{demoCardQrPath/);
@@ -168,8 +198,13 @@ describe("CeleYou studio share controls", () => {
     assert.doesNotMatch(desk, /SHOW_QR_CTA/);
     assert.match(desk, /CeleYouSmartShareEngine/);
     assert.match(desk, /WALLET_PASS_CTA/);
+    assert.match(desk, /digitalCardOgImagePath/);
+    assert.match(desk, /imageUrl/);
+    assert.match(desk, /identityShare/);
     assert.doesNotMatch(desk, /same public profile/);
     assert.doesNotMatch(desk, /start AirDrop by NFC|automatic phone to phone NFC/i);
+    assert.doesNotMatch(desk, /Phone to phone NFC is not used/);
+    assert.doesNotMatch(desk, /Chrome on Android only/);
   });
 });
 

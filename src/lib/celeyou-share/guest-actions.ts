@@ -53,3 +53,15 @@ export function guestPrimaryActions(card: DigitalCardPublicPayload): GuestPrimar
   actions.push({ id: "share", label: "Share", event: "share_tap" });
   return actions;
 }
+
+export function guestReachEventKind(
+  item: Pick<DigitalCardReachItem, "brand" | "href" | "locked">
+): CeleYouPublicEventKind | null {
+  if (item.locked) return null;
+  const href = item.href || "";
+  if (item.brand === "phone" && /^tel:/i.test(href)) return "call_tap";
+  if (item.brand === "whatsapp" || item.brand === "whatsappbusiness") return "whatsapp_tap";
+  if (item.brand === "email" && /^mailto:/i.test(href)) return "email_tap";
+  if (item.brand === "website" && /^https?:/i.test(href)) return "website_tap";
+  return null;
+}

@@ -10,11 +10,11 @@ export type CeleCardPaperWeight = "subtle" | "balanced" | "rich";
 export type CeleCardPaperTone = "light" | "dark";
 export type CeleCardNameScale = "quiet" | "balanced" | "statement";
 export type CeleCardFaceLead = "photo" | "name" | "code";
-export type CeleCardLettering = "letterhead" | "credit" | "stamp" | "neon" | "masthead" | "carved";
+export type CeleCardLettering = "letterhead" | "credit" | "stamp" | "neon" | "masthead" | "carved" | "script" | "mono";
 export type CeleCardInk = "light" | "dark";
-export type CeleCardAccent = "teal" | "gold" | "ivory" | "rose" | "sky" | "ink";
-export type CeleCardQrFinish = "foil" | "quiet";
-export type CeleCardGrain = "paper" | "linen" | "none";
+export type CeleCardAccent = "teal" | "gold" | "ivory" | "rose" | "sky" | "ink" | "copper" | "emerald" | "wine" | "sand";
+export type CeleCardQrFinish = "foil" | "quiet" | "inset" | "stamp";
+export type CeleCardGrain = "paper" | "linen" | "silk" | "speckle" | "canvas" | "none";
 export type CeleCardMotion = CeleCardMotionMood;
 
 export type CeleCardDesign = {
@@ -53,12 +53,17 @@ export const CELECARD_COMPOSITIONS: { id: DigitalCardComposition; label: string;
 
 export const CELECARD_ORNAMENTS: { id: DigitalCardOrnament; label: string }[] = [
   { id: "foil", label: "Foil frame" },
+  { id: "double", label: "Double foil" },
+  { id: "filigree", label: "Filigree" },
+  { id: "bead", label: "Pearl" },
+  { id: "inset", label: "Inset" },
+  { id: "ribbon", label: "Ribbon" },
+  { id: "crest", label: "Crest" },
   { id: "halftone", label: "Halftone" },
   { id: "wave", label: "Wave" },
   { id: "grid", label: "Grid" },
   { id: "marquee", label: "Marquee" },
   { id: "cel", label: "Cel" },
-  { id: "crest", label: "Crest" },
   { id: "kente", label: "Kente" },
   { id: "sunburst", label: "Sunburst" },
   { id: "neon", label: "Neon" },
@@ -177,6 +182,8 @@ export const CELECARD_LETTERING: { id: CeleCardLettering; label: string; hint: s
   { id: "stamp", label: "Stamp", hint: "Clean sans, boardroom quiet" },
   { id: "masthead", label: "Masthead", hint: "Editorial bold, magazine type" },
   { id: "carved", label: "Carved", hint: "Inscribed serif for landmarks and earth" },
+  { id: "script", label: "Script", hint: "Italic editorial for houses and studios" },
+  { id: "mono", label: "Mono", hint: "Technical type for founders and labs" },
   { id: "neon", label: "Neon", hint: "Wide tracking, night type" },
 ];
 
@@ -188,7 +195,11 @@ export const CELECARD_INKS: { id: CeleCardInk; label: string; hint: string }[] =
 export const CELECARD_ACCENTS: { id: CeleCardAccent; label: string; swatch: string }[] = [
   { id: "teal", label: "CeleYou teal", swatch: "#0B8A83" },
   { id: "gold", label: "Foil gold", swatch: "#d4a63a" },
+  { id: "copper", label: "Copper", swatch: "#b45309" },
+  { id: "sand", label: "Sand", swatch: "#c4a574" },
   { id: "ivory", label: "Ivory", swatch: "#e8d5b5" },
+  { id: "emerald", label: "Emerald", swatch: "#047857" },
+  { id: "wine", label: "Wine", swatch: "#9f1239" },
   { id: "rose", label: "Rose", swatch: "#e11d48" },
   { id: "sky", label: "Sky", swatch: "#38bdf8" },
   { id: "ink", label: "Ink", swatch: "#0f172a" },
@@ -197,20 +208,27 @@ export const CELECARD_ACCENTS: { id: CeleCardAccent; label: string; swatch: stri
 export const CELECARD_QR_FINISHES: { id: CeleCardQrFinish; label: string; hint: string }[] = [
   { id: "foil", label: "Foil edge", hint: "Accent ring around the code" },
   { id: "quiet", label: "Quiet well", hint: "A simple white tile" },
+  { id: "inset", label: "Inset well", hint: "A recessed square on the plate" },
+  { id: "stamp", label: "Stamp", hint: "A round well around the code" },
 ];
 
 export const CELECARD_GRAINS: { id: CeleCardGrain; label: string; hint: string }[] = [
   { id: "paper", label: "Paper", hint: "Fine laid grain over the plate" },
   { id: "linen", label: "Linen", hint: "A stronger cloth tooth" },
+  { id: "silk", label: "Silk", hint: "A fine diagonal sheen" },
+  { id: "speckle", label: "Speckle", hint: "A light film grain" },
+  { id: "canvas", label: "Canvas", hint: "A painted cloth weave" },
   { id: "none", label: "Smooth", hint: "No extra grain" },
 ];
 
 export const CELECARD_MOTIONS: { id: CeleCardMotion; label: string; hint: string }[] = [
   { id: "atelier", label: "Atelier", hint: "Slow, house-quiet motion" },
   { id: "cinema", label: "Cinema", hint: "Title-card motion" },
+  { id: "spotlight", label: "Spotlight", hint: "A brighter title-card sheen" },
   { id: "pulse", label: "Pulse", hint: "Live, creator energy" },
   { id: "earth", label: "Earth", hint: "Warm landmark drift" },
   { id: "linen", label: "Linen", hint: "Soft, even motion" },
+  { id: "still", label: "Still", hint: "No guest-page motion" },
 ];
 
 export const CELECARD_HOUSE_PAPERS: {
@@ -321,7 +339,11 @@ function textIsDark(color: string) {
 function accentPair(id: CeleCardAccent, theme: DigitalCardTheme) {
   if (id === "teal") return { accent: "#0B8A83", accentSoft: "rgba(11,138,131,0.14)" };
   if (id === "gold") return { accent: "#d4a63a", accentSoft: "rgba(212,166,58,0.16)" };
+  if (id === "copper") return { accent: "#b45309", accentSoft: "rgba(180,83,9,0.16)" };
+  if (id === "sand") return { accent: "#c4a574", accentSoft: "rgba(196,165,116,0.18)" };
   if (id === "ivory") return { accent: "#e8d5b5", accentSoft: "rgba(232,213,181,0.16)" };
+  if (id === "emerald") return { accent: "#047857", accentSoft: "rgba(4,120,87,0.14)" };
+  if (id === "wine") return { accent: "#9f1239", accentSoft: "rgba(159,18,57,0.14)" };
   if (id === "rose") return { accent: "#e11d48", accentSoft: "rgba(225,29,72,0.12)" };
   if (id === "sky") return { accent: "#38bdf8", accentSoft: "rgba(56,189,248,0.14)" };
   const darkPlate = !textIsDark(theme.text);

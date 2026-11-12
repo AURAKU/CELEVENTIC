@@ -145,18 +145,50 @@ export type ShareProfileInput = {
   title: string;
   text: string;
   url: string;
+  /** Live plate PNG. WhatsApp and iMessage show it with the public URL. */
+  imageUrl?: string | null;
 };
 
 export type ShareProfileResult = "shared" | "copied" | "cancelled" | "unavailable";
+
+async function livePlateFile(imageUrl: string): Promise<File | null> {
+  try {
+    const res = await fetch(imageUrl, { cache: "no-store", credentials: "omit" });
+    if (!res.ok) return null;
+    const type = res.headers.get("content-type") || "";
+    if (!type.includes("image")) return null;
+    const buffer = await res.arrayBuffer();
+    if (buffer.byteLength < 64) return null;
+    return new File([buffer], "celeyou-card.png", { type: "image/png" });
+  } catch {
+    return null;
+  }
+}
+
+function shareCaption(text: string, url: string) {
+  return text.includes(url) ? text : `${text}\n${url}`;
+}
 
 export async function shareCeleYouProfile(
   input: ShareProfileInput,
   nav: Navigator | null | undefined = typeof navigator !== "undefined" ? navigator : null
 ): Promise<ShareProfileResult> {
   if (!input.url) return "unavailable";
+  const text = shareCaption(input.text, input.url);
+  const file = input.imageUrl ? await livePlateFile(input.imageUrl) : null;
   try {
     if (nav && typeof nav.share === "function") {
-      await nav.share({ title: input.title, text: input.text, url: input.url });
+      if (file && typeof nav.canShare === "function") {
+        try {
+          if (nav.canShare({ files: [file] })) {
+            await nav.share({ title: input.title, text, url: input.url, files: [file] });
+            return "shared";
+          }
+        } catch (error) {
+          if ((error as { name?: string })?.name === "AbortError") return "cancelled";
+        }
+      }
+      await nav.share({ title: input.title, text, url: input.url });
       return "shared";
     }
   } catch (error) {
@@ -164,9 +196,8 @@ export async function shareCeleYouProfile(
   }
   try {
     if (nav?.clipboard && typeof nav.clipboard.writeText === "function") {
-      const clipboard = input.text.includes(input.url) ? input.text : `${input.text}\n${input.url}`;
       await Promise.race([
-        nav.clipboard.writeText(clipboard),
+        nav.clipboard.writeText(text),
         new Promise<never>((_, reject) => {
           setTimeout(() => reject(new Error("clipboard-timeout")), 1200);
         }),

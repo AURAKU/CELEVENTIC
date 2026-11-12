@@ -9,7 +9,12 @@ import { CeleCardQrBadge } from "@/components/digital-business-card/celecard-qr-
 import { DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
 import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { applyCeleCardDesign } from "@/lib/digital-business-card/design";
-import { digitalCardPublicUrl, digitalCardQrImageSrc, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
+import {
+  digitalCardIdentityUrl,
+  digitalCardPublicUrl,
+  digitalCardQrImageSrc,
+  type DigitalCardPublicPayload,
+} from "@/lib/digital-business-card/types";
 import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
 import { sanitizePublicUrl } from "@/lib/app-url";
 import {
@@ -75,10 +80,7 @@ export function DigitalCardPresentView({
   const rootRef = useRef<HTMLElement>(null);
   const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
   const profileUrl = digitalCardPublicUrl(card.slug);
-  const shareUrl = sanitizePublicUrl(
-    profileUrl.startsWith("http") ? profileUrl : `${origin.replace(/\/$/, "")}${profileUrl}`,
-    origin
-  );
+  const shareUrl = sanitizePublicUrl(digitalCardIdentityUrl(card.slug, origin), origin);
   const qrSrc = scanUrl ? digitalCardQrImageSrc(scanUrl, 1024) : "";
   const { sharingLive, sent, sendFromCard } = useEmbeddedCardShare({
     card,

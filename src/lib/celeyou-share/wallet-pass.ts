@@ -1,8 +1,8 @@
 /**
- * Wallet-style sharing card for the cardholder.
+ * Wallet card CTA on the cardholder Share desk.
+ * Guests see only uploaded payment channels, wallets, and bank details.
  * Signed Apple Wallet (.pkpass) and Google Wallet issuer files need certificates
- * we do not ship in this MVP. This card still shows the same public QR.
- * It does not enable phone-to-phone NFC URL transfer.
+ * we do not ship in this MVP. It does not enable phone-to-phone NFC URL transfer.
  */
 
 export const WALLET_PASS_CTA = "Wallet card";

@@ -16,6 +16,14 @@ import { recordCeleCardLifecycleEvent } from "./digital-business-card.service";
 export const SMARTCARD_RENEWAL_WINDOWS = [72, 48, 24] as const;
 export type SmartCardRenewalWindow = (typeof SMARTCARD_RENEWAL_WINDOWS)[number] | 0;
 
+export function celeCardReminderLegacyLink(cardId: string) {
+  return `/dashboard/business-card/billing?card=${cardId}`;
+}
+
+export function celeCardReminderDedupeLink(cardId: string, expiresAt: Date) {
+  return `${celeCardReminderLegacyLink(cardId)}&term=${expiresAt.toISOString().slice(0, 10)}`;
+}
+
 /** Legacy hour windows kept for existing tests. Prefer dueReminderOffsetDays. */
 export function dueRenewalWindow(expiresAt: Date, now = new Date()): SmartCardRenewalWindow | null {
   const hoursLeft = (expiresAt.getTime() - now.getTime()) / 3_600_000;
@@ -134,9 +142,10 @@ export async function runSmartCardRenewalReminders(now = new Date()) {
     }
 
     const type = reminderType(offset);
-    const link = `/dashboard/business-card/billing?card=${card.id}`;
+    const link = celeCardReminderDedupeLink(card.id, card.subscriptionExpiresAt);
+    const legacyLink = celeCardReminderLegacyLink(card.id);
     const already = await prisma.notification.findFirst({
-      where: { userId: card.userId, type, link },
+      where: { userId: card.userId, type, OR: [{ link }, { link: legacyLink }] },
       select: { id: true },
     });
     if (already) {

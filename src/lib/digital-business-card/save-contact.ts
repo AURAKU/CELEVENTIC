@@ -122,7 +122,7 @@ function isAppleTouchDevice() {
 
 function triggerDownload(href: string, filename: string) {
   const a = document.createElement("a");
-  a.href = href;
+  a.href = href.includes("?") ? `${href}&delivery=1` : `${href}?delivery=1`;
   a.download = filename;
   a.rel = "noopener";
   a.style.display = "none";

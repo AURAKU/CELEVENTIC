@@ -33,7 +33,7 @@ export const DEFAULT_CELECARD_LIFECYCLE_POLICY: CeleCardLifecyclePolicy = {
   timezone: CELECARD_TIMEZONE,
   gracePeriodDays: 3,
   expiringSoonDays: 14,
-  reminderOffsetsDays: [14, 7, 3, 1, 0, -3, -14, -30],
+  reminderOffsetsDays: [14, 7, 1, 0, -3, -14],
   reconnectBatchHours: 6,
   reconnectPerCardPerHour: 3,
   reconnectPerIpPerHour: 10,

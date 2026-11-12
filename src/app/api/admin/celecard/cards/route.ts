@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { Permission } from "@/lib/rbac/types";
 import { requireCeleCardPermission } from "@/lib/require-admin";
 import { digitalCardSocialsSchema } from "@/lib/digital-business-card/socials";
+import { CELECARD_BIO_MAX_CHARS } from "@/lib/digital-business-card/types";
 import {
   CeleCardAdminError,
   createAssistedCeleCard,
@@ -19,7 +20,7 @@ const createSchema = z.object({
   displayName: z.string().min(2).max(80),
   title: z.string().max(120).nullable().optional(),
   company: z.string().max(120).nullable().optional(),
-  bio: z.string().max(600).nullable().optional(),
+  bio: z.string().max(CELECARD_BIO_MAX_CHARS).nullable().optional(),
   email: z.string().email().nullable().optional().or(z.literal("")),
   phone: z.string().max(40).nullable().optional(),
   website: z.string().max(300).nullable().optional(),

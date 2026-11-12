@@ -2266,6 +2266,11 @@ model DigitalBusinessCard {
   entitlementGrants SmartCardEntitlementGrant[]
   proximitySessionsHost CeleYouProximitySession[] @relation("ProximityHostCard")
   proximitySessionsPeer CeleYouProximitySession[] @relation("ProximityPeerCard")
+  connectAutomation   CeleYouConnectAutomation?
+  connectDeliveries   CeleYouConnectDelivery[]
+  connectEvents       CeleYouConnectEvent[]
+  connectReminders    CeleYouConnectReminder[]
+  visitorConnections  SmartCardConnection[] @relation("ConnectionVisitorCard")
 
   @@index([userId])
   @@index([subscriptionStatus])
@@ -2390,15 +2395,134 @@ model SmartCardConnection {
   eventId       String?
   tags          Json     @default("[]")
   consentAt     DateTime @default(now())
+  /// Signed-in visitor. Null for anonymous Connect Back.
+  visitorUserId String?
+  visitorCardId String?
+  /// Idempotency key for two-way exchange. Null for guest leads.
+  pairKey       String?  @unique
+  ownerShareSnapshot   Json?
+  visitorShareSnapshot Json?
+  ownerNote            String?
+  followupConsentAt    DateTime?
+  lastFollowupAt       DateTime?
+  searchText           String   @default("")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  card     DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  campaign SmartCardCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  card        DigitalBusinessCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  visitorCard DigitalBusinessCard? @relation("ConnectionVisitorCard", fields: [visitorCardId], references: [id], onDelete: SetNull)
+  campaign    SmartCardCampaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  deliveries  CeleYouConnectDelivery[]
+  events      CeleYouConnectEvent[]
+  reminders   CeleYouConnectReminder[]
 
   @@index([cardId, createdAt])
   @@index([status])
+  @@index([visitorUserId])
+  @@index([source, createdAt])
+  @@index([searchText])
   @@map("smartcard_connections")
+}
+
+/// Per-card automatic thank-you. Off until the owner enables it.
+model CeleYouConnectAutomation {
+  id                     String   @id @default(cuid())
+  cardId                 String   @unique
+  enabled                Boolean  @default(false)
+  subject                String
+  body                   String
+  /// IMMEDIATE | HOUR | DAY | CUSTOM
+  delay                  String   @default("HOUR")
+  customDelayMinutes     Int?
+  requireFollowupConsent Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  card DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@map("celeyou_connect_automations")
+}
+
+/// Durable follow-up and owner-notice email jobs.
+model CeleYouConnectDelivery {
+  id               String    @id @default(cuid())
+  connectionId     String?
+  cardId           String
+  /// OWNER_NOTICE | GUEST_FOLLOWUP | EXCHANGE_NOTICE
+  kind             String
+  toEmail          String
+  subject          String
+  body             String
+  /// PENDING | SCHEDULED | SENDING | SENT | FAILED | SUPPRESSED | CANCELLED
+  status           String    @default("SCHEDULED")
+  runAt            DateTime
+  attempts         Int       @default(0)
+  lastError        String?
+  providerAccepted Boolean   @default(false)
+  idempotencyKey   String    @unique
+  sentAt           DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  connection SmartCardConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  card       DigitalBusinessCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([status, runAt])
+  @@index([cardId, createdAt])
+  @@map("celeyou_connect_deliveries")
+}
+
+model CeleYouConnectEvent {
+  id           String   @id @default(cuid())
+  connectionId String
+  cardId       String
+  /// CONNECTION_CREATED | CARD_EXCHANGED | FOLLOWUP_SCHEDULED | FOLLOWUP_SENT | STATUS_CHANGED | NOTE_ADDED | REMINDER_CREATED
+  kind         String
+  actorUserId  String?
+  meta         Json     @default("{}")
+  createdAt    DateTime @default(now())
+
+  connection SmartCardConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  card       DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId, createdAt])
+  @@index([cardId, createdAt])
+  @@map("celeyou_connect_events")
+}
+
+model CeleYouConnectPreference {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  newConnectionAlerts    Boolean  @default(true)
+  exchangeAlerts         Boolean  @default(true)
+  followupReminders      Boolean  @default(true)
+  weeklySummary          Boolean  @default(false)
+  marketingNotifications Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("celeyou_connect_preferences")
+}
+
+/// Release 2 reminders. Table exists so R1 migrations stay additive.
+model CeleYouConnectReminder {
+  id           String    @id @default(cuid())
+  connectionId String
+  cardId       String
+  dueAt        DateTime
+  /// SCHEDULED | DUE | COMPLETED | CANCELLED
+  status       String    @default("SCHEDULED")
+  note         String?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  connection SmartCardConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  card       DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, dueAt])
+  @@index([status, dueAt])
+  @@map("celeyou_connect_reminders")
 }
 
 /// Attribution layer for QR / NFC / link campaigns pointing at one SmartCard.
@@ -2631,7 +2755,7 @@ model CeleCardLifecyclePolicy {
   id                  String   @id @default("default")
   gracePeriodDays     Int      @default(3)
   expiringSoonDays    Int      @default(14)
-  reminderOffsetsDays Json     @default("[14,7,3,1,0,-3,-14,-30]")
+  reminderOffsetsDays Json     @default("[14,7,1,0,-3,-14]")
   timezone            String   @default("Africa/Accra")
   reconnectBatchHours Int      @default(6)
   reconnectPerCardPerHour Int  @default(3)
@@ -2639,7 +2763,7 @@ model CeleCardLifecyclePolicy {
   designVaultMax      Int      @default(40)
   /// Overlay on SMARTCARD_PLANS. { monthly, quarter, half, yearly } GHS integers.
   planPrices          Json?
-  conciergePriceGhs   Int      @default(199)
+  conciergePriceGhs   Int      @default(800)
   conciergeBundledPlanId String?
   updatedAt           DateTime @updatedAt
   updatedByUserId     String?
@@ -3003,9 +3127,12 @@ model BackgroundJob {
   maxAttempts Int       @default(3)
   error       String?
   processedAt DateTime?
+  /// Optional delay. Null means due immediately.
+  runAfter    DateTime?
   createdAt   DateTime  @default(now())
 
   @@index([queue, status])
+  @@index([status, runAfter])
   @@map("background_jobs")
 }
 

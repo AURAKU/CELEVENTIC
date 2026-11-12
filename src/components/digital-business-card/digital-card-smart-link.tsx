@@ -32,6 +32,7 @@ export function DigitalCardSmartLink({
   className,
   style,
   children,
+  onActivate,
   "aria-label": ariaLabel,
 }: {
   item: DigitalCardReachItem;
@@ -39,6 +40,7 @@ export function DigitalCardSmartLink({
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
+  onActivate?: () => void;
   "aria-label"?: string;
 }) {
   if (!isLiveReachHref(item.href)) return null;
@@ -49,6 +51,7 @@ export function DigitalCardSmartLink({
   const openInNewTab = (preview || website) && !customScheme;
 
   function onClick(event: MouseEvent<HTMLAnchorElement>) {
+    onActivate?.();
     if (preview || phoneOrMail) return;
     if (!item.androidIntent || !isAndroidDevice()) return;
     event.preventDefault();
@@ -63,7 +66,7 @@ export function DigitalCardSmartLink({
       aria-label={ariaLabel}
       className={className}
       style={style}
-      onClick={item.androidIntent && !preview ? onClick : undefined}
+      onClick={onActivate || (item.androidIntent && !preview) ? onClick : undefined}
     >
       {children}
     </a>

@@ -61,7 +61,7 @@
     "smoke:live-invitations": "node scripts/smoke-live-invitations.mjs",
     "audit:invitation-links": "tsx scripts/audit-invitation-links.ts",
     "test:auth": "tsx --test src/lib/auth/__tests__/*.test.ts",
-    "test:celeyou": "tsx --test src/lib/digital-business-card/__tests__/*.test.ts src/lib/celeyou-share/__tests__/*.test.ts src/lib/celeyou-proximity/__tests__/*.test.ts",
+    "test:celeyou": "tsx --test src/lib/digital-business-card/__tests__/*.test.ts src/lib/celeyou-share/__tests__/*.test.ts src/lib/celeyou-proximity/__tests__/*.test.ts src/lib/celeyou-connect/__tests__/*.test.ts",
     "test:video": "tsx --test src/lib/video/__tests__/*.test.ts",
     "test:video-pipeline": "tsx --test --test-concurrency=1 src/lib/video/__tests__/integration/*.test.ts",
     "test:uploads": "tsx --test src/app/api/uploads/__tests__/*.test.ts",

@@ -153,9 +153,27 @@ export async function renameDesignVersion(
 export async function archiveDesignVersion(userId: string, cardId: string, versionId: string) {
   const card = await getDigitalCardForUser(userId, cardId);
   if (!card) return null;
-  const updated = await prisma.smartCardDesignVersion.updateMany({
-    where: { id: versionId, cardId },
-    data: { archivedAt: new Date(), status: "ARCHIVED" },
+  const existing = await prisma.smartCardDesignVersion.findFirst({
+    where: { id: versionId, cardId, archivedAt: null },
+    select: { id: true },
   });
-  return updated.count > 0;
+  if (!existing) return null;
+  await prisma.$transaction(async (tx) => {
+    await tx.smartCardDesignVersion.update({
+      where: { id: versionId },
+      data: { archivedAt: new Date(), status: "ARCHIVED" },
+    });
+    if (card.publishedDesignVersionId === versionId) {
+      await tx.digitalBusinessCard.update({
+        where: { id: cardId },
+        data: { publishedDesignVersionId: null },
+      });
+    }
+  });
+  await recordCeleCardLifecycleEvent({
+    cardId,
+    kind: "DesignArchived",
+    meta: { versionId },
+  });
+  return true;
 }

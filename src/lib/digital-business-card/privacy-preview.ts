@@ -38,6 +38,32 @@ export function visibilityForItem(
   return map?.[itemId] && map[itemId] !== "PUBLIC" ? map[itemId] : "PUBLIC";
 }
 
+export function mergeReachVisibility(
+  current: Record<string, ReachVisibility> | undefined,
+  patch: Record<string, ReachVisibility>
+): Record<string, ReachVisibility> {
+  const next: Record<string, ReachVisibility> = { ...(current ?? {}) };
+  for (const [id, mode] of Object.entries(patch)) {
+    const key = id.trim();
+    if (!key) continue;
+    if (mode === "PUBLIC") delete next[key];
+    else next[key] = mode;
+  }
+  return next;
+}
+
+export function protectReachItemKeys(
+  current: Record<string, ReachVisibility> | undefined,
+  itemKeys: string[]
+): Record<string, ReachVisibility> {
+  const patch: Record<string, ReachVisibility> = {};
+  for (const id of itemKeys) {
+    const key = id.trim();
+    if (key) patch[key] = "CODE_PROTECTED";
+  }
+  return mergeReachVisibility(current, patch);
+}
+
 export function lockedReachPlaceholder(
   item: DigitalCardReachItem,
   mode: ReachVisibility
@@ -48,7 +74,7 @@ export function lockedReachPlaceholder(
     id: item.id,
     brand: item.brand,
     title: kind ? `${kind} ${brand}` : brand,
-    subtitle: mode === "CODE_PROTECTED" ? "Tap to view" : "Request access",
+    subtitle: mode === "CODE_PROTECTED" ? "Needs a code" : "Request access",
     href: "",
     locked: true,
     visibility: mode,

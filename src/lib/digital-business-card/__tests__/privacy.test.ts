@@ -1,12 +1,17 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   buildGuestReach,
   guestReachLeaksDestination,
   hashCeleCardAccessCode,
   hashesMatch,
+  mergeReachVisibility,
   normalizeAccessCode,
+  protectReachItemKeys,
   readReachVisibilityMap,
+  visibilityForItem,
 } from "@/lib/digital-business-card/privacy";
 import { toGuestPublicPayload } from "@/lib/digital-business-card/access";
 import { buildVCard } from "@/lib/digital-business-card/vcard";
@@ -78,7 +83,7 @@ describe("CeleYou reach privacy", () => {
     assert.equal(lockedPhone?.locked, true);
     assert.equal(lockedPhone?.href, "");
     assert.equal(lockedPhone?.copyValue, undefined);
-    assert.equal(lockedPhone?.subtitle, "Tap to view");
+    assert.equal(lockedPhone?.subtitle, "Needs a code");
     assert.equal(lockedPhone?.visibility, "CODE_PROTECTED");
     const instagram = guest.guestReach.find((item) => item.brand === "instagram");
     assert.equal(Boolean(instagram?.href), true);
@@ -114,8 +119,37 @@ describe("CeleYou reach privacy", () => {
     });
     const instagram = preview.find((item) => item.brand === "instagram");
     assert.equal(instagram?.locked, true);
-    assert.equal(instagram?.subtitle, "Tap to view");
+    assert.equal(instagram?.subtitle, "Needs a code");
     assert.equal(instagram?.href, "");
     assert.equal(preview.find((item) => item.brand === "email")?.locked, undefined);
+  });
+
+  it("keeps unselected details public when a code protects a subset", () => {
+    const next = protectReachItemKeys({ "email-0": "REQUEST_ACCESS" }, ["whatsapp-0", "phone-0"]);
+    assert.equal(visibilityForItem("whatsapp-0", next), "CODE_PROTECTED");
+    assert.equal(visibilityForItem("phone-0", next), "CODE_PROTECTED");
+    assert.equal(visibilityForItem("email-0", next), "REQUEST_ACCESS");
+    assert.equal(visibilityForItem("instagram-0", next), "PUBLIC");
+    const cleared = mergeReachVisibility(next, { "phone-0": "PUBLIC" });
+    assert.equal(visibilityForItem("phone-0", cleared), "PUBLIC");
+    assert.equal(visibilityForItem("whatsapp-0", cleared), "CODE_PROTECTED");
+    const desk = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-privacy-desk.tsx"),
+      "utf8"
+    );
+    assert.match(desk, /Select the details this code unveils/);
+    assert.match(desk, /reach-visibility/);
+    assert.doesNotMatch(desk, /Hide at least one detail above/);
+    const unlock = readFileSync(
+      join(process.cwd(), "src/app/api/digital-business-cards/public/[slug]/unlock/route.ts"),
+      "utf8"
+    );
+    assert.match(unlock, /existing\?\.itemKeys/);
+    const access = readFileSync(
+      join(process.cwd(), "src/services/digital-business-card/celecard-access.service.ts"),
+      "utf8"
+    );
+    assert.match(access, /persistReachVisibilityForCard/);
+    assert.match(access, /alreadyGranted/);
   });
 });

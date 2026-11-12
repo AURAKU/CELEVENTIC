@@ -303,7 +303,7 @@ export function CeleCardCreateWizard() {
               companyLogo
               companyLogoUrl={companyLogoUrl}
               qrSrc={demoCardPreviewQrSrc()}
-              qrBadgeHref={demoCardPreviewExplorePath()}
+              qrHref={demoCardPreviewExplorePath()}
               compact={viewport === "mobile"}
             />
           </div>

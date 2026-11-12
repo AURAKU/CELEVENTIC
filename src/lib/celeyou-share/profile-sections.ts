@@ -30,7 +30,7 @@ const SECTION_LABEL: Record<GuestIdentitySectionId, string> = {
   portfolio: "Portfolio",
   social: "Social",
   credentials: "Credentials",
-  products: "Products and Services",
+  products: "Payment Channels & Wallet",
 };
 
 const CONTACT_BRANDS = new Set([

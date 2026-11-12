@@ -6,7 +6,11 @@ import {
   hashesMatch,
   newGrantToken,
   normalizeAccessCode,
+  protectReachItemKeys,
+  readReachVisibilityMap,
+  type ReachVisibility,
 } from "@/lib/digital-business-card/privacy";
+import { getDigitalCardForUser } from "@/services/digital-business-card/digital-business-card.service";
 
 export const CELECARD_GRANT_MAX_AGE_SECONDS = 60 * 60 * 12;
 
@@ -38,7 +42,7 @@ export async function createCeleCardAccessCode(input: {
   if (!normalized) throw new Error("Use four digits or four letters");
   const itemKeys = [...new Set(input.itemKeys.filter(Boolean))].slice(0, 40);
   if (!itemKeys.length) throw new Error("Choose at least one protected detail");
-  return prisma.smartCardAccessCode.create({
+  const created = await prisma.smartCardAccessCode.create({
     data: {
       cardId: input.cardId,
       label: input.label.trim().slice(0, 80) || "Access code",
@@ -48,6 +52,48 @@ export async function createCeleCardAccessCode(input: {
       expiresAt: input.expiresAt ?? null,
       maxRedemptions: input.maxRedemptions ?? null,
     },
+  });
+  await persistReachVisibilityForCard(input.cardId, protectReachItemKeys(undefined, itemKeys), {
+    merge: true,
+  });
+  return created;
+}
+
+export async function persistReachVisibilityForUser(
+  userId: string,
+  cardId: string,
+  visibility: Record<string, ReachVisibility>
+) {
+  const card = await getDigitalCardForUser(userId, cardId);
+  if (!card) return null;
+  return persistReachVisibilityForCard(card.id, visibility, { merge: false });
+}
+
+async function persistReachVisibilityForCard(
+  cardId: string,
+  visibility: Record<string, ReachVisibility>,
+  options?: { merge?: boolean }
+) {
+  const card = await prisma.digitalBusinessCard.findUnique({
+    where: { id: cardId },
+    select: { id: true, socials: true },
+  });
+  if (!card) return null;
+  const raw =
+    card.socials && typeof card.socials === "object" && !Array.isArray(card.socials)
+      ? { ...(card.socials as Record<string, unknown>) }
+      : {};
+  const current = readReachVisibilityMap(raw);
+  const next = options?.merge ? { ...current, ...visibility } : visibility;
+  const cleaned: Record<string, ReachVisibility> = {};
+  for (const [id, mode] of Object.entries(next)) {
+    if (mode && mode !== "PUBLIC") cleaned[id] = mode;
+  }
+  if (Object.keys(cleaned).length) raw.reachVisibility = cleaned;
+  else delete raw.reachVisibility;
+  return prisma.digitalBusinessCard.update({
+    where: { id: card.id },
+    data: { socials: raw as object },
   });
 }
 
@@ -78,7 +124,11 @@ export async function revokeCeleCardAccessCode(cardId: string, codeId: string) {
   });
 }
 
-export async function unlockCeleCardWithCode(cardId: string, code: string) {
+export async function unlockCeleCardWithCode(
+  cardId: string,
+  code: string,
+  alreadyGranted: Iterable<string> = []
+) {
   const normalized = normalizeAccessCode(code);
   if (!normalized) return { ok: false as const, reason: "invalid" };
   const hash = hashCeleCardAccessCode(cardId, normalized.code);
@@ -98,7 +148,7 @@ export async function unlockCeleCardWithCode(cardId: string, code: string) {
   if (match.maxRedemptions != null && match.redemptionCount >= match.maxRedemptions) {
     return { ok: false as const, reason: "exhausted" };
   }
-  const itemKeys = asItemKeys(match.itemKeys);
+  const itemKeys = [...new Set([...alreadyGranted, ...asItemKeys(match.itemKeys)])].filter(Boolean);
   const issued = await issueCeleCardGrant({ cardId, itemKeys, source: "CODE" });
   await prisma.smartCardAccessCode.update({
     where: { id: match.id },

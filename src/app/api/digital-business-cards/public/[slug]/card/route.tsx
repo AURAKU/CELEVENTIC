@@ -12,6 +12,7 @@ import {
   celeCardStableQrUrl,
 } from "@/lib/digital-business-card/share";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
+import type { CeleCardPortraitFrame } from "@/lib/digital-business-card/portrait-frame";
 import { isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
 import { celeYouGuestOrigin, getAppUrlFromEnv } from "@/lib/app-url";
 import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-business-card.service";
@@ -29,7 +30,7 @@ function renderCard(props: {
   photoSrc?: string | null;
   qrSrc?: string | null;
   qrLabel?: string | null;
-  portraitFrame?: "circle" | "square" | "rounded" | null;
+  portraitFrame?: CeleCardPortraitFrame | null;
   filename: string;
   download: boolean;
   cacheControl: string;

@@ -16,6 +16,9 @@ describe("CeleYou concierge quote", () => {
     assert.equal(yearly?.pricePesewas, 50000);
     const monthly = getSmartCardPlanFromCatalog("monthly", plans);
     assert.equal(monthly?.priceGhs, 49);
+    const raisedMonthly = overlaySmartCardPlanPrices({ monthly: 59, yearly: 399 });
+    const yearlyVsNewMonthly = getSmartCardPlanFromCatalog("yearly", raisedMonthly);
+    assert.equal(yearlyVsNewMonthly?.saveGhs, 59 * 12 - 399);
   });
 
   it("quotes design plus optional subscription and never invents a payment", () => {
@@ -23,10 +26,10 @@ describe("CeleYou concierge quote", () => {
     const yearly = getSmartCardPlanFromCatalog("yearly", plans);
     const withPlan = conciergeQuote({ includeSubscription: true, plan: yearly });
     assert.equal(withPlan.designFeeGhs, DEFAULT_CELECARD_CONCIERGE_PRICE_GHS);
-    assert.equal(withPlan.subscriptionFeeGhs, 449);
-    assert.equal(withPlan.totalGhs, 199 + 449);
+    assert.equal(withPlan.subscriptionFeeGhs, 399);
+    assert.equal(withPlan.totalGhs, 800 + 399);
     const designOnly = conciergeQuote({ includeSubscription: false, plan: yearly });
     assert.equal(designOnly.subscriptionFeeGhs, 0);
-    assert.equal(designOnly.totalGhs, 199);
+    assert.equal(designOnly.totalGhs, 800);
   });
 });

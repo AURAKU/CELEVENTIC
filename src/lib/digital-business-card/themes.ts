@@ -80,6 +80,11 @@ export type DigitalCardComposition =
 export type DigitalCardOrnament =
   | "none"
   | "foil"
+  | "double"
+  | "filigree"
+  | "bead"
+  | "inset"
+  | "ribbon"
   | "halftone"
   | "wave"
   | "grid"
@@ -185,7 +190,7 @@ export type DigitalCardTheme = {
 };
 
 /** Guest-page motion family. Every template maps to one so motion complements the room. */
-export type CeleCardMotionMood = "atelier" | "cinema" | "pulse" | "earth" | "linen";
+export type CeleCardMotionMood = "atelier" | "cinema" | "pulse" | "earth" | "linen" | "still" | "spotlight";
 
 export function celecardMotionMood(
   theme: DigitalCardTheme,

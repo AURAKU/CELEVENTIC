@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   DIGITAL_CARD_TRIAL_DAYS,
+  clipCeleCardBio,
   normalizeSocials,
   type DigitalCardPublicPayload,
   type DigitalCardSocials,
@@ -279,15 +280,19 @@ export async function createSmartCardConnection(input: {
   const phone = input.visitorPhone?.trim() || null;
   if (!email && !phone) throw new Error("Email or phone is required");
 
+  const visitorCompany = input.visitorCompany?.trim() || null;
+  const visitorTitle = input.visitorTitle?.trim() || null;
+  const note = input.note?.trim() || null;
+  const { celeYouConnectSearchText } = await import("@/lib/celeyou-connect/pair");
   const connection = await prisma.smartCardConnection.create({
     data: {
       cardId: input.cardId,
       visitorName: name,
       visitorEmail: email,
       visitorPhone: phone,
-      visitorCompany: input.visitorCompany?.trim() || null,
-      visitorTitle: input.visitorTitle?.trim() || null,
-      note: input.note?.trim() || null,
+      visitorCompany,
+      visitorTitle,
+      note,
       formMode: input.formMode || "Instant",
       campaignId: input.campaignId || null,
       eventId: input.eventId || null,
@@ -295,6 +300,14 @@ export async function createSmartCardConnection(input: {
       source: input.source || "connect_back",
       tags: input.tags ?? [],
       consentAt: new Date(),
+      searchText: celeYouConnectSearchText({
+        visitorName: name,
+        visitorEmail: email,
+        visitorPhone: phone,
+        visitorCompany,
+        visitorTitle,
+        note,
+      }),
     },
   });
 
@@ -391,7 +404,7 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
           displayName,
           title: slugSeed.title,
           company: slugSeed.company,
-          bio: input.bio?.trim() || null,
+          bio: clipCeleCardBio(input.bio?.trim()) || null,
           email: input.email?.trim() || null,
           phone: input.phone?.trim() || null,
           website: input.website?.trim() || null,
@@ -464,7 +477,7 @@ export async function updateDigitalCard(userId: string, id: string, input: Upser
         input.displayName !== undefined ? input.displayName.trim() : undefined,
       title: input.title !== undefined ? input.title?.trim() || null : undefined,
       company: input.company !== undefined ? input.company?.trim() || null : undefined,
-      bio: input.bio !== undefined ? input.bio?.trim() || null : undefined,
+      bio: input.bio !== undefined ? clipCeleCardBio(input.bio?.trim()) || null : undefined,
       email: input.email !== undefined ? input.email?.trim() || null : undefined,
       phone: input.phone !== undefined ? input.phone?.trim() || null : undefined,
       website: input.website !== undefined ? input.website?.trim() || null : undefined,
@@ -631,6 +644,29 @@ export async function incrementDigitalCardView(id: string) {
   });
 }
 
+export async function recordDigitalCardGuestOpen(input: {
+  cardId: string;
+  ownerUserId: string;
+  viewerUserId?: string | null;
+  userAgent?: string | null;
+  isDemo?: boolean;
+}) {
+  const { shouldCountCeleYouGuestStat } = await import("@/lib/celeyou-share/events");
+  if (
+    !shouldCountCeleYouGuestStat({
+      ownerUserId: input.ownerUserId,
+      viewerUserId: input.viewerUserId,
+      userAgent: input.userAgent,
+      isDemo: input.isDemo,
+    })
+  ) {
+    return false;
+  }
+  await incrementDigitalCardView(input.cardId);
+  await recordSmartCardInteraction(input.cardId, "profile_open", { surface: "profile" });
+  return true;
+}
+
 export async function recordSmartCardInteraction(cardId: string, kind: string, meta?: Record<string, unknown>) {
   await prisma.smartCardInteraction
     .create({
@@ -648,16 +684,28 @@ function sanitizeActivityMeta(meta: unknown): { surface?: string; reason?: strin
   return { ...(surface ? { surface } : {}), ...(reason ? { reason } : {}) };
 }
 
+type ActivityWindow = { from?: Date | null; to?: Date | null };
+
+function createdAtWindow(input?: ActivityWindow) {
+  if (!input?.from && !input?.to) return undefined;
+  return {
+    createdAt: {
+      ...(input.from ? { gte: input.from } : {}),
+      ...(input.to ? { lte: input.to } : {}),
+    },
+  };
+}
+
 export async function listDigitalCardActivityForUser(
   userId: string,
   cardId: string,
-  input?: { cursor?: string | null; take?: number }
+  input?: { cursor?: string | null; take?: number } & ActivityWindow
 ) {
   const card = await getDigitalCardForUser(userId, cardId);
   if (!card) return null;
   const take = Math.min(50, Math.max(1, input?.take ?? 20));
   const rows = await prisma.smartCardInteraction.findMany({
-    where: { cardId },
+    where: { cardId, ...createdAtWindow(input) },
     orderBy: { createdAt: "desc" },
     take: take + 1,
     ...(input?.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
@@ -679,29 +727,36 @@ export async function listDigitalCardActivityForUser(
 export async function getDigitalCardAnalyticsForUser(
   userId: string,
   cardId: string,
-  input?: { cursor?: string | null; take?: number }
+  input?: { cursor?: string | null; take?: number } & ActivityWindow
 ) {
   const card = await getDigitalCardForUser(userId, cardId);
   if (!card) return null;
+  const when = createdAtWindow(input);
+  const ranged = Boolean(when);
   const activity = await listDigitalCardActivityForUser(userId, cardId, input);
   if (input?.cursor) {
     return {
-      viewCount: card.viewCount,
+      viewCount: ranged ? 0 : card.viewCount,
       activity: activity?.items ?? [],
       nextCursor: activity?.nextCursor ?? null,
     };
   }
-  const grouped = await prisma.smartCardInteraction.groupBy({
-    by: ["kind"],
-    where: { cardId },
-    _count: { _all: true },
-  });
+  const [grouped, connectionCount] = await Promise.all([
+    prisma.smartCardInteraction.groupBy({
+      by: ["kind"],
+      where: { cardId, ...when },
+      _count: { _all: true },
+    }),
+    prisma.smartCardConnection.count({
+      where: { cardId, status: { not: "ARCHIVED" }, ...when },
+    }),
+  ]);
   const byKind: Record<string, number> = {};
   for (const row of grouped) {
     byKind[row.kind] = row._count._all;
   }
   return {
-    viewCount: card.viewCount,
+    viewCount: ranged ? byKind.profile_open ?? 0 : card.viewCount,
     qrOpens: byKind.qr_open ?? 0,
     nfcTaps: byKind.nfc_tap ?? 0,
     vcardSaves: byKind.vcard_save ?? 0,
@@ -710,9 +765,10 @@ export async function getDigitalCardAnalyticsForUser(
     emailTaps: byKind.email_tap ?? 0,
     websiteTaps: byKind.website_tap ?? 0,
     shares: byKind.share_tap ?? 0,
-    connects: byKind.connect ?? 0,
-    reconnects: byKind.courtesy_reconnect ?? 0,
+    connects: connectionCount,
+    reconnects: 0,
     byKind,
+    ranged,
     activity: activity?.items ?? [],
     nextCursor: activity?.nextCursor ?? null,
   };

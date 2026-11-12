@@ -28,9 +28,12 @@ describe("CeleYou portrait frames", () => {
   it("keeps square CSS off the circle class and maps crop frames", () => {
     assert.equal(celecardPortraitFrameClass("circle").includes("rounded-full"), true);
     assert.equal(celecardPortraitFrameClass("square").includes("rounded-full"), false);
+    assert.equal(celecardPortraitFrameClass("arch").includes("rounded-t-[50%]"), true);
     assert.equal(celecardPortraitCropAspect("square"), "1:1");
     assert.equal(celecardPortraitCropAspect("rounded"), "rounded-square");
+    assert.equal(celecardPortraitCropAspect("arch"), "rounded-square");
     assert.equal(celecardPortraitFrameRadius("circle", 168), 84);
     assert.ok(celecardPortraitFrameRadius("square", 168) < 20);
+    assert.equal(resolveCeleCardPortraitFrame(resolveDigitalCardTheme("gold-folio"), "arch"), "arch");
   });
 });

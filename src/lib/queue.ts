@@ -13,7 +13,8 @@ export function registerJobHandler(queue: string, handler: JobHandler) {
 export async function dispatchJob(
   queue: string,
   payload: Record<string, unknown>,
-  maxAttempts = 3
+  maxAttempts = 3,
+  runAfter?: Date | null
 ) {
   return prisma.backgroundJob.create({
     data: {
@@ -21,13 +22,19 @@ export async function dispatchJob(
       payload: payload as Prisma.InputJsonValue,
       maxAttempts,
       status: "PENDING",
+      runAfter: runAfter ?? null,
     },
   });
 }
 
 export async function processJobs(queue: string, batchSize = 10) {
+  const now = new Date();
   const jobs = await prisma.backgroundJob.findMany({
-    where: { queue, status: "PENDING" },
+    where: {
+      queue,
+      status: "PENDING",
+      OR: [{ runAfter: null }, { runAfter: { lte: now } }],
+    },
     take: batchSize,
     orderBy: { createdAt: "asc" },
   });

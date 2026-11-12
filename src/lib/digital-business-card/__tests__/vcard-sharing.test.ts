@@ -44,14 +44,15 @@ describe("CeleYou vCard sharing", () => {
     assert.match(vcf, /^BEGIN:VCARD\r\n/);
     assert.match(vcf, /\r\nEND:VCARD\r\n$/);
     assert.match(vcf, /VERSION:3.0/);
-    assert.match(vcf, /FN:Owuraku Afari/);
-    assert.match(vcf, /N:Afari;Owuraku;;;/);
-    assert.match(vcf, /ORG:Example Company/);
-    assert.match(vcf, /TITLE:Founder/);
-    assert.match(vcf, /TEL;TYPE=CELL,VOICE:\+233241234567/);
+    assert.match(vcf, /FN;CHARSET=UTF-8:Owuraku Afari/);
+    assert.match(vcf, /N;CHARSET=UTF-8:Afari;Owuraku;;;/);
+    assert.match(vcf, /ORG;CHARSET=UTF-8:Example Company/);
+    assert.match(vcf, /TITLE;CHARSET=UTF-8:Founder/);
+    assert.match(vcf, /TEL;TYPE=CELL;TYPE=VOICE;TYPE=PREF:\+233241234567/);
     assert.match(vcf, /EMAIL;TYPE=INTERNET:public@example.com/);
-    assert.match(vcf, /URL;TYPE=PREF:https:\/\/www\.celeventic\.com\/card\/owuraku-afari/);
+    assert.match(vcf, /item1\.URL;TYPE=PREF:https:\/\/www\.celeventic\.com\/card\/owuraku-afari/);
     assert.match(vcf, /X-ABLabel:CeleYou/);
+    assert.equal(vcf.includes("TYPE=CELL,VOICE"), false);
     assert.equal(vcf.includes("tok_secret"), false);
     assert.equal(vcf.includes("localhost"), false);
     assert.equal(vcf.includes("http://"), false);
@@ -88,10 +89,10 @@ describe("CeleYou vCard sharing", () => {
         bio: "Line one\nLine two",
       })
     );
-    assert.match(vcf, /FN:Nana Yaa Mensah-Osei/);
-    assert.match(vcf, /N:Mensah-Osei;Nana Yaa;;;/);
-    assert.match(vcf, /ORG:Foil\\, Form & Co\\;/);
-    assert.match(vcf, /NOTE:Line one\\nLine two/);
+    assert.match(vcf, /FN;CHARSET=UTF-8:Nana Yaa Mensah-Osei/);
+    assert.match(vcf, /N;CHARSET=UTF-8:Mensah-Osei;Nana Yaa;;;/);
+    assert.match(vcf, /ORG;CHARSET=UTF-8:Foil\\, Form & Co\\;/);
+    assert.match(vcf, /NOTE;CHARSET=UTF-8:Line one\\nLine two/);
     const longNote = "A".repeat(120);
     const folded = buildVCard(publicCard({ bio: longNote }));
     assert.match(folded, /\r\n /);
@@ -111,6 +112,34 @@ describe("CeleYou vCard sharing", () => {
       photo: { type: "JPEG", base64: "A".repeat(60_001) },
     });
     assert.equal(vcf.includes("PHOTO;"), false);
+  });
+
+  it("maps filled phones, mail, chat, and socials into the device fields", () => {
+    const vcf = buildVCard(
+      publicCard({
+        pronouns: "she/her",
+        socials: {
+          phones: ["+233241234567"],
+          phoneTags: ["personal"],
+          emails: ["public@example.com"],
+          emailTags: ["business"],
+          whatsapp: ["233241234567"],
+          instagram: "owuraku",
+          trendshub: "owuraku",
+          momo: "0241234567",
+          linkedin: "owuraku-afari",
+        },
+      })
+    ).replace(/\r\n /g, "");
+    assert.match(vcf, /TEL;TYPE=CELL;TYPE=VOICE;TYPE=PREF:\+233241234567/);
+    assert.match(vcf, /EMAIL;TYPE=INTERNET;TYPE=WORK:public@example.com/);
+    assert.match(vcf, /X-PRONOUNS;CHARSET=UTF-8:she\/her/);
+    assert.match(vcf, /IMPP;X-SERVICE-TYPE=WhatsApp:x-apple:233241234567/);
+    assert.match(vcf, /X-SOCIALPROFILE;TYPE=instagram;x-user=owuraku:https:\/\/www\.instagram\.com\/owuraku/);
+    assert.match(vcf, /X-SOCIALPROFILE;TYPE=trendshub;x-user=owuraku:https:\/\/www\.trendshub\.live\/owuraku/);
+    assert.match(vcf, /X-ABLabel:TrendsHub/);
+    assert.match(vcf, /X-SOCIALPROFILE;TYPE=linkedin;x-user=owuraku-afari:/);
+    assert.match(vcf, /NOTE;CHARSET=UTF-8:[\s\S]*MTN MoMo: 0241234567/);
   });
 
   it("keeps protected fields out of guest vCards", () => {

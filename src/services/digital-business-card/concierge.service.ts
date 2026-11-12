@@ -53,7 +53,7 @@ export async function quoteConciergeOrder(input: { includeSubscription?: boolean
     catalog,
     quote: conciergeQuote({
       designFeeGhs: catalog.conciergePriceGhs,
-      includeSubscription: input.includeSubscription !== false,
+      includeSubscription: Boolean(input.includeSubscription),
       plan,
     }),
   };

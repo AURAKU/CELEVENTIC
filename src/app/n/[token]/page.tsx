@@ -1,5 +1,7 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { getSession } from "@/lib/auth";
 import { DigitalCardNfcTapView } from "@/components/digital-business-card/digital-card-nfc-tap-view";
 import { peekNfcDeviceCard, resolveNfcDeviceTap } from "@/services/digital-business-card/nfc-device.service";
 import { celeYouScanLandingUrl } from "@/lib/digital-business-card/share-identity";
@@ -80,7 +82,12 @@ export default async function SmartCardNfcTapPage({
     const card = await peekNfcDeviceCard(token);
     if (card && !card.deletedAt) return null;
   }
-  const resolved = await resolveNfcDeviceTap(token);
+  const session = await getSession();
+  const ua = (await headers()).get("user-agent") || "";
+  const resolved = await resolveNfcDeviceTap(token, {
+    viewerUserId: session?.user?.id,
+    userAgent: ua,
+  });
   if (resolved.outcome === "open" || resolved.outcome === "profile") {
     redirect(celeYouScanLandingUrl(resolved.slug, origin));
   }

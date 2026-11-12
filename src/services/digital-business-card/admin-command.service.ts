@@ -19,8 +19,9 @@ import {
   type CeleCardLifecyclePolicy,
 } from "@/lib/digital-business-card/lifecycle";
 import { DIGITAL_CARD_THEMES, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
-import { getSmartCardPlan, smartCardExpiryFromNow, SMARTCARD_PLANS } from "@/lib/digital-business-card/plans";
-import { digitalCardPublicUrl } from "@/lib/digital-business-card/types";
+import { getSmartCardPlan, smartCardExpiryFromNow } from "@/lib/digital-business-card/plans";
+import { getCeleCardCatalog } from "@/services/digital-business-card/catalog.service";
+import { clipCeleCardBio, digitalCardPublicUrl } from "@/lib/digital-business-card/types";
 import { celeCardStableQrUrl, digitalCardExportImagePath } from "@/lib/digital-business-card/share";
 import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
 import {
@@ -338,6 +339,7 @@ export async function listCeleCardAdminDirectory(input: {
 
 export async function getCeleCardCommandOverview() {
   const policy = await getCeleCardLifecyclePolicy();
+  const catalog = await getCeleCardCatalog();
   const now = new Date();
   const expiringUntil = new Date(now.getTime() + policy.expiringSoonDays * 86_400_000);
   const [
@@ -418,13 +420,14 @@ export async function getCeleCardCommandOverview() {
     conciergeOpen,
     courtesyReconnects,
     totals,
-    prepaidNote: "CeleYou plans are prepaid terms, not contractual monthly recurring revenue.",
-    plans: SMARTCARD_PLANS.map((plan) => ({
+    prepaidNote: "CeleYou Pro plans are prepaid terms, not contractual monthly recurring revenue. Concierge design is a separate one-time fee.",
+    plans: catalog.plans.map((plan) => ({
       id: plan.id,
       label: plan.label,
       months: plan.months,
       priceGhs: plan.priceGhs,
     })),
+    conciergePriceGhs: catalog.conciergePriceGhs,
   };
 }
 
@@ -1049,7 +1052,7 @@ export async function updateAssistedCeleCard(
       displayName: input.displayName?.trim() || undefined,
       title: input.title !== undefined ? input.title?.trim() || null : undefined,
       company: input.company !== undefined ? input.company?.trim() || null : undefined,
-      bio: input.bio !== undefined ? input.bio?.trim() || null : undefined,
+      bio: input.bio !== undefined ? clipCeleCardBio(input.bio?.trim()) || null : undefined,
       email: input.email !== undefined ? input.email?.trim() || null : undefined,
       phone: input.phone !== undefined ? input.phone?.trim() || null : undefined,
       website: input.website !== undefined ? input.website?.trim() || null : undefined,

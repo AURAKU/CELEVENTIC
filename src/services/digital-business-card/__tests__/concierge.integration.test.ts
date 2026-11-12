@@ -71,7 +71,7 @@ describe("CeleYou concierge orders", () => {
     await assert.rejects(
       () =>
         applyConciergeAdminAction(
-          { id: admin.id, role: admin.role },
+          { id: customer.id, role: "ORGANIZER" },
           { orderId: order.id, action: "waive", reason: "partner courtesy for this launch" }
         ),
       (error: unknown) => error instanceof CeleCardAdminError && error.status === 403
@@ -112,5 +112,48 @@ describe("CeleYou concierge orders", () => {
     );
     const delivered = await prisma.smartCardConciergeOrder.findUniqueOrThrow({ where: { id: order.id } });
     assert.equal(delivered.status, "DELIVERED");
+  });
+
+  it("records a design-only concierge payment without granting a live hosting term", async () => {
+    const admin = await makeUser({
+      email: `celecard.concierge.designadmin.${stamp}@local.test`,
+      name: "Design Admin",
+      role: "ADMIN",
+    });
+    const customer = await makeUser({
+      email: `celecard.concierge.design.${stamp}@local.test`,
+      name: "Yaa Asantewaa",
+    });
+    const order = await createConciergeOrder({
+      customerUserId: customer.id,
+      customerEmail: customer.email!,
+      customerName: "Yaa Asantewaa",
+      displayName: "Yaa Asantewaa",
+      title: "Founder",
+      brief: "Please design a founder CeleYou with gold folio energy and booking plus MoMo.",
+      includeSubscription: false,
+    });
+    assert.equal(order.includeSubscription, false);
+    assert.equal(order.subscriptionFeeGhs, 0);
+    assert.equal(order.totalGhs, order.designFeeGhs);
+    assert.equal(order.planId, null);
+
+    const paid = await markConciergePaid({
+      orderId: order.id,
+      paymentId: `pay_design_only_${stamp}`,
+      amountGhs: order.totalGhs,
+    });
+    assert.equal(paid?.status, "PAID");
+
+    const fulfilled = await applyConciergeAdminAction(
+      { id: admin.id, role: admin.role },
+      { orderId: order.id, action: "fulfill" }
+    );
+    const cardId = (fulfilled as { card?: { id: string } }).card?.id;
+    assert.ok(cardId);
+    const card = await prisma.digitalBusinessCard.findUniqueOrThrow({ where: { id: cardId } });
+    assert.equal(isDigitalCardLive(card), false);
+    assert.notEqual(card.entitlementKind, "PAID_CONCIERGE");
+    assert.equal(card.lastActivationPaymentId, null);
   });
 });

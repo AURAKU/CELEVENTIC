@@ -1,5 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   buildCoverageReport,
   coverageGatePasses,
@@ -143,6 +145,48 @@ describe("contextual help expansion §58/§62", () => {
     assert.ok(resolveContextHelp("/digital-cards"));
     assert.equal(resolveContextHelp("/invite/abc"), null);
     assert.ok(MINI_TOURS.length >= 2);
+  });
+
+  it("uses a round Help icon button instead of a labeled pill", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/celeventic-guide/contextual-help.tsx"),
+      "utf8"
+    );
+    assert.match(source, /size="icon"/);
+    assert.match(source, /aria-label="Help"/);
+    assert.match(source, /rounded-full/);
+    assert.match(source, /function HelpMark/);
+    assert.doesNotMatch(source, /HelpCircle/);
+    assert.doesNotMatch(source, />\s*Help\s*</);
+  });
+
+  it("explains CeleYou Studio controls including Wallet card and Hold up this card", () => {
+    const studio = resolveContextHelp("/dashboard/business-card");
+    assert.ok(studio);
+    assert.equal(studio?.tourId, "celeyou-studio");
+    const titles = (studio?.topics ?? []).map((topic) => topic.title);
+    for (const title of [
+      "Activity",
+      "Activation",
+      "Access codes",
+      "Wallet card",
+      "Hold up this card",
+      "NFC",
+    ]) {
+      assert.ok(titles.includes(title), title);
+    }
+    const blob = `${studio?.intro ?? ""} ${JSON.stringify(studio?.topics ?? [])}`;
+    assert.match(blob, /All time/);
+    assert.match(blob, /calendar/);
+    assert.match(blob, /payment channels/);
+    assert.match(blob, /physical card/);
+    assert.doesNotMatch(blob, /phone to phone NFC|phone-to-phone NFC|Apple Wallet pass/i);
+    const tour = MINI_TOURS.find((item) => item.id === "celeyou-studio");
+    assert.ok(tour);
+    assert.match(tour?.steps.map((step) => step.body).join(" ") ?? "", /Wallet card/);
+    const celeyou = CELEVENTIC_GUIDE_CATALOG.find((g) => g.slug === "celeyou");
+    assert.ok(celeyou?.steps.some((step) => step.title === "Share in person"));
+    assert.match(celeyou?.body ?? "", /cardholder/);
   });
 });
 

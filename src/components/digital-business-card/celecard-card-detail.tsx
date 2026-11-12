@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DIGITAL_CARD_THEMES } from "@/lib/digital-business-card/themes";
+import { CELECARD_BIO_MAX_CHARS, clipCeleCardBio } from "@/lib/digital-business-card/types";
 
 type Detail = {
   card: {
@@ -132,7 +133,7 @@ export function CeleCardCardDetail({ cardId }: { cardId: string }) {
         displayName: profile.displayName.trim(),
         title: profile.title.trim() || null,
         company: profile.company.trim() || null,
-        bio: profile.bio.trim() || null,
+        bio: clipCeleCardBio(profile.bio.trim()) || null,
         email: profile.email.trim() || null,
         phone: profile.phone.trim() || null,
         website: profile.website.trim() || null,
@@ -217,8 +218,10 @@ export function CeleCardCardDetail({ cardId }: { cardId: string }) {
               <Textarea
                 className="sm:col-span-2"
                 value={profile.bio}
-                onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))}
+                onChange={(e) => setProfile((p) => ({ ...p, bio: clipCeleCardBio(e.target.value) }))}
                 placeholder="About"
+                maxLength={CELECARD_BIO_MAX_CHARS}
+                rows={4}
               />
             </div>
             <Button disabled={busy || profile.displayName.trim().length < 2} onClick={() => void saveProfile()}>

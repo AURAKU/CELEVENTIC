@@ -25,11 +25,18 @@ import {
   persistMeetingDesk,
   type CeleCardMeetingDesk,
 } from "@/lib/digital-business-card/meetings";
-import { celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
+import { celecardCompanyDisplayLines, celecardPlateDisplayName, celecardTitleDisplayLines, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import { SMARTCARD_PLANS, type SmartCardPlan, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
+import {
+  CELEYOU_TERM_LOCKED_CTA,
+  CELEYOU_TERM_LOCKED_HINT,
+  CELEYOU_TERM_OPEN_HINT,
+} from "@/lib/digital-business-card/billing-rules";
 import { celeYouCameraScanUrl, celeYouNfcScanUrl } from "@/lib/digital-business-card/share-identity";
 import {
+  CELECARD_BIO_MAX_CHARS,
   DIGITAL_CARD_TRIAL_DAYS,
+  clipCeleCardBio,
   digitalCardIdentityUrl,
   digitalCardQrImageSrc,
   normalizeSocials,
@@ -85,8 +92,8 @@ import { DigitalCardLiveTermRibbon } from "@/components/digital-business-card/di
 import { DigitalCardPrivacyDesk } from "@/components/digital-business-card/digital-card-privacy-desk";
 import { DigitalCardDesignVault } from "@/components/digital-business-card/digital-card-design-vault";
 import { DigitalCardConnectionInbox } from "@/components/digital-business-card/digital-card-connection-inbox";
+import { DigitalCardConnectAutomations } from "@/components/digital-business-card/digital-card-connect-automations";
 import { DigitalCardShareDesk } from "@/components/digital-business-card/digital-card-share-desk";
-import { DigitalCardTileActions } from "@/components/digital-business-card/digital-card-tile-actions";
 import { DigitalCardAnalyticsPanel } from "@/components/digital-business-card/digital-card-analytics-panel";
 import { DigitalCardStudioNotice } from "@/components/digital-business-card/digital-card-studio-notice";
 import { celeCardCheckoutUi } from "@/lib/digital-business-card/checkout-outcome";
@@ -96,13 +103,7 @@ import {
   resolveCeleCardPortraitFrame,
   type CeleCardPortraitFrame,
 } from "@/lib/digital-business-card/portrait-frame";
-import {
-  celeCardShareMessage,
-  celeCardShareTitle,
-  digitalCardExportImagePath,
-  digitalCardPresentPath,
-} from "@/lib/digital-business-card/share";
-import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
+import { digitalCardPresentPath } from "@/lib/digital-business-card/share";
 import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { getCeleYouShareOrigin } from "@/lib/app-url";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
@@ -139,6 +140,37 @@ type CardRow = {
 const studioInputClass =
   "flex h-11 w-full min-w-0 rounded-md border border-slate-200 bg-white px-3 py-2 text-base outline-none ring-offset-white placeholder:text-[13px] placeholder:leading-tight focus-visible:ring-2 focus-visible:ring-slate-400 sm:h-11 sm:text-sm";
 
+function PlateNameHint({ name }: { name: string }) {
+  const plate = celecardPlateDisplayName(name);
+  const saved = name.replace(/\s+/g, " ").trim();
+  if (!plate || plate === saved) return null;
+  return (
+    <p className="text-xs leading-relaxed text-slate-500">
+      On the card this reads {plate}. Your saved name stays in full.
+    </p>
+  );
+}
+
+function CompanyPlateHint({ name }: { name: string }) {
+  const lines = celecardCompanyDisplayLines(name);
+  if (lines.length < 2) return null;
+  return (
+    <p className="text-[11px] leading-relaxed text-slate-500">
+      On the card this sits on {lines.length} lines so the plate stays clear. The saved name stays in full.
+    </p>
+  );
+}
+
+function TitlePlateHint({ name }: { name: string }) {
+  const lines = celecardTitleDisplayLines(name);
+  if (lines.length < 2) return null;
+  return (
+    <p className="text-xs leading-relaxed text-slate-500">
+      On the card this sits on {lines.length} lines so the plate stays clear. The saved title stays in full.
+    </p>
+  );
+}
+
 function StudioPanel({
   id,
   title,
@@ -162,11 +194,14 @@ function StudioPanel({
 }
 
 const STUDIO_JUMP = [
+  { href: "#studio-activity", label: "Activity" },
+  { href: "#studio-activation", label: "Activation" },
   { href: "#studio-identity", label: "Identity" },
   { href: "#studio-look", label: "Design" },
   { href: "#studio-contact", label: "Contact" },
   { href: "#studio-reach", label: "Reach" },
-  { href: "#studio-inbox", label: "Inbox" },
+  { href: "#studio-inbox", label: "Connections" },
+  { href: "#studio-connect", label: "Follow-ups" },
   { href: "#studio-preview", label: "Share" },
 ] as const;
 
@@ -466,7 +501,7 @@ export function DigitalCardStudioClient() {
       displayName: form.displayName.trim(),
       title: form.title.trim() || null,
       company: form.company.trim() || null,
-      bio: form.bio.trim() || null,
+      bio: clipCeleCardBio(form.bio.trim()) || null,
       email: emails[0] || null,
       phone: phones[0] || null,
       website: websites[0] || null,
@@ -555,20 +590,6 @@ export function DigitalCardStudioClient() {
     await navigator.clipboard.writeText(canonical);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
-  }
-
-  async function sharePreview() {
-    const url = shareUrl || publicUrl;
-    if (!url) return;
-    const result = await shareCeleYouProfile({
-      title: celeCardShareTitle({ displayName: form.displayName, title: form.title }),
-      text: celeCardShareMessage({ displayName: form.displayName }),
-      url,
-    });
-    if (result === "copied") {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    }
   }
 
   async function uploadPayQr(file: File): Promise<string | null> {
@@ -683,6 +704,54 @@ export function DigitalCardStudioClient() {
           ))}
         </nav>
 
+        <DigitalCardAnalyticsPanel cardId={activeId} />
+
+        <div
+          id="studio-activation"
+          className="scroll-mt-16 rounded-2xl border border-slate-200 bg-white p-4 space-y-3"
+        >
+          <p className="text-sm font-semibold tracking-tight text-slate-900">Activation</p>
+          <div className="cta-phrase-grid gap-1.5">
+            {plans.map((plan) => (
+              <button
+                key={plan.id}
+                type="button"
+                disabled={active?.canRenew === false}
+                onClick={() => {
+                  if (active?.canRenew === false) return;
+                  setPlanId(plan.id);
+                }}
+                className={`whitespace-nowrap rounded-lg border px-2 py-1.5 text-left text-[11px] ${
+                  planId === plan.id
+                    ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
+                    : "border-slate-200 text-slate-600"
+                } ${active?.canRenew === false ? "cursor-not-allowed opacity-60" : ""}`}
+              >
+                <span className="font-semibold">{plan.label}</span>
+                <span className="ml-1">₵{plan.priceGhs}</span>
+              </button>
+            ))}
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="w-full whitespace-nowrap bg-[#0B8A83] hover:bg-[#097a74]"
+            onClick={subscribe}
+            disabled={!activeId || paying || active?.canRenew === false}
+          >
+            {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+            {active?.canRenew === false
+              ? CELEYOU_TERM_LOCKED_CTA
+              : `Activate ${plans.find((p) => p.id === planId)?.label} · ₵${plans.find((p) => p.id === planId)?.priceGhs}`}
+          </Button>
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            {active?.canRenew === false ? CELEYOU_TERM_LOCKED_HINT : CELEYOU_TERM_OPEN_HINT}
+          </p>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/dashboard/business-card/billing">Manage billing</Link>
+          </Button>
+        </div>
+
         <div className="celecard-studio-desk">
           <div className="celecard-studio-identity-col space-y-4">
             {cards.length > 0 ? (
@@ -731,6 +800,7 @@ export function DigitalCardStudioClient() {
                   onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
                   placeholder="Ama Mensah"
                 />
+                <PlateNameHint name={form.displayName} />
               </div>
               <div className="celecard-studio-identity-wide space-y-2">
                 <Label htmlFor="title">Title / role</Label>
@@ -740,6 +810,7 @@ export function DigitalCardStudioClient() {
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                   placeholder="Founder & Creative Director"
                 />
+                <TitlePlateHint name={form.title} />
               </div>
               <div className="celecard-studio-identity-wide space-y-2">
                 <Label htmlFor="company">Company</Label>
@@ -766,17 +837,25 @@ export function DigitalCardStudioClient() {
                     <p className="text-[11px] leading-relaxed text-slate-500">
                       Upload a square PNG or JPEG. It sits beside the company name on the card.
                     </p>
+                    <CompanyPlateHint name={form.company} />
                   </div>
                 </div>
               </div>
               <div className="celecard-studio-identity-wide space-y-2">
-                <Label htmlFor="bio">About</Label>
+                <div className="flex items-baseline justify-between gap-3">
+                  <Label htmlFor="bio">About</Label>
+                  <span id="bio-count" className="text-[11px] tabular-nums text-slate-500">
+                    {form.bio.length}/{CELECARD_BIO_MAX_CHARS}
+                  </span>
+                </div>
                 <Textarea
                   id="bio"
                   value={form.bio}
-                  onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, bio: clipCeleCardBio(e.target.value) }))}
                   placeholder="One short line about what you do."
-                  rows={3}
+                  rows={4}
+                  maxLength={CELECARD_BIO_MAX_CHARS}
+                  aria-describedby="bio-count"
                 />
               </div>
             </div>
@@ -1139,6 +1218,7 @@ export function DigitalCardStudioClient() {
             </StudioPanel>
 
             <DigitalCardConnectionInbox cardId={activeId} />
+            <DigitalCardConnectAutomations cardId={activeId} />
           </div>
 
           <aside id="studio-preview" className="celecard-studio-preview space-y-4">
@@ -1190,31 +1270,20 @@ export function DigitalCardStudioClient() {
               >
                 Live preview
               </p>
-              <div className="relative">
-                <DigitalCardFace
-                  themeId={form.themeId}
-                  displayName={form.displayName || "Your name"}
-                  title={form.title || "Your title"}
-                  company={form.company || "Company"}
-                  avatarUrl={form.avatarUrl}
-                  qrSrc={qrSrc}
-                  qrHref={form.slug ? digitalCardIdentityUrl(form.slug) : null}
-                  compact
-                  portraitFrame={form.portraitFrame}
-                  companyLogo
-                  companyLogoUrl={form.companyLogoUrl}
-                  design={form.design}
-                />
-                {form.slug ? (
-                  <DigitalCardTileActions
-                    accent={previewTheme.accent}
-                    border={previewTheme.border}
-                    copied={copied}
-                    downloadHref={digitalCardExportImagePath(form.slug)}
-                    onShare={() => void sharePreview()}
-                  />
-                ) : null}
-              </div>
+              <DigitalCardFace
+                themeId={form.themeId}
+                displayName={form.displayName || "Your name"}
+                title={form.title || "Your title"}
+                company={form.company || "Company"}
+                avatarUrl={form.avatarUrl}
+                qrSrc={qrSrc}
+                qrHref={form.slug ? digitalCardIdentityUrl(form.slug) : null}
+                compact
+                portraitFrame={form.portraitFrame}
+                companyLogo
+                companyLogoUrl={form.companyLogoUrl}
+                design={form.design}
+              />
               {guestPreviewReach.length ? (
                 <div className="mt-4">
                   <DigitalCardReachGrid
@@ -1266,49 +1335,6 @@ export function DigitalCardStudioClient() {
                 <p className="text-xs text-slate-500">Save the card to show, share, and download QR files.</p>
               )}
             </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-              <p className="text-sm font-semibold tracking-tight text-slate-900">Activation</p>
-              <div className="cta-phrase-grid gap-1.5">
-                {plans.map((plan) => (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    onClick={() => setPlanId(plan.id)}
-                    className={`whitespace-nowrap rounded-lg border px-2 py-1.5 text-left text-[11px] ${
-                      planId === plan.id
-                        ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
-                        : "border-slate-200 text-slate-600"
-                    }`}
-                  >
-                    <span className="font-semibold">{plan.label}</span>
-                    <span className="ml-1">₵{plan.priceGhs}</span>
-                  </button>
-                ))}
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                className="w-full whitespace-nowrap bg-[#0B8A83] hover:bg-[#097a74]"
-                onClick={subscribe}
-                disabled={!activeId || paying || active?.canRenew === false}
-              >
-                {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-                {active?.canRenew === false
-                  ? "Paid through this term"
-                  : `Activate ${plans.find((p) => p.id === planId)?.label} · ₵${plans.find((p) => p.id === planId)?.priceGhs}`}
-              </Button>
-              <p className="text-[11px] leading-relaxed text-slate-500">
-                {active?.canRenew === false
-                  ? "Renewal opens after this term ends. New cards you save stay on this same subscription, each with a unique QR, link, and NFC."
-                  : "Live activation uses Paystack. A paid term runs until expiry and cannot be cancelled. Extra cards share that term."}
-              </p>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/dashboard/business-card/billing">Manage billing</Link>
-              </Button>
-            </div>
-
-            <DigitalCardAnalyticsPanel cardId={activeId} />
           </aside>
         </div>
         </>

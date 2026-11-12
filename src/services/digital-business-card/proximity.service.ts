@@ -258,8 +258,7 @@ async function toView(
     peer,
     self,
     share: verifiedShare,
-    phoneToPhoneClaim:
-      "Phone to phone NFC is not used. Nearby Bluetooth discovery needs the CeleYou app on both phones. In this browser, scan the session QR or enter the code.",
+    phoneToPhoneClaim: "Scan the session QR or enter the code to connect.",
   };
 }
 

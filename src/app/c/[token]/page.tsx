@@ -1,5 +1,8 @@
+import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { getSession } from "@/lib/auth";
+import { shouldCountCeleYouGuestStat } from "@/lib/celeyou-share/events";
 import {
   getDigitalCardByPublicToken,
   recordSmartCardInteraction,
@@ -78,7 +81,17 @@ export default async function SmartCardShortRedirectPage({
   if (!share.found || !card) notFound();
   if (unfurl) return null;
   if (share.recordOpen) {
-    void recordSmartCardInteraction(card.id, "qr_open").catch(() => undefined);
+    const session = await getSession();
+    const ua = (await headers()).get("user-agent") || "";
+    if (
+      shouldCountCeleYouGuestStat({
+        ownerUserId: card.userId,
+        viewerUserId: session?.user?.id,
+        userAgent: ua,
+      })
+    ) {
+      void recordSmartCardInteraction(card.id, "qr_open").catch(() => undefined);
+    }
   }
   redirect(celeYouScanLandingUrl(card.slug, origin));
 }

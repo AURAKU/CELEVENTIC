@@ -160,6 +160,7 @@ const FRAME_COPY: Record<CeleCardPortraitFrame, { label: string; hint: string }>
   circle: { label: "Circle", hint: "A round portrait" },
   square: { label: "Square", hint: "A sharp ID plate" },
   rounded: { label: "Soft square", hint: "A gentle studio crop" },
+  arch: { label: "Arch", hint: "A windowed portrait" },
 };
 
 export function DigitalCardDesignDesk({
@@ -486,7 +487,7 @@ export function DigitalCardDesignDesk({
       <DeskFold
         id="finish"
         title="Finish"
-        hint="Foil, lettering, ink, photo frame, QR, grain, and guest-page motion."
+        hint="Foil, lettering, ink, photo frame, QR, grain, and guest-page motion. Each chip changes the live plate."
         open={open.finish}
         onToggle={toggle}
       >
