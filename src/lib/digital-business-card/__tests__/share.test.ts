@@ -98,6 +98,7 @@ describe("CeleYou share metadata", () => {
     assert.equal(metadata.openGraph?.title, "Ama Serwaa on CeleYou");
     assert.equal(metadata.openGraph?.description, celeCardShareCommentary(DEMO_CARD));
     assert.equal(metadata.openGraph?.siteName, "CeleYou");
+    assert.equal(metadata.openGraph?.type, "website");
     const image = Array.isArray(metadata.openGraph?.images) ? metadata.openGraph?.images[0] : metadata.openGraph?.images;
     assert.equal(typeof image === "object" && image && "width" in image ? image.width : 0, 1200);
     assert.equal(typeof image === "object" && image && "height" in image ? image.height : 0, 630);
@@ -165,12 +166,13 @@ describe("CeleYou share metadata", () => {
     const config = readFileSync(join(process.cwd(), "next.config.ts"), "utf8");
     const ogRoute = readFileSync(join(process.cwd(), "src/app/card/[slug]/og/route.tsx"), "utf8");
     const engine = readFileSync(join(process.cwd(), "src/lib/celeyou-share/engine.ts"), "utf8");
-    assert.match(markup, /1200×630 share tile: the live ID-1 plate only/);
-    assert.match(markup, /cover/);
+    assert.match(markup, /the full ID-1 plate/);
+    assert.match(markup, /contain/);
+    assert.doesNotMatch(markup, /\n\s+cover\s*\n/);
     assert.match(bitmap, /background: "#ffffff"/);
     assert.match(bitmap, /paperSrc/);
     assert.match(bitmap, /isEmbeddedImage\(markSrc\)/);
-    assert.match(bitmap, /coverPlateSize/);
+    assert.match(bitmap, /containPlateSize/);
     assert.doesNotMatch(bitmap, /logo-full\.png|brand\/icon\.png|celeventic-logo/i);
     assert.doesNotMatch(bitmap, /\bright:\s|\bbottom:\s/);
     assert.doesNotMatch(markup, /Open this CeleYou|Download this card|Share this card/);

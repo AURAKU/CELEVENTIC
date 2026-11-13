@@ -15,8 +15,10 @@ function isEmbeddedImage(src?: string | null): src is string {
 export type CeleCardPlateBitmapProps = {
   width: number;
   height: number;
-  /** Crop the ID-1 plate to fill the tile. Used for 1200×630 social previews. */
+  /** Crop the ID-1 plate to fill the tile. */
   cover?: boolean;
+  /** Letterbox the full ID-1 plate. iMessage must see name, title, company, and QR, not a headshot. */
+  contain?: boolean;
   displayName: string;
   title?: string | null;
   company?: string | null;
@@ -46,11 +48,19 @@ function coverPlateSize(tileW: number, tileH: number) {
   return { width: tileW, height: Math.round(tileW / CELECARD_CARD_ASPECT) };
 }
 
-/** Satori-safe live plate. OG tiles cover-crop; export keeps the full ID-1 face. */
+function containPlateSize(tileW: number, tileH: number) {
+  if (tileW / tileH > CELECARD_CARD_ASPECT) {
+    return { width: Math.round(tileH * CELECARD_CARD_ASPECT), height: tileH };
+  }
+  return { width: tileW, height: Math.round(tileW / CELECARD_CARD_ASPECT) };
+}
+
+/** Satori-safe live plate. OG tiles letterbox the full ID-1 face. Export keeps the uncropped card. */
 export function CeleCardPlateBitmap({
   width,
   height,
   cover = false,
+  contain = false,
   displayName,
   title,
   company,
@@ -62,7 +72,7 @@ export function CeleCardPlateBitmap({
   paperSrc,
   companyLogoSrc,
 }: CeleCardPlateBitmapProps) {
-  const plate = cover ? coverPlateSize(width, height) : { width, height };
+  const plate = cover ? coverPlateSize(width, height) : contain ? containPlateSize(width, height) : { width, height };
   const s = plate.height / 558;
   const photo = Math.max(120, Math.round(188 * s));
   const qr = Math.max(128, Math.round(196 * s));

@@ -87,11 +87,16 @@ async function renderSharpPlateFallback(props: OgRenderProps): Promise<Response>
   const fill = solidThemeFill(props.theme.cardBackground);
   const accent = props.theme.accent || "#0B8A83";
   const name = escapeXml(props.displayName.trim() || "CeleYou");
-  const role = escapeXml([props.title?.trim(), props.company?.trim()].filter(Boolean).join("  ·  "));
+  const title = escapeXml(props.title?.trim() || "");
+  const company = escapeXml(props.company?.trim() || "");
+  const plateW = Math.round(CELECARD_OG_HEIGHT * (85.6 / 54));
+  const plateX = Math.round((CELECARD_OG_WIDTH - plateW) / 2);
   const svg = `<svg width="${CELECARD_OG_WIDTH}" height="${CELECARD_OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-    <rect width="1200" height="630" fill="${fill}"/>
-    <text x="320" y="300" font-size="54" font-weight="700" fill="${accent}" font-family="sans-serif">${name}</text>
-    ${role ? `<text x="320" y="360" font-size="28" fill="#334155" font-family="sans-serif">${role}</text>` : ""}
+    <rect width="1200" height="630" fill="#0B8A83"/>
+    <rect x="${plateX}" y="0" width="${plateW}" height="630" rx="28" fill="${fill}"/>
+    <text x="${plateX + 280}" y="280" font-size="44" font-weight="700" fill="${accent}" font-family="sans-serif">${name}</text>
+    ${title ? `<text x="${plateX + 280}" y="330" font-size="24" fill="#475569" font-family="sans-serif">${title}</text>` : ""}
+    ${company ? `<text x="${plateX + 280}" y="372" font-size="20" fill="${accent}" font-family="sans-serif">${company}</text>` : ""}
   </svg>`;
   let image = sharp(Buffer.from(svg));
   const photoRaw = props.photoSrc?.startsWith("data:image/")
@@ -99,8 +104,8 @@ async function renderSharpPlateFallback(props: OgRenderProps): Promise<Response>
     : null;
   if (photoRaw && photoRaw.length > 64) {
     try {
-      const photo = await sharp(photoRaw).resize(188, 188, { fit: "cover" }).png().toBuffer();
-      image = image.composite([{ input: photo, left: 88, top: 221 }]);
+      const photo = await sharp(photoRaw).resize(168, 168, { fit: "cover" }).png().toBuffer();
+      image = image.composite([{ input: photo, left: plateX + 56, top: 231 }]);
     } catch {
       /* keep the name plate */
     }
@@ -126,7 +131,10 @@ export async function livePlateOgFromSnapshot(cardId: string, cacheControl: stri
   try {
     const framed = await sharp(buffer)
       .rotate()
-      .resize(CELECARD_OG_WIDTH, CELECARD_OG_HEIGHT, { fit: "cover", position: "centre" })
+      .resize(CELECARD_OG_WIDTH, CELECARD_OG_HEIGHT, {
+        fit: "contain",
+        background: { r: 11, g: 138, b: 131, alpha: 1 },
+      })
       .png()
       .toBuffer();
     return pngResponse(framed, cacheControl);

@@ -40,7 +40,7 @@ export function digitalCardPresentUrl(slug: string, origin?: string): string {
   return `${origin.replace(/\/$/, "")}${path}`;
 }
 
-export const CELECARD_PLATE_SHARE_GEN = "p3";
+export const CELECARD_PLATE_SHARE_GEN = "p4";
 
 export function digitalCardOgImagePath(slug: string, version?: string | number | null): string {
   const base = `/card/${encodeURIComponent(slug)}/og`;
@@ -205,7 +205,7 @@ export function buildCeleCardShareMetadata(input: {
     openGraph: {
       title,
       description,
-      type: "profile",
+      type: "website",
       url: canonical,
       siteName: SMARTCARD_PRODUCT_SHORT_NAME,
       images: [
