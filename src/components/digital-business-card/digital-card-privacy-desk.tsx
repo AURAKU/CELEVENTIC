@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, Lock } from "lucide-react";
 import { DigitalCardBrandMark } from "@/components/digital-business-card/digital-card-brand-mark";
 import {
   brandReachLabel,
@@ -31,7 +31,11 @@ export function DigitalCardPrivacyDesk({
   const [code, setCode] = useState("");
   const [label, setLabel] = useState("Clients");
   const [selected, setSelected] = useState<string[]>([]);
-  const [codes, setCodes] = useState<Array<{ id: string; label: string; itemKeys: string[]; revokedAt: string | null }>>([]);
+  const [codes, setCodes] = useState<
+    Array<{ id: string; label: string; code: string | null; itemKeys: string[]; revokedAt: string | null }>
+  >([]);
+  const [maskedCodes, setMaskedCodes] = useState<Record<string, boolean>>({});
+  const [openCodeId, setOpenCodeId] = useState<string | null>(null);
   const [requests, setRequests] = useState<Array<{
     id: string;
     visitorName: string;
@@ -198,7 +202,14 @@ export function DigitalCardPrivacyDesk({
 
   function itemTitle(id: string) {
     const item = lockable.find((row) => row.id === id);
-    return item ? reachAccountPreview(item).title : id;
+    return item ? fieldLabel(item) : id;
+  }
+
+  function fieldLabel(item: DigitalCardReachItem) {
+    const preview = reachAccountPreview(item);
+    const brand = brandReachLabel(item.brand);
+    if (preview.title && preview.title !== brand) return `${brand} ${preview.title}`;
+    return preview.hint ? `${brand} ${preview.hint}` : brand;
   }
 
   return (
@@ -274,7 +285,8 @@ export function DigitalCardPrivacyDesk({
         <div className="space-y-3 rounded-xl border border-slate-200 p-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Access codes</p>
           <p className="text-[11px] leading-snug text-slate-500">
-            Select the details this code unveils. Details you leave unselected stay public and never need this code.
+            Every filled field is here. Tap the eye to hide or show it on your public CeleYou. Tap the icon to include a
+            hidden detail in this code.
           </p>
           <input
             value={label}
@@ -290,21 +302,43 @@ export function DigitalCardPrivacyDesk({
             autoComplete="one-time-code"
             className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm tracking-[0.2em]"
           />
-          {lockable.length ? (
-            <div className="flex flex-wrap gap-1.5">
-              {lockable.map((item) => {
+          {items.length ? (
+            <div className="celecard-privacy-icons">
+              {items.map((item) => {
                 const on = selected.includes(item.id);
-                const preview = reachAccountPreview(item);
+                const mode = visibility[item.id] || "PUBLIC";
+                const hidden = mode !== "PUBLIC";
+                const name = fieldLabel(item);
                 return (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
-                    onClick={() => toggleCodeItem(item.id)}
-                    className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]"
-                    style={{ background: on ? "#0B8A83" : "#e2e8f0", color: on ? "#fff" : "#334155" }}
+                    className="celecard-privacy-tile"
+                    data-on={on ? "true" : "false"}
+                    data-hidden={hidden ? "true" : "false"}
                   >
-                    {preview.title}
-                  </button>
+                    <button
+                      type="button"
+                      className="celecard-privacy-mark"
+                      aria-label={`${on ? "Remove from this code" : "Include in this code"} ${name}`}
+                      title={name}
+                      onClick={() => toggleCodeItem(item.id)}
+                    >
+                      <DigitalCardBrandMark
+                        id={reachBrandMarkId(item)}
+                        className="h-10 w-10 rounded-[12px] shadow-none"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      className="celecard-privacy-eye"
+                      data-hidden={hidden ? "true" : "false"}
+                      aria-label={hidden ? `Show ${name}` : `Hide ${name}`}
+                      title={hidden ? `Show ${name}` : `Hide ${name}`}
+                      onClick={() => setMode(item.id, hidden ? "PUBLIC" : "CODE_PROTECTED")}
+                    >
+                      {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -318,16 +352,73 @@ export function DigitalCardPrivacyDesk({
           >
             Save code
           </button>
-          {liveCodes.map((row) => (
-            <div key={row.id} className="flex items-center justify-between gap-3 text-xs text-slate-600">
-              <span className="min-w-0 truncate">
-                {row.label} · {row.itemKeys.map(itemTitle).join(", ") || `${row.itemKeys.length} details`}
-              </span>
-              <button type="button" className="shrink-0 text-slate-500" onClick={() => void revoke(row.id)}>
-                Revoke
-              </button>
-            </div>
-          ))}
+          {liveCodes.map((row) => {
+            const masked = maskedCodes[row.id] === true;
+            const digits = row.code || "";
+            const shown = digits ? (masked ? "••••" : digits) : "Saved";
+            const open = openCodeId === row.id;
+            return (
+              <div key={row.id} className="celecard-code-row" data-open={open ? "true" : "false"}>
+                <button
+                  type="button"
+                  className="celecard-code-toggle"
+                  aria-expanded={open}
+                  aria-controls={`celecard-code-drop-${row.id}`}
+                  onClick={() => setOpenCodeId(open ? null : row.id)}
+                >
+                  <ChevronDown className="celecard-code-chevron h-4 w-4 shrink-0" aria-hidden />
+                  <span className="min-w-0 truncate text-left text-[12px] font-semibold text-slate-800">
+                    {row.label}
+                  </span>
+                  <span className="celecard-code-value">{shown}</span>
+                </button>
+                {digits ? (
+                  <button
+                    type="button"
+                    className="celecard-privacy-eye celecard-privacy-eye-inline"
+                    data-hidden={masked ? "true" : "false"}
+                    aria-label={masked ? `Show ${row.label} code` : `Hide ${row.label} code`}
+                    onClick={() =>
+                      setMaskedCodes((current) => ({ ...current, [row.id]: !masked }))
+                    }
+                  >
+                    {masked ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className="shrink-0 text-[11px] font-semibold text-slate-500"
+                  onClick={() => void revoke(row.id)}
+                >
+                  Revoke
+                </button>
+                {open ? (
+                  <div id={`celecard-code-drop-${row.id}`} className="celecard-code-drop">
+                    <div className="celecard-privacy-icons celecard-privacy-icons-compact">
+                      {row.itemKeys.map((id) => {
+                        const item = items.find((entry) => entry.id === id);
+                        const name = item ? fieldLabel(item) : itemTitle(id);
+                        return (
+                          <span
+                            key={id}
+                            className="celecard-privacy-tile celecard-privacy-tile-static"
+                            title={name}
+                          >
+                            <span className="celecard-privacy-mark">
+                              <DigitalCardBrandMark
+                                id={item ? reachBrandMarkId(item) : "other"}
+                                className="h-8 w-8 rounded-[10px] shadow-none"
+                              />
+                            </span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
           {codes.some((row) => row.revokedAt) ? (
             <p className="text-[11px] text-slate-400">
               {codes.filter((row) => row.revokedAt).length} revoked

@@ -8,10 +8,8 @@ import {
 import { celeYouConnectSearchText, celeYouExchangePairKey } from "@/lib/celeyou-connect/pair";
 import { celeYouPublicShareSnapshot, type CeleYouShareSnapshot } from "@/lib/celeyou-connect/snapshots";
 import { buildGuestReach } from "@/lib/digital-business-card/privacy";
-import {
-  isDigitalCardLive,
-  toPublicPayload,
-} from "@/services/digital-business-card/digital-business-card.service";
+import { isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
+import { toPublicPayload } from "@/services/digital-business-card/digital-business-card.service";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { scheduleCeleYouConnectSideEffects } from "@/services/celeyou-connect/delivery.service";
 
@@ -60,6 +58,7 @@ export async function finalizeGuestConnectBack(input: {
   visitorName: string;
   visitorEmail?: string | null;
   followupConsent: boolean;
+  source?: string;
 }) {
   const flags = await getCeleYouConnectFlags();
   if (input.followupConsent) {
@@ -72,7 +71,7 @@ export async function finalizeGuestConnectBack(input: {
     connectionId: input.connectionId,
     cardId: input.cardId,
     kind: "CONNECTION_CREATED",
-    meta: { source: "connect_back" },
+    meta: { source: input.source || "connect_back" },
   });
   await scheduleCeleYouConnectSideEffects({
     flags,
@@ -101,7 +100,7 @@ export async function previewCeleYouExchange(input: {
   const host = await prisma.digitalBusinessCard.findFirst({
     where: { slug: input.hostSlug, deletedAt: null },
   });
-  if (!host || !isDigitalCardLive(host, new Date(), policy)) {
+  if (!host || !isCeleCardPubliclyReachable(host, policy)) {
     return { error: "Card unavailable", status: 404 as const };
   }
   if (host.userId === input.visitorUserId) {
@@ -129,6 +128,7 @@ export async function previewCeleYouExchange(input: {
   const existing = await prisma.smartCardConnection.findUnique({ where: { pairKey } });
   const you = await snapshotForCard(visitorCard);
   const them = await snapshotForCard(host);
+  const eligible = await listExchangeableVisitorCards(input.visitorUserId, policy);
   return {
     status: 200 as const,
     canExchange: true,
@@ -142,6 +142,7 @@ export async function previewCeleYouExchange(input: {
     you,
     them,
     visitorCardId: visitorCard.id,
+    cards: eligible,
     pairKey,
   };
 }
@@ -155,11 +156,29 @@ async function pickVisitorCard(
     where: { userId, deletedAt: null, adminSuspendedAt: null },
     orderBy: { updatedAt: "desc" },
   });
-  const live = cards.filter((card) => isDigitalCardLive(card, new Date(), policy));
+  const live = cards.filter((card) => isCeleCardPubliclyReachable(card, policy));
   if (requestedId) {
     return live.find((card) => card.id === requestedId) ?? null;
   }
   return live[0] ?? null;
+}
+
+async function listExchangeableVisitorCards(
+  userId: string,
+  policy: Awaited<ReturnType<typeof getCeleCardLifecyclePolicy>>
+) {
+  const cards = await prisma.digitalBusinessCard.findMany({
+    where: { userId, deletedAt: null, adminSuspendedAt: null },
+    orderBy: { updatedAt: "desc" },
+  });
+  return cards
+    .filter((card) => isCeleCardPubliclyReachable(card, policy))
+    .map((card) => ({
+      id: card.id,
+      displayName: card.displayName,
+      title: card.title,
+      company: card.company,
+    }));
 }
 
 export async function confirmCeleYouExchange(input: {

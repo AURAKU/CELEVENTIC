@@ -7,6 +7,19 @@ export function hashProximitySecret(value: string): string {
   return sha256Hex(value.trim().toUpperCase());
 }
 
+/** 256-bit URL token for the session QR. Do not uppercase. */
+export function newProximityPairingToken(bytes: Uint8Array = randomBytes(32)): {
+  token: string;
+  tokenHash: string;
+} {
+  const token = Buffer.from(bytes).toString("base64url");
+  return { token, tokenHash: hashProximityPairingToken(token) };
+}
+
+export function hashProximityPairingToken(token: string): string {
+  return sha256Hex(token.trim());
+}
+
 export function newProximityJoinCode(bytes: Uint8Array = randomBytes(6)): string {
   let code = "";
   for (let i = 0; i < 6; i += 1) {

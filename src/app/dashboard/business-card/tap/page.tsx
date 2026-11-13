@@ -1,9 +1,9 @@
 import { CeleYouTapConnect } from "@/components/digital-business-card/celeyou-tap-connect";
-import { TAP_TO_CONNECT_NAME, TAP_TO_CONNECT_TAGLINE } from "@/lib/celeyou-proximity/product";
+import { TAP_MODE_HEADING, TAP_TO_CONNECT_NAME } from "@/lib/celeyou-proximity/product";
 
 export const metadata = {
   title: `${TAP_TO_CONNECT_NAME} · Celeventic`,
-  description: TAP_TO_CONNECT_TAGLINE,
+  description: TAP_MODE_HEADING,
 };
 
 export default async function CeleYouTapPage({

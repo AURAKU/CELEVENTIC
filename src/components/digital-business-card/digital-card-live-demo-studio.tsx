@@ -79,7 +79,7 @@ import { applyReachVisibilityPreview, type ReachVisibility } from "@/lib/digital
 import { DigitalCardPortraitField } from "@/components/digital-business-card/digital-card-portrait-field";
 import { DigitalCardCompanyLogoField } from "@/components/digital-business-card/digital-card-company-logo-field";
 import { DigitalCardLiveTermRibbon } from "@/components/digital-business-card/digital-card-subscription-countdown";
-import { celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
+import { celecardAccentOnStage, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import {
   celecardPortraitFrame,
   resolveCeleCardPortraitFrame,
@@ -174,7 +174,7 @@ function stageInk(stageBackground: string) {
   return {
     dark,
     fg: dark ? "#faf6ef" : "#1c1917",
-    muted: dark ? "rgba(250,246,239,0.72)" : "rgba(28,25,23,0.68)",
+    muted: dark ? "rgba(250,246,239,0.90)" : "rgba(28,25,23,0.82)",
     faint: dark ? "rgba(250,246,239,0.12)" : "rgba(28,25,23,0.08)",
   };
 }
@@ -201,7 +201,7 @@ function FolioField({
           {mark ? <span className="inline-flex shrink-0">{mark}</span> : null}
           <span
             className="text-[10px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: theme.accent }}
+            style={{ color: celecardAccentOnStage(theme.accent, stageInk(theme.stageBackground).dark) }}
           >
             {label}
           </span>
@@ -218,8 +218,8 @@ function folioControlStyle(theme: DigitalCardTheme): CSSProperties {
   const voice = celecardTypeVoice(theme);
   return {
     borderColor: theme.border,
-    color: theme.text,
-    background: darkCard ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.92)",
+    background: darkCard ? "rgba(12, 28, 27, 0.88)" : "rgba(255,255,255,0.96)",
+    color: darkCard ? "#faf6ef" : "#1c1917",
     fontFamily: voice.meta,
     colorScheme: darkCard ? "dark" : "light",
   };
@@ -454,7 +454,7 @@ export function DigitalCardLiveDemoStudio({
                   />
                 </div>
               ) : null}
-              <p className="mt-4 text-center text-[11px]" style={{ color: theme.muted }}>
+              <p className="mt-4 text-center text-[11px]" style={{ color: stage.muted }}>
                 Tap the card to open the live page.
               </p>
             </div>
@@ -483,7 +483,7 @@ export function DigitalCardLiveDemoStudio({
                 onClick={resetDesk}
                 className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em]"
                 style={{
-                  color: dirty ? theme.accent : theme.muted,
+                  color: dirty ? celecardAccentOnStage(theme.accent, stage.dark) : stage.muted,
                   border: `1px solid ${theme.border}`,
                 }}
               >
@@ -504,7 +504,7 @@ export function DigitalCardLiveDemoStudio({
                   portraitFrame={desk.portraitFrame}
                   onPortraitFrameChange={(portraitFrame) => patch({ portraitFrame })}
                 />
-                <p className="mt-1.5 text-[11px] leading-relaxed" style={{ color: theme.muted }}>
+                <p className="mt-1.5 text-[11px] leading-relaxed" style={{ color: stage.muted }}>
                   Circle or square sits on this preview. Guests who tap Ama still see her published portrait until you publish.
                 </p>
               </FolioField>
@@ -542,7 +542,7 @@ export function DigitalCardLiveDemoStudio({
                       style={folioControlStyle(theme)}
                       placeholder="Your company, studio, or business"
                     />
-                    <p className="text-[11px] leading-relaxed" style={{ color: theme.muted }}>
+                    <p className="text-[11px] leading-relaxed" style={{ color: stage.muted }}>
                       The business guests should remember. Upload a square mark beside the name.
                     </p>
                   </div>
@@ -553,7 +553,7 @@ export function DigitalCardLiveDemoStudio({
                 theme={theme}
                 wide
                 action={
-                  <span className="text-[11px] tabular-nums" style={{ color: theme.muted }}>
+                  <span className="text-[11px] tabular-nums" style={{ color: stage.muted }}>
                     {desk.bio.length}/{CELECARD_BIO_MAX_CHARS}
                   </span>
                 }
@@ -592,7 +592,7 @@ export function DigitalCardLiveDemoStudio({
                 label="Phone"
                 theme={theme}
                 wide
-                mark={<DigitalCardBrandMark id="phone" className="h-7 w-7 rounded-[9px]" color={theme.accent} />}
+                mark={<DigitalCardBrandMark id="phone" className="h-7 w-7 rounded-[9px]" />}
               >
                 <DigitalCardRepeatFields
                   brand="phone"
@@ -683,7 +683,7 @@ export function DigitalCardLiveDemoStudio({
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: theme.accent }}>
                 Reach
               </p>
-              <p className="mt-1 text-xs leading-relaxed" style={{ color: theme.muted }}>
+              <p className="mt-1 text-xs leading-relaxed" style={{ color: stage.muted }}>
                 Search or flip through a network. Tap one to add it, then fill that field. If the app is not listed, save it as another page guests can open.
               </p>
               {DIGITAL_CARD_SOCIAL_GROUPS.map((group) => (
@@ -697,7 +697,7 @@ export function DigitalCardLiveDemoStudio({
                       payQr={desk.payQr}
                       accent={theme.accent}
                       intro={
-                        <p className="mb-3 text-xs leading-relaxed" style={{ color: theme.muted }}>
+                        <p className="mb-3 text-xs leading-relaxed" style={{ color: stage.muted }}>
                           Official wallet marks. Guests only see the wallets you fill. Number, cashtag, payment link, bank account, or a receive QR.
                         </p>
                       }
@@ -756,11 +756,11 @@ export function DigitalCardLiveDemoStudio({
                     searchStyle={folioControlStyle(theme)}
                     intro={
                       group.id === "chat" ? (
-                        <p className="mb-3 text-xs leading-relaxed" style={{ color: theme.muted }}>
+                        <p className="mb-3 text-xs leading-relaxed" style={{ color: stage.muted }}>
                           Number, username, group, or channel. Tagged so guests can choose.
                         </p>
                       ) : group.id === "social" ? (
-                        <p className="mb-3 text-xs leading-relaxed" style={{ color: theme.muted }}>
+                        <p className="mb-3 text-xs leading-relaxed" style={{ color: stage.muted }}>
                           Profiles, posts, and any page that is not in the list. Other links stay reserved at the bottom.
                         </p>
                       ) : null
@@ -862,7 +862,7 @@ export function DigitalCardLiveDemoStudio({
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: theme.accent }}>
                 House art
               </p>
-              <p className="mt-1 text-xs leading-relaxed" style={{ color: theme.muted }}>
+              <p className="mt-1 text-xs leading-relaxed" style={{ color: stage.muted }}>
                 {theme.name}. {theme.tagline}.
               </p>
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1">

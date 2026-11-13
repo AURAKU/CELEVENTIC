@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { parseCeleCardPlace, type CeleCardPlace } from "@/lib/digital-business-card/maps";
 import type { DigitalCardReachItem } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
+import { launchGuestReach } from "@/components/digital-business-card/digital-card-smart-link";
 
 export function locationPreviewItems(values: string[]): DigitalCardReachItem[] {
   const items: DigitalCardReachItem[] = [];
@@ -120,6 +121,17 @@ function PlacePreview({
             href={place.geoHref || place.href}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(event) => {
+              if (
+                launchGuestReach({
+                  ...item,
+                  href: place.href,
+                  appHref: item.appHref || place.geoHref || undefined,
+                })
+              ) {
+                event.preventDefault();
+              }
+            }}
             className={cn(
               "inline-flex items-center justify-center gap-1.5 rounded-full font-semibold transition hover:opacity-90",
               compact ? "h-9 px-3 text-[11px]" : "h-10 px-3.5 text-[13px]"

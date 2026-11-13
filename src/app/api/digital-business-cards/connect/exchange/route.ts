@@ -9,6 +9,7 @@ import {
   confirmCeleYouExchange,
   previewCeleYouExchange,
 } from "@/services/celeyou-connect/connect.service";
+import { recordTapGuestReceipt } from "@/services/digital-business-card/proximity.service";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ const confirmSchema = z.object({
   slug: z.string().min(1).max(80),
   visitorCardId: z.string().min(8).max(80).optional().nullable(),
   confirm: z.literal(true),
+  tapJoinCode: z.string().max(128).optional().nullable(),
 });
 
 export async function GET(req: NextRequest) {
@@ -66,5 +68,12 @@ export async function POST(req: NextRequest) {
     confirm: true,
   });
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
+  const tapJoinCode = parsed.data.tapJoinCode?.trim();
+  if (tapJoinCode) {
+    await recordTapGuestReceipt({
+      joinCode: tapJoinCode,
+      visitorName: session.user.name || "CeleYou member",
+    }).catch(() => undefined);
+  }
   return NextResponse.json({ success: true, data: result });
 }

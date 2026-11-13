@@ -15,6 +15,7 @@ import {
   type CeleCardHouseAvatarId,
 } from "@/lib/digital-business-card/portraits";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
+import { celecardPaperTone } from "@/lib/digital-business-card/type-voice";
 import {
   CELECARD_PORTRAIT_FRAMES,
   celecardPortraitCropAspect,
@@ -55,6 +56,7 @@ function PortraitFramePicker({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const index = Math.max(0, CELECARD_PORTRAIT_FRAMES.indexOf(frame));
+  const ink = celecardPaperTone(theme);
 
   useEffect(() => {
     if (!open) return;
@@ -90,7 +92,7 @@ function PortraitFramePicker({
 
   return (
     <div ref={rootRef} className="relative w-fit max-w-full">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: theme.muted }}>
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: ink.label }}>
         Frame
       </p>
       <div className="inline-flex flex-nowrap items-center gap-0.5 rounded-xl border border-slate-200 bg-white p-1">
@@ -110,9 +112,9 @@ function PortraitFramePicker({
           aria-label={`Portrait frame, ${FRAME_LABELS[frame]}`}
           onClick={() => setOpen((value) => !value)}
           className="inline-flex h-8 min-w-[9rem] flex-nowrap items-center justify-center gap-2 whitespace-nowrap rounded-lg px-2.5 text-[11px] font-semibold"
-          style={{ color: theme.accent, background: theme.accentSoft }}
+          style={{ color: ink.accent, background: theme.accentSoft }}
         >
-          <FrameGlyph frame={frame} accent={theme.accent} />
+          <FrameGlyph frame={frame} accent={ink.accent} />
           {FRAME_LABELS[frame]}
           <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 transition", open ? "rotate-180" : "")} />
         </button>
@@ -144,11 +146,11 @@ function PortraitFramePicker({
                   className="flex w-full flex-nowrap items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-[12px] font-semibold"
                   style={
                     active
-                      ? { color: theme.accent, background: theme.accentSoft }
-                      : { color: "#475569" }
+                      ? { color: ink.accent, background: theme.accentSoft }
+                      : { color: "#334155" }
                   }
                 >
-                  <FrameGlyph frame={item} accent={active ? theme.accent : "#94a3b8"} />
+                  <FrameGlyph frame={item} accent={active ? ink.accent : "#64748b"} />
                   {FRAME_LABELS[item]}
                 </button>
               </li>
@@ -196,6 +198,7 @@ function AvatarRow({
   const safePage = Math.min(page, pages - 1);
   const slice = items.slice(safePage * AVATAR_PAGE_SIZE, safePage * AVATAR_PAGE_SIZE + AVATAR_PAGE_SIZE);
   const menuId = `studio-portrait-${id}-menu`;
+  const ink = celecardPaperTone(theme);
 
   useEffect(() => {
     if (!open) return;
@@ -235,13 +238,13 @@ function AvatarRow({
         <span className="min-w-0 flex-1">
           <span
             className="block text-[10px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: theme.muted }}
+            style={{ color: ink.label }}
           >
             {label}
           </span>
           <span
             className="block truncate text-[12px] font-semibold"
-            style={{ color: activeInGroup ? theme.accent : theme.text }}
+            style={{ color: activeInGroup ? ink.accent : ink.text }}
           >
             {activeInGroup && selected ? selected.label : emptyLabel}
           </span>
@@ -342,6 +345,7 @@ export function DigitalCardPortraitField({
   const studio = celeCardHouseAvatarsByGroup("studio");
   const [notice, setNotice] = useState<string | null>(null);
   const [openGroup, setOpenGroup] = useState<PortraitAvatarGroupId | null>(null);
+  const ink = celecardPaperTone(theme);
 
   useEffect(() => {
     if (!openGroup) return;
@@ -400,12 +404,12 @@ export function DigitalCardPortraitField({
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-semibold tracking-tight" style={{ color: theme.text }}>
+          <p className="text-[12px] font-semibold tracking-tight" style={{ color: ink.text }}>
             {photo
               ? "Cropped portrait"
               : `${selectedMeta.label} ${selectedMeta.kind === "avatar" ? "avatar" : "mark"}`}
           </p>
-          <p className="mt-0.5 text-[11px] leading-relaxed" style={{ color: theme.muted }}>
+          <p className="mt-0.5 text-[11px] leading-relaxed" style={{ color: ink.muted }}>
             Upload any photo from this device, then crop the face into a circle or square frame. Or pick a house mark, a person, a creature, or a studio mark.
           </p>
           {photo ? (
@@ -413,7 +417,7 @@ export function DigitalCardPortraitField({
               type="button"
               onClick={clearPhoto}
               className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.12em]"
-              style={{ color: theme.accent }}
+              style={{ color: ink.accent }}
             >
               Use CeleYou mark
             </button>

@@ -9,6 +9,7 @@ import {
   normalizeCeleCardLeadStatus,
   type CeleCardLeadStatus,
 } from "@/lib/digital-business-card/leads";
+import { celeYouConnectionSourceLabel } from "@/lib/celeyou-connect/pair";
 import {
   downloadMeetingIcs,
   formatMeetingDay,
@@ -142,7 +143,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
   const lastPage = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <section id="studio-inbox" className="scroll-mt-16 rounded-2xl border border-slate-200 bg-white p-4">
+    <section id="studio-inbox" className="celeyou-adaptive scroll-mt-16 rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-sm font-semibold text-slate-900">Connections</p>
       <p className="text-xs text-slate-500">
         Connect Back, card exchanges, courtesy reconnects, and meeting times. Contact details appear only when the visitor chose to share them.
@@ -261,13 +262,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                   ))}
                 </select>
                 <p className="text-[11px] text-slate-500">
-                  {item.source === "courtesy_reconnect"
-                    ? "Courtesy reconnect"
-                    : item.source === "meeting"
-                      ? "Meeting request"
-                      : item.source === "exchange"
-                        ? "Card exchange"
-                        : "Connect Back"}{" "}
+                  {celeYouConnectionSourceLabel(item.source)}{" "}
                   · {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                 </p>
               </div>

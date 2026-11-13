@@ -145,28 +145,73 @@ export type ShareProfileInput = {
   title: string;
   text: string;
   url: string;
-  /** Live plate PNG. WhatsApp and iMessage show it with the public URL. */
-  imageUrl?: string | null;
+  /** Live plate PNG, then OG tile. Instagram, Snapchat, WhatsApp, and iMessage need the file. */
+  imageUrl?: string | string[] | null;
 };
 
 export type ShareProfileResult = "shared" | "copied" | "cancelled" | "unavailable";
 
-async function livePlateFile(imageUrl: string): Promise<File | null> {
+function looksLikeImage(type: string, buffer: ArrayBuffer) {
+  const mime = type.toLowerCase();
+  if (mime.includes("text/html") || mime.includes("application/json")) return false;
+  if (mime.includes("image/png") || mime.includes("image/jpeg") || mime.includes("image/webp")) return true;
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return true;
+  }
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return true;
+  return mime.includes("image/");
+}
+
+async function fetchLivePlateFile(imageUrl: string): Promise<File | null> {
   try {
     const res = await fetch(imageUrl, { cache: "no-store", credentials: "omit" });
     if (!res.ok) return null;
-    const type = res.headers.get("content-type") || "";
-    if (!type.includes("image")) return null;
     const buffer = await res.arrayBuffer();
     if (buffer.byteLength < 64) return null;
-    return new File([buffer], "celeyou-card.png", { type: "image/png" });
+    if (!looksLikeImage(res.headers.get("content-type") || "", buffer)) return null;
+    return new File([buffer], "celeyou-plate.png", { type: "image/png" });
   } catch {
     return null;
   }
 }
 
+async function livePlateFile(imageUrl?: string | string[] | null): Promise<File | null> {
+  const urls = (Array.isArray(imageUrl) ? imageUrl : [imageUrl])
+    .map((url) => url?.trim())
+    .filter((url): url is string => Boolean(url));
+  for (const url of urls) {
+    const file = await fetchLivePlateFile(url);
+    if (file) return file;
+  }
+  return null;
+}
+
 function shareCaption(text: string, url: string) {
   return text.includes(url) ? text : `${text}\n${url}`;
+}
+
+function isShareAbort(error: unknown) {
+  return (error as { name?: string })?.name === "AbortError";
+}
+
+function canSharePayload(nav: Navigator, payload: ShareData) {
+  if (typeof nav.canShare !== "function") return true;
+  try {
+    return nav.canShare(payload);
+  } catch {
+    return true;
+  }
+}
+
+async function tryNativeShare(nav: Navigator, payload: ShareData): Promise<ShareProfileResult | "failed"> {
+  try {
+    await nav.share(payload);
+    return "shared";
+  } catch (error) {
+    if (isShareAbort(error)) return "cancelled";
+    return "failed";
+  }
 }
 
 export async function shareCeleYouProfile(
@@ -175,24 +220,26 @@ export async function shareCeleYouProfile(
 ): Promise<ShareProfileResult> {
   if (!input.url) return "unavailable";
   const text = shareCaption(input.text, input.url);
-  const file = input.imageUrl ? await livePlateFile(input.imageUrl) : null;
-  try {
-    if (nav && typeof nav.share === "function") {
-      if (file && typeof nav.canShare === "function") {
-        try {
-          if (nav.canShare({ files: [file] })) {
-            await nav.share({ title: input.title, text, url: input.url, files: [file] });
-            return "shared";
-          }
-        } catch (error) {
-          if ((error as { name?: string })?.name === "AbortError") return "cancelled";
-        }
+  const file = await livePlateFile(input.imageUrl);
+  if (nav && typeof nav.share === "function") {
+    if (file) {
+      const withPlate = { title: input.title, text, files: [file] };
+      if (canSharePayload(nav, withPlate)) {
+        const plateOnly = await tryNativeShare(nav, withPlate);
+        if (plateOnly !== "failed") return plateOnly;
       }
+      const withPlateAndUrl = { title: input.title, text, url: input.url, files: [file] };
+      if (canSharePayload(nav, withPlateAndUrl)) {
+        const mixed = await tryNativeShare(nav, withPlateAndUrl);
+        if (mixed !== "failed") return mixed;
+      }
+    }
+    try {
       await nav.share({ title: input.title, text, url: input.url });
       return "shared";
+    } catch (error) {
+      if (isShareAbort(error)) return "cancelled";
     }
-  } catch (error) {
-    if ((error as { name?: string })?.name === "AbortError") return "cancelled";
   }
   try {
     if (nav?.clipboard && typeof nav.clipboard.writeText === "function") {

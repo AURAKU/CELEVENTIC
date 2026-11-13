@@ -137,7 +137,11 @@ describe("CeleYou reach privacy", () => {
       join(process.cwd(), "src/components/digital-business-card/digital-card-privacy-desk.tsx"),
       "utf8"
     );
-    assert.match(desk, /Select the details this code unveils/);
+    assert.match(desk, /Every filled field is here/);
+    assert.match(desk, /celecard-privacy-tile/);
+    assert.match(desk, /celecard-privacy-eye/);
+    assert.match(desk, /Hide \$\{name\}/);
+    assert.match(desk, /Show \$\{name\}/);
     assert.match(desk, /reach-visibility/);
     assert.doesNotMatch(desk, /Hide at least one detail above/);
     const unlock = readFileSync(
@@ -151,5 +155,19 @@ describe("CeleYou reach privacy", () => {
     );
     assert.match(access, /persistReachVisibilityForCard/);
     assert.match(access, /alreadyGranted/);
+    assert.match(access, /codeHint/);
+    assert.match(access, /ownerCodeFromHint/);
+    assert.match(desk, /celecard-code-value/);
+    assert.match(desk, /celecard-code-drop/);
+    assert.match(desk, /aria-expanded/);
+    assert.match(desk, /Show \$\{row\.label\} code/);
+    assert.match(desk, /Hide \$\{row\.label\} code/);
+    assert.doesNotMatch(desk, /itemKeys\.map\(itemTitle\)\.join/);
+    assert.doesNotMatch(desk, /flex items-center justify-between gap-3 text-xs text-slate-600/);
+    const publicUnlock = readFileSync(
+      join(process.cwd(), "src/app/api/digital-business-cards/public/[slug]/unlock/route.ts"),
+      "utf8"
+    );
+    assert.doesNotMatch(publicUnlock, /codeHint/);
   });
 });

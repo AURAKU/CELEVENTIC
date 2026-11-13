@@ -97,6 +97,8 @@
     "test:recovery:populated": "tsx scripts/phase13-populated-restore-drill.ts",
     "test:e2e:lifecycle": "playwright test e2e/phase1-lifecycle.spec.ts",
     "test:e2e:isolated": "playwright test --config=playwright.isolated.config.ts",
+    "test:e2e:tap": "playwright test --config=playwright.tap.config.ts",
+    "test:e2e:tap:http": "tsx scripts/e2e-tap-mode-http.ts",
     "test:financial": "npm run test:gifts && tsx --test src/services/tickets/__tests__/*.test.ts src/lib/payments/__tests__/*.test.ts src/lib/tickets/__tests__/*.test.ts",
     "test:all": "npm run test:auth && npm run test:celeyou && npm run test:video && npm run test:media-audit && npm run test:transformstream-race && npm run test:uploads-stream-safe && npm run test:video-pipeline && npm run test:uploads && npm run test:experience-engine && npm run test:opening-preview && npm run test:live-editability && npm run test:currency && npm run test:social && npm run test:build-fingerprint && npm run test:app-url && npm run test:invitation-sharing && npm run test:gifts && npm run test:admission && npm run test:admission-passes && npm run test:vendor-pass-types && npm run test:guest-import && npm run test:guest-import-e2e && npm run test:guest-search && npm run test:guest-search-e2e && npm run test:event-guide && npm run test:celeventic-guide && npm run test:integrity",
     "db:studio": "prisma studio",

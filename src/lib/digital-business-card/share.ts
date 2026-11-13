@@ -52,6 +52,11 @@ export function digitalCardExportImagePath(slug: string, version?: string | numb
   return `${base}?download=1&v=${encodeURIComponent(String(version))}`;
 }
 
+/** Live plate PNG first (WhatsApp, iMessage, Instagram), then the 1200×630 OG tile. */
+export function celeCardShareImageUrls(slug: string, version?: string | number | null): string[] {
+  return [digitalCardExportImagePath(slug, version), digitalCardOgImagePath(slug, version)];
+}
+
 /** Encoded into the QR bitmap. Survives slug edits. Always a camera-safe guest URL. */
 export function celeCardStableQrUrl(publicToken: string, origin?: string): string {
   return celeYouCameraScanUrl(publicToken, origin);
@@ -83,22 +88,40 @@ export function celeCardShareTitle(card: Pick<CeleCardShareFields, "displayName"
   return name ? `${name} on ${SMARTCARD_PRODUCT_SHORT_NAME}` : SMARTCARD_PRODUCT_SHORT_NAME;
 }
 
-/** Link preview subtitle on WhatsApp, iMessage, X, LinkedIn. Matches the share caption. */
-export function celeCardShareDescription(
-  _card?: Pick<CeleCardShareFields, "title" | "company" | "bio" | "displayName" | "email" | "phone">
+export function celeCardShareRoleLine(
+  card: Pick<CeleCardShareFields, "title" | "company">
 ): string {
-  return SMARTCARD_BRAND_TAGLINE;
+  const title = card.title?.trim() || "";
+  const company = card.company?.trim() || "";
+  if (title && company) return `${title} at ${company}`;
+  return title || company;
 }
 
-/** Native share body. Name, CeleYou, official line. Optional live URL on its own line. */
-export function celeCardShareMessage(
-  card: Pick<CeleCardShareFields, "displayName">,
-  url?: string | null
+/** Plate caption. Name, role, live CeleYou. Never email, phone, or gender titles. */
+export function celeCardShareCommentary(
+  card: Pick<CeleCardShareFields, "displayName" | "title" | "company">
 ): string {
   const name = card.displayName.trim();
-  const line = name
-    ? `${name} on ${SMARTCARD_PRODUCT_SHORT_NAME}. ${SMARTCARD_BRAND_TAGLINE}`
-    : `My ${SMARTCARD_PRODUCT_SHORT_NAME}. ${SMARTCARD_BRAND_TAGLINE}`;
+  const role = celeCardShareRoleLine(card);
+  if (name && role) return `Meet ${name}, ${role}. Their live CeleYou plate.`;
+  if (name) return `Meet ${name}. Their live CeleYou plate.`;
+  return `A live CeleYou plate. ${SMARTCARD_BRAND_TAGLINE}`;
+}
+
+/** Link preview subtitle on WhatsApp, iMessage, X, LinkedIn. Matches the share caption. */
+export function celeCardShareDescription(
+  card?: Pick<CeleCardShareFields, "title" | "company" | "bio" | "displayName" | "email" | "phone">
+): string {
+  if (!card) return SMARTCARD_BRAND_TAGLINE;
+  return celeCardShareCommentary(card);
+}
+
+/** Native share body. Plate commentary, then the live URL on its own line. */
+export function celeCardShareMessage(
+  card: Pick<CeleCardShareFields, "displayName" | "title" | "company">,
+  url?: string | null
+): string {
+  const line = celeCardShareCommentary(card);
   const live = url?.trim();
   if (!live || line.includes(live)) return line;
   return `${line}\n${live}`;
@@ -173,6 +196,7 @@ export function buildCeleCardShareMetadata(input: {
       images: [
         {
           url: image,
+          secureUrl: image,
           width: CELECARD_OG_WIDTH,
           height: CELECARD_OG_HEIGHT,
           alt: `${input.card.displayName} ${SMARTCARD_PRODUCT_SHORT_NAME}`,

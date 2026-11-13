@@ -5,7 +5,6 @@ import {
   TAP_DECLINE_COOLDOWN_LIMIT,
   TAP_DECLINE_COOLDOWN_MS,
   TAP_SESSION_PURGE_AFTER_MS,
-  TAP_SESSION_TTL_MS,
   TAP_SHARE_TOKEN_TTL_MS,
   TAP_STUDIO_PATH,
 } from "@/lib/celeyou-proximity/product";
@@ -15,19 +14,31 @@ import {
   type ProximityStatus,
 } from "@/lib/celeyou-proximity/state-machine";
 import {
+  hashProximityPairingToken,
   hashProximitySecret,
   hashProximityShareToken,
   inspectProximityShareToken,
   newProximityDiscoveryId,
   newProximityJoinCode,
+  newProximityPairingToken,
   newProximityShareToken,
   newProximityVerifyCode,
-  normalizeJoinCode,
 } from "@/lib/celeyou-proximity/tokens";
+import { isTapPairingToken, normalizeTapSecret } from "@/lib/celeyou-proximity/join-code";
 import type { ProximityTransport } from "@/lib/celeyou-proximity/protocol";
 import { digitalCardPublicUrl } from "@/lib/digital-business-card/types";
 import { digitalCardVcardPath } from "@/lib/digital-business-card/vcard";
-import { celeYouShareGuestMessage, resolveCeleYouPublicShare } from "@/lib/digital-business-card/access";
+import {
+  celeYouShareGuestMessage,
+  guestMayUsePublicAction,
+  isCeleCardPubliclyReachable,
+  resolveCeleYouPublicShare,
+} from "@/lib/digital-business-card/access";
+import { buildGuestReach } from "@/lib/digital-business-card/privacy";
+import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
+import { toPublicPayload } from "@/services/digital-business-card/digital-business-card.service";
+import { getCeleYouConnectFlags, tapSessionTtlMs } from "@/lib/celeyou-connect/flags";
+import { tapGuestFirstName } from "@/lib/celeyou-connect/pair";
 
 export type ProximityPeerPreview = {
   displayName: string;
@@ -49,6 +60,7 @@ export type ProximitySessionView = {
   status: ProximityStatus;
   hostCardId: string;
   joinCode: string | null;
+  pairingToken: string | null;
   verifyCode: string | null;
   discoveryId: string;
   transport: string;
@@ -57,6 +69,7 @@ export type ProximitySessionView = {
   self: ProximityPeerPreview;
   share: ProximitySharePayload | null;
   phoneToPhoneClaim: string;
+  guestReceipt: { name: string; at: string } | null;
 };
 
 function previewFromCard(card: {
@@ -78,6 +91,20 @@ type PendingShare = { token: string; fromCardId: string; expiresAt: string };
 function capabilityRecord(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return { ...(value as Record<string, unknown>) };
+}
+
+function guestReceiptsFromCapability(value: Prisma.JsonValue | null | undefined): Array<{ name: string; at: string }> {
+  const rows = capabilityRecord(value).guestReceipts;
+  if (!Array.isArray(rows)) return [];
+  const next: Array<{ name: string; at: string }> = [];
+  for (const row of rows) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+    const name = String((row as { name?: unknown }).name ?? "").trim().slice(0, 40);
+    const at = String((row as { at?: unknown }).at ?? "").trim();
+    if (!name || !at) continue;
+    next.push({ name, at });
+  }
+  return next.slice(-8);
 }
 
 function pendingSharesFromCapability(value: Prisma.JsonValue | null | undefined): Record<string, PendingShare> {
@@ -159,6 +186,7 @@ async function expireIfNeeded<T extends { id: string; status: string; expiresAt:
     where: { id: session.id },
     data: { status: "EXPIRED" },
   });
+  await securityEvent({ sessionId: session.id, kind: "SESSION_EXPIRED" });
   return { ...session, status: "EXPIRED" };
 }
 
@@ -192,6 +220,7 @@ async function toView(
     peerUserId: string | null;
     peerCardId: string | null;
     joinCode: string;
+    pairingToken?: string | null;
     verifyCode: string | null;
     discoveryId: string;
     status: string;
@@ -251,6 +280,7 @@ async function toView(
     status,
     hostCardId: session.hostCardId,
     joinCode: role === "host" || status !== "DISCOVERING" ? session.joinCode : null,
+    pairingToken: role === "host" ? session.pairingToken ?? null : null,
     verifyCode: session.verifyCode,
     discoveryId: session.discoveryId,
     transport: session.transport,
@@ -259,6 +289,7 @@ async function toView(
     self,
     share: verifiedShare,
     phoneToPhoneClaim: "Scan the session QR or enter the code to connect.",
+    guestReceipt: guestReceiptsFromCapability(session.capabilityJson ?? null).at(-1) ?? null,
   };
 }
 
@@ -302,6 +333,8 @@ export async function createProximitySession(input: {
   transport?: ProximityTransport;
   ip?: string | null;
 }) {
+  const flags = await getCeleYouConnectFlags();
+  if (!flags.tap_mode_enabled) throw new Error("Tap Mode is paused.");
   const card = await loadCardForUser(input.userId, input.cardId);
   if (!card) throw new Error("CeleYou not found");
   assertShareable(card);
@@ -316,16 +349,19 @@ export async function createProximitySession(input: {
   });
 
   const joinCode = newProximityJoinCode();
+  const pairing = newProximityPairingToken();
   const session = await prisma.celeYouProximitySession.create({
     data: {
       hostUserId: input.userId,
       hostCardId: card.id,
       joinCode,
       joinCodeHash: hashProximitySecret(joinCode),
+      pairingToken: pairing.token,
+      pairingTokenHash: pairing.tokenHash,
       discoveryId: newProximityDiscoveryId(),
       status: "DISCOVERING",
       transport: input.transport || "qr",
-      expiresAt: new Date(Date.now() + TAP_SESSION_TTL_MS),
+      expiresAt: new Date(Date.now() + tapSessionTtlMs(flags)),
       capabilityJson: { bleAdvertise: false, nativeBlePeer: false },
     },
     include: {
@@ -353,7 +389,7 @@ export async function joinProximitySession(input: {
   transport?: ProximityTransport;
   ip?: string | null;
 }) {
-  const code = normalizeJoinCode(input.joinCode);
+  const code = normalizeTapSecret(input.joinCode);
   if (code.length < 6) throw new Error("Enter the six-character code from the other phone.");
   const card = await loadCardForUser(input.userId, input.cardId);
   if (!card) throw new Error("CeleYou not found");
@@ -361,9 +397,7 @@ export async function joinProximitySession(input: {
     throw new Error("Tap-to-Connect is turned off on this CeleYou.");
   }
 
-  const found = await prisma.celeYouProximitySession.findUnique({
-    where: { joinCodeHash: hashProximitySecret(code) },
-  });
+  const found = await findTapSessionBySecret(code);
   if (!found) {
     await securityEvent({ userId: input.userId, kind: "JOIN_UNKNOWN", ip: input.ip, meta: { codeLength: code.length } });
     throw new Error("No open Tap session uses that code.");
@@ -702,4 +736,106 @@ export async function listProximityHistory(userId: string, take = 20) {
       },
     },
   });
+}
+
+const OPEN_TAP_STATUSES = new Set(["DISCOVERING", "PEER_FOUND", "REQUEST_PENDING"]);
+
+export { tapGuestFirstName };
+
+async function findTapSessionBySecret(raw: string) {
+  const secret = normalizeTapSecret(raw);
+  if (!secret) return null;
+  if (isTapPairingToken(secret)) {
+    return prisma.celeYouProximitySession.findUnique({
+      where: { pairingTokenHash: hashProximityPairingToken(secret) },
+    });
+  }
+  if (secret.length < 6) return null;
+  return prisma.celeYouProximitySession.findUnique({
+    where: { joinCodeHash: hashProximitySecret(secret) },
+  });
+}
+
+export async function getTapGuestLanding(joinCode: string, options?: { recordOpen?: boolean }) {
+  const code = normalizeTapSecret(joinCode);
+  if (code.length < 6) {
+    return { status: 404 as const, error: "That connection QR is not open." };
+  }
+  await purgeExpiredProximityRecords();
+  const found = await findTapSessionBySecret(code);
+  if (!found) {
+    return { status: 404 as const, error: "That connection QR is not open." };
+  }
+  const session = await expireIfNeeded(found);
+  if (session.status === "EXPIRED") {
+    return { status: 410 as const, error: "That connection QR has expired." };
+  }
+  if (!OPEN_TAP_STATUSES.has(session.status)) {
+    return { status: 410 as const, error: "That connection QR is no longer open." };
+  }
+  const flags = await getCeleYouConnectFlags();
+  if (!flags.tap_mode_enabled) {
+    return { status: 410 as const, error: "That connection QR is no longer open." };
+  }
+  const card = await prisma.digitalBusinessCard.findFirst({
+    where: { id: session.hostCardId, deletedAt: null },
+  });
+  const policy = await getCeleCardLifecyclePolicy();
+  if (!card || !isCeleCardPubliclyReachable(card, policy)) {
+    return { status: 404 as const, error: "Card unavailable" };
+  }
+  const payload = toPublicPayload(card, policy);
+  const guest = buildGuestReach(card);
+  payload.guestReach = guest.guestReach;
+  payload.socials = guest.socials;
+  payload.email = guest.email;
+  payload.phone = guest.phone;
+  payload.website = guest.website;
+  if (options?.recordOpen) {
+    await securityEvent({
+      sessionId: session.id,
+      kind: "GUEST_PAGE_OPENED",
+      meta: { status: session.status },
+    });
+  }
+  return {
+    status: 200 as const,
+    data: {
+      expiresAt: session.expiresAt.toISOString(),
+      sessionStatus: session.status,
+      connectBackEnabled:
+        guestMayUsePublicAction(card, "connect", policy) && flags.tap_guest_exchange,
+      host: payload,
+    },
+  };
+}
+
+export async function recordTapGuestReceipt(input: { joinCode: string; visitorName: string }) {
+  const found = await findTapSessionBySecret(input.joinCode);
+  if (!found || !OPEN_TAP_STATUSES.has(found.status)) return null;
+  if (found.expiresAt.getTime() <= Date.now()) return null;
+  const receipts = [
+    ...guestReceiptsFromCapability(found.capabilityJson),
+    { name: tapGuestFirstName(input.visitorName), at: new Date().toISOString() },
+  ].slice(-8);
+  const cap = capabilityRecord(found.capabilityJson);
+  await prisma.celeYouProximitySession.update({
+    where: { id: found.id },
+    data: { capabilityJson: { ...cap, guestReceipts: receipts } as Prisma.InputJsonValue },
+  });
+  await securityEvent({
+    sessionId: found.id,
+    kind: "GUEST_CONNECT",
+    meta: { name: tapGuestFirstName(input.visitorName) },
+  });
+  return found.id;
+}
+
+export async function assertTapGuestSessionForCard(joinCode: string, cardId: string) {
+  const landing = await getTapGuestLanding(joinCode);
+  if (landing.status !== 200) return landing;
+  if (landing.data.host.id !== cardId) {
+    return { status: 400 as const, error: "That connection QR is not for this CeleYou." };
+  }
+  return landing;
 }

@@ -12,15 +12,20 @@ type Preview = {
   you: CeleYouShareSnapshot;
   them: CeleYouShareSnapshot;
   visitorCardId: string;
+  cards?: Array<{ id: string; displayName: string; title: string | null; company: string | null }>;
 };
 
 export function DigitalCardConnectExchange({
   slug,
   isDemo,
+  tapJoinCode,
+  onExchanged,
   dock,
 }: {
   slug: string;
   isDemo?: boolean;
+  tapJoinCode?: string;
+  onExchanged?: () => void;
   dock: {
     ghostBg: string;
     ghostFg: string;
@@ -39,11 +44,14 @@ export function DigitalCardConnectExchange({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [cardId, setCardId] = useState("");
 
   useEffect(() => {
     if (isDemo || status !== "authenticated") return;
     const ac = new AbortController();
-    void fetch(`/api/digital-business-cards/connect/exchange?slug=${encodeURIComponent(slug)}`, {
+    const params = new URLSearchParams({ slug });
+    if (cardId) params.set("visitorCardId", cardId);
+    void fetch(`/api/digital-business-cards/connect/exchange?${params}`, {
       signal: ac.signal,
     })
       .then(async (res) => {
@@ -51,11 +59,12 @@ export function DigitalCardConnectExchange({
         if (res.ok && json.data?.canExchange) {
           setPreview(json.data as Preview);
           if (json.data.alreadyConnected) setDone(true);
+          if (!cardId && json.data.visitorCardId) setCardId(json.data.visitorCardId);
         }
       })
       .catch(() => undefined);
     return () => ac.abort();
-  }, [isDemo, slug, status]);
+  }, [isDemo, slug, status, cardId]);
 
   if (isDemo || status !== "authenticated" || !preview) return null;
 
@@ -69,8 +78,9 @@ export function DigitalCardConnectExchange({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slug,
-          visitorCardId: preview.visitorCardId,
+          visitorCardId: cardId || preview.visitorCardId,
           confirm: true,
+          tapJoinCode: tapJoinCode || undefined,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -80,6 +90,7 @@ export function DigitalCardConnectExchange({
       }
       setDone(true);
       setOpen(false);
+      onExchanged?.();
     } catch {
       setError("Network error. Try again.");
     } finally {
@@ -93,7 +104,7 @@ export function DigitalCardConnectExchange({
         type="button"
         data-kind="ghost"
         aria-label={done ? "Cards already exchanged" : "Exchange Cards"}
-        className="celecard-action"
+        className={tapJoinCode ? "inline-flex h-11 w-full items-center justify-center rounded-full border text-sm" : "celecard-action"}
         style={{
           backgroundColor: dock.ghostBg,
           color: dock.ghostFg,
@@ -126,13 +137,32 @@ export function DigitalCardConnectExchange({
           aria-labelledby="celeyou-exchange-title"
         >
           <button type="button" className="absolute inset-0" aria-label="Cancel exchange" onClick={() => setOpen(false)} />
-          <div className="relative z-10 mb-[max(4.5rem,env(safe-area-inset-bottom))] w-full max-w-md space-y-3 rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-2xl sm:mb-0">
+          <div className="celecard-connect-panel relative z-10 mb-[max(4.5rem,env(safe-area-inset-bottom))] w-full space-y-3 rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-2xl sm:mb-0">
             <p id="celeyou-exchange-title" className="text-base font-semibold text-slate-900">
               Connect with {preview.host.displayName}?
             </p>
             <p className="text-xs leading-relaxed text-slate-600">
               Share your selected CeleYou contact details with {preview.host.displayName} and receive the publicly shareable card details.
             </p>
+            {preview.cards && preview.cards.length > 1 ? (
+              <label className="block text-xs font-medium text-slate-700">
+                Share this CeleYou
+                <select
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm"
+                  value={cardId || preview.visitorCardId}
+                  onChange={(event) => {
+                    setCardId(event.target.value);
+                    setDone(false);
+                  }}
+                >
+                  {preview.cards.map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.displayName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-700">
               <p className="font-semibold text-slate-900">{preview.you.displayName}</p>
               <p>{[preview.you.title, preview.you.company].filter(Boolean).join(" · ") || "Your CeleYou"}</p>

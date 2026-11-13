@@ -12,9 +12,11 @@ import {
 } from "@/lib/celeyou-proximity/protocol";
 import { parseTapJoinScan } from "@/lib/celeyou-proximity/join-code";
 import {
+  hashProximityPairingToken,
   hashProximitySecret,
   inspectProximityShareToken,
   newProximityJoinCode,
+  newProximityPairingToken,
   newProximityShareToken,
 } from "@/lib/celeyou-proximity/tokens";
 
@@ -81,5 +83,19 @@ describe("CeleYou Tap-to-Connect protocol", () => {
     assert.equal(parseTapJoinScan(`https://www.celeventic.com/tap/${code}`), code);
     assert.equal(parseTapJoinScan(code.toLowerCase()), code);
     assert.equal(hashProximitySecret(code), hashProximitySecret(code.toLowerCase()));
+  });
+
+  it("puts a high-entropy pairing token in the QR URL and keeps the short code for typing", () => {
+    const pairing = newProximityPairingToken();
+    assert.ok(pairing.token.length >= 32);
+    assert.equal(pairing.tokenHash, hashProximityPairingToken(pairing.token));
+    assert.notEqual(pairing.token, pairing.tokenHash);
+    assert.notEqual(newProximityPairingToken().token, pairing.token);
+    assert.equal(
+      parseTapJoinScan(`https://www.celeventic.com/tap/${pairing.token}`),
+      pairing.token
+    );
+    assert.equal(pairing.token.includes("@"), false);
+    assert.equal(/email|phone|userId/i.test(pairing.token), false);
   });
 });

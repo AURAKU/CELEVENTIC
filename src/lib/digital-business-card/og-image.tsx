@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getDemoCardBySlug } from "@/lib/digital-business-card/demo-card";
 import { CeleCardOgMarkup } from "@/lib/digital-business-card/og-markup";
-import { celeCardGuideQrDataUrl, localCeleCardPhotoDataUrl, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
+import { celeCardGuideQrDataUrl, celeCardPlateBitmapAssets, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
 import {
   CELECARD_OG_HEIGHT,
   CELECARD_OG_WIDTH,
@@ -16,7 +16,6 @@ import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-b
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { normalizeSocials } from "@/lib/digital-business-card/types";
 import type { CeleCardPortraitFrame } from "@/lib/digital-business-card/portrait-frame";
-import type { DigitalCardSocials } from "@/lib/digital-business-card/socials";
 
 function renderOg(props: {
   displayName: string;
@@ -55,18 +54,6 @@ function renderOg(props: {
   return png;
 }
 
-async function plateAssets(socials: DigitalCardSocials, theme: ReturnType<typeof resolveDigitalCardTheme>) {
-  const paperPath = socials.design?.paperUrl || theme.textureUrl || "";
-  const [markSrc, paperSrc, companyLogoSrc] = await Promise.all([
-    celeYouMark(),
-    paperPath.startsWith("/") ? localCeleCardPhotoDataUrl(paperPath) : Promise.resolve(null),
-    socials.companyLogoUrl?.startsWith("/")
-      ? localCeleCardPhotoDataUrl(socials.companyLogoUrl)
-      : Promise.resolve(null),
-  ]);
-  return { markSrc, paperSrc, companyLogoSrc };
-}
-
 async function previewAssets(publicToken: string) {
   const origin = celeYouGuestOrigin(getAppUrlFromEnv());
   const destination = celeCardStableQrUrl(publicToken, origin);
@@ -75,10 +62,6 @@ async function previewAssets(publicToken: string) {
     qrSrc,
     qrLabel: celeCardReadableQrLabel(destination),
   };
-}
-
-function celeYouMark() {
-  return localCeleCardPhotoDataUrl("/digital-cards/brands/celeyou-mark.png");
 }
 
 /**
@@ -94,7 +77,7 @@ export async function renderCeleCardOgBySlug(slug: string): Promise<Response> {
     const [photoSrc, qr, plate] = await Promise.all([
       safeCeleCardPhotoSrc(demo.avatarUrl),
       live ? previewAssets(demo.publicToken) : Promise.resolve({ qrSrc: null as string | null, qrLabel: null as string | null }),
-      plateAssets(socials, theme),
+      celeCardPlateBitmapAssets(socials, theme),
     ]);
     return renderOg({
       displayName: demo.displayName,
@@ -125,7 +108,7 @@ export async function renderCeleCardOgBySlug(slug: string): Promise<Response> {
   const [photoSrc, qr, plate] = await Promise.all([
     safeCeleCardPhotoSrc(card.avatarUrl),
     courtesy ? Promise.resolve({ qrSrc: null as string | null, qrLabel: null as string | null }) : previewAssets(card.publicToken),
-    plateAssets(socials, theme),
+    celeCardPlateBitmapAssets(socials, theme),
   ]);
   return renderOg({
     displayName: card.displayName,

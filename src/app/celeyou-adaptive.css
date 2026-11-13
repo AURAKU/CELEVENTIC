@@ -1,0 +1,529 @@
+/*
+ * CeleYou Adaptive UI System
+ * Content-driven layout. Brand colors, typefaces, and plate ratios stay.
+ * Essential actions wrap onto extra rows. They are never hidden.
+ */
+
+:root {
+  --celeyou-touch: 2.75rem;
+  --celeyou-title: clamp(1.35rem, 1.05rem + 1.8vw, 2.35rem);
+  --celeyou-kicker: clamp(0.62rem, 0.55rem + 0.25vw, 0.72rem);
+  --celeyou-lead: clamp(0.9375rem, 0.88rem + 0.35vw, 1.125rem);
+  --celeyou-stage-pad: max(1rem, env(safe-area-inset-left, 0px));
+  --celeyou-stage-pad-end: max(1rem, env(safe-area-inset-right, 0px));
+  --celeyou-stage-pad-top: max(1.15rem, env(safe-area-inset-top, 0px));
+  --celeyou-stage-pad-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.celeyou-adaptive,
+.celecard-stage,
+.celecard-studio,
+.celecard-tap-shell {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.celeyou-page-title,
+.celecard-tap-heading h1 {
+  font-size: var(--celeyou-title);
+  line-height: 1.15;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-wrap: pretty;
+}
+
+.celecard-tap-heading {
+  min-width: 0;
+  max-width: 100%;
+  padding-inline: 0.15rem;
+}
+
+.celecard-tap-heading p,
+.celecard-tap-lead {
+  font-size: var(--celeyou-lead);
+  line-height: 1.45;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+@media (max-width: 430px) {
+  .celeyou-page-title,
+  .celecard-tap-heading h1 {
+    font-size: clamp(1.25rem, 1.05rem + 2.4vw, 1.7rem);
+  }
+}
+
+.celecard-tap-guest-bar,
+.celecard-tap-chrome:first-of-type {
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.celecard-tap-guest-bar p {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  letter-spacing: 0.12em;
+}
+
+.celecard-identity-copy,
+.celecard-tap-identity {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: normal;
+  text-wrap: pretty;
+}
+
+.celecard-identity-copy,
+.celecard-tap-identity p,
+.celecard-tap-identity h1,
+.celecard-tap-identity h2 {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+/* Host and guest Tap shells must scroll, never clip primary actions. */
+.celecard-stage:has(.celecard-tap-shell),
+.celecard-stage:has(.celecard-tap-guest) {
+  padding-inline: var(--celeyou-stage-pad) var(--celeyou-stage-pad-end);
+  padding-top: var(--celeyou-stage-pad-top);
+  padding-bottom: var(--celeyou-stage-pad-bottom);
+  min-height: var(--app-viewport-min-height);
+  overflow-x: clip;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.celecard-tap-shell,
+.celecard-tap-guest {
+  position: relative;
+  width: min(100%, 32rem);
+  max-width: 100%;
+  min-height: 0;
+  margin-inline: auto;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+@media (min-width: 1024px) {
+  .celecard-tap-shell,
+  .celecard-tap-guest {
+    width: min(100%, 36rem);
+  }
+}
+
+@media (min-width: 1440px) {
+  .celecard-tap-shell,
+  .celecard-tap-guest {
+    width: min(100%, 38rem);
+  }
+}
+
+.celecard-tap-qr {
+  width: min(15.5rem, calc(100vw - 3.75rem));
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+}
+
+.celecard-tap-qr img,
+.celecard-tap-qr canvas,
+.celecard-tap-qr svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.celecard-tap-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+}
+
+@media (min-width: 380px) {
+  .celecard-tap-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.celecard-tap-actions > * {
+  min-height: var(--celeyou-touch);
+  min-width: 0;
+  width: 100%;
+}
+
+.celecard-tap-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.celecard-tap-pair > * {
+  flex: 1 1 9.5rem;
+  min-height: var(--celeyou-touch);
+  min-width: 0;
+}
+
+.celecard-universal-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+}
+
+.celecard-universal-actions > * {
+  min-height: var(--celeyou-touch);
+  min-width: 0;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .celecard-universal-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .celecard-universal-actions > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Landscape phones: identity + QR beside actions. Never clip. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .celecard-tap-shell,
+  .celecard-tap-guest {
+    display: grid;
+    width: min(100%, 72rem);
+    grid-template-columns: minmax(12rem, 0.92fr) minmax(0, 1.08fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: 1.1rem;
+    row-gap: 0.45rem;
+    align-items: start;
+  }
+
+  .celecard-tap-shell > .celecard-atmo,
+  .celecard-tap-guest > .celecard-atmo {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+  }
+
+  .celecard-tap-chrome:first-of-type,
+  .celecard-tap-guest-bar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .celecard-tap-heading {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: 0.35rem !important;
+  }
+
+  .celecard-tap-shell .celecard-hold-frame,
+  .celecard-tap-guest .celecard-tap-identity {
+    grid-column: 1;
+    grid-row: 3;
+    width: min(100%, 18.5rem);
+    margin-top: 0.35rem !important;
+    align-self: center;
+  }
+
+  .celecard-tap-shell .celecard-tap-qr {
+    width: min(14rem, 52dvh, 100%);
+  }
+
+  .celecard-tap-body {
+    display: flex;
+    flex-direction: column;
+    grid-column: 2;
+    grid-row: 3;
+    margin-top: 0 !important;
+    max-height: calc(100dvh - 5.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 0.5rem;
+  }
+
+  .celecard-tap-session {
+    order: -1;
+    margin-top: 0 !important;
+  }
+
+  .celecard-tap-heading h1 {
+    font-size: clamp(1.05rem, 2.4vh, 1.35rem);
+  }
+
+  .celecard-tap-heading .celecard-tap-lead {
+    display: none;
+  }
+}
+
+.celecard-tap-form input,
+.celecard-tap-form textarea,
+.celecard-tap-form select,
+.celecard-connect-panel input,
+.celecard-connect-panel textarea,
+.celecard-connect-panel select {
+  min-height: var(--celeyou-touch);
+  scroll-margin-bottom: 7rem;
+}
+
+.celecard-tap-form,
+.celecard-connect-panel {
+  max-height: min(86dvh, 42rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+.celecard-connect-layer {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.celecard-connect-panel {
+  max-width: min(28rem, 100%);
+}
+
+.celecard-sheet {
+  max-height: min(88dvh, 40rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+body:has(.celecard-connect-layer),
+body:has(.celecard-tap-scanner) {
+  overflow: hidden;
+}
+
+.celecard-tap-scanner {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.celecard-stage :focus-visible,
+.celecard-tap-scanner :focus-visible {
+  outline: 2px solid #7ff0e4;
+  outline-offset: 2px;
+}
+
+.celecard-studio :focus-visible,
+.celecard-connect-panel :focus-visible {
+  outline: 2px solid #0b8a83;
+  outline-offset: 2px;
+}
+
+.celecard-studio,
+.celecard-studio-desk,
+.celecard-studio-work,
+#studio-inbox {
+  min-width: 0;
+}
+
+@media (max-width: 430px) {
+  .celecard-studio-live-title {
+    white-space: normal;
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
+  }
+
+  .celecard-studio-live-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+.celecard-studio-jump a,
+.celecard-studio-toolbar > *,
+#studio-inbox button {
+  min-height: 2.5rem;
+}
+
+@media (pointer: coarse) {
+  .celecard-tap-actions > *,
+  .celecard-tap-pair > *,
+  .celecard-universal-actions > *,
+  .celecard-studio-jump a {
+    min-height: var(--celeyou-touch);
+  }
+}
+
+.celeyou-table-scroll,
+#studio-inbox,
+.celecard-admin-desk {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+}
+
+.celecard-guest-column {
+  width: min(100%, 36rem);
+}
+
+@media (min-width: 768px) {
+  .celecard-guest-column {
+    width: min(100%, 40rem);
+  }
+}
+
+@media (min-width: 1280px) {
+  .celecard-guest-column {
+    width: min(100%, 42rem);
+  }
+}
+
+.celecard-hold-frame {
+  width: min(100%, 22.75rem);
+}
+
+.celecard-tap-shell .celecard-hold-frame {
+  width: min(100%, 16.5rem);
+}
+
+@media (max-height: 740px) {
+  .celecard-tap-shell .celecard-hold-frame {
+    width: min(100%, 13.75rem);
+    margin-top: 0.75rem !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .celecard-hold-frame {
+    width: min(100%, 24rem);
+  }
+}
+
+@media (min-width: 1440px) {
+  .celecard-hold-frame {
+    width: min(100%, 24.5rem);
+  }
+}
+
+.celecard-wallet-shell {
+  width: min(100%, 28rem);
+  margin-inline: auto;
+}
+
+@media (min-width: 768px) {
+  .celecard-wallet-shell {
+    width: min(100%, 32rem);
+  }
+}
+
+@media (max-width: 374px) {
+  html {
+    font-size: 16.5px;
+  }
+
+  .celecard-tap-heading {
+    margin-top: 1.25rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celecard-tap-receipt,
+  .celecard-sheet,
+  .celecard-connect-panel {
+    animation: none !important;
+  }
+}
+
+/*
+ * Public cards may cover-fill on landscape hold.
+ * Tap Mode must keep the connection QR, code, and actions visible.
+ */
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"],
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: var(--app-viewport-min-height) !important;
+  max-height: none !important;
+  overflow-x: clip !important;
+  overflow-y: auto !important;
+  padding-inline: var(--celeyou-stage-pad) var(--celeyou-stage-pad-end) !important;
+  padding-top: var(--celeyou-stage-pad-top) !important;
+  padding-bottom: var(--celeyou-stage-pad-bottom) !important;
+  background: #062e2c !important;
+  z-index: auto !important;
+}
+
+html:has(.celecard-tap-shell),
+body:has(.celecard-tap-shell) {
+  height: auto !important;
+  overflow: auto !important;
+  background: #062e2c;
+}
+
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] header.celecard-tap-chrome,
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) header.celecard-tap-chrome {
+  display: flex !important;
+}
+
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-tap-heading,
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-tap-heading,
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-tap-body,
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-tap-body {
+  display: block !important;
+}
+
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-atmo,
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-atmo {
+  display: block !important;
+}
+
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-tap-shell,
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-tap-shell {
+  position: relative !important;
+  width: min(100%, 32rem) !important;
+  max-width: 100% !important;
+  height: auto !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-hold-frame,
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-hold-frame {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  width: min(100%, 18.5rem) !important;
+  height: auto !important;
+  max-width: 18.5rem !important;
+  max-height: none !important;
+  margin: 0.35rem auto 0 !important;
+}
+
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-face,
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-face,
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-plate-motion,
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-plate-motion,
+.celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-plate-motion > *,
+.celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-plate-motion > * {
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+}
+
+@media (orientation: landscape) and (max-height: 540px) {
+  .celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-tap-shell,
+  .celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-tap-shell {
+    display: grid !important;
+    width: min(100%, 72rem) !important;
+    grid-template-columns: minmax(12rem, 0.92fr) minmax(0, 1.08fr);
+    place-items: stretch !important;
+  }
+
+  .celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"] .celecard-tap-body,
+  .celecard-stage:has(.celecard-tap-shell):not([data-celecard-hold="false"]) .celecard-tap-body {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+}

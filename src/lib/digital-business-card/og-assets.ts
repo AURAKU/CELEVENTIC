@@ -2,7 +2,8 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { generateBrandedQrPng } from "@/lib/qr/branded-qr-generator";
 import { getAppUrlFromEnv, isLocalHost } from "@/lib/app-url";
-import { isCeleCardPhotoUrl } from "@/lib/digital-business-card/portraits";
+import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
+import type { DigitalCardSocials } from "@/lib/digital-business-card/socials";
 
 const SAFE_PUBLIC_PREFIXES = ["/digital-cards/", "/brand/", "/uploads/", "/smartcard/"];
 
@@ -19,8 +20,23 @@ export async function localCeleCardPhotoDataUrl(rel: string): Promise<string | n
   }
 }
 
+export async function celeCardPlateBitmapAssets(
+  socials: Pick<DigitalCardSocials, "companyLogoUrl"> & { design?: { paperUrl?: string } | null },
+  theme: Pick<DigitalCardTheme, "textureUrl">
+) {
+  const paperPath = socials.design?.paperUrl || theme.textureUrl || "";
+  const [markSrc, paperSrc, companyLogoSrc] = await Promise.all([
+    localCeleCardPhotoDataUrl("/digital-cards/brands/celeyou-mark.png"),
+    paperPath.startsWith("/") ? localCeleCardPhotoDataUrl(paperPath) : Promise.resolve(null),
+    socials.companyLogoUrl?.startsWith("/")
+      ? localCeleCardPhotoDataUrl(socials.companyLogoUrl)
+      : Promise.resolve(null),
+  ]);
+  return { markSrc, paperSrc, companyLogoSrc };
+}
+
 export async function safeCeleCardPhotoSrc(avatarUrl: string | null | undefined): Promise<string | null> {
-  if (!isCeleCardPhotoUrl(avatarUrl) || !avatarUrl) return null;
+  if (!avatarUrl || avatarUrl.startsWith("house:")) return null;
   if (avatarUrl.startsWith("/") && !avatarUrl.startsWith("//")) {
     return localCeleCardPhotoDataUrl(avatarUrl);
   }

@@ -1104,7 +1104,7 @@ const NATIVE_APPS: Partial<Record<string, NativeAppSpec>> = {
   },
   tiktok: {
     packageName: "com.zhiliaoapp.musically",
-    appHref: (h) => `snssdk1233://user?unique_id=${encodeURIComponent(h)}`,
+    appHref: (h) => `tiktok://user?unique_id=${encodeURIComponent(h)}`,
     intentPath: (h) => `www.tiktok.com/@${encodeURIComponent(h)}`,
   },
   x: {
@@ -1236,6 +1236,26 @@ const NATIVE_APPS: Partial<Record<string, NativeAppSpec>> = {
     packageName: "com.tencent.mm",
     appHref: (h) => `weixin://dl/business/?t=${encodeURIComponent(h)}`,
     intentPath: (h) => `dl/business/?t=${encodeURIComponent(h)}`,
+  },
+  applemusic: {
+    packageName: "com.apple.android.music",
+    appHref: (h) => `music://music.apple.com/search?term=${encodeURIComponent(h)}`,
+    intentPath: (h) => `music.apple.com/search?term=${encodeURIComponent(h)}`,
+  },
+  behance: {
+    packageName: "com.behance.behance",
+    appHref: (h) => `behance://profile/${encodeURIComponent(h)}`,
+    intentPath: (h) => `www.behance.net/${encodeURIComponent(h)}`,
+  },
+  dribbble: {
+    packageName: "com.dribbble.dribbble",
+    appHref: (h) => `dribbble://shots?user=${encodeURIComponent(h)}`,
+    intentPath: (h) => `dribbble.com/${encodeURIComponent(h)}`,
+  },
+  medium: {
+    packageName: "com.medium.reader",
+    appHref: (h) => `medium://@${encodeURIComponent(h)}`,
+    intentPath: (h) => `medium.com/@${encodeURIComponent(h)}`,
   },
 };
 
@@ -1400,6 +1420,35 @@ export function nativeOpenFor(
     appHref,
     androidIntent: androidIntentUrl(path, spec.packageName, webHref, scheme),
   };
+}
+
+export function isCustomAppScheme(href: string | undefined | null): boolean {
+  if (!href) return false;
+  return !/^(https?:|mailto:|tel:|sms:)/i.test(href);
+}
+
+export type ReachLaunchPlan = {
+  mode: "web" | "intent" | "native-then-web";
+  web: string;
+  native?: string;
+};
+
+export function reachLaunchPlan(
+  item: Pick<DigitalCardReachItem, "href" | "appHref" | "androidIntent" | "brand">,
+  env: { android?: boolean; mobile?: boolean } = {}
+): ReachLaunchPlan {
+  const web = item.href || "";
+  if (!web) return { mode: "web", web };
+  if (/^(mailto:|tel:|sms:)/i.test(web) || item.brand === "website") {
+    return { mode: "web", web };
+  }
+  if (env.android && item.androidIntent) {
+    return { mode: "intent", native: item.androidIntent, web };
+  }
+  if (env.mobile && isCustomAppScheme(item.appHref) && item.appHref) {
+    return { mode: "native-then-web", native: item.appHref, web };
+  }
+  return { mode: "web", web };
 }
 
 export function socialValueList(value: unknown): string[] {

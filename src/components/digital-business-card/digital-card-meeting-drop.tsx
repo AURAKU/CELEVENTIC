@@ -19,7 +19,7 @@ import {
 } from "@/lib/digital-business-card/meetings";
 import type { DigitalCardReachItem } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
-import { CELECARD_REACH_INK, CELECARD_REACH_MUTED } from "@/lib/digital-business-card/type-voice";
+import { CELECARD_REACH_INK, celecardInkLuminance, celecardPaperTone } from "@/lib/digital-business-card/type-voice";
 
 function deskFromItem(item: DigitalCardReachItem): CeleCardMeetingDesk {
   try {
@@ -101,7 +101,16 @@ function MeetingBooker({
   const [honeypot, setHoneypot] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shake, setShake] = useState<"name" | "reach" | "form" | null>(null);
   const [done, setDone] = useState<CeleCardMeetingSlot | null>(null);
+  const paper = celecardPaperTone(theme);
+  const fill = paper.accent;
+  const fillInk = celecardInkLuminance(fill) < 158 ? "#fffef8" : "#16120e";
+
+  function react(kind: "name" | "reach" | "form") {
+    setShake(kind);
+    window.setTimeout(() => setShake((current) => (current === kind ? null : current)), 420);
+  }
 
   useEffect(() => {
     setSlots(localSlots);
@@ -134,19 +143,20 @@ function MeetingBooker({
 
   async function submit() {
     if (preview) {
-      setError("Preview only. Guests send this from the live card.");
+      react("form");
+      setError("preview");
       return;
     }
     if (!picked) {
-      setError("Pick a time first.");
+      react("form");
       return;
     }
     if (name.trim().length < 2) {
-      setError("Add your name so they know who is asking.");
+      react("name");
       return;
     }
     if (!email.trim() && !phone.trim()) {
-      setError("Add an email or a number so they can confirm.");
+      react("reach");
       return;
     }
     setBusy(true);
@@ -167,12 +177,14 @@ function MeetingBooker({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof json.error === "string" ? json.error : "That time just filled. Pick another.");
+        react("form");
+        setError("busy");
         return;
       }
       setDone(picked);
     } catch {
-      setError("Could not send the request. Try again.");
+      react("form");
+      setError("network");
     } finally {
       setBusy(false);
     }
@@ -180,12 +192,14 @@ function MeetingBooker({
 
   if (done) {
     return (
-      <div className={cn("grid gap-3", compact ? "p-3" : "p-3.5")}>
-        <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: theme.accent }}>
-          <Check className="h-4 w-4" />
+      <div className={cn("celecard-meet celecard-meet-pop grid gap-3", compact ? "p-3" : "p-3.5")}>
+        <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: fill }}>
+          <span className="grid h-8 w-8 place-items-center rounded-full" style={{ background: fill, color: fillInk }}>
+            <Check className="h-4 w-4" />
+          </span>
           Request sent
         </p>
-        <p className="text-sm leading-relaxed" style={{ color: CELECARD_REACH_INK }}>
+        <p className="text-sm font-medium leading-relaxed" style={{ color: CELECARD_REACH_INK }}>
           {formatMeetingWhen(done.start, desk.timezone)}
           {guestZone !== desk.timezone ? ` · your ${formatMeetingWhen(done.start, guestZone)}` : ""}.{" "}
           {ownerName ? `${ownerName.split(" ")[0]} gets a message to confirm.` : "They get a message to confirm this time."}
@@ -209,10 +223,10 @@ function MeetingBooker({
               )
             )
           }
-          className="inline-flex items-center justify-center gap-2 rounded-full px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white"
-          style={{ background: theme.accent }}
+          className="celecard-meet-chip inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-semibold"
+          style={{ background: fill, color: fillInk }}
         >
-          <CalendarPlus className="h-3.5 w-3.5" />
+          <CalendarPlus className="h-4 w-4" />
           Add to calendar
         </button>
       </div>
@@ -220,33 +234,53 @@ function MeetingBooker({
   }
 
   return (
-    <div className={cn("grid gap-3", compact ? "p-3" : "p-3.5")}>
+    <div className={cn("celecard-meet grid gap-3", compact ? "p-3" : "p-3.5", shake === "form" && "celecard-meet-shake")}>
+      <div className="sr-only" aria-live="polite">
+        {error === "busy" ? "That time just filled" : error === "network" ? "Could not send" : shake === "name" ? "Name needed" : shake === "reach" ? "Email or phone needed" : ""}
+      </div>
       <div>
-        <p className="text-sm font-semibold" style={{ color: CELECARD_REACH_INK }}>
+        <p className="text-[15px] font-semibold" style={{ color: CELECARD_REACH_INK }}>
           {desk.title}
         </p>
-        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: CELECARD_REACH_MUTED }}>
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-medium" style={{ color: CELECARD_REACH_INK }}>
           <span className="inline-flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
+            <Clock className="h-3.5 w-3.5" style={{ color: fill }} />
             {meetingDurationCopy(desk.durationMin)}
           </span>
           <span className="inline-flex items-center gap-1">
-            <MapPin className="h-3.5 w-3.5" />
+            <MapPin className="h-3.5 w-3.5" style={{ color: fill }} />
             {desk.place}
           </span>
         </p>
         {desk.note ? (
-          <p className="mt-1 text-xs leading-relaxed" style={{ color: CELECARD_REACH_MUTED }}>
+          <p className="mt-1 text-[13px] font-medium leading-relaxed" style={{ color: CELECARD_REACH_INK }}>
             {desk.note}
           </p>
         ) : null}
       </div>
 
-      <p className="flex flex-wrap gap-x-3 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: CELECARD_REACH_MUTED }}>
-        <span style={{ color: !picked ? theme.accent : CELECARD_REACH_MUTED }}>1 Day</span>
-        <span style={{ color: !picked ? theme.accent : CELECARD_REACH_MUTED }}>2 Time</span>
-        <span style={{ color: picked ? theme.accent : CELECARD_REACH_MUTED }}>3 Your details</span>
-      </p>
+      <div className="flex flex-wrap gap-1.5" role="list">
+        {[
+          { id: "1 Day", on: step === "time", done: Boolean(dayKey) },
+          { id: "2 Time", on: step === "time", done: Boolean(picked) },
+          { id: "3 Your details", on: step === "details", done: false },
+        ].map((row) => (
+          <span
+            key={row.id}
+            role="listitem"
+            className="celecard-meet-step"
+            data-on={row.on ? "true" : "false"}
+            style={{
+              background: row.on || row.done ? fill : "#fffef8",
+              color: row.on || row.done ? fillInk : CELECARD_REACH_INK,
+              border: `1px solid ${row.on || row.done ? fill : "rgba(28,25,23,0.16)"}`,
+            }}
+          >
+            {row.done ? <Check className="h-3 w-3" /> : null}
+            {row.id}
+          </span>
+        ))}
+      </div>
 
       {step !== "details" ? (
         days.length ? (
@@ -262,16 +296,18 @@ function MeetingBooker({
                     setPicked(null);
                     setError(null);
                   }}
-                  className="flex w-[4.1rem] shrink-0 snap-start flex-col items-center rounded-2xl border px-1.5 py-2"
+                  className="celecard-meet-chip flex w-[4.35rem] shrink-0 snap-start flex-col items-center rounded-2xl border px-1.5 py-2"
+                  data-on={on ? "true" : "false"}
+                  aria-pressed={on}
                   style={{
-                    borderColor: on ? theme.accent : theme.border,
-                    background: on ? theme.accent : "#fff",
-                    color: on ? "#fff" : CELECARD_REACH_INK,
+                    borderColor: on ? fill : "rgba(28,25,23,0.16)",
+                    background: on ? fill : "#fffef8",
+                    color: on ? fillInk : CELECARD_REACH_INK,
                   }}
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">{row.weekday}</span>
-                  <span className="text-base font-semibold leading-tight">{row.label.split(" ")[0]}</span>
-                  <span className="text-[9px] opacity-80">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.12em]">{row.weekday}</span>
+                  <span className="text-lg font-semibold leading-tight">{row.label.split(" ")[0]}</span>
+                  <span className="text-[10px] font-semibold">
                     {row.slots.length} {row.slots.length === 1 ? "time" : "times"}
                   </span>
                 </button>
@@ -279,7 +315,7 @@ function MeetingBooker({
             })}
           </div>
         ) : (
-          <p className="text-xs" style={{ color: CELECARD_REACH_MUTED }}>
+          <p className="text-sm font-medium" style={{ color: CELECARD_REACH_INK }}>
             No open times in the next {desk.horizonDays} days.
           </p>
         )
@@ -297,13 +333,16 @@ function MeetingBooker({
                   setPicked(slot);
                   setError(null);
                 }}
-                className="rounded-xl border px-2 py-2.5 text-sm font-semibold"
+                className="celecard-meet-chip inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 text-[15px] font-semibold"
+                data-on={on ? "true" : "false"}
+                aria-pressed={on}
                 style={{
-                  borderColor: on ? theme.accent : theme.border,
-                  background: on ? theme.accent : "#fff",
-                  color: on ? "#fff" : theme.accent,
+                  borderColor: on ? fill : "rgba(28,25,23,0.16)",
+                  background: on ? fill : "#fffef8",
+                  color: on ? fillInk : CELECARD_REACH_INK,
                 }}
               >
+                {on ? <Check className="h-4 w-4" /> : null}
                 {slot.timeLabel}
               </button>
             );
@@ -313,34 +352,31 @@ function MeetingBooker({
 
       {picked ? (
         <div
-          className="rounded-2xl border px-3 py-2.5"
-          style={{ borderColor: theme.border, background: theme.accentSoft || "rgba(11,138,131,0.08)" }}
+          className="celecard-meet-pop rounded-2xl border px-3 py-2.5"
+          style={{ borderColor: fill, background: "#fffef8" }}
         >
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: theme.accent }}>
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: fill }}>
+            <Check className="h-3.5 w-3.5" />
             You picked
           </p>
           <p className="mt-0.5 text-sm font-semibold" style={{ color: CELECARD_REACH_INK }}>
             {formatMeetingWhen(picked.start, desk.timezone)}
           </p>
           {guestZone !== desk.timezone ? (
-            <p className="text-[11px]" style={{ color: CELECARD_REACH_MUTED }}>
+            <p className="text-[13px] font-medium" style={{ color: CELECARD_REACH_INK }}>
               Your time {formatMeetingClockSafe(picked.start, guestZone)}
             </p>
           ) : null}
         </div>
-      ) : (
-        <p className="text-xs" style={{ color: CELECARD_REACH_MUTED }}>
-          Pick a day, then a time. They get a message in their CeleYou inbox.
-        </p>
-      )}
+      ) : null}
 
       {step === "details" && picked ? (
-        <div className="grid gap-2">
+        <div className="relative grid gap-2">
           <button
             type="button"
             onClick={() => setPicked(null)}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em]"
-            style={{ color: theme.accent }}
+            className="inline-flex items-center gap-1 text-[13px] font-semibold"
+            style={{ color: fill }}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Change time
@@ -349,27 +385,39 @@ function MeetingBooker({
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Your name"
-            className={inputClass}
-            style={inputStyle}
+            className={cn(inputClass, shake === "name" && "celecard-meet-shake")}
+            style={{
+              ...inputStyle,
+              borderColor: shake === "name" ? "#b45309" : "rgba(28,25,23,0.16)",
+            }}
             autoComplete="name"
+            aria-invalid={shake === "name"}
           />
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="Email"
-            className={inputClass}
-            style={inputStyle}
+            className={cn(inputClass, shake === "reach" && "celecard-meet-shake")}
+            style={{
+              ...inputStyle,
+              borderColor: shake === "reach" ? "#b45309" : "rgba(28,25,23,0.16)",
+            }}
             autoComplete="email"
+            aria-invalid={shake === "reach"}
           />
           <input
             type="tel"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
             placeholder="Phone"
-            className={inputClass}
-            style={inputStyle}
+            className={cn(inputClass, shake === "reach" && "celecard-meet-shake")}
+            style={{
+              ...inputStyle,
+              borderColor: shake === "reach" ? "#b45309" : "rgba(28,25,23,0.16)",
+            }}
             autoComplete="tel"
+            aria-invalid={shake === "reach"}
           />
           <input
             value={note}
@@ -390,17 +438,12 @@ function MeetingBooker({
             type="button"
             disabled={busy}
             onClick={() => void submit()}
-            className="inline-flex items-center justify-center rounded-full px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white disabled:opacity-60"
-            style={{ background: theme.accent }}
+            className="celecard-meet-chip inline-flex min-h-11 items-center justify-center rounded-full px-3 text-sm font-semibold disabled:opacity-60"
+            style={{ background: fill, color: fillInk }}
           >
             {busy ? "Sending…" : preview ? "Preview request" : "Request this time"}
           </button>
         </div>
-      ) : null}
-      {error ? (
-        <p className="text-xs font-medium" style={{ color: "#b45309" }}>
-          {error}
-        </p>
       ) : null}
     </div>
   );

@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Check,
   Contact,
   Handshake,
   Share2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
@@ -16,7 +17,6 @@ import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-busin
 import { applyCeleCardDesign } from "@/lib/digital-business-card/design";
 import { celecardAccentOnStage, celecardDockFinish, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import { digitalCardIdentityUrl, digitalCardQrImageSrc, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
-import { digitalCardOgImagePath } from "@/lib/digital-business-card/share";
 import { listDigitalCardReachItems } from "@/lib/digital-business-card/socials";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
 import {
@@ -24,8 +24,15 @@ import {
   DigitalCardUnavailableView,
 } from "@/components/digital-business-card/digital-card-continuity-view";
 import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_NAME } from "@/lib/digital-business-card/product";
+import { APP_TAGLINE, FOOTER_POWERED_BY } from "@/lib/constants";
 import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
-import { celeCardShareClipboard, celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
+import {
+  celeCardShareClipboard,
+  celeCardShareCommentary,
+  celeCardShareImageUrls,
+  celeCardShareMessage,
+  celeCardShareTitle,
+} from "@/lib/digital-business-card/share";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 import { CONNECT_BACK_ARIA, CONNECT_BACK_CTA } from "@/lib/celeyou-share/guest-actions";
 import {
@@ -37,17 +44,7 @@ import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
 import { SAVE_CONTACT_CTA, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
 import { contactSaveHint } from "@/lib/celeyou-share/namedrop";
 import { detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
-import {
-  celecardEventIsPlateBackground,
-  celecardHoldIntentAfterAutoChange,
-  celecardHoldIsActive,
-  celecardRunHoldMotion,
-  celecardToggleHoldIntent,
-  readCelecardHoldAxis,
-  readCelecardHoldViewport,
-  type CeleCardHoldAxis,
-  type CeleCardHoldIntent,
-} from "@/lib/digital-business-card/hold-viewport";
+import { useCelecardSilentHold } from "@/components/digital-business-card/use-celecard-silent-hold";
 
 export function DigitalCardPublicView({
   card,
@@ -67,28 +64,22 @@ export function DigitalCardPublicView({
     1000;
   const darkStage = stageLum < 140;
   const dock = celecardDockFinish(theme, { darkStage, stageHex }, card.socials.design?.lettering);
-  const copyInk = darkStage ? "rgba(250,246,239,0.92)" : "rgba(28,25,23,0.88)";
-  const faintInk = darkStage ? "rgba(250,246,239,0.72)" : "rgba(28,25,23,0.62)";
+  const copyInk = darkStage ? "rgba(250,246,239,0.94)" : "rgba(28,25,23,0.92)";
+  const faintInk = darkStage ? "rgba(250,246,239,0.88)" : "rgba(28,25,23,0.82)";
   const headingInk = celecardAccentOnStage(theme.accent, darkStage);
   const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
   const profileUrl = digitalCardIdentityUrl(card.slug, origin);
   const qrSrc = scanUrl ? digitalCardQrImageSrc(scanUrl) : "";
   const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [saveHint, setSaveHint] = useState<string | null>(null);
   const [connectOpen, setConnectOpen] = useState(false);
   const [connectDone, setConnectDone] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
-  const [holdIntent, setHoldIntent] = useState<CeleCardHoldIntent>("auto");
-  const [autoHold, setAutoHold] = useState(false);
-  const [holdAxis, setHoldAxis] = useState<CeleCardHoldAxis>("portrait");
-  const [holdReady, setHoldReady] = useState(false);
-  const holdIntentRef = useRef(holdIntent);
-  holdIntentRef.current = holdIntent;
-  const autoHoldRef = useRef(autoHold);
-  autoHoldRef.current = autoHold;
-  const hold = celecardHoldIsActive(holdIntent, autoHold);
+  const { hold, holdAxis, holdReady, holdIntent, setHoldIntent, toggleHold, onPlateActivate } = useCelecardSilentHold();
   const [form, setForm] = useState({
     visitorName: "",
     visitorEmail: "",
@@ -98,7 +89,6 @@ export function DigitalCardPublicView({
     note: "",
     website: "",
     consent: false,
-    followupConsent: false,
   });
   const exchangeAvailable = useCeleYouExchangeAvailable(card.slug, card.isDemo);
 
@@ -126,17 +116,23 @@ export function DigitalCardPublicView({
     }
   }, [card, origin, saveState]);
 
+  const plateShareUrls = useMemo(() => celeCardShareImageUrls(card.slug, card.id), [card.slug, card.id]);
+  const shareCommentary = celeCardShareCommentary(card);
+
   const shareCard = useCallback(async () => {
     const shareUrl = profileUrl || scanUrl;
+    setSharing(true);
     const result = await shareCeleYouProfile({
       title: celeCardShareTitle(card),
       text: celeCardShareMessage(card, shareUrl),
       url: shareUrl,
-      imageUrl: digitalCardOgImagePath(card.slug, card.id),
+      imageUrl: plateShareUrls,
     });
+    setSharing(false);
     if (result === "cancelled") return;
     if (result === "shared" || result === "copied" || result === "unavailable") {
       trackCeleYouGuestEvent(card.slug, "share_tap");
+      setShareOpen(false);
     }
     if (result === "copied" || result === "unavailable") {
       if (result === "unavailable") {
@@ -145,7 +141,7 @@ export function DigitalCardPublicView({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [card, profileUrl, scanUrl]);
+  }, [card, plateShareUrls, profileUrl, scanUrl]);
 
   const submitConnect = useCallback(async () => {
     if (!form.consent) {
@@ -172,7 +168,7 @@ export function DigitalCardPublicView({
           note: form.note || null,
           website: form.website || null,
           consent: true,
-          followupConsent: form.followupConsent,
+          followupConsent: true,
         }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
@@ -192,72 +188,25 @@ export function DigitalCardPublicView({
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
+      if (shareOpen) {
+        setShareOpen(false);
+        return;
+      }
       if (connectOpen) {
         setConnectOpen(false);
         return;
       }
-      if (celecardHoldIsActive(holdIntentRef.current, autoHoldRef.current)) {
-        celecardRunHoldMotion(() => setHoldIntent("closed"));
-      }
+      if (hold) setHoldIntent("closed");
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [connectOpen]);
-
-  const toggleHold = useCallback(() => {
-    const next = celecardToggleHoldIntent(celecardHoldIsActive(holdIntentRef.current, autoHoldRef.current));
-    celecardRunHoldMotion(() => {
-      setHoldIntent(next);
-      if (next === "open") setConnectOpen(false);
-    });
-  }, []);
-
-  const onPlateActivate = useCallback(
-    (event: { target: EventTarget | null; preventDefault?: () => void }) => {
-      if (!celecardEventIsPlateBackground(event.target)) return;
-      event.preventDefault?.();
-      toggleHold();
-    },
-    [toggleHold]
-  );
+  }, [connectOpen, hold, setHoldIntent, shareOpen]);
 
   useEffect(() => {
-    const apply = () => {
-      const nextAuto = readCelecardHoldViewport();
-      const nextIntent = celecardHoldIntentAfterAutoChange(holdIntentRef.current, nextAuto, autoHoldRef.current);
-      if (nextIntent !== holdIntentRef.current) setHoldIntent(nextIntent);
-      setAutoHold(nextAuto);
-      setHoldAxis(readCelecardHoldAxis());
-      setHoldReady(true);
-      if (celecardHoldIsActive(nextIntent, nextAuto)) setConnectOpen(false);
-    };
-    apply();
-    const landscape = window.matchMedia("(orientation: landscape)");
-    const coarse = window.matchMedia("(pointer: coarse)");
-    landscape.addEventListener("change", apply);
-    coarse.addEventListener("change", apply);
-    window.addEventListener("resize", apply);
-    window.visualViewport?.addEventListener("resize", apply);
-    return () => {
-      landscape.removeEventListener("change", apply);
-      coarse.removeEventListener("change", apply);
-      window.removeEventListener("resize", apply);
-      window.visualViewport?.removeEventListener("resize", apply);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hold) return;
-    const html = document.documentElement;
-    const body = document.body;
-    const prevHtml = html.style.overflow;
-    const prevBody = body.style.overflow;
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-    return () => {
-      html.style.overflow = prevHtml;
-      body.style.overflow = prevBody;
-    };
+    if (hold) {
+      setConnectOpen(false);
+      setShareOpen(false);
+    }
   }, [hold]);
 
   if (!card.isLive) {
@@ -330,17 +279,11 @@ export function DigitalCardPublicView({
           <div className="celecard-enter celecard-d3 flex flex-col gap-6">
             {sections.map((section) => (
               <section key={section.id} className="celecard-guest-section">
-                <h2
-                  className="mb-2 text-center text-[11px] font-semibold uppercase tracking-[0.16em]"
-                  style={{ color: headingInk, fontFamily: typeVoice.meta }}
-                >
+                <h2 className="celecard-guest-kicker" style={{ color: headingInk }}>
                   {section.label}
                 </h2>
                 {section.body ? (
-                  <p
-                    className="text-center text-[15px] font-medium leading-relaxed"
-                    style={{ color: copyInk, fontFamily: typeVoice.meta }}
-                  >
+                  <p className="celecard-guest-copy" style={{ color: copyInk }}>
                     {section.body}
                   </p>
                 ) : null}
@@ -386,6 +329,10 @@ export function DigitalCardPublicView({
             <span className="celecard-guest-brand-cta">Create your CeleYou</span>
           </span>
         </Link>
+        <p className="celecard-guest-powered">
+          <span className="celecard-guest-powered-by">{FOOTER_POWERED_BY}</span>
+          <span className="celecard-guest-powered-tag">{APP_TAGLINE}</span>
+        </p>
       </footer>
 
       <div
@@ -475,6 +422,7 @@ export function DigitalCardPublicView({
             type="button"
             data-kind="ghost"
             className="celecard-action"
+            aria-label="Share this live CeleYou plate"
             style={{
               backgroundColor: dock.ghostBg,
               color: dock.ghostFg,
@@ -486,7 +434,7 @@ export function DigitalCardPublicView({
               textTransform: dock.labelTransform,
               borderRadius: dock.actionRadius,
             }}
-            onClick={shareCard}
+            onClick={() => setShareOpen(true)}
           >
             <span className="celecard-action-mark" aria-hidden>
               <Share2 />
@@ -496,6 +444,86 @@ export function DigitalCardPublicView({
         </div>
         </div>
       </div>
+
+      {shareOpen ? (
+        <div
+          className="celecard-share-layer fixed inset-0 z-50 grid place-items-end bg-black/55 p-3 sm:place-items-center"
+          role="dialog"
+          aria-modal
+          aria-labelledby="celecard-share-title"
+        >
+          <button type="button" className="absolute inset-0" aria-label="Close share" onClick={() => setShareOpen(false)} />
+          <div
+            className="relative z-10 w-full max-w-sm overflow-hidden rounded-[1.7rem] border p-4 shadow-2xl"
+            style={{ background: "rgba(255,251,245,0.98)", borderColor: theme.border, color: "#1c1917" }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p id="celecard-share-title" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0B8A83]">
+                  Share this CeleYou
+                </p>
+                <p className="mt-1 text-[15px] font-semibold tracking-tight">Live plate</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShareOpen(false)}
+                className="grid h-8 w-8 place-items-center rounded-full bg-black/5"
+                aria-label="Close share"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div
+              className="celecard-share-plate mt-3 overflow-hidden rounded-[1.15rem] border shadow-[0_12px_28px_rgba(15,23,42,0.12)]"
+              style={{ borderColor: "rgba(28,25,23,0.08)" }}
+              aria-hidden
+            >
+              <DigitalCardFace
+                themeId={card.themeId}
+                displayName={card.displayName}
+                title={card.title}
+                company={card.company}
+                avatarUrl={card.avatarUrl}
+                qrSrc={qrSrc}
+                portraitFrame={card.socials.portraitFrame}
+                companyLogo
+                companyLogoUrl={card.socials.companyLogoUrl}
+                design={card.socials.design}
+              />
+            </div>
+            <p className="mt-3 text-sm leading-relaxed" style={{ fontFamily: typeVoice.meta }}>
+              {shareCommentary}
+            </p>
+            <div className="mt-4 grid gap-2">
+              <button
+                type="button"
+                disabled={sharing}
+                onClick={() => void shareCard()}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white"
+                style={{ background: "#0B8A83" }}
+              >
+                <Share2 className="h-4 w-4" />
+                {sharing ? "Preparing plate…" : "Share plate"}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const shareUrl = profileUrl || scanUrl;
+                  await navigator.clipboard.writeText(celeCardShareClipboard(card, shareUrl)).catch(() => undefined);
+                  trackCeleYouGuestEvent(card.slug, "share_tap");
+                  setCopied(true);
+                  setShareOpen(false);
+                  window.setTimeout(() => setCopied(false), 2000);
+                }}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border text-sm font-semibold"
+                style={{ borderColor: "rgba(28,25,23,0.14)", color: "#0B8A83" }}
+              >
+                Copy link
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {card.connectBackEnabled && !card.isDemo && connectOpen && !connectDone ? (
         <div className="celecard-connect-layer fixed inset-0 z-50 grid place-items-end bg-black/55 p-3 sm:place-items-center" role="dialog" aria-modal aria-labelledby="celecard-connect-title">
@@ -581,15 +609,6 @@ export function DigitalCardPublicView({
                 className="mt-0.5"
               />
               <span>I agree to share these details with {card.displayName} through CeleYou.</span>
-            </label>
-            <label className="flex items-start gap-2 text-xs" style={{ color: copyInk }}>
-              <input
-                type="checkbox"
-                checked={form.followupConsent}
-                onChange={(e) => setForm((f) => ({ ...f, followupConsent: e.target.checked }))}
-                className="mt-0.5"
-              />
-              <span>Send me a short thank you from {card.displayName} (optional).</span>
             </label>
             <input
               tabIndex={-1}

@@ -97,6 +97,16 @@ describe("CeleYou meeting desk", () => {
     assert.match(drop, /You picked/);
     assert.match(drop, /1 Day/);
     assert.match(drop, /gets a message to confirm/);
+    assert.match(drop, /celecardPaperTone/);
+    assert.match(drop, /celecard-meet-chip/);
+    assert.match(drop, /CELECARD_REACH_INK/);
+    assert.doesNotMatch(drop, /Pick a day, then a time/);
+    const grid = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-reach-grid.tsx"),
+      "utf8"
+    );
+    assert.doesNotMatch(grid, /Pick a day and time\. They get a message to confirm/);
+    assert.doesNotMatch(drop, /color: on \? "#fff" : theme\.accent/);
     assert.match(desk, /Guests can book a time/);
     assert.match(desk, /Soonest/);
     assert.match(inbox, /Confirm this time/);

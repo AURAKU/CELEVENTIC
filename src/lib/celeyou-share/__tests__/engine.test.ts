@@ -209,7 +209,10 @@ describe("CeleYou Smart Share Engine", () => {
           title: "Kojo Mensah on CeleYou",
           text: "Kojo Mensah on CeleYou. One Identity. Infinite Connections.",
           url: "https://www.celeventic.com/u/kojo-mensah",
-          imageUrl: "/card/kojo-mensah/og?v=live",
+          imageUrl: [
+            "/api/digital-business-cards/public/kojo-mensah/card?download=1&v=live",
+            "/card/kojo-mensah/og?v=live",
+          ],
         },
         {
           share: async (payload: ShareData) => {
@@ -220,11 +223,50 @@ describe("CeleYou Smart Share Engine", () => {
       );
       assert.equal(result, "shared");
       assert.equal(payloads.length, 1);
-      assert.equal(payloads[0]?.url, "https://www.celeventic.com/u/kojo-mensah");
+      assert.equal(payloads[0]?.url, undefined);
       assert.match(String(payloads[0]?.text), /https:\/\/www\.celeventic\.com\/u\/kojo-mensah/);
       const files = payloads[0]?.files as File[] | undefined;
-      assert.equal(files?.[0]?.name, "celeyou-card.png");
+      assert.equal(files?.[0]?.name, "celeyou-plate.png");
       assert.equal(files?.[0]?.type, "image/png");
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
+
+  it("uses the OG plate tile when the export PNG is missing", async () => {
+    const requested: string[] = [];
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      requested.push(url);
+      if (url.includes("/card?")) return new Response("missing", { status: 404 });
+      return new Response(new Uint8Array(96), {
+        status: 200,
+        headers: { "content-type": "image/png" },
+      });
+    }) as typeof fetch;
+    try {
+      const payloads: Array<Record<string, unknown>> = [];
+      const result = await shareCeleYouProfile(
+        {
+          title: "Kojo Mensah on CeleYou",
+          text: "Kojo Mensah on CeleYou. One Identity. Infinite Connections.",
+          url: "https://www.celeventic.com/u/kojo-mensah",
+          imageUrl: [
+            "/api/digital-business-cards/public/kojo-mensah/card?download=1",
+            "/card/kojo-mensah/og?v=live",
+          ],
+        },
+        {
+          share: async (payload: ShareData) => {
+            payloads.push(payload as Record<string, unknown>);
+          },
+        } as Navigator
+      );
+      assert.equal(result, "shared");
+      assert.ok(requested.some((url) => url.includes("/og?v=live")));
+      const files = payloads[0]?.files as File[] | undefined;
+      assert.equal(files?.[0]?.name, "celeyou-plate.png");
     } finally {
       globalThis.fetch = previousFetch;
     }
