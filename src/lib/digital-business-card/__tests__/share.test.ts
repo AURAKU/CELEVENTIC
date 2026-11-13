@@ -15,13 +15,13 @@ import {
   celeCardReadableQrLabel,
   celeCardStableQrUrl,
   celeCardShareImageUrls,
+  CELECARD_PLATE_SHARE_GEN,
   digitalCardExportImagePath,
   digitalCardOgImagePath,
   digitalCardPresentPath,
   courtesyCeleCardMetadata,
   withheldCeleCardMetadata,
 } from "@/lib/digital-business-card/share";
-import { SMARTCARD_BRAND_TAGLINE } from "@/lib/digital-business-card/product";
 import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
 import { DEMO_CARD } from "@/lib/digital-business-card/demo-card";
 import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capability";
@@ -61,8 +61,8 @@ describe("CeleYou share metadata", () => {
     assert.equal(celeCardReadableQrLabel("http://localhost:3000/c/demo-ama-serwaa"), "/c/demo-ama-serwaa");
     assert.match(digitalCardExportImagePath("ama-serwaa"), /\/card\?download=1$/);
     assert.deepEqual(celeCardShareImageUrls("ama-serwaa", "demo"), [
-      digitalCardExportImagePath("ama-serwaa", "demo"),
-      digitalCardOgImagePath("ama-serwaa", "demo"),
+      digitalCardExportImagePath("ama-serwaa", `${CELECARD_PLATE_SHARE_GEN}-demo`),
+      digitalCardOgImagePath("ama-serwaa", `${CELECARD_PLATE_SHARE_GEN}-demo`),
     ]);
   });
 
@@ -104,6 +104,13 @@ describe("CeleYou share metadata", () => {
     assert.match(String(typeof image === "object" && image && "url" in image ? image.url : ""), /\/card\/ama-serwaa\/og\?v=demo/);
     assert.equal(typeof image === "object" && image && "type" in image ? image.type : "", "image/png");
     assert.equal(String(metadata.openGraph?.url).includes("localhost"), false);
+    const icons = metadata.icons && typeof metadata.icons === "object" && "icon" in metadata.icons ? metadata.icons : null;
+    const iconList = icons && "icon" in icons ? icons.icon : undefined;
+    const iconUrl = Array.isArray(iconList) ? iconList[0] : iconList;
+    const iconHref = typeof iconUrl === "object" && iconUrl && "url" in iconUrl ? String(iconUrl.url) : String(iconUrl || "");
+    assert.match(iconHref, /\/card\/ama-serwaa\/og\?v=demo/);
+    assert.equal(iconHref.includes("/brand/icon.png"), false);
+    assert.equal(iconHref.includes("/icon.png"), false);
   });
 
   it("withholds unpublished cards from social previews", () => {
@@ -128,6 +135,19 @@ describe("CeleYou share metadata", () => {
     assert.equal(celeCardShareCacheVersion(at), String(at.getTime()));
   });
 
+  it("does not let Satori load remote images or CSS inset on the plate bitmap", () => {
+    const overlay = readFileSync(join(process.cwd(), "src/lib/digital-business-card/qr-center-overlay.tsx"), "utf8");
+    const plate = readFileSync(join(process.cwd(), "src/lib/digital-business-card/plate-bitmap.tsx"), "utf8");
+    const assets = readFileSync(join(process.cwd(), "src/lib/digital-business-card/og-assets.ts"), "utf8");
+    const pages = readFileSync(join(process.cwd(), "src/app/card/[slug]/page.tsx"), "utf8");
+    assert.match(overlay, /data:image\//);
+    assert.doesNotMatch(overlay, /CELEYOU_MARK_SRC/);
+    assert.doesNotMatch(plate, /inset:/);
+    assert.match(assets, /Always a data URL/);
+    assert.match(pages, /celeCardPageOgPath/);
+    assert.match(pages, /presentation === "courtesy"/);
+  });
+
   it("keeps dummy OG image ungated for crawlers", () => {
     const source = readFileSync(join(process.cwd(), "src/lib/digital-business-card/og-image.tsx"), "utf8");
     assert.doesNotMatch(source, /dummyLiveNotFoundResponse|viewerMayOpenDummyLive/);
@@ -149,15 +169,31 @@ describe("CeleYou share metadata", () => {
     assert.match(markup, /cover/);
     assert.match(bitmap, /background: "#ffffff"/);
     assert.match(bitmap, /paperSrc/);
-    assert.match(bitmap, /markSrc \?/);
+    assert.match(bitmap, /isEmbeddedImage\(markSrc\)/);
     assert.match(bitmap, /coverPlateSize/);
     assert.doesNotMatch(bitmap, /logo-full\.png|brand\/icon\.png|celeventic-logo/i);
     assert.doesNotMatch(markup, /Open this CeleYou|Download this card|Share this card/);
     assert.match(assets, /\/smartcard\//);
+    assert.match(assets, /Never a remote URL/);
     assert.match(config, /source: "\/u\/:slug\/og"/);
     assert.match(ogRoute, /export async function HEAD/);
     assert.match(engine, /files: \[file\]/);
     assert.match(engine, /celeyou-plate\.png/);
+    assert.match(engine, /captureLivePlateFile/);
+    assert.match(engine, /persistLivePlateSnapshot/);
+    const face = readFileSync(join(process.cwd(), "src/components/digital-business-card/digital-card-face.tsx"), "utf8");
+    const capture = readFileSync(join(process.cwd(), "src/lib/digital-business-card/capture-live-plate.ts"), "utf8");
+    const ogImage = readFileSync(join(process.cwd(), "src/lib/digital-business-card/og-image.tsx"), "utf8");
+    const wallet = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-wallet-view.tsx"),
+      "utf8"
+    );
+    assert.match(face, /data-celeyou-live-plate="true"/);
+    assert.match(capture, /html-to-image/);
+    assert.match(capture, /CELEYOU_PLATE_FILE_NAME/);
+    assert.match(ogImage, /livePlateOgFromSnapshot/);
+    assert.match(ogImage, /readLivePlateSnapshotPng/);
+    assert.match(wallet, /capturePlate: false/);
   });
 });
 
@@ -218,6 +254,8 @@ describe("CeleYou studio share controls", () => {
     assert.match(desk, /WALLET_PASS_CTA/);
     assert.match(desk, /celeCardShareImageUrls/);
     assert.match(desk, /imageUrl/);
+    assert.match(desk, /persistPlateCardId/);
+    assert.match(desk, /usePersistLivePlateSnapshot/);
     assert.match(desk, /identityShare/);
     assert.doesNotMatch(desk, /same public profile/);
     assert.doesNotMatch(desk, /start AirDrop by NFC|automatic phone to phone NFC/i);

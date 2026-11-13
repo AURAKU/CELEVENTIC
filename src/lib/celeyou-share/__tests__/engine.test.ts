@@ -195,6 +195,41 @@ describe("CeleYou Smart Share Engine", () => {
     assert.doesNotMatch(analytics, /A nearby phone is not a tap/);
   });
 
+  it("attaches a captured on-screen plate before fetching OG tiles", async () => {
+    const payloads: Array<Record<string, unknown>> = [];
+    let fetched = 0;
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      fetched += 1;
+      return new Response("should-not-fetch", { status: 500 });
+    }) as typeof fetch;
+    const plate = new File([new Uint8Array(128).fill(7)], "live-face.png", { type: "image/png" });
+    try {
+      const result = await shareCeleYouProfile(
+        {
+          title: "Kojo Mensah on CeleYou",
+          text: "Kojo Mensah on CeleYou. One Identity. Infinite Connections.",
+          url: "https://www.celeventic.com/u/kojo-mensah",
+          imageUrl: "/brand/icon.png",
+          capturePlate: async () => plate,
+        },
+        {
+          share: async (payload: ShareData) => {
+            payloads.push(payload as Record<string, unknown>);
+          },
+          canShare: (payload?: ShareData) => Boolean(payload?.files?.length),
+        } as Navigator
+      );
+      assert.equal(result, "shared");
+      assert.equal(fetched, 0);
+      const files = payloads[0]?.files as File[] | undefined;
+      assert.equal(files?.[0]?.name, "celeyou-plate.png");
+      assert.equal(files?.[0]?.size, 128);
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
+
   it("attaches the live plate PNG and public URL on the share sheet", async () => {
     const payloads: Array<Record<string, unknown>> = [];
     const previousFetch = globalThis.fetch;

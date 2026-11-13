@@ -147,6 +147,12 @@ export type ShareProfileInput = {
   url: string;
   /** Live plate PNG, then OG tile. Instagram, Snapchat, WhatsApp, and iMessage need the file. */
   imageUrl?: string | string[] | null;
+  /** Already captured ID-1 plate. Wins over fetch. */
+  imageFile?: File | Blob | null;
+  /** Capture the on-screen `.celecard-face`. Default true in the browser. */
+  capturePlate?: boolean | (() => Promise<File | null>);
+  /** Owner card id. Stores the capture so OG unfurl uses the same live plate. */
+  persistPlateCardId?: string | null;
 };
 
 export type ShareProfileResult = "shared" | "copied" | "cancelled" | "unavailable";
@@ -176,6 +182,14 @@ async function fetchLivePlateFile(imageUrl: string): Promise<File | null> {
   }
 }
 
+function asPlateFile(blob: File | Blob | null | undefined): File | null {
+  if (!blob || blob.size < 64) return null;
+  if (blob instanceof File && blob.type.startsWith("image/")) {
+    return blob.name === "celeyou-plate.png" ? blob : new File([blob], "celeyou-plate.png", { type: "image/png" });
+  }
+  return new File([blob], "celeyou-plate.png", { type: "image/png" });
+}
+
 async function livePlateFile(imageUrl?: string | string[] | null): Promise<File | null> {
   const urls = (Array.isArray(imageUrl) ? imageUrl : [imageUrl])
     .map((url) => url?.trim())
@@ -185,6 +199,39 @@ async function livePlateFile(imageUrl?: string | string[] | null): Promise<File 
     if (file) return file;
   }
   return null;
+}
+
+async function captureOnScreenPlate(capturePlate?: ShareProfileInput["capturePlate"]): Promise<File | null> {
+  if (capturePlate === false) return null;
+  if (typeof capturePlate === "function") {
+    try {
+      return asPlateFile(await capturePlate());
+    } catch {
+      return null;
+    }
+  }
+  if (typeof document === "undefined") return null;
+  try {
+    const { captureLivePlateFile } = await import("@/lib/digital-business-card/capture-live-plate");
+    return asPlateFile(await captureLivePlateFile());
+  } catch {
+    return null;
+  }
+}
+
+async function resolveLivePlateFile(input: ShareProfileInput): Promise<File | null> {
+  const provided = asPlateFile(input.imageFile);
+  if (provided) return provided;
+  const captured = await captureOnScreenPlate(input.capturePlate);
+  if (captured) {
+    if (input.persistPlateCardId) {
+      void import("@/lib/digital-business-card/capture-live-plate")
+        .then(({ persistLivePlateSnapshot }) => persistLivePlateSnapshot(input.persistPlateCardId!, captured))
+        .catch(() => undefined);
+    }
+    return captured;
+  }
+  return livePlateFile(input.imageUrl);
 }
 
 function shareCaption(text: string, url: string) {
@@ -220,7 +267,7 @@ export async function shareCeleYouProfile(
 ): Promise<ShareProfileResult> {
   if (!input.url) return "unavailable";
   const text = shareCaption(input.text, input.url);
-  const file = await livePlateFile(input.imageUrl);
+  const file = await resolveLivePlateFile(input);
   if (nav && typeof nav.share === "function") {
     if (file) {
       const withPlate = { title: input.title, text, files: [file] };

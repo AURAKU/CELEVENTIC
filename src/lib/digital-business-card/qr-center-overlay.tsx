@@ -1,7 +1,10 @@
-import { CELEYOU_MARK_SRC } from "@/components/digital-business-card/celeyou-brand-mark";
 import { CELECARD_QR_CENTER_WELL } from "@/lib/digital-business-card/qr-center";
 
-/** Satori-safe QR inset. Portrait when uploaded, otherwise the official CeleYou logo. */
+function isEmbeddedImage(src?: string | null): src is string {
+  return Boolean(src && src.startsWith("data:image/"));
+}
+
+/** Satori-safe QR inset. Portrait when uploaded, otherwise the official CeleYou mark data URL. */
 export function CeleCardQrCenterOverlay({
   photoSrc,
   markSrc,
@@ -11,8 +14,9 @@ export function CeleCardQrCenterOverlay({
   markSrc?: string | null;
   qrSize: number;
 }) {
-  const official = !photoSrc;
-  const src = photoSrc || markSrc || CELEYOU_MARK_SRC;
+  const src = isEmbeddedImage(photoSrc) ? photoSrc : isEmbeddedImage(markSrc) ? markSrc : null;
+  if (!src) return null;
+  const official = !isEmbeddedImage(photoSrc);
   const well = Math.max(22, Math.round(qrSize * CELECARD_QR_CENTER_WELL));
   const inner = official
     ? Math.max(14, Math.round(well * 0.8))

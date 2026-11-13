@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getDemoCardBySlug, isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
 import { dummyLiveNotFoundResponse } from "@/lib/digital-business-card/demo-live-access";
 import { CeleCardExportMarkup } from "@/lib/digital-business-card/card-export-markup";
+import { livePlateSnapshotResponse } from "@/lib/digital-business-card/live-plate-server";
 import { celeCardGuideQrDataUrl, celeCardPlateBitmapAssets, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
 import { applyCeleCardDesign, compactCeleCardDesign } from "@/lib/digital-business-card/design";
 import {
@@ -14,7 +15,7 @@ import {
 } from "@/lib/digital-business-card/share";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import type { CeleCardPortraitFrame } from "@/lib/digital-business-card/portrait-frame";
-import { isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
+import { isCeleCardCourtesyReachable, isCeleCardPubliclyReachable } from "@/lib/digital-business-card/access";
 import { celeYouGuestOrigin, getAppUrlFromEnv } from "@/lib/app-url";
 import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-business-card.service";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
@@ -113,11 +114,24 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
   if (!card) return new Response("Not found", { status: 404 });
   const policy = await getCeleCardLifecyclePolicy();
 
-  if (!isCeleCardPubliclyReachable(card, policy)) {
+  const guestPlate =
+    isCeleCardPubliclyReachable(card, policy) || isCeleCardCourtesyReachable(card, policy);
+  if (!guestPlate) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.id !== card.userId) {
       return new Response("Not found", { status: 404 });
     }
+  }
+
+  const snapshot = await livePlateSnapshotResponse(
+    card.id,
+    guestPlate ? "public, max-age=60, stale-while-revalidate=86400" : "private, no-store"
+  );
+  if (snapshot) {
+    if (download) {
+      snapshot.headers.set("Content-Disposition", `attachment; filename="${filename}"`);
+    }
+    return snapshot;
   }
 
   const socials = normalizeSocials(card.socials);
@@ -141,7 +155,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     companyLogoSrc: plate.companyLogoSrc,
     filename,
     download,
-    cacheControl: isCeleCardPubliclyReachable(card, policy)
+    cacheControl: guestPlate
       ? "public, max-age=300, stale-while-revalidate=86400"
       : "private, no-store",
   });

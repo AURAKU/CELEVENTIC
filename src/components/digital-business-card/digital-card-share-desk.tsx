@@ -26,6 +26,7 @@ import {
 } from "@/lib/celeyou-share/engine";
 import { contactSaveHint } from "@/lib/celeyou-share/namedrop";
 import { WALLET_PASS_CTA } from "@/lib/celeyou-share/wallet-pass";
+import { usePersistLivePlateSnapshot } from "@/lib/digital-business-card/capture-live-plate";
 
 export function DigitalCardShareDesk({
   profileUrl,
@@ -58,6 +59,10 @@ export function DigitalCardShareDesk({
   useEffect(() => {
     setDiscoverable(proximityDiscoverable);
   }, [proximityDiscoverable]);
+  usePersistLivePlateSnapshot(
+    cardId || vcard.id,
+    [vcard.themeId, vcard.avatarUrl, vcard.displayName, vcard.title, vcard.company].join("|")
+  );
   const nfc = useMemo(() => detectNfcWriteSupport(), []);
   const engine = useMemo(() => new CeleYouSmartShareEngine(), []);
   const origin = getCeleYouShareOrigin();
@@ -102,6 +107,7 @@ export function DigitalCardShareDesk({
       text: celeCardShareMessage({ displayName: vcard.displayName }, identityShare),
       url: identityShare,
       imageUrl: vcard.slug ? celeCardShareImageUrls(vcard.slug, vcard.id || undefined) : null,
+      persistPlateCardId: cardId || vcard.id || null,
     });
     if (result === "copied") {
       setShareNote("Link copied.");

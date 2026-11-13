@@ -11,8 +11,8 @@ import { resolveCeleYouPublicShare, toGuestPublicPayload } from "@/lib/digital-b
 import { celeCardGrantCookieName } from "@/lib/digital-business-card/privacy";
 import {
   buildCeleCardShareMetadata,
-  celeCardShareCacheVersion,
-  courtesyCeleCardMetadata,
+  celeCardPageOgPath,
+  CELECARD_PLATE_SHARE_GEN,
   digitalCardOgImagePath,
   isCeleYouUnfurlRequest,
   withheldCeleCardMetadata,
@@ -31,13 +31,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const demo = getDemoCardBySlug(slug);
   if (demo) {
     if (demo.presentationMode === "courtesy" || !demo.isLive) {
-      return courtesyCeleCardMetadata(demo.displayName);
+      return withheldCeleCardMetadata();
     }
     return {
       ...buildCeleCardShareMetadata({
         card: demo,
         origin,
-        imagePath: digitalCardOgImagePath(demo.slug, "card-tile"),
+        imagePath: digitalCardOgImagePath(demo.slug, `${CELECARD_PLATE_SHARE_GEN}-card-tile`),
       }),
       robots: { index: false, follow: false },
     };
@@ -46,17 +46,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!card || card.deletedAt) return withheldCeleCardMetadata();
   const policy = await getCeleCardLifecyclePolicy();
   const presentation = resolveCeleYouPublicShare({ card, channel: "profile", policy }).presentation;
-  if (presentation === "live") {
+  if (presentation === "live" || presentation === "courtesy") {
     return {
       ...buildCeleCardShareMetadata({
         card,
         origin,
-        imagePath: digitalCardOgImagePath(card.slug, celeCardShareCacheVersion(card.updatedAt)),
+        imagePath: celeCardPageOgPath(card.slug, card.updatedAt),
       }),
       robots: { index: false, follow: false },
     };
   }
-  if (presentation === "courtesy") return courtesyCeleCardMetadata(card.displayName);
   return withheldCeleCardMetadata();
 }
 
