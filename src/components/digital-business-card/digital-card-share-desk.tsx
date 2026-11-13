@@ -10,9 +10,9 @@ import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact
 import { CeleYouNameDropSetup } from "@/components/digital-business-card/celeyou-namedrop-setup";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import {
+  celeCardShareImageUrls,
   celeCardShareMessage,
   celeCardShareTitle,
-  digitalCardOgImagePath,
   digitalCardWalletPath,
 } from "@/lib/digital-business-card/share";
 import { getCeleYouShareOrigin, sanitizePublicUrl } from "@/lib/app-url";
@@ -101,7 +101,7 @@ export function DigitalCardShareDesk({
       title: celeCardShareTitle({ displayName: vcard.displayName, title: vcard.title }),
       text: celeCardShareMessage({ displayName: vcard.displayName }, identityShare),
       url: identityShare,
-      imageUrl: vcard.slug ? digitalCardOgImagePath(vcard.slug, vcard.id || undefined) : null,
+      imageUrl: vcard.slug ? celeCardShareImageUrls(vcard.slug, vcard.id || undefined) : null,
     });
     if (result === "copied") {
       setShareNote("Link copied.");

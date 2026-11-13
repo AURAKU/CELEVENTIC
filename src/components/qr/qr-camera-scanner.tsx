@@ -7,7 +7,7 @@ import {
   QR_SCAN_DEBOUNCE_MS,
   QR_SCAN_SAME_CODE_MS,
 } from "@/lib/qr/qr-constants";
-import { buildScannerConfig } from "@/lib/qr/scanner-config";
+import { buildScannerConfig, scannerViewfinderIsReady } from "@/lib/qr/scanner-config";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,48 @@ async function stopScanner(scanner: ScannerRef | null) {
   }
 }
 
+/** Keep the live video in-page on iOS Safari instead of jumping into a system camera. */
+export function pinScannerVideo(host: HTMLElement | null) {
+  const video = host?.querySelector("video");
+  if (!(video instanceof HTMLVideoElement)) return null;
+  video.playsInline = true;
+  video.setAttribute("playsinline", "true");
+  video.setAttribute("webkit-playsinline", "true");
+  video.muted = true;
+  video.defaultMuted = true;
+  video.autoplay = true;
+  video.setAttribute("muted", "true");
+  video.setAttribute("autoplay", "true");
+  video.controls = false;
+  video.disablePictureInPicture = true;
+  video.style.objectFit = "cover";
+  video.style.width = "100%";
+  video.style.height = "100%";
+  void video.play()?.catch(() => undefined);
+  return video;
+}
+
+function sizeViewfinderHost(host: HTMLElement) {
+  const self = host.getBoundingClientRect();
+  if (scannerViewfinderIsReady(self.width, self.height)) return true;
+  const parent = host.parentElement?.getBoundingClientRect();
+  const width = Math.floor(self.width || parent?.width || 0);
+  const height = Math.floor(self.height || parent?.height || width);
+  if (!scannerViewfinderIsReady(width, height)) return false;
+  host.style.width = `${width}px`;
+  host.style.height = `${height}px`;
+  return true;
+}
+
+async function waitForViewfinder(host: HTMLElement, isStale: () => boolean) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    if (isStale()) return false;
+    if (sizeViewfinderHost(host)) return true;
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
+  return sizeViewfinderHost(host);
+}
+
 const REAR_CAMERA_LABEL = /back|rear|environment|trás|arrière|wide|ultra/i;
 const FRONT_CAMERA_LABEL = /front|user|selfie|facetime/i;
 
@@ -119,6 +161,11 @@ export function QrCameraScanner({
   const lastScanRef = useRef<{ text: string; at: number } | null>(null);
   const cooldownRef = useRef(false);
   const videoTrackRef = useRef<MediaStreamTrack | null>(null);
+  const startGenRef = useRef(0);
+  const onScanRef = useRef(onScan);
+  const onErrorRef = useRef(onError);
+  onScanRef.current = onScan;
+  onErrorRef.current = onError;
   const [starting, setStarting] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
@@ -134,23 +181,20 @@ export function QrCameraScanner({
     [onScreenScanModeChange]
   );
 
-  const handleScan = useCallback(
-    (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
-      const now = Date.now();
-      const last = lastScanRef.current;
-      if (last && last.text === trimmed && now - last.at < QR_SCAN_SAME_CODE_MS) return;
-      if (cooldownRef.current) return;
-      lastScanRef.current = { text: trimmed, at: now };
-      cooldownRef.current = true;
-      onScan(trimmed);
-      window.setTimeout(() => {
-        cooldownRef.current = false;
-      }, QR_SCAN_DEBOUNCE_MS);
-    },
-    [onScan]
-  );
+  const handleScan = useCallback((text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const now = Date.now();
+    const last = lastScanRef.current;
+    if (last && last.text === trimmed && now - last.at < QR_SCAN_SAME_CODE_MS) return;
+    if (cooldownRef.current) return;
+    lastScanRef.current = { text: trimmed, at: now };
+    cooldownRef.current = true;
+    onScanRef.current(trimmed);
+    window.setTimeout(() => {
+      cooldownRef.current = false;
+    }, QR_SCAN_DEBOUNCE_MS);
+  }, []);
 
   const applyTorch = useCallback(async (on: boolean) => {
     const track = videoTrackRef.current;
@@ -167,6 +211,7 @@ export function QrCameraScanner({
 
   useEffect(() => {
     if (!active) {
+      startGenRef.current += 1;
       void stopScanner(scannerRef.current);
       scannerRef.current = null;
       videoTrackRef.current = null;
@@ -178,15 +223,17 @@ export function QrCameraScanner({
     }
 
     if (!canUseCamera()) {
-      onError?.("Camera requires HTTPS. Open Celeventic over a secure connection.");
+      onErrorRef.current?.("Camera requires HTTPS. Open Celeventic over a secure connection.");
       return;
     }
 
-    let cancelled = false;
+    const startGen = ++startGenRef.current;
+    const isStale = () => startGen !== startGenRef.current;
 
     async function startCamera() {
       setStarting(true);
       await stopScanner(scannerRef.current);
+      if (isStale()) return;
       scannerRef.current = null;
       videoTrackRef.current = null;
       setTorchAvailable(false);
@@ -194,11 +241,17 @@ export function QrCameraScanner({
 
       try {
         const { Html5Qrcode } = await import("html5-qrcode");
-        if (cancelled) return;
+        if (isStale()) return;
 
         const host = document.getElementById(viewfinderId);
         if (!host) {
-          onError?.("Scanner viewfinder is not ready. Refresh and try again.");
+          onErrorRef.current?.("Scanner viewfinder is not ready. Refresh and try again.");
+          return;
+        }
+        const sized = await waitForViewfinder(host, isStale);
+        if (isStale()) return;
+        if (!sized) {
+          onErrorRef.current?.("Scanner viewfinder is not ready. Refresh and try again.");
           return;
         }
 
@@ -209,6 +262,10 @@ export function QrCameraScanner({
         scannerRef.current = scanner;
 
         const cameras = await rearCameraCandidates();
+        if (isStale()) {
+          await stopScanner(scanner);
+          return;
+        }
         const config = buildScannerConfig(screenScanMode);
 
         const startWithCamera = async (cam: string | MediaTrackConstraints) => {
@@ -218,12 +275,21 @@ export function QrCameraScanner({
         let lastStartError: unknown = null;
         let started = false;
         for (const camera of cameras) {
+          if (isStale()) {
+            await stopScanner(scanner);
+            return;
+          }
           try {
             await startWithCamera(camera);
             started = true;
             break;
           } catch (error) {
             lastStartError = error;
+            try {
+              await scanner.stop();
+            } catch {
+              /* try the next camera */
+            }
           }
         }
         if (!started) {
@@ -232,9 +298,12 @@ export function QrCameraScanner({
             : new Error("Rear camera is unavailable on this device.");
         }
 
-        if (cancelled) return;
+        if (isStale()) {
+          await stopScanner(scanner);
+          return;
+        }
 
-        // Capture the live track for torch + capability probes.
+        pinScannerVideo(host);
         const video = host.querySelector("video");
         const stream = video?.srcObject;
         if (stream instanceof MediaStream) {
@@ -253,9 +322,9 @@ export function QrCameraScanner({
           setTorchAvailable(Boolean(caps?.torch));
         }
       } catch (err) {
-        if (!cancelled) {
+        if (!isStale()) {
           const msg = err instanceof Error ? err.message : "Camera unavailable";
-          onError?.(
+          onErrorRef.current?.(
             msg.includes("NotAllowed")
               ? "Camera permission denied. Allow camera access in your browser settings."
               : msg.includes("NotFound")
@@ -264,19 +333,19 @@ export function QrCameraScanner({
           );
         }
       } finally {
-        if (!cancelled) setStarting(false);
+        if (!isStale()) setStarting(false);
       }
     }
 
     void startCamera();
 
     return () => {
-      cancelled = true;
+      startGenRef.current += 1;
       void stopScanner(scannerRef.current);
       scannerRef.current = null;
       videoTrackRef.current = null;
     };
-  }, [active, handleScan, onError, screenScanMode, viewfinderId]);
+  }, [active, handleScan, screenScanMode, viewfinderId]);
 
   if (!active) return null;
 
@@ -309,20 +378,22 @@ export function QrCameraScanner({
 
       <div
         className={cn(
-          "relative w-full max-w-md mx-auto rounded-2xl overflow-hidden bg-slate-900 border shadow-xl",
+          "relative mx-auto w-full max-w-md overflow-hidden rounded-2xl border bg-slate-900 shadow-xl",
           screenScanMode ? "border-brand-400/50 ring-2 ring-brand-400/20" : "border-slate-700"
         )}
       >
-        <div
-          id={viewfinderId}
-          className={cn(
-            "w-full min-h-[300px] sm:min-h-[420px] [&_video]:w-full [&_video]:h-full",
-            // Screen mode: contain keeps the guest phone QR fully in frame (cover crops edges).
-            screenScanMode ? "[&_video]:object-contain bg-black" : "[&_video]:object-cover"
-          )}
-        />
+        <div className="relative aspect-square w-full min-h-[280px] bg-black">
+          <div
+            id={viewfinderId}
+            className="absolute inset-0 h-full min-h-[280px] w-full [&_video]:absolute [&_video]:inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover [&_#qr-shaded-region]:opacity-0"
+          />
+          <div
+            className="pointer-events-none absolute inset-[12%] rounded-[1.15rem] border-2 border-white/70"
+            aria-hidden
+          />
+        </div>
         {starting && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-sm font-medium">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm font-medium text-white">
             Starting camera…
           </div>
         )}
@@ -330,7 +401,7 @@ export function QrCameraScanner({
           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3 text-center">
             <p className="text-xs text-white/90">
               {screenScanMode
-                ? "Hold steady · fill the frame with the guest's phone QR"
+                ? "Hold the other phone QR inside the frame"
                 : "Point at the pass · printed or on-screen · auto-focus on"}
             </p>
           </div>

@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 import { DIGITAL_CARD_BRAND_PATHS } from "@/lib/digital-business-card/brand-paths";
 
-const PHONE_DEVICE_PATH =
-  "M7.2 2.2h9.6A2.7 2.7 0 0 1 19.5 4.9v14.2a2.7 2.7 0 0 1-2.7 2.7H7.2A2.7 2.7 0 0 1 4.5 19.1V4.9A2.7 2.7 0 0 1 7.2 2.2Zm1.35 3.15h7.9c.64 0 1.15.51 1.15 1.15v10.9c0 .64-.51 1.15-1.15 1.15h-7.9c-.64 0-1.15-.51-1.15-1.15V6.5c0-.64.51-1.15 1.15-1.15Zm2.55-1.85h2.8a.75.75 0 0 1 0 1.5h-2.8a.75.75 0 0 1 0-1.5Z";
+const PHONE_RECEIVER_PATH =
+  "M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z";
 
 const CONTACT_MARKS: Record<string, { color: string; ink: string; paths: string[]; stroke?: boolean; evenodd?: boolean }> = {
   email: {
@@ -14,24 +14,22 @@ const CONTACT_MARKS: Record<string, { color: string; ink: string; paths: string[
     ],
   },
   phone: {
-    color: "#0F766E",
-    ink: "#ECFDF8",
+    color: "#34C759",
+    ink: "#FFFFFF",
     evenodd: true,
-    paths: [PHONE_DEVICE_PATH],
+    paths: [PHONE_RECEIVER_PATH],
   },
   "phone-personal": {
-    color: "#0F766E",
-    ink: "#ECFDF8",
+    color: "#34C759",
+    ink: "#FFFFFF",
     evenodd: true,
-    paths: [PHONE_DEVICE_PATH],
+    paths: [PHONE_RECEIVER_PATH],
   },
   "phone-business": {
     color: "#1E3A5F",
     ink: "#F8FAFC",
     evenodd: true,
-    paths: [
-      "M3.6 3.9h16.8c1.15 0 2.1.95 2.1 2.1v2.55h-3.05V6.85H6.55v1.7H3.6V6c0-1.15.95-2.1 2.1-2.1ZM6.2 10.15h11.6v9.35c0 1.1-.9 2-2 2H8.2c-1.1 0-2-.9-2-2v-9.35Zm2.35 2.35h6.9v1.45h-6.9v-1.45Zm0 2.55h6.9v1.45h-6.9v-1.45Zm0 2.55h4.4v1.45h-4.4v-1.45Z",
-    ],
+    paths: [PHONE_RECEIVER_PATH],
   },
   bank: {
     color: "#0B2545",
@@ -41,13 +39,12 @@ const CONTACT_MARKS: Record<string, { color: string; ink: string; paths: string[
     ],
   },
   website: {
-    color: "#1C1917",
-    ink: "#FAFAF9",
-    stroke: true,
+    color: "#007AFF",
+    ink: "#FFFFFF",
+    evenodd: true,
     paths: [
-      "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z",
-      "M3.75 12h16.5",
-      "M12 3c2.4 3.2 3.75 6.4 3.75 9S14.4 17.8 12 21c-2.4-3.2-3.75-6.4-3.75-9S9.6 6.2 12 3Z",
+      "M12 2.2a9.8 9.8 0 1 1 0 19.6 9.8 9.8 0 0 1 0-19.6Zm0 1.85a7.95 7.95 0 1 0 0 15.9 7.95 7.95 0 0 0 0-15.9Z",
+      "M16.55 7.2 13.28 14.55 7.45 16.8 10.72 9.45 16.55 7.2Zm-4.55 4.05a.95.95 0 1 0 .02 1.9.95.95 0 0 0-.02-1.9Z",
     ],
   },
   location: {

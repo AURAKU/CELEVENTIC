@@ -38,5 +38,7 @@ describe("CeleYou interactive plate", () => {
     assert.match(css, /\.celecard-tap-hint \{/);
     assert.match(css, /prefers-reduced-motion[\s\S]*celecard-interactive/);
     assert.match(css, /celecard-plate-flip-in/);
+    assert.match(css, /--celecard-flip, 1\.65s/);
+    assert.doesNotMatch(css, /celecard-plate-flip-in 0\.84s/);
   });
 });

@@ -1163,6 +1163,17 @@ button p.whitespace-normal {
   color: #475569;
 }
 
+.bg-mesh .text-slate-500,
+.bg-dashboard .text-slate-500,
+.page-scaffold .text-slate-500,
+.celecard-studio .text-slate-500,
+.bg-mesh .text-muted-foreground,
+.bg-dashboard .text-muted-foreground,
+.page-scaffold .text-muted-foreground,
+.celecard-studio .text-muted-foreground {
+  color: #3f3a36;
+}
+
 /* Dark invitation / cinematic gold must read as gold, not mud */
 .inv-text-on-dark .text-gold-500,
 .inv-text-on-dark .text-gold-600,
@@ -1771,9 +1782,9 @@ button p.whitespace-normal {
   view-transition-name: celecard-plate;
   transform-origin: center center;
   transition:
-    width 0.72s cubic-bezier(0.22, 1, 0.36, 1),
-    max-height 0.72s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+    width var(--celecard-flip, 1.65s) var(--celecard-flip-ease, cubic-bezier(0.37, 0.02, 0.16, 1)),
+    max-height var(--celecard-flip, 1.65s) var(--celecard-flip-ease, cubic-bezier(0.37, 0.02, 0.16, 1)),
+    transform var(--celecard-flip, 1.65s) var(--celecard-flip-ease, cubic-bezier(0.37, 0.02, 0.16, 1));
 }
 
 .celecard-plate-motion {
@@ -1821,19 +1832,136 @@ html:active-view-transition .celecard-plate-motion {
   min-width: 0;
 }
 
+.celecard-guest-kicker {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-cinzel), Palatino, "Palatino Linotype", serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  line-height: 1.25;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.celecard-guest-copy {
+  margin: 0;
+  font-family: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  font-size: 1.125rem;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  line-height: 1.65;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.celecard-meet-chip {
+  touch-action: manipulation;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.celecard-meet-chip:hover {
+  transform: translateY(-1px);
+}
+
+.celecard-meet-chip:active {
+  transform: scale(0.97);
+}
+
+.celecard-meet-chip[data-on="true"] {
+  animation: celecard-meet-pop 280ms ease;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
+}
+
+.celecard-meet-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.75rem;
+  padding: 0.22rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.celecard-meet-pop {
+  animation: celecard-meet-pop 280ms ease;
+}
+
+.celecard-meet-shake {
+  animation: celecard-meet-shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes celecard-meet-pop {
+  0% {
+    transform: scale(0.94);
+  }
+  55% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes celecard-meet-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celecard-meet-chip,
+  .celecard-meet-chip[data-on="true"],
+  .celecard-meet-pop,
+  .celecard-meet-shake,
+  .celecard-copy-hit,
+  .celecard-copy-hit[data-copied="true"],
+  .celecard-copy-all[data-copied="true"],
+  .celecard-code-drop,
+  .celecard-code-chevron {
+    animation: none;
+    transform: none;
+  }
+}
+
 .celecard-guest-footer {
   position: relative;
   z-index: 1;
   display: flex;
   width: 100%;
   flex: 0 0 auto;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.85rem;
   margin-top: auto;
-  padding: 0.85rem
+  padding: 1.35rem
     max(1rem, env(safe-area-inset-right, 0px))
-    11.25rem
+    6.75rem
     max(1rem, env(safe-area-inset-left, 0px));
   pointer-events: none;
+  text-align: center;
 }
 
 .celecard-guest-brand {
@@ -1841,10 +1969,11 @@ html:active-view-transition .celecard-plate-motion {
   display: inline-flex;
   max-width: min(100%, 22rem);
   align-items: center;
+  justify-content: center;
   gap: 0.7rem;
   padding: 0.35rem 0.2rem;
   text-decoration: none;
-  opacity: 0.86;
+  opacity: 0.94;
   transition: opacity 0.18s ease;
 }
 
@@ -1866,6 +1995,48 @@ html:active-view-transition .celecard-plate-motion {
   align-items: flex-start;
   gap: 0.18rem;
   line-height: 1.15;
+  text-align: left;
+}
+
+.celecard-guest-powered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.22rem;
+  margin: 0;
+  pointer-events: none;
+}
+
+.celecard-guest-powered-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-cinzel), Palatino, "Palatino Linotype", serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #0b8a83;
+}
+
+.celecard-guest-powered-by::before,
+.celecard-guest-powered-by::after {
+  content: "";
+  width: 1.45rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.42;
+}
+
+.celecard-guest-powered-tag {
+  font-family: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  font-size: 0.88rem;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  color: #3f3a36;
 }
 
 .celecard-guest-brand-name {
@@ -1914,6 +2085,14 @@ html:active-view-transition .celecard-plate-motion {
 .celecard-guest-footer[data-tone="dark"] .celecard-guest-brand-tag,
 .celecard-guest-footer[data-tone="dark"] .celecard-guest-brand-cta {
   color: rgba(244, 230, 200, 0.72);
+}
+
+.celecard-guest-footer[data-tone="dark"] .celecard-guest-powered-by {
+  color: #5eead4;
+}
+
+.celecard-guest-footer[data-tone="dark"] .celecard-guest-powered-tag {
+  color: rgba(244, 230, 200, 0.78);
 }
 
 .celecard-guest-mark {
@@ -1996,6 +2175,10 @@ html:active-view-transition .celecard-plate-motion {
     text-align: left;
   }
 
+  .celecard-guest-kicker {
+    font-size: 1.125rem;
+  }
+
   .celecard-guest-footer {
     padding-left: 2rem;
     padding-right: 2rem;
@@ -2012,55 +2195,77 @@ html:active-view-transition .celecard-plate-motion {
 }
 
 /*
- * Rotated phone, tablet, or a short landscape viewport: only the ID-1 card,
- * as if you are holding it. Tall desktop landscape keeps the full guest page.
+ * Rotated phone, tablet, or a short landscape viewport: the ID-1 plate
+ * covers the visual viewport. No mint wash, no safe-area letterbox.
+ * Tall desktop landscape keeps the full guest page.
  */
 @media (orientation: landscape) and (pointer: coarse) and (min-aspect-ratio: 1.12/1),
+  (orientation: landscape) and (hover: none) and (min-aspect-ratio: 1.12/1),
   (orientation: landscape) and (max-height: 740px) and (min-aspect-ratio: 1.35/1) and (max-width: 1200px) {
   html:has(.celecard-stage:not([data-celecard-hold="false"])),
   body:has(.celecard-stage:not([data-celecard-hold="false"])) {
-    height: 100dvh;
+    height: var(--celecard-hold-vh, 100dvh);
     overflow: hidden;
+    background: #041c1a;
   }
 
   .celecard-stage:not([data-celecard-hold="false"]) {
-    height: 100dvh;
-    min-height: 100dvh;
-    max-height: 100dvh;
+    position: fixed;
+    top: var(--celecard-hold-top, 0px);
+    left: var(--celecard-hold-left, 0px);
+    width: var(--celecard-hold-vw, 100dvw);
+    height: var(--celecard-hold-vh, 100dvh);
+    min-height: 0;
+    max-height: none;
     overflow: hidden;
-    padding-bottom: 0;
+    padding: 0;
+    background: #041c1a !important;
   }
 
   .celecard-stage:not([data-celecard-hold="false"]) .celecard-guest-column {
+    position: absolute;
+    inset: 0;
     width: 100%;
     max-width: none;
     height: 100%;
-    min-height: 100dvh;
+    min-height: 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    place-items: center;
+    place-items: unsafe center;
     gap: 0;
-    padding: env(safe-area-inset-top, 0px)
-      env(safe-area-inset-right, 0px)
-      env(safe-area-inset-bottom, 0px)
-      env(safe-area-inset-left, 0px);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .celecard-stage:not([data-celecard-hold="false"]) .celecard-tap-shell {
+    position: relative;
+    max-width: none;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: grid;
+    place-items: unsafe center;
+    padding: 0;
   }
 
   .celecard-stage:not([data-celecard-hold="false"]) .celecard-hold-frame,
   .celecard-stage:not([data-celecard-hold="false"]) .celecard-guest-column .celecard-hold-frame {
-    position: static;
-    margin-inline: auto;
-    width: min(
-      calc(100dvw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)),
-      calc(
-        (100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 85.6 / 54
-      )
-    );
-    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin: calc(var(--celecard-hold-cover-h, 100dvh) / -2) 0 0 calc(var(--celecard-hold-cover-w, 100dvw) / -2);
+    width: var(--celecard-hold-cover-w, max(100dvw, calc(100dvh * 85.6 / 54)));
+    height: var(--celecard-hold-cover-h, max(100dvh, calc(100dvw * 54 / 85.6)));
+    max-width: none;
+    max-height: none;
   }
 
   .celecard-stage:not([data-celecard-hold="false"]) .celecard-hold-frame .celecard-face,
   .celecard-stage:not([data-celecard-hold="false"]) .celecard-guest-column .celecard-hold-frame .celecard-face {
+    width: 100%;
+    height: 100%;
+    max-width: none;
     border-radius: 0;
     box-shadow: none;
   }
@@ -2070,50 +2275,84 @@ html:active-view-transition .celecard-plate-motion {
   .celecard-stage:not([data-celecard-hold="false"]) .celecard-dock-bar,
   .celecard-stage:not([data-celecard-hold="false"]) .celecard-connect-layer,
   .celecard-stage:not([data-celecard-hold="false"]) .celecard-sheet,
-  .celecard-stage:not([data-celecard-hold="false"]) .celecard-atmo {
+  .celecard-stage:not([data-celecard-hold="false"]) .celecard-atmo,
+  .celecard-stage:not([data-celecard-hold="false"]) .celecard-tap-chrome {
     display: none !important;
   }
 
   .celecard-stage:not([data-celecard-hold="false"]) .celecard-enter {
     animation: none;
   }
+
+  .celecard-stage:not([data-celecard-hold="false"]) .celecard-plate-motion {
+    width: 100%;
+    height: 100%;
+  }
+
+  .celecard-stage:not([data-celecard-hold="false"]) .celecard-plate-motion > * {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .celecard-stage[data-celecard-hold="true"] {
-  height: 100dvh;
-  min-height: 100dvh;
-  max-height: 100dvh;
+  position: fixed;
+  top: var(--celecard-hold-top, 0px);
+  left: var(--celecard-hold-left, 0px);
+  width: var(--celecard-hold-vw, 100dvw);
+  height: var(--celecard-hold-vh, 100dvh);
+  min-height: 0;
+  max-height: none;
   overflow: hidden;
-  padding-bottom: 0;
+  padding: 0;
+  background: #041c1a !important;
+  z-index: 40;
 }
 
 .celecard-stage[data-celecard-hold="true"] .celecard-guest-column {
+  position: absolute;
+  inset: 0;
   width: 100%;
   max-width: none;
   height: 100%;
-  min-height: 100dvh;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  place-items: center;
+  place-items: unsafe center;
   gap: 0;
-  padding: env(safe-area-inset-top, 0px)
-    env(safe-area-inset-right, 0px)
-    env(safe-area-inset-bottom, 0px)
-    env(safe-area-inset-left, 0px);
+  padding: 0;
+  overflow: hidden;
+}
+
+.celecard-stage[data-celecard-hold="true"] .celecard-tap-shell {
+  position: relative;
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: unsafe center;
+  padding: 0;
 }
 
 .celecard-stage[data-celecard-hold="true"] .celecard-hold-frame,
 .celecard-stage[data-celecard-hold="true"] .celecard-guest-column .celecard-hold-frame {
-  position: static;
-  margin-inline: auto;
-  width: min(
-    calc(100dvw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)),
-    calc((100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 85.6 / 54)
-  );
-  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: calc(var(--celecard-hold-cover-h, 100dvh) / -2) 0 0 calc(var(--celecard-hold-cover-w, 100dvw) / -2);
+  width: var(--celecard-hold-cover-w, max(100dvw, calc(100dvh * 85.6 / 54)));
+  height: var(--celecard-hold-cover-h, max(100dvh, calc(100dvw * 54 / 85.6)));
+  max-width: none;
+  max-height: none;
 }
 
 .celecard-stage[data-celecard-hold="true"] .celecard-face {
+  width: 100%;
+  height: 100%;
+  max-width: none;
   border-radius: 0;
   box-shadow: none;
 }
@@ -2123,7 +2362,8 @@ html:active-view-transition .celecard-plate-motion {
 .celecard-stage[data-celecard-hold="true"] .celecard-dock-bar,
 .celecard-stage[data-celecard-hold="true"] .celecard-connect-layer,
 .celecard-stage[data-celecard-hold="true"] .celecard-sheet,
-.celecard-stage[data-celecard-hold="true"] .celecard-atmo {
+.celecard-stage[data-celecard-hold="true"] .celecard-atmo,
+.celecard-stage[data-celecard-hold="true"] .celecard-tap-chrome {
   display: none !important;
 }
 
@@ -2137,51 +2377,68 @@ html:active-view-transition .celecard-plate-motion {
 }
 
 .celecard-stage[data-celecard-hold="true"] .celecard-plate-motion {
-  animation: celecard-plate-flip-in 0.84s cubic-bezier(0.22, 1, 0.36, 1) both;
+  width: 100%;
+  height: 100%;
+  animation: celecard-plate-flip-in var(--celecard-flip, 1.65s) var(--celecard-flip-ease, cubic-bezier(0.37, 0.02, 0.16, 1)) both;
+}
+
+.celecard-stage[data-celecard-hold="true"] .celecard-plate-motion > * {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 ::view-transition-group(celecard-plate) {
-  animation-duration: 0.72s;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-duration: var(--celecard-flip, 1.65s);
+  animation-timing-function: var(--celecard-flip-ease, cubic-bezier(0.37, 0.02, 0.16, 1));
 }
 
 ::view-transition-old(celecard-plate) {
-  animation: celecard-vt-flip-old 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: celecard-vt-flip-old var(--celecard-flip, 1.65s) var(--celecard-flip-ease, cubic-bezier(0.37, 0.02, 0.16, 1)) both;
 }
 
 ::view-transition-new(celecard-plate) {
-  animation: celecard-vt-flip-new 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: celecard-vt-flip-new var(--celecard-flip, 1.65s) var(--celecard-flip-ease, cubic-bezier(0.37, 0.02, 0.16, 1)) both;
 }
 
 @keyframes celecard-plate-flip-in {
-  0% { transform: perspective(1400px) rotateY(-88deg) scale(0.92); }
-  58% { transform: perspective(1400px) rotateY(8deg) scale(1.02); }
+  0% { transform: perspective(1600px) rotateY(-92deg) scale(0.9); }
+  22% { transform: perspective(1600px) rotateY(-78deg) scale(0.92); }
+  48% { transform: perspective(1600px) rotateY(-22deg) scale(0.98); }
+  78% { transform: perspective(1600px) rotateY(5deg) scale(1.012); }
   100% { transform: none; }
 }
 
 @keyframes celecard-vt-flip-old {
-  0% { transform: perspective(1400px) rotateY(0deg); opacity: 1; }
-  42% { transform: perspective(1400px) rotateY(90deg) scale(0.94); opacity: 0.28; }
+  0% { transform: perspective(1600px) rotateY(0deg); opacity: 1; }
+  28% { transform: perspective(1600px) rotateY(42deg) scale(0.97); opacity: 0.86; }
+  58% { transform: perspective(1600px) rotateY(90deg) scale(0.94); opacity: 0.22; }
   100% { opacity: 0; }
 }
 
 @keyframes celecard-vt-flip-new {
-  0% { transform: perspective(1400px) rotateY(-90deg) scale(0.94); opacity: 0.28; }
+  0% { transform: perspective(1600px) rotateY(-90deg) scale(0.94); opacity: 0.22; }
+  42% { transform: perspective(1600px) rotateY(-28deg) scale(0.98); opacity: 1; }
+  78% { transform: perspective(1600px) rotateY(4deg) scale(1.01); opacity: 1; }
   100% { transform: none; opacity: 1; }
 }
 
 [data-celecard-present="true"][data-celecard-hold="true"] {
-  height: 100dvh;
-  min-height: 100dvh;
-  max-height: 100dvh;
+  position: fixed;
+  top: var(--celecard-hold-top, 0px);
+  left: var(--celecard-hold-left, 0px);
+  width: var(--celecard-hold-vw, 100dvw);
+  height: var(--celecard-hold-vh, 100dvh);
+  min-height: 0;
+  max-height: none;
   overflow: hidden;
-  padding: env(safe-area-inset-top, 0px)
-    env(safe-area-inset-right, 0px)
-    env(safe-area-inset-bottom, 0px)
-    env(safe-area-inset-left, 0px);
+  padding: 0;
 }
 
 [data-celecard-present="true"][data-celecard-hold="true"] .celecard-face {
+  width: var(--celecard-hold-cover-w, max(100dvw, calc(100dvh * 85.6 / 54)));
+  height: var(--celecard-hold-cover-h, max(100dvh, calc(100dvw * 54 / 85.6)));
+  max-width: none;
   border-radius: 0;
   box-shadow: none;
 }
@@ -2330,6 +2587,149 @@ html:active-view-transition .celecard-plate-motion {
   height: 1.05rem;
   flex-shrink: 0;
   accent-color: #0b8a83;
+}
+
+.celecard-privacy-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.celecard-privacy-tile {
+  position: relative;
+  width: 3.15rem;
+  height: 3.15rem;
+  flex: 0 0 auto;
+}
+
+.celecard-privacy-mark {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 0.95rem;
+  background: #f1f5f9;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.celecard-privacy-mark:hover {
+  transform: translateY(-1px);
+}
+
+.celecard-privacy-tile[data-on="true"] .celecard-privacy-mark {
+  border-color: #0b8a83;
+  background: rgba(11, 138, 131, 0.12);
+}
+
+.celecard-privacy-tile[data-hidden="true"] .celecard-privacy-mark {
+  background: #e2e8f0;
+}
+
+.celecard-privacy-eye {
+  position: absolute;
+  right: -0.28rem;
+  bottom: -0.28rem;
+  display: grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #1c1917;
+  color: #fffef8;
+  cursor: pointer;
+}
+
+.celecard-privacy-eye[data-hidden="true"] {
+  background: #0b8a83;
+}
+
+.celecard-privacy-eye:hover {
+  transform: scale(1.06);
+}
+
+.celecard-privacy-eye-inline {
+  position: static;
+  right: auto;
+  bottom: auto;
+}
+
+.celecard-privacy-icons-compact {
+  gap: 0.4rem;
+}
+
+.celecard-privacy-tile-static {
+  width: 2.45rem;
+  height: 2.45rem;
+  pointer-events: none;
+}
+
+.celecard-privacy-tile-static .celecard-privacy-mark {
+  cursor: default;
+  transform: none;
+}
+
+.celecard-code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 0.55rem;
+  row-gap: 0.55rem;
+  padding-top: 0.35rem;
+}
+
+.celecard-code-toggle {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.2rem 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.celecard-code-chevron {
+  color: #57534e;
+  transition: transform 180ms ease;
+}
+
+.celecard-code-row[data-open="true"] .celecard-code-chevron {
+  transform: rotate(180deg);
+}
+
+.celecard-code-drop {
+  grid-column: 1 / -1;
+  padding: 0.55rem 0.15rem 0.15rem;
+  animation: celecard-code-drop-in 220ms ease;
+}
+
+@keyframes celecard-code-drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.celecard-code-value {
+  margin-left: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #1c1917;
 }
 
 @media (min-width: 640px) {
@@ -2547,6 +2947,14 @@ html:active-view-transition .celecard-plate-motion {
   }
 }
 
+.celecard-share-layer {
+  pointer-events: auto;
+}
+
+.celecard-share-plate {
+  pointer-events: none;
+}
+
 /* ID-1 face: one composition, scaled by card width on every viewport. */
 .celecard-face {
   container-type: inline-size;
@@ -2597,6 +3005,22 @@ html:active-view-transition .celecard-plate-motion {
   0%,
   58% { opacity: 0.92; }
   100% { opacity: 0; visibility: hidden; }
+}
+
+.celecard-tap-receipt {
+  box-shadow: 0 0 0 1px rgba(127, 240, 228, 0.12), 0 0 28px rgba(11, 138, 131, 0.28);
+  animation: celecard-tap-receipt-in 0.55s ease both;
+}
+
+@keyframes celecard-tap-receipt-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celecard-tap-receipt {
+    animation: none;
+  }
 }
 
 .celecard-face-row {
@@ -3414,6 +3838,72 @@ html:active-view-transition .celecard-plate-motion {
 
 .celecard-sheet {
   animation: celecard-sheet-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.celecard-copy-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3.1rem;
+  padding: 0.55rem 0.55rem;
+}
+
+.celecard-copy-row + .celecard-copy-row {
+  border-top: 1px solid rgba(28, 25, 23, 0.08);
+}
+
+.celecard-copy-label {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #3f3a36;
+}
+
+.celecard-copy-value {
+  margin: 0.12rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: #1c1917;
+  overflow-wrap: anywhere;
+}
+
+.celecard-copy-hit {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 0.85rem;
+  background: #1c1917;
+  color: #fffef8;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.celecard-copy-hit:hover {
+  transform: translateY(-1px);
+}
+
+.celecard-copy-hit:active {
+  transform: scale(0.96);
+}
+
+.celecard-copy-hit[data-copied="true"],
+.celecard-copy-all[data-copied="true"] {
+  background: #0b8a83;
+  animation: celecard-meet-pop 280ms ease;
+}
+
+.celecard-copy-all[data-copied="true"] {
+  color: #fffef8;
 }
 
 @keyframes celecard-sheet-in {

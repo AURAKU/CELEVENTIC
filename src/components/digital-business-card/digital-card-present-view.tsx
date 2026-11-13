@@ -22,6 +22,7 @@ import {
   DigitalCardUnavailableView,
 } from "@/components/digital-business-card/digital-card-continuity-view";
 import { useEmbeddedCardShare } from "@/components/digital-business-card/use-embedded-card-share";
+import { useCelecardSilentHold } from "@/components/digital-business-card/use-celecard-silent-hold";
 
 type FullscreenNode = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -88,28 +89,20 @@ export function DigitalCardPresentView({
     hostCardId,
     discoverable: proximityDiscoverable,
   });
-  const [landscape, setLandscape] = useState(false);
+  const { hold, holdAxis } = useCelecardSilentHold();
+  const landscape = hold || holdAxis === "landscape";
   const [nativeFs, setNativeFs] = useState(false);
   const [fsHint, setFsHint] = useState(wantImmersive);
   const [canFs, setCanFs] = useState(false);
 
   useEffect(() => {
     setCanFs(fullscreenAvailable());
-    const landscapeQuery = window.matchMedia("(orientation: landscape)");
-    const apply = () => setLandscape(landscapeQuery.matches);
-    apply();
-    landscapeQuery.addEventListener("change", apply);
-    window.addEventListener("resize", apply);
-    window.visualViewport?.addEventListener("resize", apply);
     function onFs() {
       setNativeFs(Boolean(fullscreenElement()));
     }
     document.addEventListener("fullscreenchange", onFs);
     document.addEventListener("webkitfullscreenchange", onFs);
     return () => {
-      landscapeQuery.removeEventListener("change", apply);
-      window.removeEventListener("resize", apply);
-      window.visualViewport?.removeEventListener("resize", apply);
       document.removeEventListener("fullscreenchange", onFs);
       document.removeEventListener("webkitfullscreenchange", onFs);
     };
@@ -161,7 +154,7 @@ export function DigitalCardPresentView({
 
   const chromePad = landscape ? "0px" : "8.5rem";
   const stageWidth = landscape
-    ? `min(100%, calc((100dvh - ${chromePad}) * 85.6 / 54))`
+    ? "var(--celecard-hold-cover-w, max(100dvw, calc(100dvh * 85.6 / 54)))"
     : `min(100%, 46rem, calc((100dvh - ${chromePad}) * 85.6 / 54))`;
 
   return (
@@ -173,10 +166,10 @@ export function DigitalCardPresentView({
       data-celecard-hold={landscape ? "true" : undefined}
       style={{
         background: theme.stageBackground,
-        paddingTop: landscape ? "env(safe-area-inset-top)" : "max(0.75rem, env(safe-area-inset-top))",
-        paddingBottom: landscape ? "env(safe-area-inset-bottom)" : "max(0.75rem, env(safe-area-inset-bottom))",
-        paddingLeft: landscape ? "env(safe-area-inset-left)" : "max(0.75rem, env(safe-area-inset-left))",
-        paddingRight: landscape ? "env(safe-area-inset-right)" : "max(0.75rem, env(safe-area-inset-right))",
+        paddingTop: landscape ? "0px" : "max(0.75rem, env(safe-area-inset-top))",
+        paddingBottom: landscape ? "0px" : "max(0.75rem, env(safe-area-inset-bottom))",
+        paddingLeft: landscape ? "0px" : "max(0.75rem, env(safe-area-inset-left))",
+        paddingRight: landscape ? "0px" : "max(0.75rem, env(safe-area-inset-right))",
       }}
     >
       <div className="pointer-events-none absolute inset-0 opacity-[0.2]" aria-hidden>

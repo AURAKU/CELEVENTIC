@@ -4,7 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { getDemoCardBySlug, isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
 import { dummyLiveNotFoundResponse } from "@/lib/digital-business-card/demo-live-access";
 import { CeleCardExportMarkup } from "@/lib/digital-business-card/card-export-markup";
-import { celeCardGuideQrDataUrl, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
+import { celeCardGuideQrDataUrl, celeCardPlateBitmapAssets, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
+import { applyCeleCardDesign, compactCeleCardDesign } from "@/lib/digital-business-card/design";
 import {
   CELECARD_EXPORT_HEIGHT,
   CELECARD_EXPORT_WIDTH,
@@ -31,6 +32,9 @@ function renderCard(props: {
   qrSrc?: string | null;
   qrLabel?: string | null;
   portraitFrame?: CeleCardPortraitFrame | null;
+  markSrc?: string | null;
+  paperSrc?: string | null;
+  companyLogoSrc?: string | null;
   filename: string;
   download: boolean;
   cacheControl: string;
@@ -46,6 +50,9 @@ function renderCard(props: {
         qrSrc={props.qrSrc}
         qrLabel={props.qrLabel}
         portraitFrame={props.portraitFrame}
+        markSrc={props.markSrc}
+        paperSrc={props.paperSrc}
+        companyLogoSrc={props.companyLogoSrc}
       />
     ),
     { width: CELECARD_EXPORT_WIDTH, height: CELECARD_EXPORT_HEIGHT }
@@ -78,8 +85,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     if (blocked) return blocked;
     const demo = getDemoCardBySlug(slug);
     if (!demo) return new Response("Not found", { status: 404 });
-    const theme = resolveDigitalCardTheme(demo.themeId);
-    const [photoSrc, qr] = await Promise.all([safeCeleCardPhotoSrc(demo.avatarUrl), cardAssets(demo.publicToken)]);
+    const theme = applyCeleCardDesign(resolveDigitalCardTheme(demo.themeId), compactCeleCardDesign(demo.socials.design));
+    const [photoSrc, qr, plate] = await Promise.all([
+      safeCeleCardPhotoSrc(demo.avatarUrl),
+      cardAssets(demo.publicToken),
+      celeCardPlateBitmapAssets(demo.socials, theme),
+    ]);
     return renderCard({
       displayName: demo.displayName,
       title: demo.title,
@@ -89,6 +100,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
       qrSrc: qr.qrSrc,
       qrLabel: qr.qrLabel,
       portraitFrame: demo.socials.portraitFrame,
+      markSrc: plate.markSrc,
+      paperSrc: plate.paperSrc,
+      companyLogoSrc: plate.companyLogoSrc,
       filename,
       download,
       cacheControl: "public, max-age=3600, stale-while-revalidate=86400",
@@ -106,8 +120,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     }
   }
 
-  const theme = resolveDigitalCardTheme(card.themeId);
-  const [photoSrc, qr] = await Promise.all([safeCeleCardPhotoSrc(card.avatarUrl), cardAssets(card.publicToken)]);
+  const socials = normalizeSocials(card.socials);
+  const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), compactCeleCardDesign(socials.design));
+  const [photoSrc, qr, plate] = await Promise.all([
+    safeCeleCardPhotoSrc(card.avatarUrl),
+    cardAssets(card.publicToken),
+    celeCardPlateBitmapAssets(socials, theme),
+  ]);
   return renderCard({
     displayName: card.displayName,
     title: card.title,
@@ -116,7 +135,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     photoSrc,
     qrSrc: qr.qrSrc,
     qrLabel: qr.qrLabel,
-    portraitFrame: normalizeSocials(card.socials).portraitFrame,
+    portraitFrame: socials.portraitFrame,
+    markSrc: plate.markSrc,
+    paperSrc: plate.paperSrc,
+    companyLogoSrc: plate.companyLogoSrc,
     filename,
     download,
     cacheControl: isCeleCardPubliclyReachable(card, policy)

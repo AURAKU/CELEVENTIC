@@ -24,27 +24,27 @@ export const TAP_CAPABILITY_MATRIX = [
   {
     pair: "iPhone to iPhone",
     technology: "BLE proximity in the CeleYou app, plus Apple-supported sharing in the system sheet.",
-    today: "Web Tap Mode uses session QR or code. Safari cannot advertise BLE or do phone to phone NFC.",
+    today: "Web Universal Connect uses Tap to Share, Scan to Connect, and Share Link. Safari cannot advertise BLE or do phone to phone NFC.",
   },
   {
     pair: "Samsung to Samsung",
     technology: "BLE proximity in the CeleYou app, plus Android NFC Reader Mode where the OS allows it.",
-    today: "Web Tap Mode uses session QR or code. Chrome can write a physical NFC card. It cannot advertise BLE.",
+    today: "Web Universal Connect uses Tap to Share, Scan to Connect, and Share Link. Chrome can write a physical NFC card. It cannot advertise BLE.",
   },
   {
     pair: "Android to Android",
     technology: "Vendor-neutral BLE in the CeleYou app. Runtime checks decide what this phone can do.",
-    today: "Web Tap Mode uses session QR or code. Do not depend on Android Beam. It is obsolete.",
+    today: "Web Universal Connect uses Tap to Share, Scan to Connect, and Share Link. Do not depend on Android Beam. It is obsolete.",
   },
   {
     pair: "iPhone to Android",
     technology: "Shared BLE protocol in both apps. Same service UUID, GATT hello, and token exchange.",
-    today: "Web Tap Mode uses session QR or code. That is the working cross-platform handshake in the browser.",
+    today: "Web Universal Connect uses Tap to Share, Scan to Connect, and Share Link. That is the working cross-platform handshake in the browser.",
   },
   {
     pair: "Samsung to iPhone",
     technology: "The same shared BLE protocol as iPhone to Android.",
-    today: "Web Tap Mode uses session QR or code. No manufacturer shortcut is required.",
+    today: "Web Universal Connect uses Tap to Share, Scan to Connect, and Share Link. No manufacturer shortcut is required.",
   },
   {
     pair: "Any phone to NFC card",

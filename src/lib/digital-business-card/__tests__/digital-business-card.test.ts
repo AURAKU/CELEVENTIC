@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { resolveDigitalCardTheme, DIGITAL_CARD_THEMES, celecardMotionMood } from "@/lib/digital-business-card/themes";
-import { CELECARD_REACH_INK, celecardAccentOnStage, celecardCompanyDisplayLines, celecardCompanyFitCqw, celecardDisplayNameLines, celecardDockFinish, celecardNameFitCqw, celecardNameShouldStack, celecardPlateDisplayName, celecardReachPlate, celecardTitleDisplayLines, celecardTitleFitCqw, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
+import { CELECARD_PAPER_INK, CELECARD_PAPER_MUTED, CELECARD_REACH_INK, celecardAccentOnStage, celecardCompanyDisplayLines, celecardCompanyFitCqw, celecardDisplayNameLines, celecardDockFinish, celecardInkLuminance, celecardNameFitCqw, celecardNameShouldStack, celecardPaperAccent, celecardPaperTone, celecardPlateDisplayName, celecardReachPlate, celecardTitleDisplayLines, celecardTitleFitCqw, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import {
   CELECARD_HOUSE_AVATAR_IDS,
   CELECARD_PORTRAIT_MAX_EDGE,
@@ -31,6 +31,7 @@ import { DEMO_CARD } from "@/lib/digital-business-card/demo-card";
 import {
   celecardEventIsPlateBackground,
   celecardHoldAxis,
+  celecardHoldCoverSize,
   celecardHoldIntentAfterAutoChange,
   celecardHoldIsActive,
   celecardShouldHoldViewport,
@@ -303,6 +304,7 @@ describe("digital business card themes", () => {
     assert.match(portrait, /Choose a person/);
     assert.match(portrait, /Choose a creature/);
     assert.match(portrait, /Choose a studio mark/);
+    assert.match(portrait, /celecardPaperTone/);
     assert.doesNotMatch(portrait, /flex flex-wrap gap-1.5/);
     assert.match(notice, /aria-live="polite"/);
     assert.match(studio, /DigitalCardStudioNotice/);
@@ -407,9 +409,17 @@ describe("digital business card themes", () => {
     }
     const pulse = resolveDigitalCardTheme("teal-pulse");
     assert.equal(pulse.text, "#f8fafc");
-    assert.equal(celecardAccentOnStage(pulse.accent, false), CELECARD_REACH_INK);
+    const paperGold = celecardPaperAccent(pulse.accent);
+    assert.notEqual(paperGold.toLowerCase(), pulse.accent.toLowerCase());
+    assert.equal(celecardInkLuminance(paperGold) <= 142, true);
+    assert.equal(celecardAccentOnStage(pulse.accent, false), paperGold);
     assert.equal(celecardAccentOnStage("#0B8A83", false), "#0B8A83");
     assert.equal(celecardAccentOnStage("#0a3d3a", true), "#f4e6c8");
+    const desk = celecardPaperTone(pulse);
+    assert.equal(desk.text, CELECARD_PAPER_INK);
+    assert.equal(desk.muted, CELECARD_PAPER_MUTED);
+    assert.equal(celecardInkLuminance(desk.text) < 60, true);
+    assert.equal(celecardInkLuminance(desk.muted) < 90, true);
   });
 
   it("maps every template to a guest motion mood", () => {
@@ -717,6 +727,7 @@ describe("celecard social catalog", () => {
     assert.deepEqual(missing.map((n) => n.key), []);
     assert.equal(hasOfficialBrandMark("signal"), true);
     assert.equal(hasOfficialBrandMark("whatsappbusiness"), true);
+    assert.equal(hasOfficialBrandMark("website"), true);
     const { DIGITAL_CARD_BRAND_PATHS } = await import("@/lib/digital-business-card/brand-paths");
     assert.equal(DIGITAL_CARD_BRAND_PATHS.whatsapp.color, "#25D366");
     assert.equal(DIGITAL_CARD_BRAND_PATHS.whatsappbusiness.color, "#128C7E");
@@ -737,6 +748,21 @@ describe("celecard social catalog", () => {
     assert.deepEqual(payWithoutImage.map((n) => n.key), []);
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
+    const brandMarkSource = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-brand-mark.tsx"),
+      "utf8"
+    );
+    assert.match(brandMarkSource, /website: \{\s*color: "#007AFF"/);
+    assert.match(brandMarkSource, /M16\.55 7\.2/);
+    assert.doesNotMatch(brandMarkSource, /M12 21a9 9 0 1 0 0-18/);
+    assert.match(brandMarkSource, /phone: \{\s*color: "#34C759"/);
+    assert.match(brandMarkSource, /M2\.25 6\.75c0 8\.284/);
+    assert.doesNotMatch(brandMarkSource, /M7\.2 2\.2h9\.6/);
+    const reachGrid = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-reach-grid.tsx"),
+      "utf8"
+    );
+    assert.doesNotMatch(reachGrid, /color=\{group\.brand === "phone" \? theme\.accent/);
     for (const network of DIGITAL_CARD_SOCIAL_NETWORKS.filter((n) => n.group === "pay")) {
       const svg = readFileSync(join(process.cwd(), "public", PAY_BRAND_IMAGES[network.key].replace(/^\//, "")), "utf8");
       assert.match(svg, /width="48"/, `${network.key} wallet mark must be a sized official tile`);
@@ -863,7 +889,15 @@ describe("celecard social catalog", () => {
     assert.match(view, /listDigitalCardPayItems/);
     assert.match(view, /groupDigitalCardPayItems/);
     assert.match(view, /Payment channels/);
-    assert.match(view, /DigitalCardReachGrid/);
+    assert.match(view, /Share pay page/);
+    assert.match(view, /Save QR/);
+    assert.match(view, /Copy number/);
+    assert.match(view, /Copy all/);
+    assert.match(view, /PayChannelCard/);
+    assert.match(view, /digitalCardWalletPath/);
+    assert.match(view, /receive QR/);
+    assert.match(view, /"scan", "mobile-money"/);
+    assert.doesNotMatch(view, /DigitalCardReachGrid/);
     assert.doesNotMatch(view, /walletPassGuidance/);
     assert.doesNotMatch(view, /Hold up this card/);
     assert.doesNotMatch(view, /Save card image/);
@@ -968,6 +1002,26 @@ describe("celecard social catalog", () => {
     assert.equal(isLiveReachItem(bank!), true);
     assert.equal(DIGITAL_CARD_PAY_KEYS.includes("bank" as (typeof DIGITAL_CARD_PAY_KEYS)[number]), true);
     assert.match(formatBankAccountCopy(parsed), /Account number 1234 5678 90/);
+    const grid = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-reach-grid.tsx"),
+      "utf8"
+    );
+    const wallet = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-wallet-view.tsx"),
+      "utf8"
+    );
+    const copyCss = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    assert.match(grid, /celecard-copy-row/);
+    assert.match(grid, /Copy all/);
+    assert.match(grid, /Copy \$\{row\.label\}/);
+    assert.match(grid, /writeClipboard/);
+    assert.match(grid, /CELECARD_REACH_INK/);
+    assert.match(grid, /Copied all/);
+    assert.match(grid, /background: CELECARD_REACH_INK, color: "#fffef8"/);
+    assert.match(wallet, /celecard-copy-row/);
+    assert.match(wallet, /Copy all/);
+    assert.match(wallet, /CopyFieldButton/);
+    assert.match(copyCss, /\.celecard-copy-hit/);
     const hidden = listDigitalCardReachItems({
       socials: {
         bank: [
@@ -1440,6 +1494,48 @@ describe("celecard multiple reach", () => {
     assert.match(business.androidIntent ?? "", /scheme=whatsapp/);
     const linkedin = nativeOpenFor("linkedin", "ama-serwaa", "https://www.linkedin.com/in/ama-serwaa");
     assert.match(linkedin.appHref ?? "", /linkedin:\/\/in\/ama-serwaa/);
+    const tiktok = nativeOpenFor("tiktok", "amaserwaa", "https://www.tiktok.com/@amaserwaa");
+    assert.match(tiktok.appHref ?? "", /tiktok:\/\/user\?unique_id=amaserwaa/);
+    const snapchat = nativeOpenFor("snapchat", "amaserwaa", "https://www.snapchat.com/add/amaserwaa");
+    assert.match(snapchat.appHref ?? "", /snapchat:\/\/add\/amaserwaa/);
+  });
+
+  it("sends a guest phone into the installed app, then the web page if it is missing", async () => {
+    const { listDigitalCardReachItems, nativeOpenFor, reachLaunchPlan } = await import(
+      "@/lib/digital-business-card/socials"
+    );
+    const { DEMO_CARD } = await import("@/lib/digital-business-card/demo-card");
+    const items = listDigitalCardReachItems(DEMO_CARD);
+    const instagram = items.find((item) => item.brand === "instagram");
+    assert.ok(instagram);
+    assert.equal(reachLaunchPlan(instagram!, { android: true, mobile: true }).mode, "intent");
+    assert.match(reachLaunchPlan(instagram!, { android: true, mobile: true }).native ?? "", /com\.instagram\.android/);
+    const ios = reachLaunchPlan(instagram!, { android: false, mobile: true });
+    assert.equal(ios.mode, "native-then-web");
+    assert.match(ios.native ?? "", /instagram:\/\/user\?username=amaserwaa/);
+    assert.equal(ios.web, "https://www.instagram.com/amaserwaa");
+    assert.equal(reachLaunchPlan(instagram!, { android: false, mobile: false }).mode, "web");
+    const tiktok = items.find((item) => item.brand === "tiktok");
+    assert.ok(tiktok);
+    const iosTiktok = reachLaunchPlan(tiktok!, { android: false, mobile: true });
+    assert.equal(iosTiktok.mode, "native-then-web");
+    assert.match(iosTiktok.native ?? "", /^tiktok:\/\//);
+    const snapchat = nativeOpenFor("snapchat", "amaserwaa", "https://www.snapchat.com/add/amaserwaa");
+    assert.equal(
+      reachLaunchPlan(
+        { href: "https://www.snapchat.com/add/amaserwaa", appHref: snapchat.appHref, androidIntent: snapchat.androidIntent, brand: "snapchat" },
+        { android: false, mobile: true }
+      ).mode,
+      "native-then-web"
+    );
+    const phone = items.find((item) => item.brand === "phone");
+    if (phone) {
+      assert.equal(reachLaunchPlan(phone, { android: true, mobile: true }).mode, "web");
+    }
+    const site = items.find((item) => item.brand === "website");
+    if (site) {
+      assert.equal(reachLaunchPlan(site, { android: true, mobile: true }).mode, "web");
+    }
   });
 
   it("keeps a QR-only wallet on the guest page and hides blank pay fields", async () => {
@@ -1737,6 +1833,14 @@ describe("CeleYou landscape hold", () => {
     assert.equal(celecardShouldHoldViewport(781, 731, false), false);
     assert.equal(celecardShouldHoldViewport(1440, 900, false), false);
     assert.equal(celecardShouldHoldViewport(1280, 720, false, 1280, 800), false);
+    const coverPhone = celecardHoldCoverSize(844, 390);
+    assert.ok(coverPhone.width >= 844 - 0.5);
+    assert.ok(coverPhone.height >= 390);
+    assert.ok(Math.abs(coverPhone.width / coverPhone.height - 85.6 / 54) < 0.002);
+    const coverTall = celecardHoldCoverSize(800, 600);
+    assert.ok(coverTall.height >= 600 - 0.5);
+    assert.ok(coverTall.width >= 800);
+    assert.ok(Math.abs(coverTall.width / coverTall.height - 85.6 / 54) < 0.002);
 
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
     const view = readFileSync(
@@ -1746,12 +1850,48 @@ describe("CeleYou landscape hold", () => {
     assert.match(css, /data-celecard-hold="true"/);
     assert.match(css, /\(orientation: landscape\) and \(max-height: 740px\)/);
     assert.match(css, /85\.6 \/\s*54/);
+    assert.match(css, /--celecard-hold-cover-w/);
+    assert.match(css, /--celecard-hold-cover-h/);
+    assert.match(css, /--celecard-hold-top/);
     assert.doesNotMatch(css, /0\.7rem\) \* 85\.6/);
+    assert.doesNotMatch(
+      css,
+      /\.celecard-stage\[data-celecard-hold="true"\] \.celecard-guest-column \{[\s\S]*?padding: env\(safe-area-inset-top/
+    );
     assert.match(css, /celecard-plate-flip-in/);
+    assert.match(css, /--celecard-flip, 1\.65s/);
+    assert.match(css, /rotateY\(-78deg\)/);
+    assert.doesNotMatch(css, /celecard-plate-flip-in 0\.84s/);
     assert.match(css, /view-transition-name: celecard-plate/);
-    assert.match(view, /celecardRunHoldMotion/);
+    assert.match(view, /useCelecardSilentHold/);
     assert.match(view, /onPlateActivate/);
-    assert.match(view, /readCelecardHoldViewport/);
+    const holdHook = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/use-celecard-silent-hold.ts"),
+      "utf8"
+    );
+    assert.match(holdHook, /orientationchange/);
+    assert.match(holdHook, /wakeLock/);
+    assert.match(holdHook, /readCelecardHoldViewport/);
+    assert.match(holdHook, /writeCelecardHoldViewportCss/);
+    const tap = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/celeyou-tap-connect.tsx"),
+      "utf8"
+    );
+    assert.match(tap, /DigitalCardFace/);
+    assert.match(tap, /useCelecardSilentHold/);
+    assert.match(tap, /celecard-hold-frame/);
+    assert.match(tap, /silentHost/);
+    assert.match(tap, /void startHost\(\)/);
+    assert.match(tap, /celecard-tap-scanner/);
+    assert.match(tap, /celeyou-tap-scan-viewfinder/);
+    assert.match(tap, /showScreenScanToggle=\{false\}/);
+    assert.match(tap, /if \(scanning\) setHoldIntent\("closed"\)/);
+    assert.doesNotMatch(tap, /ProximityOrbs|h-24 w-40/);
+    assert.match(css, /hover: none/);
+    assert.match(css, /celecard-tap-chrome/);
+    assert.match(css, /max-width: none/);
+    assert.match(css, /place-items: unsafe center/);
+    assert.match(css, /background: #041c1a !important/);
     assert.doesNotMatch(view, /qrHref=\{hold \? undefined : digitalCardPublicUrl/);
     assert.doesNotMatch(view, /Tap this plate to share from this phone/);
     assert.match(view, /Hold this card up/);
@@ -1781,10 +1921,24 @@ describe("CeleYou guest public layout", () => {
     assert.match(view, /celecard-guest-intro/);
     assert.doesNotMatch(view, /You do not need an app or an account/);
     assert.match(view, /celecard-guest-section/);
+    assert.match(view, /celecard-guest-kicker/);
+    assert.doesNotMatch(view, /mb-2 text-center text-\[11px\] font-semibold uppercase tracking-\[0\.16em\]/);
+    assert.match(css, /\.celecard-guest-kicker/);
+    assert.match(css, /font-family: var\(--font-cinzel\)/);
+    assert.match(css, /font-size: 1\.05rem/);
+    assert.match(view, /celecard-guest-copy/);
+    assert.match(css, /\.celecard-guest-copy/);
+    assert.match(css, /font-family: var\(--font-cormorant\)/);
+    assert.doesNotMatch(view, /text-center text-\[15px\] font-medium leading-relaxed/);
     assert.match(view, /celecard-action-label/);
     assert.match(view, /SAVE_CONTACT_CTA/);
     assert.match(view, /CONNECT_BACK_ARIA/);
     assert.match(view, /CONNECT_BACK_CTA/);
+    assert.match(view, /celecard-share-layer/);
+    assert.match(view, /celecard-share-plate/);
+    assert.match(view, /Share plate/);
+    assert.match(view, /celeCardShareCommentary/);
+    assert.match(view, /Share this live CeleYou plate/);
     assert.match(view, /<Contact/);
     assert.doesNotMatch(view, /<Download/);
     assert.doesNotMatch(view, /contactActions/);
@@ -1793,8 +1947,13 @@ describe("CeleYou guest public layout", () => {
     assert.match(view, /celecard-plate-motion/);
     assert.doesNotMatch(view, /Tap to Connect/);
     assert.match(view, /celecard-guest-footer/);
+    assert.match(view, /celecard-guest-powered/);
+    assert.match(view, /FOOTER_POWERED_BY/);
+    assert.match(view, /APP_TAGLINE/);
+    assert.match(css, /\.celecard-studio \.text-slate-500/);
     assert.match(css, /\.celecard-guest-footer \{/);
-    assert.match(css, /11\.25rem/);
+    assert.match(css, /6\.75rem/);
+    assert.match(css, /\.celecard-guest-powered-by/);
     assert.match(css, /\.celecard-guest-footer,[\s\S]*\.celecard-dock-bar/);
     const footerAt = view.indexOf("celecard-guest-footer");
     const dockAt = view.indexOf("celecard-dock-bar");
@@ -1806,6 +1965,8 @@ describe("CeleYou guest public layout", () => {
     assert.match(css, /\.celecard-reach-row \{/);
     assert.match(view, /headingInk/);
     assert.match(view, /ghostBorder/);
+    assert.doesNotMatch(view, /28,25,23,0\.62/);
+    assert.match(view, /28,25,23,0\.82/);
     const grid = readFileSync(
       join(process.cwd(), "src/components/digital-business-card/digital-card-reach-grid.tsx"),
       "utf8"

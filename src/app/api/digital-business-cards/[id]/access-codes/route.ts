@@ -47,7 +47,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       expiresAt: parsed.data.expiresAt ? new Date(parsed.data.expiresAt) : null,
       maxRedemptions: parsed.data.maxRedemptions ?? null,
     });
-    return NextResponse.json({ success: true, data: { id: created.id, label: created.label } });
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: created.id,
+        label: created.label,
+        code: parsed.data.code.trim().toUpperCase(),
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save the code";
     return NextResponse.json({ error: message }, { status: 400 });

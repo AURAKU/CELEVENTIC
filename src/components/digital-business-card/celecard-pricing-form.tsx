@@ -98,7 +98,7 @@ export function CeleCardPricingForm({ canEdit }: { canEdit: boolean }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="celecard-admin-desk space-y-5">
       <section className="rounded-2xl border bg-white p-5">
         <h2 className="text-sm font-semibold">1. Subscription Catalog</h2>
         <p className="mt-1 text-xs text-slate-500">

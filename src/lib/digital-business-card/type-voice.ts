@@ -507,6 +507,29 @@ function hexLum(hex: string) {
   return (r * 299 + g * 587 + b * 114) / 1000;
 }
 
+function parseHexRgb(color: string): [number, number, number] | null {
+  const value = color.trim().replace("#", "");
+  if (value.length === 3) {
+    return [
+      parseInt(value[0] + value[0], 16),
+      parseInt(value[1] + value[1], 16),
+      parseInt(value[2] + value[2], 16),
+    ];
+  }
+  if (value.length < 6) return null;
+  return [parseInt(value.slice(0, 2), 16), parseInt(value.slice(2, 4), 16), parseInt(value.slice(4, 6), 16)];
+}
+
+function toHexRgb(r: number, g: number, b: number) {
+  return `#${[r, g, b].map((n) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, "0")).join("")}`;
+}
+
+export function celecardInkLuminance(color: string) {
+  const rgb = parseHexRgb(color);
+  if (!rgb) return 0;
+  return hexLum(toHexRgb(...rgb));
+}
+
 function inkOn(hex: string) {
   return hexLum(hex) < 158 ? "#fff8ef" : "#16120e";
 }
@@ -514,6 +537,36 @@ function inkOn(hex: string) {
 /** Reach pills are always light paper. Type is always dark, on every template. */
 export const CELECARD_REACH_INK = "#1c1917";
 export const CELECARD_REACH_MUTED = "#44403c";
+/** Studio, dashboard, and forms. Never plate cream or mint on light paper. */
+export const CELECARD_PAPER_INK = CELECARD_REACH_INK;
+export const CELECARD_PAPER_MUTED = "#3f3a36";
+export const CELECARD_PAPER_LABEL = "#0B8A83";
+const PAPER_ACCENT_LUM_MAX = 142;
+
+/** Keep the house hue, pull it down until it reads on white. */
+export function celecardPaperAccent(accent: string): string {
+  const rgb = parseHexRgb(accent);
+  if (!rgb) return CELECARD_PAPER_LABEL;
+  let [r, g, b] = rgb;
+  let lum = (r * 299 + g * 587 + b * 114) / 1000;
+  if (lum <= PAPER_ACCENT_LUM_MAX) return toHexRgb(r, g, b);
+  while (lum > PAPER_ACCENT_LUM_MAX && (r > 10 || g > 10 || b > 10)) {
+    r = Math.max(0, Math.round(r * 0.9));
+    g = Math.max(0, Math.round(g * 0.9));
+    b = Math.max(0, Math.round(b * 0.9));
+    lum = (r * 299 + g * 587 + b * 114) / 1000;
+  }
+  return toHexRgb(r, g, b);
+}
+
+export function celecardPaperTone(theme: Pick<DigitalCardTheme, "accent">) {
+  return {
+    text: CELECARD_PAPER_INK,
+    muted: CELECARD_PAPER_MUTED,
+    accent: celecardPaperAccent(theme.accent),
+    label: celecardPaperAccent(theme.accent),
+  };
+}
 
 export function celecardReachPlate(_theme: DigitalCardTheme, darkStage: boolean) {
   return {
@@ -527,7 +580,7 @@ export function celecardReachPlate(_theme: DigitalCardTheme, darkStage: boolean)
 export function celecardAccentOnStage(accent: string, darkStage: boolean) {
   const lum = hexLum(accent.startsWith("#") ? accent.slice(0, 7) : accent);
   if (darkStage && lum < 88) return "#f4e6c8";
-  if (!darkStage && lum > 186) return "#1c1917";
+  if (!darkStage && lum > PAPER_ACCENT_LUM_MAX) return celecardPaperAccent(accent);
   return accent;
 }
 

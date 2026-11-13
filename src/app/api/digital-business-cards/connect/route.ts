@@ -12,6 +12,27 @@ import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
 import { prisma } from "@/lib/prisma";
 import { finalizeGuestConnectBack } from "@/services/celeyou-connect/connect.service";
+import { normalizeGuestPhone } from "@/lib/celeyou-connect/pair";
+import {
+  assertTapGuestSessionForCard,
+  recordTapGuestReceipt,
+} from "@/services/digital-business-card/proximity.service";
+import { getCeleYouConnectFlags } from "@/lib/celeyou-connect/flags";
+import { isCeleventicDomain } from "@/lib/app-url";
+
+const GUEST_DUPLICATE_WINDOW_MS = 6 * 60 * 60 * 1000;
+
+function tapOriginAllowed(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  if (!origin) return true;
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+    return isCeleventicDomain(hostname);
+  } catch {
+    return false;
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +48,7 @@ const bodySchema = z.object({
   followupConsent: z.boolean().optional(),
   /** Honeypot. Bots fill this; humans leave blank */
   website: z.string().max(200).optional().nullable(),
+  tapJoinCode: z.string().max(128).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -75,17 +97,76 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Connect Back is disabled" }, { status: 403 });
   }
 
+  const flags = await getCeleYouConnectFlags();
+  const tapJoinCode = parsed.data.tapJoinCode?.trim() || "";
+  if (tapJoinCode) {
+    if (!tapOriginAllowed(req)) {
+      return NextResponse.json({ error: "That connection QR is not open." }, { status: 403 });
+    }
+    if (!flags.tap_mode_enabled || !flags.tap_guest_exchange) {
+      return NextResponse.json({ error: "Tap Mode exchange is paused." }, { status: 403 });
+    }
+    const tap = await assertTapGuestSessionForCard(tapJoinCode, card.id);
+    if (tap.status !== 200) {
+      return NextResponse.json({ error: tap.error }, { status: tap.status });
+    }
+  }
+
+  const visitorEmail = parsed.data.visitorEmail?.trim().toLowerCase() || null;
+  const visitorPhone = normalizeGuestPhone(parsed.data.visitorPhone);
+  const since = new Date(Date.now() - GUEST_DUPLICATE_WINDOW_MS);
+  const duplicateWhere = [
+    visitorEmail ? { visitorEmail } : undefined,
+    visitorPhone ? { visitorPhone } : undefined,
+  ].filter(Boolean) as Array<{ visitorEmail: string } | { visitorPhone: string }>;
+  const duplicate = duplicateWhere.length
+    ? await prisma.smartCardConnection.findFirst({
+        where: { cardId: card.id, createdAt: { gte: since }, OR: duplicateWhere },
+        select: { id: true },
+      })
+    : null;
+
   try {
+    if (duplicate) {
+      if (tapJoinCode) {
+        await recordTapGuestReceipt({ joinCode: tapJoinCode, visitorName: parsed.data.visitorName });
+      }
+      return NextResponse.json({
+        ok: true,
+        connectionId: duplicate.id,
+        ownerName: card.displayName,
+        duplicate: true,
+      });
+    }
+
+    if (tapJoinCode) {
+      const tap = await assertTapGuestSessionForCard(tapJoinCode, card.id);
+      if (tap.status !== 200) {
+        return NextResponse.json({ error: tap.error }, { status: tap.status });
+      }
+    }
+
     const connection = await createSmartCardConnection({
       cardId: card.id,
       visitorName: parsed.data.visitorName,
-      visitorEmail: parsed.data.visitorEmail,
-      visitorPhone: parsed.data.visitorPhone,
+      visitorEmail,
+      visitorPhone,
       visitorCompany: parsed.data.visitorCompany,
       visitorTitle: parsed.data.visitorTitle,
       note: parsed.data.note,
       formMode: "Instant",
+      source: tapJoinCode ? "tap_mode_qr" : "connect_back",
+      tags: [],
     });
+    const sessionId = tapJoinCode
+      ? await recordTapGuestReceipt({ joinCode: tapJoinCode, visitorName: parsed.data.visitorName })
+      : null;
+    if (sessionId) {
+      await prisma.smartCardConnection.update({
+        where: { id: connection.id },
+        data: { tags: [`tap_session:${sessionId}`] },
+      }).catch(() => undefined);
+    }
     const owner = await prisma.user.findUnique({
       where: { id: card.userId },
       select: { email: true },
@@ -97,8 +178,9 @@ export async function POST(req: NextRequest) {
       ownerDisplayName: card.displayName,
       ownerEmail: owner?.email,
       visitorName: parsed.data.visitorName,
-      visitorEmail: parsed.data.visitorEmail,
+      visitorEmail,
       followupConsent: parsed.data.followupConsent === true,
+      source: tapJoinCode ? "tap_mode_qr" : "connect_back",
     }).catch(() => undefined);
     return NextResponse.json({
       ok: true,

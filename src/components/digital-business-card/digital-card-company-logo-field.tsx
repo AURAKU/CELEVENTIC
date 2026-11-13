@@ -8,6 +8,7 @@ import { CROP_PRESETS } from "@/lib/image/crop-utils";
 import { readImageDimensions } from "@/lib/image/crop-utils";
 import { validateClientImage } from "@/lib/media/upload-with-progress";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
+import { celecardPaperTone } from "@/lib/digital-business-card/type-voice";
 import { cn } from "@/lib/utils";
 
 export function DigitalCardCompanyLogoField({
@@ -89,6 +90,7 @@ export function DigitalCardCompanyLogoField({
   }
 
   const size = compact ? "h-14 w-14" : "h-16 w-16";
+  const ink = celecardPaperTone(theme);
 
   return (
     <div className="shrink-0">
@@ -143,7 +145,7 @@ export function DigitalCardCompanyLogoField({
                 className="h-full w-full"
               />
             ) : uploading ? null : (
-              <Upload className="h-4 w-4" style={{ color: theme.accent }} />
+              <Upload className="h-4 w-4" style={{ color: ink.accent }} />
             )}
             {company ? (
               <span className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/35 to-transparent pb-1">
@@ -163,7 +165,7 @@ export function DigitalCardCompanyLogoField({
           type="button"
           onClick={clearLogo}
           className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
-          style={{ color: theme.accent }}
+          style={{ color: ink.accent }}
         >
           <X className="h-3 w-3" />
           Remove

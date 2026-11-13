@@ -197,5 +197,6 @@ describe("CeleYou vCard sharing", () => {
     const save = readFileSync(join(process.cwd(), "src/lib/digital-business-card/save-contact.ts"), "utf8");
     assert.match(save, /shareDigitalCardContactFile/);
     assert.doesNotMatch(save, /NameDrop/);
+    assert.doesNotMatch(save, /automatically/);
   });
 });

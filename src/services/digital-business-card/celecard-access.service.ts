@@ -11,12 +11,24 @@ import {
   type ReachVisibility,
 } from "@/lib/digital-business-card/privacy";
 import { getDigitalCardForUser } from "@/services/digital-business-card/digital-business-card.service";
+import { decrypt, encrypt } from "@/lib/encryption";
 
 export const CELECARD_GRANT_MAX_AGE_SECONDS = 60 * 60 * 12;
 
 function asItemKeys(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((value): value is string => typeof value === "string" && value.length > 0 && value.length < 80);
+}
+
+function ownerCodeFromHint(hint: string | null | undefined): string | null {
+  const raw = hint?.trim() || "";
+  if (!raw) return null;
+  try {
+    const code = decrypt(raw);
+    return normalizeAccessCode(code)?.code ?? null;
+  } catch {
+    return normalizeAccessCode(raw)?.code ?? null;
+  }
 }
 
 export async function resolveCeleCardGrant(cardId: string, rawToken: string | null | undefined) {
@@ -47,6 +59,7 @@ export async function createCeleCardAccessCode(input: {
       cardId: input.cardId,
       label: input.label.trim().slice(0, 80) || "Access code",
       codeHash: hashCeleCardAccessCode(input.cardId, normalized.code),
+      codeHint: encrypt(normalized.code),
       codeKind: normalized.kind,
       itemKeys,
       expiresAt: input.expiresAt ?? null,
@@ -105,6 +118,7 @@ export async function listCeleCardAccessCodes(cardId: string) {
   return rows.map((row) => ({
     id: row.id,
     label: row.label,
+    code: ownerCodeFromHint(row.codeHint),
     codeKind: row.codeKind,
     itemKeys: asItemKeys(row.itemKeys),
     expiresAt: row.expiresAt,

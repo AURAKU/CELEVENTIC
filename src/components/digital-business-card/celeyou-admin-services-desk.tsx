@@ -18,6 +18,7 @@ import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-bra
 import { CeleCardCommandDirectory } from "@/components/digital-business-card/celecard-command-directory";
 import { CeleCardPricingForm } from "@/components/digital-business-card/celecard-pricing-form";
 import { CeleCardAdminPolicyForm } from "@/components/digital-business-card/celecard-admin-policy-form";
+import { CeleCardTapAdminForm } from "@/components/digital-business-card/celecard-tap-admin-form";
 import type { CeleCardLifecyclePolicy } from "@/lib/digital-business-card/lifecycle";
 import type { CeleYouAdminServiceStatus } from "@/lib/digital-business-card/admin-services-catalog";
 
@@ -365,6 +366,7 @@ export function CeleYouAdminServicesDesk({ canEditPrices = false }: { canEditPri
                 </dl>
               </section>
               <CeleCardAdminPolicyForm policy={data.policy} />
+              <CeleCardTapAdminForm />
             </div>
           ) : null}
 

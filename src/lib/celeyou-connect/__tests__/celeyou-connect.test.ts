@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   DEFAULT_CELEYOU_CONNECT_FLAGS,
   mergeCeleYouConnectFlags,
+  tapSessionTtlMs,
 } from "@/lib/celeyou-connect/flags";
 import {
   celeYouConnectSearchText,
@@ -129,7 +130,13 @@ describe("CeleYou Connect flags", () => {
     assert.equal(DEFAULT_CELEYOU_CONNECT_FLAGS.connect_enrichment, false);
     assert.equal(DEFAULT_CELEYOU_CONNECT_FLAGS.connect_crm_integrations, false);
     assert.equal(DEFAULT_CELEYOU_CONNECT_FLAGS.connect_enterprise, false);
+    assert.equal(DEFAULT_CELEYOU_CONNECT_FLAGS.tap_mode_enabled, true);
+    assert.equal(DEFAULT_CELEYOU_CONNECT_FLAGS.tap_guest_exchange, true);
+    assert.equal(DEFAULT_CELEYOU_CONNECT_FLAGS.tap_session_ttl_seconds, 300);
+    assert.equal(DEFAULT_CELEYOU_CONNECT_FLAGS.tap_session_create_limit, 8);
+    assert.equal(tapSessionTtlMs(DEFAULT_CELEYOU_CONNECT_FLAGS), 5 * 60 * 1000);
     assert.equal(mergeCeleYouConnectFlags({ connect_enterprise: true }).connect_enterprise, true);
+    assert.equal(mergeCeleYouConnectFlags({ tap_session_ttl_seconds: 30 }).tap_session_ttl_seconds, 60);
   });
 });
 
@@ -141,6 +148,13 @@ describe("CeleYou Connect wiring", () => {
     assert.match(route, /website: z\.string\(\)\.max\(200\)/);
     assert.match(route, /if \(parsed\.data\.website\)/);
     assert.match(route, /finalizeGuestConnectBack/);
+    assert.match(route, /tapJoinCode/);
+    assert.match(route, /tap_mode_qr/);
+    assert.match(route, /GUEST_DUPLICATE_WINDOW_MS = 6 \* 60 \* 60 \* 1000/);
+    assert.match(route, /tapOriginAllowed/);
+    const createAt = route.indexOf("const connection = await createSmartCardConnection");
+    const receiptAt = route.lastIndexOf("recordTapGuestReceipt");
+    assert.ok(createAt > 0 && receiptAt > createAt, "host receipt must wait until the connection row is committed");
   });
 
   it("requires confirm true before exchanging cards", () => {
@@ -157,7 +171,8 @@ describe("CeleYou Connect wiring", () => {
     const view = source("src/components/digital-business-card/digital-card-public-view.tsx");
     assert.match(view, /DigitalCardConnectExchange/);
     assert.match(view, /I agree to share these details/);
-    assert.match(view, /followupConsent/);
+    assert.doesNotMatch(view, /Send me a short thank you/);
+    assert.match(view, /followupConsent: true/);
     assert.match(view, /visitorCompany/);
     assert.match(view, /connectBackEnabled && !card\.isDemo && !connectDone && !exchangeAvailable/);
   });
@@ -168,7 +183,7 @@ describe("CeleYou Connect wiring", () => {
     const automations = source("src/components/digital-business-card/digital-card-connect-automations.tsx");
     assert.match(inbox, /studio-inbox-search/);
     assert.match(inbox, /Share your CeleYou card to start building your network/);
-    assert.match(inbox, /Card exchange/);
+    assert.match(inbox, /celeYouConnectionSourceLabel/);
     assert.match(studio, /#studio-connect/);
     assert.match(studio, /DigitalCardConnectAutomations/);
     assert.match(automations, /Enable automatic follow-up/);

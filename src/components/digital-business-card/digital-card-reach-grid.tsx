@@ -27,9 +27,31 @@ import {
   type DigitalCardReachItem,
 } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
-import { CELECARD_REACH_MUTED, celecardReachPlate } from "@/lib/digital-business-card/type-voice";
+import { CELECARD_REACH_INK, CELECARD_REACH_MUTED, celecardReachPlate } from "@/lib/digital-business-card/type-voice";
 import { guestReachEventKind } from "@/lib/celeyou-share/guest-actions";
 import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
+
+async function writeClipboard(value: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    try {
+      const field = document.createElement("textarea");
+      field.value = value;
+      field.setAttribute("readonly", "");
+      field.style.position = "fixed";
+      field.style.opacity = "0";
+      document.body.appendChild(field);
+      field.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(field);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
 
 function trackGuestReach(item: DigitalCardReachItem, slug?: string, preview?: boolean) {
   if (!slug || preview) return;
@@ -180,22 +202,14 @@ export function DigitalCardReachGrid({
                   preview={compact}
                 />
               ) : isMeetingGroup(openDock) ? (
-                <>
-                  <div className="px-3.5 pt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: CELECARD_REACH_MUTED }}>Meetings</p>
-                    <p className={cn("mt-0.5 font-medium", compact ? "text-[11px]" : "text-[12px]")} style={{ color: CELECARD_REACH_MUTED }}>
-                      Pick a day and time. They get a message to confirm.
-                    </p>
-                  </div>
-                  <DigitalCardMeetingDrop
-                    items={openDock.items}
-                    theme={theme}
-                    compact={compact}
-                    preview={compact}
-                    slug={slug}
-                    ownerName={ownerName}
-                  />
-                </>
+                <DigitalCardMeetingDrop
+                  items={openDock.items}
+                  theme={theme}
+                  compact={compact}
+                  preview={compact}
+                  slug={slug}
+                  ownerName={ownerName}
+                />
               ) : (
               <ChoiceList
                 group={openDock}
@@ -374,7 +388,6 @@ function DockTap({
       <DigitalCardBrandMark
         id={group.brand === "phone" ? phoneGroupBrandMarkId(group.items) : group.brand}
         className={compact ? "h-10 w-10 rounded-[12px]" : "h-11 w-11 rounded-[13px] sm:h-12 sm:w-12 sm:rounded-[14px]"}
-        color={group.brand === "phone" ? theme.accent : undefined}
       />
       {one && group.items[0]?.locked ? (
         <span
@@ -483,7 +496,6 @@ function StackTap({
       <DigitalCardBrandMark
         id={group.brand === "phone" ? phoneGroupBrandMarkId(group.items) : group.brand}
         className={compact ? "ml-1 h-9 w-9 rounded-[10px]" : "ml-1.5 h-11 w-11 rounded-[13px]"}
-        color={group.brand === "phone" ? theme.accent : undefined}
       />
       <span className="min-w-0 flex-1 text-left">
         <span className={cn("block truncate font-semibold tracking-tight", compact ? "text-[12px]" : "text-[15px]")}>
@@ -577,24 +589,14 @@ function StackTap({
                   />
                 </>
               ) : isMeetingGroup(group) ? (
-                <>
-                  <div className="px-3.5 pt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: CELECARD_REACH_MUTED }}>
-                      Meetings
-                    </p>
-                    <p className={cn("mt-0.5 font-medium", compact ? "text-[11px]" : "text-[12px]")} style={{ color: CELECARD_REACH_MUTED }}>
-                      Pick a day and time. They get a message to confirm.
-                    </p>
-                  </div>
-                  <DigitalCardMeetingDrop
-                    items={group.items}
-                    theme={theme}
-                    compact={compact}
-                    preview={compact}
-                    slug={slug}
-                    ownerName={ownerName}
-                  />
-                </>
+                <DigitalCardMeetingDrop
+                  items={group.items}
+                  theme={theme}
+                  compact={compact}
+                  preview={compact}
+                  slug={slug}
+                  ownerName={ownerName}
+                />
               ) : (
               <ChoiceList
                 group={group}
@@ -688,25 +690,36 @@ function PayQrSheet({
   trackSlug?: string;
   onClose: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copyTimer = useRef<number | null>(null);
   const bank = item.brand === "bank" ? parseBankAccount(item.copyValue) : null;
   const bankRows = bank ? bankAccountDisplayRows(bank) : [];
   const qrShare = isQrShareNetwork(item.brand);
-  async function copyDetails() {
-    const value = bank
-      ? formatBankAccountCopy(bank)
-      : item.copyValue || item.subtitle || item.title;
+  const allValue = bank
+    ? formatBankAccountCopy(bank)
+    : item.copyValue || item.subtitle || item.title;
+
+  useEffect(
+    () => () => {
+      if (copyTimer.current) window.clearTimeout(copyTimer.current);
+    },
+    []
+  );
+
+  async function copyValue(key: string, value: string) {
     if (!value) return;
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+    const ok = await writeClipboard(value);
+    if (!ok) return;
+    setCopiedKey(key);
+    if (copyTimer.current) window.clearTimeout(copyTimer.current);
+    copyTimer.current = window.setTimeout(() => setCopiedKey(null), 1600);
   }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-black/55 p-4" role="dialog" aria-modal>
       <button type="button" className="absolute inset-0" aria-label="Close" onClick={onClose} />
       <div
-        className="celecard-sheet relative z-10 w-full max-w-sm overflow-hidden rounded-[1.6rem] border p-4 shadow-2xl"
+        className="celecard-sheet relative z-10 w-full max-w-sm max-h-[min(92dvh,40rem)] overflow-y-auto overflow-x-hidden rounded-[1.6rem] border p-4 shadow-2xl"
         style={{ background: "rgba(255,251,245,0.98)", borderColor: theme.border, color: "#1c1917" }}
       >
         <div className="flex items-start justify-between gap-3">
@@ -728,13 +741,27 @@ function PayQrSheet({
           </button>
         </div>
         {bankRows.length ? (
-          <dl className="mt-4 grid gap-2.5 rounded-2xl bg-white px-3.5 py-3">
-            {bankRows.map((row) => (
-              <div key={row.label}>
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-45">{row.label}</dt>
-                <dd className="mt-0.5 text-[14px] font-medium tracking-tight break-words">{row.value}</dd>
-              </div>
-            ))}
+          <dl className="celecard-copy-list mt-4 grid gap-0 rounded-2xl bg-white px-2 py-1.5">
+            {bankRows.map((row) => {
+              const copied = copiedKey === row.label;
+              return (
+                <div key={row.label} className="celecard-copy-row">
+                  <div className="min-w-0 flex-1">
+                    <dt className="celecard-copy-label">{row.label}</dt>
+                    <dd className="celecard-copy-value">{row.value}</dd>
+                  </div>
+                  <button
+                    type="button"
+                    className="celecard-copy-hit"
+                    data-copied={copied ? "true" : "false"}
+                    aria-label={`Copy ${row.label}`}
+                    onClick={() => void copyValue(row.label, row.value)}
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              );
+            })}
           </dl>
         ) : null}
         {item.qrUrl ? (
@@ -747,16 +774,24 @@ function PayQrSheet({
             />
           </div>
         ) : null}
+        <p className="sr-only" aria-live="polite">
+          {copiedKey === "all"
+            ? "Copied all details"
+            : copiedKey
+              ? `Copied ${copiedKey}`
+              : ""}
+        </p>
         <div className="mt-3 grid gap-2">
-          {item.copyValue || bankRows.length ? (
+          {allValue ? (
             <button
               type="button"
-              onClick={() => void copyDetails()}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold"
-              style={{ background: theme.accentSoft, color: theme.accent }}
+              onClick={() => void copyValue("all", allValue)}
+              className="celecard-copy-all inline-flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold"
+              data-copied={copiedKey === "all" ? "true" : "false"}
+              style={{ background: CELECARD_REACH_INK, color: "#fffef8" }}
             >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copied" : "Copy details"}
+              {copiedKey === "all" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copiedKey === "all" ? "Copied all" : bankRows.length ? "Copy all" : "Copy details"}
             </button>
           ) : null}
           {item.href ? (

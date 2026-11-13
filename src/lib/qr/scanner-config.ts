@@ -19,6 +19,11 @@ export interface QrScannerConfig {
  * here makes html5-qrcode ignore the selected rear-camera id and also defeats
  * its fallback path.
  */
+/** html5-qrcode must not start until the host has a real box. Zero-size starts flicker. */
+export function scannerViewfinderIsReady(width: number, height: number): boolean {
+  return width >= 80 && height >= 80;
+}
+
 export function buildScannerConfig(screenScanMode: boolean): QrScannerConfig {
   return {
     fps: screenScanMode ? QR_SCANNER_FPS_SCREEN : QR_SCANNER_FPS,

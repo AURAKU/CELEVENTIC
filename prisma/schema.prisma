@@ -2571,6 +2571,8 @@ model SmartCardAccessCode {
   cardId          String
   label           String
   codeHash        String
+  /// Owner-only encrypted 4-character code. Guests never receive this.
+  codeHint        String?
   /// DIGITS | LETTERS
   codeKind        String
   /// Reach item ids this code unlocks
@@ -2638,6 +2640,9 @@ model CeleYouProximitySession {
   peerCardId     String?
   joinCode       String
   joinCodeHash   String    @unique
+  /// High-entropy QR pairing token. Short joinCode stays for typed entry.
+  pairingToken     String?
+  pairingTokenHash String?   @unique
   verifyCode     String?
   discoveryId    String    @unique
   /// DISCOVERING | PEER_FOUND | REQUEST_PENDING | APPROVED | COMPLETED | DECLINED | CANCELLED | EXPIRED | FAILED

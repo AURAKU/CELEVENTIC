@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
 import { createProximitySession } from "@/services/digital-business-card/proximity.service";
 import { prisma } from "@/lib/prisma";
+import { getCeleYouConnectFlags } from "@/lib/celeyou-connect/flags";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,12 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const ip = requestClientIp(req);
-  const limited = await rateLimit(`celecard-tap-create:${session.user.id}`, 8, 300);
+  const flags = await getCeleYouConnectFlags();
+  const limited = await rateLimit(
+    `celecard-tap-create:${session.user.id}`,
+    flags.tap_session_create_limit,
+    300
+  );
   if (!limited.success) {
     return NextResponse.json({ error: "Too many Tap sessions. Wait a moment." }, { status: 429 });
   }
