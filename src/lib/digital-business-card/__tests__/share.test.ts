@@ -61,8 +61,8 @@ describe("CeleYou share metadata", () => {
     assert.equal(celeCardReadableQrLabel("http://localhost:3000/c/demo-ama-serwaa"), "/c/demo-ama-serwaa");
     assert.match(digitalCardExportImagePath("ama-serwaa"), /\/card\?download=1$/);
     assert.deepEqual(celeCardShareImageUrls("ama-serwaa", "demo"), [
-      digitalCardExportImagePath("ama-serwaa", "demo"),
-      digitalCardOgImagePath("ama-serwaa", "demo"),
+      digitalCardExportImagePath("ama-serwaa", "p2-demo"),
+      digitalCardOgImagePath("ama-serwaa", "p2-demo"),
     ]);
   });
 
@@ -104,6 +104,11 @@ describe("CeleYou share metadata", () => {
     assert.match(String(typeof image === "object" && image && "url" in image ? image.url : ""), /\/card\/ama-serwaa\/og\?v=demo/);
     assert.equal(typeof image === "object" && image && "type" in image ? image.type : "", "image/png");
     assert.equal(String(metadata.openGraph?.url).includes("localhost"), false);
+    const icon = Array.isArray(metadata.icons) ? null : metadata.icons;
+    const iconUrl = Array.isArray(icon?.icon) ? icon?.icon[0] : icon?.icon;
+    assert.match(String(typeof iconUrl === "object" && iconUrl && "url" in iconUrl ? iconUrl.url : iconUrl), /\/card\/ama-serwaa\/og\?v=demo/);
+    assert.equal(String(typeof iconUrl === "object" && iconUrl && "url" in iconUrl ? iconUrl.url : "").includes("/brand/icon.png"), false);
+    assert.equal(String(typeof iconUrl === "object" && iconUrl && "url" in iconUrl ? iconUrl.url : "").includes("/icon.png"), false);
   });
 
   it("withholds unpublished cards from social previews", () => {
@@ -128,6 +133,19 @@ describe("CeleYou share metadata", () => {
     assert.equal(celeCardShareCacheVersion(at), String(at.getTime()));
   });
 
+  it("does not let Satori load remote images or CSS inset on the plate bitmap", () => {
+    const overlay = readFileSync(join(process.cwd(), "src/lib/digital-business-card/qr-center-overlay.tsx"), "utf8");
+    const plate = readFileSync(join(process.cwd(), "src/lib/digital-business-card/plate-bitmap.tsx"), "utf8");
+    const assets = readFileSync(join(process.cwd(), "src/lib/digital-business-card/og-assets.ts"), "utf8");
+    const pages = readFileSync(join(process.cwd(), "src/app/card/[slug]/page.tsx"), "utf8");
+    assert.match(overlay, /data:image\//);
+    assert.doesNotMatch(overlay, /CELEYOU_MARK_SRC/);
+    assert.doesNotMatch(plate, /inset:/);
+    assert.match(assets, /Always a data URL/);
+    assert.match(pages, /celeCardPageOgPath/);
+    assert.match(pages, /presentation === "courtesy"/);
+  });
+
   it("keeps dummy OG image ungated for crawlers", () => {
     const source = readFileSync(join(process.cwd(), "src/lib/digital-business-card/og-image.tsx"), "utf8");
     assert.doesNotMatch(source, /dummyLiveNotFoundResponse|viewerMayOpenDummyLive/);
@@ -149,11 +167,12 @@ describe("CeleYou share metadata", () => {
     assert.match(markup, /cover/);
     assert.match(bitmap, /background: "#ffffff"/);
     assert.match(bitmap, /paperSrc/);
-    assert.match(bitmap, /markSrc \?/);
+    assert.match(bitmap, /isEmbeddedImage\(markSrc\)/);
     assert.match(bitmap, /coverPlateSize/);
     assert.doesNotMatch(bitmap, /logo-full\.png|brand\/icon\.png|celeventic-logo/i);
     assert.doesNotMatch(markup, /Open this CeleYou|Download this card|Share this card/);
     assert.match(assets, /\/smartcard\//);
+    assert.match(assets, /Never a remote URL/);
     assert.match(config, /source: "\/u\/:slug\/og"/);
     assert.match(ogRoute, /export async function HEAD/);
     assert.match(engine, /files: \[file\]/);

@@ -34,7 +34,8 @@ describe("CeleYou QR center", () => {
     assert.match(badge, /CeleYouThemedMark/);
     assert.match(badge, /p-\[10%\]/);
     assert.doesNotMatch(badge, /DigitalCardHouseAvatar/);
-    assert.match(overlay, /CELEYOU_MARK_SRC/);
+    assert.doesNotMatch(overlay, /CELEYOU_MARK_SRC/);
+    assert.match(overlay, /data:image\//);
     assert.match(overlay, /objectFit: official \? "contain"/);
   });
 

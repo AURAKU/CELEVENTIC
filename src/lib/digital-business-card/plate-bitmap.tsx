@@ -8,6 +8,10 @@ import {
 } from "@/lib/digital-business-card/portrait-frame";
 import { CeleCardQrCenterOverlay } from "@/lib/digital-business-card/qr-center-overlay";
 
+function isEmbeddedImage(src?: string | null): src is string {
+  return Boolean(src && src.startsWith("data:image/"));
+}
+
 export type CeleCardPlateBitmapProps = {
   width: number;
   height: number;
@@ -108,7 +112,7 @@ export function CeleCardPlateBitmap({
             position: "relative",
           }}
         >
-          {paperSrc ? (
+          {isEmbeddedImage(paperSrc) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={paperSrc}
@@ -117,7 +121,8 @@ export function CeleCardPlateBitmap({
               height={plate.height}
               style={{
                 position: "absolute",
-                inset: 0,
+                top: 0,
+                left: 0,
                 width: plate.width,
                 height: plate.height,
                 objectFit: "cover",
@@ -128,7 +133,10 @@ export function CeleCardPlateBitmap({
           <div
             style={{
               position: "absolute",
-              inset: Math.round(14 * s),
+              top: Math.round(14 * s),
+              right: Math.round(14 * s),
+              bottom: Math.round(14 * s),
+              left: Math.round(14 * s),
               borderRadius: Math.round(20 * s),
               border: `1px solid ${theme.border}`,
               opacity: 0.55,
@@ -137,7 +145,10 @@ export function CeleCardPlateBitmap({
           <div
             style={{
               position: "absolute",
-              inset: Math.round(22 * s),
+              top: Math.round(22 * s),
+              right: Math.round(22 * s),
+              bottom: Math.round(22 * s),
+              left: Math.round(22 * s),
               borderRadius: Math.round(16 * s),
               border: `1px solid ${theme.accent}`,
               opacity: 0.4,
@@ -166,10 +177,10 @@ export function CeleCardPlateBitmap({
                 flexShrink: 0,
               }}
             >
-              {photoSrc ? (
+              {isEmbeddedImage(photoSrc) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={photoSrc} alt="" width={photo} height={photo} style={{ objectFit: "cover" }} />
-              ) : markSrc ? (
+              ) : isEmbeddedImage(markSrc) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={markSrc}
@@ -223,7 +234,7 @@ export function CeleCardPlateBitmap({
                     alignItems: "center",
                   }}
                 >
-                  {companyLogoSrc ? (
+                  {isEmbeddedImage(companyLogoSrc) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={companyLogoSrc}
@@ -251,7 +262,7 @@ export function CeleCardPlateBitmap({
                 </div>
               ) : null}
             </div>
-            {qrSrc ? (
+            {isEmbeddedImage(qrSrc) ? (
               <div
                 style={{
                   width: qr,
@@ -274,11 +285,13 @@ export function CeleCardPlateBitmap({
                     position: "relative",
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrSrc} alt="" width={qr - Math.round(20 * s)} height={qr - Math.round(20 * s)} />
+                  {isEmbeddedImage(qrSrc) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={qrSrc} alt="" width={qr - Math.round(20 * s)} height={qr - Math.round(20 * s)} />
+                  ) : null}
                   <CeleCardQrCenterOverlay
-                    photoSrc={photoSrc}
-                    markSrc={markSrc}
+                    photoSrc={isEmbeddedImage(photoSrc) ? photoSrc : null}
+                    markSrc={isEmbeddedImage(markSrc) ? markSrc : null}
                     qrSize={qr - Math.round(20 * s)}
                   />
                 </div>
@@ -304,7 +317,7 @@ export function CeleCardPlateBitmap({
             </div>
           </div>
         </div>
-        {markSrc ? (
+        {isEmbeddedImage(markSrc) ? (
           <div
             style={{
               position: "absolute",

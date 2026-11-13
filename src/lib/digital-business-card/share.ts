@@ -40,10 +40,17 @@ export function digitalCardPresentUrl(slug: string, origin?: string): string {
   return `${origin.replace(/\/$/, "")}${path}`;
 }
 
+export const CELECARD_PLATE_SHARE_GEN = "p2";
+
 export function digitalCardOgImagePath(slug: string, version?: string | number | null): string {
   const base = `/card/${encodeURIComponent(slug)}/og`;
   if (version == null || version === "") return base;
   return `${base}?v=${encodeURIComponent(String(version))}`;
+}
+
+/** Cache-busted OG plate. Busts WhatsApp/iMessage tiles that cached the Celeventic icon. */
+export function celeCardPageOgPath(slug: string, updatedAt?: Date | string | null, fallback = "live"): string {
+  return digitalCardOgImagePath(slug, `${CELECARD_PLATE_SHARE_GEN}-${celeCardShareCacheVersion(updatedAt, fallback)}`);
 }
 
 export function digitalCardExportImagePath(slug: string, version?: string | number | null): string {
@@ -54,7 +61,11 @@ export function digitalCardExportImagePath(slug: string, version?: string | numb
 
 /** Live plate PNG first (WhatsApp, iMessage, Instagram), then the 1200×630 OG tile. */
 export function celeCardShareImageUrls(slug: string, version?: string | number | null): string[] {
-  return [digitalCardExportImagePath(slug, version), digitalCardOgImagePath(slug, version)];
+  const token =
+    version == null || version === ""
+      ? CELECARD_PLATE_SHARE_GEN
+      : `${CELECARD_PLATE_SHARE_GEN}-${version}`;
+  return [digitalCardExportImagePath(slug, token), digitalCardOgImagePath(slug, token)];
 }
 
 /** Encoded into the QR bitmap. Survives slug edits. Always a camera-safe guest URL. */
@@ -187,6 +198,10 @@ export function buildCeleCardShareMetadata(input: {
     title: { absolute: title },
     description,
     alternates: { canonical },
+    icons: {
+      icon: [{ url: image, type: "image/png", sizes: `${CELECARD_OG_WIDTH}x${CELECARD_OG_HEIGHT}` }],
+      apple: [{ url: image, type: "image/png" }],
+    },
     openGraph: {
       title,
       description,
