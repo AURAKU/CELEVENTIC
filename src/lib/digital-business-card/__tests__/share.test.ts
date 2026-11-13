@@ -172,6 +172,7 @@ describe("CeleYou share metadata", () => {
     assert.match(bitmap, /isEmbeddedImage\(markSrc\)/);
     assert.match(bitmap, /coverPlateSize/);
     assert.doesNotMatch(bitmap, /logo-full\.png|brand\/icon\.png|celeventic-logo/i);
+    assert.doesNotMatch(bitmap, /\bright:\s|\bbottom:\s/);
     assert.doesNotMatch(markup, /Open this CeleYou|Download this card|Share this card/);
     assert.match(assets, /\/smartcard\//);
     assert.match(assets, /Never a remote URL/);
@@ -190,6 +191,7 @@ describe("CeleYou share metadata", () => {
     );
     assert.match(face, /data-celeyou-live-plate="true"/);
     assert.match(capture, /html-to-image/);
+    assert.match(capture, /flattenLivePlate/);
     assert.match(capture, /CELEYOU_PLATE_FILE_NAME/);
     assert.match(ogImage, /livePlateOgFromSnapshot/);
     assert.match(ogImage, /readLivePlateSnapshotPng/);

@@ -275,11 +275,6 @@ export async function shareCeleYouProfile(
         const plateOnly = await tryNativeShare(nav, withPlate);
         if (plateOnly !== "failed") return plateOnly;
       }
-      const withPlateAndUrl = { title: input.title, text, url: input.url, files: [file] };
-      if (canSharePayload(nav, withPlateAndUrl)) {
-        const mixed = await tryNativeShare(nav, withPlateAndUrl);
-        if (mixed !== "failed") return mixed;
-      }
     }
     try {
       await nav.share({ title: input.title, text, url: input.url });

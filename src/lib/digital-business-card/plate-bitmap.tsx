@@ -134,9 +134,9 @@ export function CeleCardPlateBitmap({
             style={{
               position: "absolute",
               top: Math.round(14 * s),
-              right: Math.round(14 * s),
-              bottom: Math.round(14 * s),
               left: Math.round(14 * s),
+              width: plate.width - Math.round(28 * s),
+              height: plate.height - Math.round(28 * s),
               borderRadius: Math.round(20 * s),
               border: `1px solid ${theme.border}`,
               opacity: 0.55,
@@ -146,9 +146,9 @@ export function CeleCardPlateBitmap({
             style={{
               position: "absolute",
               top: Math.round(22 * s),
-              right: Math.round(22 * s),
-              bottom: Math.round(22 * s),
               left: Math.round(22 * s),
+              width: plate.width - Math.round(44 * s),
+              height: plate.height - Math.round(44 * s),
               borderRadius: Math.round(16 * s),
               border: `1px solid ${theme.accent}`,
               opacity: 0.4,
@@ -323,7 +323,7 @@ export function CeleCardPlateBitmap({
               position: "absolute",
               top: Math.round(-10 * s),
               left: 0,
-              right: 0,
+              width: plate.width,
               display: "flex",
               justifyContent: "center",
             }}

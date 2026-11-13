@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import sharp from "sharp";
 import { getDemoCardBySlug } from "@/lib/digital-business-card/demo-card";
 import { CeleCardOgMarkup } from "@/lib/digital-business-card/og-markup";
 import { celeCardGuideQrDataUrl, celeCardPlateBitmapAssets, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
@@ -58,34 +59,77 @@ function renderOg(props: {
   return png;
 }
 
+type OgRenderProps = Parameters<typeof renderOg>[0];
+
+function escapeXml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function solidThemeFill(background: string) {
+  const hex = background.match(/#(?:[0-9a-fA-F]{3,8})/);
+  return hex?.[0] || "#0B8A83";
+}
+
+function pngResponse(buffer: Buffer, cacheControl: string) {
+  return new Response(new Uint8Array(buffer), {
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": cacheControl,
+    },
+  });
+}
+
+async function renderSharpPlateFallback(props: OgRenderProps): Promise<Response> {
+  const fill = solidThemeFill(props.theme.cardBackground);
+  const accent = props.theme.accent || "#0B8A83";
+  const name = escapeXml(props.displayName.trim() || "CeleYou");
+  const role = escapeXml([props.title?.trim(), props.company?.trim()].filter(Boolean).join("  ·  "));
+  const svg = `<svg width="${CELECARD_OG_WIDTH}" height="${CELECARD_OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="630" fill="${fill}"/>
+    <text x="320" y="300" font-size="54" font-weight="700" fill="${accent}" font-family="sans-serif">${name}</text>
+    ${role ? `<text x="320" y="360" font-size="28" fill="#334155" font-family="sans-serif">${role}</text>` : ""}
+  </svg>`;
+  let image = sharp(Buffer.from(svg));
+  const photoRaw = props.photoSrc?.startsWith("data:image/")
+    ? Buffer.from(props.photoSrc.slice(props.photoSrc.indexOf(",") + 1), "base64")
+    : null;
+  if (photoRaw && photoRaw.length > 64) {
+    try {
+      const photo = await sharp(photoRaw).resize(188, 188, { fit: "cover" }).png().toBuffer();
+      image = image.composite([{ input: photo, left: 88, top: 221 }]);
+    } catch {
+      /* keep the name plate */
+    }
+  }
+  return pngResponse(await image.png().toBuffer(), props.cacheControl);
+}
+
+async function renderOgSafe(props: OgRenderProps): Promise<Response> {
+  try {
+    const png = renderOg(props);
+    const buffer = Buffer.from(await png.arrayBuffer());
+    if (buffer.length < 64 || buffer[0] !== 0x89) throw new Error("empty og png");
+    return pngResponse(buffer, props.cacheControl);
+  } catch {
+    return renderSharpPlateFallback(props);
+  }
+}
+
 /** Crawler tile: the captured live plate, cover-fit to 1200×630. Never the site icon. */
 export async function livePlateOgFromSnapshot(cardId: string, cacheControl: string): Promise<Response | null> {
+  const buffer = await readLivePlateSnapshotPng(cardId);
+  if (!buffer) return null;
   try {
-    const buffer = await readLivePlateSnapshotPng(cardId);
-    if (!buffer) return null;
-    const src = `data:image/png;base64,${buffer.toString("base64")}`;
-    const plateHeight = Math.round((CELECARD_OG_WIDTH * 54) / 85.6);
-    const png = new ImageResponse(
-      (
-        <div
-          style={{
-            width: CELECARD_OG_WIDTH,
-            height: CELECARD_OG_HEIGHT,
-            display: "flex",
-            background: "#0B8A83",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-          }}
-        >
-          <img src={src} width={CELECARD_OG_WIDTH} height={plateHeight} />
-        </div>
-      ),
-      { width: CELECARD_OG_WIDTH, height: CELECARD_OG_HEIGHT }
-    );
-    png.headers.set("Cache-Control", cacheControl);
-    png.headers.set("Content-Type", "image/png");
-    return png;
+    const framed = await sharp(buffer)
+      .rotate()
+      .resize(CELECARD_OG_WIDTH, CELECARD_OG_HEIGHT, { fit: "cover", position: "centre" })
+      .png()
+      .toBuffer();
+    return pngResponse(framed, cacheControl);
   } catch {
     return livePlateSnapshotResponse(cardId, cacheControl);
   }
@@ -116,7 +160,7 @@ export async function renderCeleCardOgBySlug(slug: string): Promise<Response> {
       live ? previewAssets(demo.publicToken) : Promise.resolve({ qrSrc: null as string | null, qrLabel: null as string | null }),
       celeCardPlateBitmapAssets(socials, theme),
     ]);
-    return renderOg({
+    return renderOgSafe({
       displayName: demo.displayName,
       title: demo.title,
       company: demo.company,
@@ -153,7 +197,7 @@ export async function renderCeleCardOgBySlug(slug: string): Promise<Response> {
     courtesy ? Promise.resolve({ qrSrc: null as string | null, qrLabel: null as string | null }) : previewAssets(card.publicToken),
     celeCardPlateBitmapAssets(socials, theme),
   ]);
-  return renderOg({
+  return renderOgSafe({
     displayName: card.displayName,
     title: card.title,
     company: card.company,

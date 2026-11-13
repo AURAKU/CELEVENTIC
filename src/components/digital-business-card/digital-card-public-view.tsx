@@ -127,6 +127,7 @@ export function DigitalCardPublicView({
       text: celeCardShareMessage(card, shareUrl),
       url: shareUrl,
       imageUrl: plateShareUrls,
+      persistPlateCardId: card.id || null,
     });
     setSharing(false);
     if (result === "cancelled") return;
