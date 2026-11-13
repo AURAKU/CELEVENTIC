@@ -99,6 +99,7 @@ export function useEmbeddedCardShare({
       text: celeCardShareMessage(card, profileUrl),
       url: profileUrl,
       imageUrl: card.slug ? celeCardShareImageUrls(card.slug, card.id) : null,
+      persistPlateCardId: hostCardId || card.id || null,
     });
     setSent(result);
     window.setTimeout(() => setSent(null), 2200);

@@ -47,6 +47,7 @@ import { screenForProximityStatus, type ProximityStatus } from "@/lib/celeyou-pr
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
 import { CeleCardQrBadge } from "@/components/digital-business-card/celecard-qr-badge";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
+import { usePersistLivePlateSnapshot } from "@/lib/digital-business-card/capture-live-plate";
 import { useCelecardSilentHold } from "@/components/digital-business-card/use-celecard-silent-hold";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import type { DigitalCardSocials } from "@/lib/digital-business-card/socials";
@@ -117,6 +118,7 @@ export function CeleYouTapConnect({
   const engineRef = useRef<CeleYouProximityEngine | null>(null);
 
   const card = cards.find((row) => row.id === cardId) ?? cards[0] ?? null;
+  usePersistLivePlateSnapshot(card?.id, [card?.themeId, card?.avatarUrl, card?.displayName].join("|"));
   const { hold, holdAxis, holdReady, setHoldIntent, onPlateActivate } = useCelecardSilentHold();
   const plateThemeId = card?.themeId || "teal-pulse";
 
@@ -350,6 +352,7 @@ export function CeleYouTapConnect({
       text: celeCardShareMessage({ displayName: card.displayName }, profileUrl),
       url: profileUrl,
       imageUrl: card.slug ? celeCardShareImageUrls(card.slug, card.id) : null,
+      persistPlateCardId: card.id || null,
     });
   }
 

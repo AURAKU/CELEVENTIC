@@ -16,6 +16,10 @@ import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-b
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { normalizeSocials } from "@/lib/digital-business-card/types";
 import type { CeleCardPortraitFrame } from "@/lib/digital-business-card/portrait-frame";
+import {
+  livePlateSnapshotResponse,
+  readLivePlateSnapshotPng,
+} from "@/lib/digital-business-card/live-plate-server";
 
 function renderOg(props: {
   displayName: string;
@@ -52,6 +56,39 @@ function renderOg(props: {
   png.headers.set("Cache-Control", props.cacheControl);
   png.headers.set("Content-Type", "image/png");
   return png;
+}
+
+/** Crawler tile: the captured live plate, cover-fit to 1200×630. Never the site icon. */
+export async function livePlateOgFromSnapshot(cardId: string, cacheControl: string): Promise<Response | null> {
+  try {
+    const buffer = await readLivePlateSnapshotPng(cardId);
+    if (!buffer) return null;
+    const src = `data:image/png;base64,${buffer.toString("base64")}`;
+    const plateHeight = Math.round((CELECARD_OG_WIDTH * 54) / 85.6);
+    const png = new ImageResponse(
+      (
+        <div
+          style={{
+            width: CELECARD_OG_WIDTH,
+            height: CELECARD_OG_HEIGHT,
+            display: "flex",
+            background: "#0B8A83",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+        >
+          <img src={src} width={CELECARD_OG_WIDTH} height={plateHeight} />
+        </div>
+      ),
+      { width: CELECARD_OG_WIDTH, height: CELECARD_OG_HEIGHT }
+    );
+    png.headers.set("Cache-Control", cacheControl);
+    png.headers.set("Content-Type", "image/png");
+    return png;
+  } catch {
+    return livePlateSnapshotResponse(cardId, cacheControl);
+  }
 }
 
 async function previewAssets(publicToken: string) {
@@ -98,13 +135,19 @@ export async function renderCeleCardOgBySlug(slug: string): Promise<Response> {
   const card = await getDigitalCardBySlug(slug);
   if (!card || card.deletedAt) return new Response("Not found", { status: 404 });
   const policy = await getCeleCardLifecyclePolicy();
-  const socials = normalizeSocials(card.socials);
-  const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), compactCeleCardDesign(socials.design));
   const courtesy = isCeleCardCourtesyReachable(card, policy);
   if (!courtesy && !isCeleCardPubliclyReachable(card, policy)) {
     return new Response("Not found", { status: 404 });
   }
 
+  const snapshot = await livePlateOgFromSnapshot(
+    card.id,
+    courtesy ? "private, no-store" : "public, max-age=60, stale-while-revalidate=86400"
+  );
+  if (snapshot) return snapshot;
+
+  const socials = normalizeSocials(card.socials);
+  const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), compactCeleCardDesign(socials.design));
   const [photoSrc, qr, plate] = await Promise.all([
     safeCeleCardPhotoSrc(card.avatarUrl),
     courtesy ? Promise.resolve({ qrSrc: null as string | null, qrLabel: null as string | null }) : previewAssets(card.publicToken),

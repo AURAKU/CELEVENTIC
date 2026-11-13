@@ -1157,6 +1157,7 @@ export function DigitalCardFace({
   const plate = (
     <div
       className="celecard-face celecard-foil relative overflow-hidden rounded-[1.15rem] border"
+      data-celeyou-live-plate="true"
       data-compact={compact ? "true" : undefined}
       data-composition={composition}
       data-face-lead={lead}

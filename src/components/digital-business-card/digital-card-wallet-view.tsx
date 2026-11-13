@@ -257,6 +257,7 @@ function PayChannelCard({
       text: `Pay ${ownerName} with ${item.title}`,
       url: walletUrl,
       imageUrl: item.qrUrl || null,
+      capturePlate: false,
     });
   }
 

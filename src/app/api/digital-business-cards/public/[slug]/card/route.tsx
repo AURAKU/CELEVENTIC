@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getDemoCardBySlug, isDemoCardSlug } from "@/lib/digital-business-card/demo-card";
 import { dummyLiveNotFoundResponse } from "@/lib/digital-business-card/demo-live-access";
 import { CeleCardExportMarkup } from "@/lib/digital-business-card/card-export-markup";
+import { livePlateSnapshotResponse } from "@/lib/digital-business-card/live-plate-server";
 import { celeCardGuideQrDataUrl, celeCardPlateBitmapAssets, safeCeleCardPhotoSrc } from "@/lib/digital-business-card/og-assets";
 import { applyCeleCardDesign, compactCeleCardDesign } from "@/lib/digital-business-card/design";
 import {
@@ -120,6 +121,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     if (!session?.user?.id || session.user.id !== card.userId) {
       return new Response("Not found", { status: 404 });
     }
+  }
+
+  const snapshot = await livePlateSnapshotResponse(
+    card.id,
+    guestPlate ? "public, max-age=60, stale-while-revalidate=86400" : "private, no-store"
+  );
+  if (snapshot) {
+    if (download) {
+      snapshot.headers.set("Content-Disposition", `attachment; filename="${filename}"`);
+    }
+    return snapshot;
   }
 
   const socials = normalizeSocials(card.socials);
