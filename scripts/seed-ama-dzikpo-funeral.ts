@@ -193,11 +193,13 @@ function amaDzikpoDesign(trackId: string): InvitationDesignConfig {
         },
       },
       media: [
+        // Envelope + cover use the deceased portrait exclusively (catalogue art is template only).
+        { url: HERO, type: "image", role: "envelope", name: "Madam Gladys Ama Dzikpo" },
         { url: HERO, type: "image", role: "hero", name: "Madam Gladys Ama Dzikpo" },
         { url: HERO, type: "image", role: "intro", name: "In loving memory portrait" },
-        { url: HOME_CALL, type: "image", role: "share", name: "Home Call" },
+        { url: BANNER, type: "image", role: "share", name: "Funeral invitation" },
         { url: HOME_CALL, type: "image", role: "reference", name: "Home Call poster" },
-        { url: BANNER, type: "image", role: "reference", name: "Funeral invitation" },
+        { url: BANNER, type: "image", role: "reference", name: "Invitation banner" },
       ],
     },
     theme

@@ -165,6 +165,8 @@ export function PremiumWaxSeal({
   sealStyle,
   pulseClass = "inv-seal-pulse-peach",
   photorealSrc,
+  photorealObjectFit = "contain",
+  photorealRound = false,
 }: {
   sealLabel: string;
   isOpening: boolean;
@@ -176,6 +178,10 @@ export function PremiumWaxSeal({
   pulseClass?: string;
   /** Transparent photoreal seal plate (memorial). Replaces SVG wax + label. */
   photorealSrc?: string | null;
+  /** Live portraits use cover; catalogue seal plates stay contain. */
+  photorealObjectFit?: "contain" | "cover";
+  /** Clip live portraits into a circular seal. */
+  photorealRound?: boolean;
 }) {
   const uid = useId().replace(/:/g, "");
   const resolvedStyle = sealStyle ?? DEFAULT_RESOLVED_SEAL_STYLE;
@@ -211,6 +217,11 @@ export function PremiumWaxSeal({
               ? "drop-shadow(0 16px 18px rgba(12, 8, 4, 0.55)) drop-shadow(0 2px 4px rgba(0,0,0,0.35))"
               : "drop-shadow(0 10px 14px rgba(12, 8, 4, 0.48)) drop-shadow(0 1px 3px rgba(0,0,0,0.28))"
             : "drop-shadow(0 12px 16px rgba(12, 8, 4, 0.5)) drop-shadow(0 2px 5px rgba(0,0,0,0.32))",
+          borderRadius: photorealRound ? "9999px" : undefined,
+          overflow: photorealRound ? "hidden" : undefined,
+          boxShadow: photorealRound
+            ? "inset 0 0 0 2px rgba(224,184,74,0.55), 0 0 0 1px rgba(0,0,0,0.35)"
+            : undefined,
         }}
       >
         <Image
@@ -218,7 +229,7 @@ export function PremiumWaxSeal({
           alt=""
           fill
           sizes={compact ? "(max-width: 768px) 28vw, 7.5rem" : "(max-width: 768px) 42vw, 16rem"}
-          className="object-contain select-none pointer-events-none"
+          className={`${photorealObjectFit === "cover" ? "object-cover" : "object-contain"} object-center select-none pointer-events-none`}
           priority
           draggable={false}
           aria-hidden
