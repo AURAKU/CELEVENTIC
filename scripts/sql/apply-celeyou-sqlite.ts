@@ -394,6 +394,25 @@ const usernameStatements = [
 for (const statement of usernameStatements) {
   sql(statement);
 }
+
+// Preserve live card slugs and legacy usernames (same as migration backfill).
+sql(`INSERT OR IGNORE INTO "celeyou_usernames" ("id", "normalized", "kind", "userId", "cardId", "createdAt", "updatedAt", "reason")
+SELECT lower(hex(randomblob(12))), lower("slug"), 'SLUG', "userId", "id", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'card-slug'
+FROM "digital_business_cards"
+WHERE "slug" IS NOT NULL AND trim("slug") != ''`);
+sql(`INSERT OR IGNORE INTO "celeyou_usernames" ("id", "normalized", "kind", "userId", "createdAt", "updatedAt", "reason")
+SELECT lower(hex(randomblob(12))), lower("username"), 'ACTIVE', "id", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'legacy-user-username'
+FROM "users"
+WHERE "username" IS NOT NULL AND trim("username") != ''`);
+sql(`UPDATE "users"
+SET "celeYouPrimaryCardId" = (
+  SELECT "id" FROM "digital_business_cards"
+  WHERE "digital_business_cards"."userId" = "users"."id"
+    AND ("deletedAt" IS NULL)
+  ORDER BY "updatedAt" DESC
+  LIMIT 1
+)
+WHERE "celeYouPrimaryCardId" IS NULL`);
 console.log("[celeyou-sqlite] username tables ready");
 
 const trialStatements = [

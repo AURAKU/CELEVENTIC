@@ -127,6 +127,16 @@ pm2 stop "$APP_NAME"
 log "Additive CeleYou SQLite columns (duplicate-safe, no overwrite)"
 npx tsx scripts/sql/apply-celeyou-sqlite.ts "$DB_PATH"
 
+# apply-celeyou-sqlite already creates username/trial schema. Mark those Prisma
+# migrations applied so migrate deploy does not re-run bare ALTER TABLE and fail.
+for migration in \
+  20261114170000_celeyou_usernames \
+  20261114180000_celeyou_username_delete_hold \
+  20261114210000_celeyou_freemium_trial
+do
+  npx prisma migrate resolve --applied "$migration" >/dev/null 2>&1 || true
+done
+
 npx prisma migrate deploy
 npx prisma migrate status
 
