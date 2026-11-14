@@ -60,13 +60,24 @@ function sectionForBrand(brand: string): GuestIdentitySectionId {
   return "social";
 }
 
+/** Guest About: drop wrapping quotes so the card can carry the ornament. */
+export function formatGuestAbout(raw: string): string {
+  let text = raw.trim();
+  if (!text) return "";
+  const wrapped = text.match(/^[“"«]([\s\S]*?)[”"»]$/);
+  text = (wrapped?.[1] ?? text).trim();
+  if (/^[“"«]/.test(text) && !/[”"»]/.test(text.slice(1))) {
+    text = text.slice(1).trim();
+  }
+  return text;
+}
+
 export function guestIdentitySections(
   card: DigitalCardPublicPayload,
   reach: DigitalCardReachItem[]
 ): GuestIdentitySection[] {
   const buckets = new Map<GuestIdentitySectionId, DigitalCardReachItem[]>();
   for (const item of reach) {
-    if (item.locked) continue;
     const id = sectionForBrand(item.brand);
     const list = buckets.get(id) ?? [];
     list.push(item);
@@ -86,9 +97,18 @@ export function guestIdentitySections(
     }
     const items = buckets.get(id);
     if (!items?.length) continue;
-    sections.push({ id, label: SECTION_LABEL[id], items });
+    sections.push({
+      id,
+      label: SECTION_LABEL[id],
+      items: id === "products" ? asGuestWalletDock(items) : items,
+    });
   }
   return sections;
+}
+
+/** Guest Payment Channels always sit in the profile dock, including hidden wallets. */
+export function asGuestWalletDock(items: DigitalCardReachItem[]): DigitalCardReachItem[] {
+  return items.map((item) => (item.surface === "dock" ? item : { ...item, surface: "dock" as const }));
 }
 
 function mergeSectionOrder(stackOrder: string[], reach: DigitalCardReachItem[]): GuestIdentitySectionId[] {

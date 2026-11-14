@@ -8,6 +8,7 @@ import { celeCardOwnerShareFlags } from "@/lib/digital-business-card/access";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { CeleYouPaidTermLockedError } from "@/lib/digital-business-card/lifecycle";
 import {
+  CeleYouPublishLimitError,
   getDigitalCardForUser,
   nfcTokensByCardId,
   softDeleteDigitalCard,
@@ -70,11 +71,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const { email, ...rest } = parsed.data;
   const emailNorm = email === "" ? null : email;
 
-  const updated = await updateDigitalCard(session.user.id, id, {
-    ...rest,
-    email: emailNorm,
-    socials: rest.socials as DigitalCardSocials | undefined,
-  });
+  let updated;
+  try {
+    updated = await updateDigitalCard(session.user.id, id, {
+      ...rest,
+      email: emailNorm,
+      socials: rest.socials as DigitalCardSocials | undefined,
+    });
+  } catch (error) {
+    if (error instanceof CeleYouPublishLimitError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    throw error;
+  }
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({
     success: true,

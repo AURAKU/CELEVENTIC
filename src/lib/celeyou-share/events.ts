@@ -5,20 +5,30 @@ export const CELEYOU_PUBLIC_EVENT_KINDS = [
   "email_tap",
   "website_tap",
   "share_tap",
+  "social_tap",
+  "location_tap",
+  "meeting_open",
+  "payment_open",
 ] as const;
 
 export const CELEYOU_ACTIVITY_LABEL: Record<string, string> = {
   profile_open: "Profile opened",
-  qr_open: "QR opened",
-  nfc_tap: "NFC card opened",
-  vcard_save: "Contact saved",
+  qr_open: "Smart QR link opened",
+  nfc_tap: "NFC tag opened",
+  vcard_save: "Save contact tapped",
+  vcard_download: "vCard downloaded",
   vcard_denied: "Contact export blocked",
-  call_tap: "Call",
-  whatsapp_tap: "WhatsApp",
-  email_tap: "Email",
-  website_tap: "Website",
-  share_tap: "Share",
-  connect: "Connect Back",
+  call_tap: "Call tapped",
+  whatsapp_tap: "WhatsApp tapped",
+  email_tap: "Email tapped",
+  website_tap: "Website tapped",
+  social_tap: "Social link tapped",
+  location_tap: "Location tapped",
+  meeting_open: "Booking opened",
+  meeting_booked: "Meeting requested",
+  payment_open: "Payment details opened",
+  share_tap: "Share started",
+  connect: "Connect Back sent",
 };
 
 export type CeleYouPublicEventKind = (typeof CELEYOU_PUBLIC_EVENT_KINDS)[number];
@@ -57,10 +67,23 @@ export function shouldCountCeleYouGuestStat(input: {
   return true;
 }
 
-export function trackCeleYouGuestEvent(slug: string, kind: CeleYouPublicEventKind) {
+export type CeleYouGuestEventMeta = {
+  brand?: string;
+  outcome?: "attempted" | "completed";
+};
+
+export function trackCeleYouGuestEvent(
+  slug: string,
+  kind: CeleYouPublicEventKind,
+  extra?: CeleYouGuestEventMeta
+) {
   if (!slug || typeof window === "undefined") return;
   const path = `/api/digital-business-cards/public/${encodeURIComponent(slug)}/events`;
-  const body = JSON.stringify({ kind });
+  const body = JSON.stringify({
+    kind,
+    ...(extra?.brand ? { brand: extra.brand } : {}),
+    outcome: extra?.outcome === "completed" ? "attempted" : extra?.outcome || "attempted",
+  });
   try {
     if (typeof navigator.sendBeacon === "function") {
       const blob = new Blob([body], { type: "text/plain;charset=UTF-8" });

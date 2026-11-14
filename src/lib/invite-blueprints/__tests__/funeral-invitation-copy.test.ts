@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildFuneralProgramme,
+  funeralProgrammeFromSchedule,
   isGenericFuneralTitle,
   parseMemorialNameCard,
   resolveDeceasedName,
@@ -95,5 +96,31 @@ describe("funeral invitation copy", () => {
     assert.match(steps[3]!.detail, /Sunday/);
     assert.match(steps[3]!.detail, /9:00am/);
     assert.equal(resolveDeceasedName(baseEvent), "Kwame Mensah");
+  });
+
+  it("keeps a host-authored funeral programme instead of the generic fallback", () => {
+    const steps = funeralProgrammeFromSchedule([
+      {
+        id: "laying-in-state",
+        title: "Laying in state",
+        description: "Saturday 14th November 2026",
+        location: "North Kaneshie Assemblies of God Church",
+        time: "6:00am",
+      },
+      {
+        id: "thanksgiving",
+        title: "Thanksgiving service",
+        description: "Sunday 15th November 2026",
+        location: "North Kaneshie Assemblies of God Church",
+        time: "8:00am",
+      },
+    ]);
+    assert.equal(steps.length, 2);
+    assert.equal(steps[0]!.title, "Laying in state");
+    assert.equal(steps[0]!.time, "6:00am");
+    assert.equal(steps[0]!.place, "North Kaneshie Assemblies of God Church");
+    assert.match(steps[0]!.detail, /6:00am/);
+    assert.equal(steps[1]!.title, "Thanksgiving service");
+    assert.equal(steps[1]!.date, "Sunday 15th November 2026");
   });
 });

@@ -1,23 +1,39 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { EVENT_TIME_ZONE } from "@/lib/constants";
+import { htmlLang, type AppLocale } from "@/lib/i18n/constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number | string, currency = "GHS") {
+function intlTag(locale: AppLocale | string) {
+  if (locale === "en") return "en-GH";
+  if (locale === "fr") return "fr-FR";
+  if (locale === "zh") return htmlLang("zh");
+  return locale;
+}
+
+export function formatCurrency(
+  amount: number | string,
+  currency = "GHS",
+  locale: AppLocale | string = "en-GH"
+) {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat("en-GH", {
+  return new Intl.NumberFormat(intlTag(locale), {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
   }).format(num);
 }
 
-export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions) {
+export function formatDate(
+  date: Date | string,
+  options?: Intl.DateTimeFormatOptions,
+  locale: AppLocale | string = "en-GH"
+) {
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("en-GH", {
+  return new Intl.DateTimeFormat(intlTag(locale), {
     timeZone: EVENT_TIME_ZONE,
     dateStyle: "medium",
     timeStyle: "short",

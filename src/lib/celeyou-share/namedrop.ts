@@ -34,6 +34,14 @@ export function contactSaveHint(platform: "ios-safari" | "android-chrome" | "and
   return SAVE_CONTACT_DESKTOP_HINT;
 }
 
+export function contactSaveHintKey(
+  platform: "ios-safari" | "android-chrome" | "android-other" | "desktop" | "unknown"
+): "celeyou.save_hint_ios" | "celeyou.save_hint_android" | "celeyou.save_hint_desktop" {
+  if (platform === "ios-safari") return "celeyou.save_hint_ios";
+  if (platform === "android-chrome" || platform === "android-other") return "celeyou.save_hint_android";
+  return "celeyou.save_hint_desktop";
+}
+
 export function namedropGuidance(): {
   title: string;
   notice: string;

@@ -10,7 +10,13 @@ import {
   getSmartCardPlanFromCatalog,
 } from "@/lib/digital-business-card/plans";
 import { getCeleCardCatalog } from "@/services/digital-business-card/catalog.service";
-import { CELEYOU_RENEWAL_WAIT_MESSAGE } from "@/lib/digital-business-card/billing-rules";
+import {
+  CELEYOU_CHECKOUT_METHOD_MESSAGE,
+  CELEYOU_RENEWAL_WAIT_MESSAGE,
+  isCeleYouPaystackCheckoutMethod,
+  newCeleYouCheckoutIdempotencyKey,
+} from "@/lib/digital-business-card/billing-rules";
+import { findOpenCeleYouCheckout } from "@/services/digital-business-card/smartcard-billing.service";
 import { isWithinPaidWindow, pickAccountPaidEntitlement, resolveCeleCardLifecycle } from "@/lib/digital-business-card/lifecycle";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import {
@@ -25,6 +31,7 @@ import { paymentService, PaymentProviderError } from "@/services/payments/paymen
 
 const bodySchema = z.object({
   planId: z.enum(["monthly", "quarter", "half", "yearly"]),
+  method: z.enum(["card", "mobile_money", "bank_transfer"]).optional(),
 });
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -90,7 +97,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: "Add an email to your account before paying" }, { status: 400 });
   }
 
+  const method = parsed.data.method;
+  if (method && !isCeleYouPaystackCheckoutMethod(method)) {
+    return NextResponse.json({ error: CELEYOU_CHECKOUT_METHOD_MESSAGE }, { status: 400 });
+  }
+
   try {
+    const openCheckout = await findOpenCeleYouCheckout(session.user.id, card.id, plan.id);
+    const idempotencyKey =
+      openCheckout?.idempotencyKey || newCeleYouCheckoutIdempotencyKey(card.id, plan.id);
     const result = await paymentService.initializePayment(
       session.user.id,
       null,
@@ -100,6 +115,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         currency: SMARTCARD_CURRENCY,
         email,
         purpose: "ADVERTISING",
+        method,
         callbackUrl: `${getAppUrlFromEnv()}/dashboard/business-card/billing?payment=callback`,
         metadata: {
           kind: SMARTCARD_PAYMENT_KIND,
@@ -113,7 +129,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         },
       },
       {
-        idempotencyKey: `smartcard-${card.id}-${plan.id}-${Math.floor(Date.now() / 60000)}`,
+        idempotencyKey,
       }
     );
 

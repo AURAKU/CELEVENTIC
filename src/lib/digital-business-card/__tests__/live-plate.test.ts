@@ -38,4 +38,24 @@ describe("CeleYou live plate capture", () => {
     assert.equal(pickLivePlateElement(root as unknown as ParentNode), large as unknown as HTMLElement);
     assert.equal(pickLivePlateElement(null), null);
   });
+
+  it("captures the live card, not the share-sheet thumbnail", () => {
+    const thumbnail = {
+      getBoundingClientRect: () => ({ width: 400, height: 252 }),
+      getClientRects: () => [{}],
+      closest: (selector: string) => (selector.includes("celecard-share") ? thumbnail : null),
+    };
+    const live = {
+      getBoundingClientRect: () => ({ width: 320, height: 202 }),
+      getClientRects: () => [{}],
+      closest: () => null,
+    };
+    const root = {
+      querySelectorAll(selector: string) {
+        if (selector.includes(CELEYOU_LIVE_PLATE_ATTR)) return [thumbnail, live];
+        return [];
+      },
+    };
+    assert.equal(pickLivePlateElement(root as unknown as ParentNode), live as unknown as HTMLElement);
+  });
 });

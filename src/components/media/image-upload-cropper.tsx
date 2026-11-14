@@ -69,7 +69,7 @@ export function ImageUploadCropper({
   onClear,
   buttonLabel = "Upload image",
   maxFileBytes,
-  dropzoneNote = "or drag & drop · JPEG, PNG, WebP · max 10MB",
+  dropzoneNote = "or drag & drop · JPEG, PNG, WebP, AVIF · max 10MB",
   enableCamera = false,
   cameraFacing = "environment",
 }: ImageUploadCropperProps) {

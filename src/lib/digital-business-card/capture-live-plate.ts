@@ -86,8 +86,9 @@ function copyComputed(src: HTMLElement, dest: HTMLElement) {
   dest.removeAttribute("class");
   dest.style.cssText = "";
   for (const key of STYLE_KEYS) {
+    if (typeof key !== "string" || key === "length" || key === "parentRule" || key === "cssText") continue;
     const value = cs[key];
-    if (typeof value === "string" && value) dest.style[key] = value;
+    if (typeof value === "string" && value) dest.style.setProperty(key, value);
   }
   dest.style.transform = "none";
   dest.style.filter = "none";

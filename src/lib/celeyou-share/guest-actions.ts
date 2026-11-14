@@ -1,9 +1,14 @@
-import { listDigitalCardReachItems, type DigitalCardReachItem } from "@/lib/digital-business-card/socials";
+import {
+  isPayNetwork,
+  listDigitalCardReachItems,
+  type DigitalCardReachItem,
+} from "@/lib/digital-business-card/socials";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import type { CeleYouPublicEventKind } from "@/lib/celeyou-share/events";
 
 export const CONNECT_BACK_CTA = "Connect back";
 export const CONNECT_BACK_ARIA = "Send your details back to this person";
+export const CONNECT_BACK_PHONE_PLACEHOLDER = "Phone / WhatsApp / WeChat";
 
 export type GuestPrimaryActionId = "save" | "call" | "whatsapp" | "email" | "website" | "share";
 
@@ -63,5 +68,10 @@ export function guestReachEventKind(
   if (item.brand === "whatsapp" || item.brand === "whatsappbusiness") return "whatsapp_tap";
   if (item.brand === "email" && /^mailto:/i.test(href)) return "email_tap";
   if (item.brand === "website" && /^https?:/i.test(href)) return "website_tap";
+  if (item.brand === "location") return "location_tap";
+  if (item.brand === "meeting") return "meeting_open";
+  if (item.brand === "bank" || isPayNetwork(item.brand)) return "payment_open";
+  if (item.brand === "other" && /^https?:/i.test(href)) return "website_tap";
+  if (item.brand) return "social_tap";
   return null;
 }

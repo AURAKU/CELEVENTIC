@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Ticket, Phone } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { PaymentMethodPicker } from "@/components/payments/payment-method-picker";
+import type { CheckoutMethodId } from "@/lib/payments/checkout-methods";
 
 interface PublicEvent {
   id: string;
@@ -43,6 +45,7 @@ export default function PublicEventPage() {
   const [selectedTicket, setSelectedTicket] = useState("");
   const [buyer, setBuyer] = useState({ name: "", email: "", phone: "", quantity: "1", promoCode: "" });
   const [loading, setLoading] = useState(false);
+  const [payMethod, setPayMethod] = useState<CheckoutMethodId | "">("");
 
   useEffect(() => {
     fetch(`/api/public/events/${slug}`)
@@ -96,6 +99,7 @@ export default function PublicEventPage() {
         email: buyer.email,
         purpose: "TICKET_PURCHASE",
         ticketOrderId: purchaseData.data.order.id,
+        method: payMethod || undefined,
         metadata: { eventId: event?.id },
       }),
     });
@@ -211,6 +215,9 @@ export default function PublicEventPage() {
                       placeholder="SAVE10"
                     />
                   </div>
+                  {selected && lineTotal > 0 ? (
+                    <PaymentMethodPicker value={payMethod} onChange={setPayMethod} />
+                  ) : null}
                   {selected && (
                     <p className="text-sm text-slate-600">
                       Subtotal: <strong>{lineTotal > 0 ? formatCurrency(lineTotal) : "Free"}</strong>

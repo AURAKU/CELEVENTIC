@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { AppLocale } from "@/lib/i18n/constants";
+import { pickLocalized } from "@/lib/i18n/pick-localized";
 import {
   CURRENT_LEGAL_VERSION,
   LEGAL_POLICY_SLUGS,
@@ -61,9 +62,9 @@ export class ComplianceService {
       return {
         slug,
         version: CURRENT_LEGAL_VERSION,
-        title: locale === "fr" ? fallback.titleFr : fallback.titleEn,
-        description: locale === "fr" ? fallback.descriptionFr : fallback.descriptionEn,
-        content: locale === "fr" ? fallback.contentFr : fallback.contentEn,
+        title: pickLocalized(locale, { en: fallback.titleEn, fr: fallback.titleFr }, fallback.titleEn),
+        description: pickLocalized(locale, { en: fallback.descriptionEn, fr: fallback.descriptionFr }, fallback.descriptionEn),
+        content: pickLocalized(locale, { en: fallback.contentEn, fr: fallback.contentFr }, fallback.contentEn),
         locale,
         requiresReacceptance: false,
       };
@@ -72,9 +73,9 @@ export class ComplianceService {
     return {
       slug,
       version: doc.version,
-      title: locale === "fr" ? doc.titleFr : doc.titleEn,
-      description: locale === "fr" ? doc.descriptionFr : doc.descriptionEn,
-      content: locale === "fr" ? doc.contentFr : doc.contentEn,
+      title: pickLocalized(locale, { en: doc.titleEn, fr: doc.titleFr }, doc.titleEn),
+      description: pickLocalized(locale, { en: doc.descriptionEn, fr: doc.descriptionFr }, doc.descriptionEn),
+      content: pickLocalized(locale, { en: doc.contentEn, fr: doc.contentFr }, doc.contentEn),
       locale,
       requiresReacceptance: doc.requiresReacceptance,
       effectiveDate: doc.effectiveDate.toISOString(),

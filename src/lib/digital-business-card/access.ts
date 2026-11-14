@@ -13,6 +13,7 @@ import { isDigitalCardLive, toPublicPayload } from "@/services/digital-business-
 import { buildGuestReach } from "@/lib/digital-business-card/privacy";
 import type { DigitalCardPresentationMode, DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import { smartCardStudioPath } from "@/lib/auth/safe-next-path";
+import { celeCardOwnerStartPath } from "@/lib/digital-business-card/activation";
 import {
   DEFAULT_CELECARD_LIFECYCLE_POLICY,
   celeCardPublicPresentation,
@@ -72,6 +73,8 @@ export function isCeleCardProductIntent(value?: string | null): boolean {
 export function celeCardOwnerStudioPath(plan?: string | null, theme?: string | null) {
   return smartCardStudioPath(plan, theme);
 }
+
+export { celeCardOwnerStartPath };
 
 function livePolicy(policy?: CeleCardLifecyclePolicy) {
   return policy ?? DEFAULT_CELECARD_LIFECYCLE_POLICY;

@@ -5,6 +5,7 @@ import { HeaderShell } from "@/components/layout/header-shell";
 import { Footer } from "@/components/layout/footer";
 import { CeleventicGuideHome } from "@/components/celeventic-guide/celeventic-guide-home";
 import { getCmsPage, isCmsPageSlug, CMS_PAGES } from "@/lib/cms-pages";
+import { getSafeServerI18nState } from "@/lib/i18n/server-locale";
 
 export function generateStaticParams() {
   return Object.keys(CMS_PAGES).map((slug) => ({ slug }));
@@ -30,7 +31,8 @@ export async function generateMetadata({
     };
   }
   if (!isCmsPageSlug(slug)) return { title: "Page Not Found" };
-  const page = await getCmsPage(slug);
+  const { locale } = await getSafeServerI18nState();
+  const page = await getCmsPage(slug, locale);
   return { title: page.title, description: page.description };
 }
 
@@ -53,7 +55,8 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
     );
   }
 
-  const page = await getCmsPage(slug, "en");
+  const { locale } = await getSafeServerI18nState();
+  const page = await getCmsPage(slug, locale);
   const legalMeta = page as { version?: string; effectiveDate?: string };
 
   return (

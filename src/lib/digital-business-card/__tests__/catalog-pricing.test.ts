@@ -123,6 +123,8 @@ describe("CeleYou launch catalog", () => {
     );
     assert.match(subscribe, /planId: z\.enum\(\["monthly", "quarter", "half", "yearly"\]\)/);
     assert.doesNotMatch(subscribe, /amountGhs/);
+    assert.doesNotMatch(subscribe, /alipay|wechat_pay/);
     assert.match(subscribe, /getCeleCardCatalog/);
+    assert.match(subscribe, /findOpenCeleYouCheckout/);
   });
 });

@@ -147,6 +147,7 @@ describe("CeleYou Connect wiring", () => {
     assert.match(route, /consent !== true/);
     assert.match(route, /website: z\.string\(\)\.max\(200\)/);
     assert.match(route, /if \(parsed\.data\.website\)/);
+    assert.match(route, /Email or phone is required/);
     assert.match(route, /finalizeGuestConnectBack/);
     assert.match(route, /tapJoinCode/);
     assert.match(route, /tap_mode_qr/);
@@ -170,7 +171,7 @@ describe("CeleYou Connect wiring", () => {
   it("shows Exchange Cards and guest consent on the public card", () => {
     const view = source("src/components/digital-business-card/digital-card-public-view.tsx");
     assert.match(view, /DigitalCardConnectExchange/);
-    assert.match(view, /I agree to share these details/);
+    assert.match(view, /celeyou\.consent/);
     assert.doesNotMatch(view, /Send me a short thank you/);
     assert.match(view, /followupConsent: true/);
     assert.match(view, /visitorCompany/);

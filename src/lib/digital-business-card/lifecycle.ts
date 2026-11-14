@@ -6,6 +6,7 @@
 
 export const CELECARD_LIFECYCLE_STATES = [
   "DRAFT",
+  "FREE",
   "ACTIVE",
   "EXPIRING",
   "GRACE_PERIOD",
@@ -48,6 +49,7 @@ export type CeleCardLifecycleInput = {
   adminDeactivatedAt?: Date | null;
   deletedAt?: Date | null;
   lastActivatedAt?: Date | null;
+  lastCourtesyAt?: Date | null;
 };
 
 const DAY_MS = 86_400_000;
@@ -139,7 +141,15 @@ export function resolveCeleCardLifecycle(
   if (isWithinGracePeriod(card, now, policy)) {
     return card.isPublished ? "GRACE_PERIOD" : "DRAFT";
   }
-  if (hasPaidEntitlementHistory(card) && card.isPublished) return "COURTESY";
+  if (hasPaidEntitlementHistory(card) && card.isPublished && card.lastCourtesyAt) return "COURTESY";
+  if (card.isPublished) {
+    const trialOpen =
+      card.subscriptionStatus === "TRIAL" &&
+      !hasPaidEntitlementHistory(card) &&
+      (!card.subscriptionExpiresAt || card.subscriptionExpiresAt.getTime() > now.getTime());
+    if (trialOpen) return "DRAFT";
+    return "FREE";
+  }
   return "DRAFT";
 }
 
@@ -189,7 +199,8 @@ export function pickAccountPaidEntitlement<T extends CeleCardLifecycleInput>(
 /**
  * Recipients may open a published identity without installing CeleYou.
  * Paid ACTIVE / EXPIRING / GRACE stay guest-shareable.
- * Published TRIAL cards stay guest-shareable until the studio window ends.
+ * Published Free cards stay guest-shareable. Active Pro trials stay guest-shareable.
+ * Legacy courtesy rows (lastCourtesyAt) keep the sanitized Continuity page.
  * Billing `isDigitalCardLive` remains paid-only.
  */
 export function isCeleCardGuestShareable(
@@ -201,6 +212,7 @@ export function isCeleCardGuestShareable(
   if (!card.isPublished) return false;
   const state = resolveCeleCardLifecycle(card, now, policy);
   if (isCeleCardFullyPublic(state)) return true;
+  if (state === "FREE") return true;
   if (card.subscriptionStatus !== "TRIAL") return false;
   if (!card.subscriptionExpiresAt) return true;
   return card.subscriptionExpiresAt.getTime() > now.getTime();
@@ -269,7 +281,11 @@ export const CELECARD_LIFECYCLE_EVENTS = [
   "CheckoutFailed",
   "SubscriptionActivated",
   "SubscriptionRenewed",
+  "ActivationFailed",
   "SubscriptionExpired",
+  "TrialActivated",
+  "TrialExpired",
+  "TrialConverted",
   "CourtesyModeEntered",
   "CourtesyPageViewed",
   "ConnectionRequested",
@@ -287,6 +303,12 @@ export const CELECARD_LIFECYCLE_EVENTS = [
   "CardClaimed",
   "CardUnclaimedCreated",
   "AdminInvitationSent",
+  "NfcRegistered",
+  "NfcPaused",
+  "NfcResumed",
+  "NfcLost",
+  "NfcReplaced",
+  "NfcRevoked",
 ] as const;
 
 export type CeleCardLifecycleEventKind = (typeof CELECARD_LIFECYCLE_EVENTS)[number];

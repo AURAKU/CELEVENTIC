@@ -26,11 +26,18 @@ const actionSchema = z.object({
     "send_invitation",
     "save_draft",
     "remind_renewal",
+    "nfc_register",
+    "nfc_pause",
+    "nfc_resume",
+    "nfc_lost",
+    "nfc_replace",
+    "nfc_revoke",
   ]),
   reason: z.string().max(500).optional(),
   planId: z.string().max(40).optional(),
   months: z.number().int().min(1).max(36).optional(),
   approvalRef: z.string().max(120).nullable().optional(),
+  deviceId: z.string().max(80).optional(),
 });
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -51,6 +58,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         planId: parsed.data.planId,
         months: parsed.data.months,
         approvalRef: parsed.data.approvalRef,
+        deviceId: parsed.data.deviceId,
         correlationId,
       }
     );

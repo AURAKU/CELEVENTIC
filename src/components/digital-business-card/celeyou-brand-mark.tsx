@@ -4,13 +4,18 @@ import {
   SMARTCARD_BRAND_TAGLINE,
   SMARTCARD_PRODUCT_SHORT_NAME,
 } from "@/lib/digital-business-card/product";
+import {
+  CELEYOU_LOCKUP_PATH,
+  CELEYOU_MARK_PATH,
+  CELEYOU_WORDMARK_PATH,
+} from "@/lib/digital-business-card/brand-lock";
 
 /** Official CeleYou orb, cropped from the master lockup. */
-export const CELEYOU_MARK_SRC = "/digital-cards/brands/celeyou-mark.png";
+export const CELEYOU_MARK_SRC = CELEYOU_MARK_PATH;
 /** Official CeleYou orb + wordmark, no tagline. */
-export const CELEYOU_WORDMARK_SRC = "/digital-cards/brands/celeyou-wordmark.png";
+export const CELEYOU_WORDMARK_SRC = CELEYOU_WORDMARK_PATH;
 /** Official CeleYou lockup: orb, wordmark, registered mark, and tagline. */
-export const CELEYOU_LOCKUP_SRC = "/digital-cards/brands/celeyou-lockup.png";
+export const CELEYOU_LOCKUP_SRC = CELEYOU_LOCKUP_PATH;
 
 /** True CeleYou inks. Never replace these with a template accent. */
 export const CELEYOU_BRAND_TEAL = "#0B8A83";

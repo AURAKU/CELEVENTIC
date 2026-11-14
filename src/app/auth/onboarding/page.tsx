@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { SignupProgress } from "@/components/auth/signup-progress";
 import { OnboardingIntentGrid } from "@/components/auth/onboarding-intent-grid";
 import { resolveAuthCallbackUrl } from "@/lib/auth/logout";
-import { safeReturnPath, smartCardStudioPath } from "@/lib/auth/safe-next-path";
+import { safeReturnPath, smartCardStartPath } from "@/lib/auth/safe-next-path";
 import {
   findOnboardingIntent,
   intentFromQuery,
@@ -22,6 +22,8 @@ import {
 } from "@/lib/auth/onboarding-intents";
 import type { AccountType } from "@prisma/client";
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { CeleYouUsernameField } from "@/components/digital-business-card/celeyou-username-field";
 
 function GoogleIcon() {
   return (
@@ -49,6 +51,7 @@ function GoogleIcon() {
 function OnboardingPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLocale();
   const preset = intentFromQuery(searchParams.get("intent") ?? searchParams.get("role"));
   const [step, setStep] = useState(preset ? 2 : 1);
   const [accountType, setAccountType] = useState<AccountType | null>(preset?.id ?? null);
@@ -135,10 +138,8 @@ function OnboardingPageInner() {
       payload.productIntent = "celecard";
     }
 
-    if (accountType === "ORGANIZER" || accountType === "ORGANIZATION") {
-      const handle = form.username.trim().toLowerCase();
-      if (handle.length >= 3) payload.username = handle;
-    }
+    const handle = form.username.trim().toLowerCase();
+    if (handle.length >= 3) payload.username = handle;
     if (accountType === "ORGANIZATION") {
       payload.organizationName = form.organizationName.trim();
     }
@@ -195,12 +196,12 @@ function OnboardingPageInner() {
 
       const identifier = contactMode === "phone" ? form.phone.trim() : form.email.trim();
       const next = safeReturnPath(searchParams);
-      const studio =
+      const start =
         selectedIntent.queryKey === "smartcard"
-          ? smartCardStudioPath(searchParams.get("plan"), searchParams.get("theme"))
+          ? smartCardStartPath(searchParams.get("plan"), searchParams.get("theme"))
           : null;
       const dest =
-        next || studio || selectedIntent.primaryHref || data.redirect || "/dashboard/getting-started";
+        next || start || selectedIntent.primaryHref || data.redirect || "/dashboard/getting-started";
       const result = await signIn("credentials", {
         identifier,
         password: form.password,
@@ -217,7 +218,7 @@ function OnboardingPageInner() {
 
       window.location.assign(dest);
     } catch {
-      setError("Something went wrong. Check your connection and try again.");
+      setError(t("auth.something_wrong"));
       setLoading(false);
     }
   }
@@ -225,7 +226,7 @@ function OnboardingPageInner() {
   const loginHref = `/auth/login?callbackUrl=${encodeURIComponent(
     safeReturnPath(searchParams) ||
       (selectedIntent?.queryKey === "smartcard"
-        ? smartCardStudioPath(searchParams.get("plan"), searchParams.get("theme"))
+        ? smartCardStartPath(searchParams.get("plan"), searchParams.get("theme"))
         : "/dashboard")
   )}`;
 
@@ -243,21 +244,21 @@ function OnboardingPageInner() {
   return (
     <AuthLayout
       wide={step === 1}
-      title={step === 1 ? "How will you use Celeventic?" : "Create your account"}
+      title={step === 1 ? t("auth.how_use") : t("auth.create_account")}
       subtitle={
         step === 1
-          ? "Pick the option that sounds like you. This only sets your first screen. You can do more later."
+          ? t("auth.how_use_body")
           : selectedIntent
             ? selectedIntent.next
-            : "Email or phone, a name, and a password. About 30 seconds."
+            : t("auth.create_account_body")
       }
-      panelTitle="Start in two minutes"
-      panelBody="We'll set up the right workspace for hosts, guests, planners, vendors, and organisations, then show one clear next step."
+      panelTitle={t("auth.start_two_minutes")}
+      panelBody={t("auth.start_body_signup")}
     >
       <SignupProgress
         current={step}
         total={2}
-        labels={["How you'll use it", "Your account"]}
+        labels={[t("auth.progress_intent"), t("auth.progress_account")]}
       />
 
       {step === 1 && (
@@ -268,9 +269,9 @@ function OnboardingPageInner() {
             onSelect={selectIntent}
           />
           <p className="text-center text-sm text-slate-500">
-            Already have an account?{" "}
+            {t("auth.already_account")}{" "}
             <Link href={loginHref} className="text-brand-600 font-semibold hover:underline">
-              Sign in
+              {t("common.sign_in")}
             </Link>
           </p>
         </div>
@@ -416,24 +417,19 @@ function OnboardingPageInner() {
             </div>
           )}
 
-          {(accountType === "ORGANIZER" || accountType === "ORGANIZATION") && (
-            <div className="space-y-2">
-              <Label htmlFor="username">Public username (optional)</Label>
-              <Input
-                id="username"
-                value={form.username}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
-                  })
-                }
-                placeholder="yourname"
-                autoComplete="off"
-              />
-              <p className="text-xs text-slate-500">Skip this for now if you are not sure.</p>
-            </div>
-          )}
+          <div className="space-y-2">
+            <CeleYouUsernameField
+              value={form.username}
+              onChange={(username) => setForm({ ...form, username })}
+              displayName={form.name}
+              company={form.organizationName}
+            />
+            <p className="text-xs text-slate-500">
+              {selectedIntent?.queryKey === "smartcard"
+                ? "Pick a unique username. Display names can match someone else. You can finish this on the next screen."
+                : "Optional now. You can choose it later in account settings."}
+            </p>
+          </div>
 
           <Button type="submit" className="w-full" size="lg" disabled={loading || !canCreate}>
             {loading ? "Creating your account…" : "Create account"}
@@ -456,13 +452,13 @@ function OnboardingPageInner() {
             onClick={() => {
               rememberIntent();
               const next = safeReturnPath(searchParams);
-              const studio =
+              const start =
                 selectedIntent?.queryKey === "smartcard"
-                  ? smartCardStudioPath(searchParams.get("plan"), searchParams.get("theme"))
+                  ? smartCardStartPath(searchParams.get("plan"), searchParams.get("theme"))
                   : null;
               void signIn("google", {
                 callbackUrl: resolveAuthCallbackUrl(
-                  next || studio || "/auth/onboarding/intent"
+                  next || start || "/auth/onboarding/intent"
                 ),
               });
             }}
@@ -483,9 +479,9 @@ function OnboardingPageInner() {
             .
           </p>
           <p className="text-center text-sm text-slate-500">
-            Already have an account?{" "}
+            {t("auth.already_account")}{" "}
             <Link href={loginHref} className="text-brand-600 font-semibold hover:underline">
-              Sign in
+              {t("common.sign_in")}
             </Link>
           </p>
         </form>

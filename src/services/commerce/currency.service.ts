@@ -1,6 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { BASE_CURRENCY, DEFAULT_EXCHANGE_RATES, type DisplayCurrency } from "@/lib/commerce/constants";
+import {
+  BASE_CURRENCY,
+  CURRENCY_NAMES,
+  CURRENCY_SYMBOLS,
+  DEFAULT_EXCHANGE_RATES,
+  DISPLAY_CURRENCIES,
+  type DisplayCurrency,
+} from "@/lib/commerce/constants";
 
 /** P2002 = unique constraint violation. Another concurrent request already seeded this row. */
 function isUniqueConstraintError(error: unknown): boolean {
@@ -38,15 +45,18 @@ export class CurrencyService {
 
     const existing = await prisma.currency.count();
     if (existing > 0) {
+      await this.ensureCnyCurrency();
       this.seededChecked = true;
       return;
     }
 
-    const defaults = [
-      { code: "GHS", symbol: "₵", name: "Ghana Cedi", enabled: true, isDefault: true },
-      { code: "USD", symbol: "$", name: "US Dollar", enabled: true, isDefault: false },
-      { code: "GBP", symbol: "£", name: "British Pound", enabled: true, isDefault: false },
-    ];
+    const defaults = DISPLAY_CURRENCIES.map((code) => ({
+      code,
+      symbol: CURRENCY_SYMBOLS[code],
+      name: CURRENCY_NAMES[code],
+      enabled: true,
+      isDefault: code === BASE_CURRENCY,
+    }));
     try {
       await prisma.currency.createMany({ data: defaults });
     } catch (error) {
@@ -70,6 +80,51 @@ export class CurrencyService {
     }
 
     this.seededChecked = true;
+  }
+
+  /** Additive: existing DBs already have GHS/USD/GBP. Insert CNY once if missing. */
+  private async ensureCnyCurrency() {
+    const cny = await prisma.currency.findUnique({ where: { code: "CNY" } });
+    if (!cny) {
+      try {
+        await prisma.currency.create({
+          data: {
+            code: "CNY",
+            symbol: CURRENCY_SYMBOLS.CNY,
+            name: CURRENCY_NAMES.CNY,
+            enabled: true,
+            isDefault: false,
+          },
+        });
+      } catch (error) {
+        if (!isUniqueConstraintError(error)) throw error;
+      }
+    } else if (!cny.enabled) {
+      await prisma.currency.update({
+        where: { code: "CNY" },
+        data: { enabled: true, name: CURRENCY_NAMES.CNY, symbol: CURRENCY_SYMBOLS.CNY },
+      });
+    }
+
+    const rate = await prisma.exchangeRate.findUnique({
+      where: {
+        baseCurrency_targetCurrency: { baseCurrency: BASE_CURRENCY, targetCurrency: "CNY" },
+      },
+    });
+    if (!rate) {
+      try {
+        await prisma.exchangeRate.create({
+          data: {
+            baseCurrency: BASE_CURRENCY,
+            targetCurrency: "CNY",
+            rate: DEFAULT_EXCHANGE_RATES.CNY,
+            source: "seed",
+          },
+        });
+      } catch (error) {
+        if (!isUniqueConstraintError(error)) throw error;
+      }
+    }
   }
 
   async getEnabledCurrencies() {
@@ -126,8 +181,16 @@ export class CurrencyService {
   }
 
   formatDisplay(amount: number, currency: string, symbol?: string) {
-    const sym = symbol ?? (currency === "GHS" ? "₵" : currency === "USD" ? "$" : currency === "GBP" ? "£" : "");
-    if (currency === "GHS") return `${sym}${amount.toLocaleString("en-GH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    const sym =
+      symbol ??
+      CURRENCY_SYMBOLS[currency as DisplayCurrency] ??
+      (currency === "GHS" ? "₵" : currency === "USD" ? "$" : currency === "GBP" ? "£" : currency === "CNY" ? "¥" : "");
+    if (currency === "GHS") {
+      return `${sym}${amount.toLocaleString("en-GH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+    if (currency === "CNY") {
+      return `${sym}${amount.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
     return `${sym}${amount.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 }

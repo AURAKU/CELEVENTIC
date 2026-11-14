@@ -89,6 +89,10 @@ if (sql(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='celecar
   addColumn("celecard_lifecycle_policy", "planPrices", "TEXT");
   addColumn("celecard_lifecycle_policy", "conciergePriceGhs", "INTEGER DEFAULT 199");
   addColumn("celecard_lifecycle_policy", "conciergeBundledPlanId", "TEXT");
+  addColumn("celecard_lifecycle_policy", "proTrialDays", "INTEGER NOT NULL DEFAULT 7");
+  addColumn("celecard_lifecycle_policy", "businessTrialDays", "INTEGER NOT NULL DEFAULT 14");
+  addColumn("celecard_lifecycle_policy", "checkoutCurrencies", "TEXT NOT NULL DEFAULT '[\"GHS\"]'");
+  addColumn("celecard_lifecycle_policy", "internationalDraftPublished", "INTEGER NOT NULL DEFAULT 0");
 }
 
 const proximityStatements = [
@@ -338,5 +342,98 @@ for (const statement of connectStatements) {
   sql(statement);
 }
 console.log("[celeyou-sqlite] connect tables ready");
+
+addColumn("users", "celeYouPrimaryCardId", "TEXT");
+
+const usernameStatements = [
+  `CREATE TABLE IF NOT EXISTS "celeyou_usernames" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "normalized" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "userId" TEXT,
+    "cardId" TEXT,
+    "redirectTo" TEXT,
+    "holdUntil" DATETIME,
+    "reason" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "celeyou_usernames_normalized_key" ON "celeyou_usernames"("normalized")`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_usernames_userId_kind_idx" ON "celeyou_usernames"("userId", "kind")`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_usernames_kind_holdUntil_idx" ON "celeyou_usernames"("kind", "holdUntil")`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_usernames_cardId_idx" ON "celeyou_usernames"("cardId")`,
+  `CREATE TABLE IF NOT EXISTS "celeyou_username_events" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "recordId" TEXT,
+    "userId" TEXT,
+    "actorId" TEXT,
+    "action" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
+    "fromValue" TEXT,
+    "toValue" TEXT,
+    "reason" TEXT,
+    "ipAddress" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_username_events_username_createdAt_idx" ON "celeyou_username_events"("username", "createdAt")`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_username_events_userId_createdAt_idx" ON "celeyou_username_events"("userId", "createdAt")`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_username_events_action_createdAt_idx" ON "celeyou_username_events"("action", "createdAt")`,
+  `CREATE TRIGGER IF NOT EXISTS celeyou_hold_usernames_on_user_delete
+    BEFORE DELETE ON users
+    BEGIN
+      UPDATE celeyou_usernames
+      SET kind = 'HOLD',
+          holdUntil = datetime('now', '+90 days'),
+          redirectTo = NULL,
+          reason = 'account-deleted',
+          updatedAt = CURRENT_TIMESTAMP
+      WHERE userId = OLD.id AND kind IN ('ACTIVE', 'ALIAS', 'SLUG');
+    END`,
+];
+
+for (const statement of usernameStatements) {
+  sql(statement);
+}
+console.log("[celeyou-sqlite] username tables ready");
+
+const trialStatements = [
+  `CREATE TABLE IF NOT EXISTS "celeyou_trial_records" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "cardId" TEXT,
+    "family" TEXT NOT NULL DEFAULT 'pro',
+    "status" TEXT NOT NULL DEFAULT 'ELIGIBLE',
+    "startedAt" DATETIME,
+    "expiresAt" DATETIME,
+    "convertedAt" DATETIME,
+    "convertedPlanId" TEXT,
+    "durationDays" INTEGER NOT NULL DEFAULT 7,
+    "reminderDay1At" DATETIME,
+    "reminderDay4At" DATETIME,
+    "reminderDay6At" DATETIME,
+    "reminderDay7At" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "celeyou_trial_records_userId_key" ON "celeyou_trial_records"("userId")`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_trial_records_status_expiresAt_idx" ON "celeyou_trial_records"("status", "expiresAt")`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_trial_records_family_status_idx" ON "celeyou_trial_records"("family", "status")`,
+  `CREATE TABLE IF NOT EXISTS "celeyou_trial_events" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "trialId" TEXT,
+    "userId" TEXT,
+    "actorId" TEXT,
+    "action" TEXT NOT NULL,
+    "reason" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_trial_events_trialId_createdAt_idx" ON "celeyou_trial_events"("trialId", "createdAt")`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_trial_events_userId_createdAt_idx" ON "celeyou_trial_events"("userId", "createdAt")`,
+  `CREATE INDEX IF NOT EXISTS "celeyou_trial_events_action_createdAt_idx" ON "celeyou_trial_events"("action", "createdAt")`,
+];
+for (const statement of trialStatements) {
+  sql(statement);
+}
+console.log("[celeyou-sqlite] trial tables ready");
 
 console.log(`[celeyou-sqlite] ready ${dbPath}`);

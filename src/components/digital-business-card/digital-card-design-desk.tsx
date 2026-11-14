@@ -174,7 +174,7 @@ export function DigitalCardDesignDesk({
 }: {
   themeId: DigitalCardThemeId;
   design: CeleCardDesign;
-  onThemeChange: (themeId: DigitalCardThemeId) => void;
+  onThemeChange: (themeId: DigitalCardThemeId, options?: { keepFinish?: boolean }) => void;
   onDesignChange: (design: CeleCardDesign) => void;
   onError?: (message: string) => void;
   portraitFrame?: CeleCardPortraitFrame | null;
@@ -199,6 +199,7 @@ export function DigitalCardDesignDesk({
   });
   const [atmoGroup, setAtmoGroup] = useState(atmosphereGroupId(atmosphere));
   const [morePaper, setMorePaper] = useState(false);
+  const [keepFinish, setKeepFinish] = useState(true);
   const group = CELECARD_ATMOSPHERE_GROUPS.find((item) => item.id === atmoGroup) ?? CELECARD_ATMOSPHERE_GROUPS[0];
   const housePapers = useMemo(() => {
     const extras = CELECARD_HOUSE_PAPERS.filter((item) => item.url !== theme.textureUrl);
@@ -248,15 +249,16 @@ export function DigitalCardDesignDesk({
         <div>
           <p className="text-sm font-semibold text-slate-900">Design</p>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-slate-500">
-            Every tool used on the house templates, grouped so you can arrange the plate, set the light, and drop in your own background. CeleYou blends that photo into the paper so the name, QR, origin mark, and wordmark stay clear.
+            Looks are optional. Your name, photo, company, QR, and CeleYou logo stay. The live card does not change until you save. CeleYou blends a background into the paper so the name, QR, origin mark, and wordmark stay clear.
           </p>
         </div>
         <button
           type="button"
           onClick={resetToLook}
+          aria-label="Restore this look's layout tokens. Name, photo, company, QR, and the CeleYou logo stay."
           className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 hover:border-slate-300"
         >
-          Reset to this look
+          Restore this look
         </button>
       </div>
 
@@ -271,10 +273,23 @@ export function DigitalCardDesignDesk({
           <p className="text-sm font-semibold text-slate-900">{theme.name}</p>
           <p className="text-[11px] text-slate-500">{theme.artLabel || theme.previewLabel}</p>
         </div>
+        <label className="mb-3 flex items-start gap-2 text-xs text-slate-600" htmlFor="celecard-keep-finish">
+          <input
+            id="celecard-keep-finish"
+            type="checkbox"
+            className="mt-0.5"
+            checked={keepFinish}
+            aria-describedby="celecard-keep-finish-hint"
+            onChange={(event) => setKeepFinish(event.target.checked)}
+          />
+          <span id="celecard-keep-finish-hint">
+            Keep my current layout, lettering, colors, and QR lead when I switch looks. Name, photo, company, and the CeleYou logo never change.
+          </span>
+        </label>
         <DigitalCardThemePicker
           value={themeId}
           onChange={(id) => {
-            onThemeChange(id);
+            onThemeChange(id, { keepFinish });
             setOpen((current) => ({ ...current, look: false, arrange: true, paper: true }));
           }}
         />
@@ -407,7 +422,7 @@ export function DigitalCardDesignDesk({
           cameraFacing="environment"
           buttonLabel="Upload your background"
           hint="A room, fabric, sky, or studio wall. Crop to the card plate. CeleYou blends it into the paper."
-          dropzoneNote="JPEG, HEIC, PNG, WebP · cropped and compressed like a portrait"
+          dropzoneNote="JPEG, HEIC, PNG, WebP, AVIF · cropped and compressed like a portrait"
           previewUrl={customPaper ? design.paperUrl : null}
           onClear={clearPaper}
           onError={onError}

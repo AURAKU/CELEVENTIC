@@ -32,11 +32,22 @@ export function tapGuestFirstName(name: string) {
   return name.trim().split(/\s+/)[0]?.slice(0, 40) || "Guest";
 }
 
+const GUEST_REACH_MAX = 120;
+
+/** Phone digits only. WeChat IDs and weixin / u.wechat links keep their letters. */
+export function looksLikeGuestPhone(value: string): boolean {
+  const raw = value.trim();
+  if (!raw) return false;
+  if (/[a-z]/i.test(raw)) return false;
+  return raw.replace(/\D/g, "").length >= 6;
+}
+
 export function normalizeGuestPhone(value?: string | null): string | null {
   const raw = (value || "").trim();
   if (!raw) return null;
+  if (!looksLikeGuestPhone(raw)) return raw.slice(0, GUEST_REACH_MAX);
   const kept = raw.replace(/[^\d+]/g, "").slice(0, 40);
-  return kept.length >= 6 ? kept : raw.slice(0, 40);
+  return kept.length >= 6 ? kept : raw.slice(0, GUEST_REACH_MAX);
 }
 
 export function celeYouConnectSearchText(input: {

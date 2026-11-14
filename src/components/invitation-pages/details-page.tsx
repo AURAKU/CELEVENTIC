@@ -11,6 +11,7 @@ import { formatInvitationDateParts } from "@/lib/invitation-templates";
 import {
   buildFuneralProgramme,
   formatFuneralDateLine,
+  funeralProgrammeFromSchedule,
   resolveDeceasedName,
 } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
@@ -45,7 +46,14 @@ export function DetailsPage({ context, page }: InvitePageProps) {
   const isFuneral = category === "funeral";
   const dateParts = event.startDateRaw ? formatInvitationDateParts(event.startDateRaw) : null;
   const deceasedName = isFuneral ? resolveDeceasedName(event) : null;
-  const programme = isFuneral ? buildFuneralProgramme(event, dateParts) : [];
+  const hostedProgramme = isFuneral
+    ? funeralProgrammeFromSchedule(context.design.experience?.scheduleItems ?? [])
+    : [];
+  const programme = isFuneral
+    ? hostedProgramme.length > 0
+      ? hostedProgramme
+      : buildFuneralProgramme(event, dateParts)
+    : [];
 
   const cards: DetailCard[] = [];
   const dateLine = formatFuneralDateLine(dateParts, event.startDate);

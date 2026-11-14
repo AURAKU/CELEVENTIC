@@ -282,7 +282,7 @@ export function DigitalCardMeetingDesk({
           </label>
           {nextSlot ? (
             <p className="text-xs text-stone-500">
-              Next open time {nextSlot.weekday} {nextSlot.dayLabel} at {nextSlot.timeLabel}. Guests tap Meetings, pick a slot, and you get a studio message plus email.
+              Next open time {nextSlot.weekday} {nextSlot.dayLabel} at {nextSlot.timeLabel}. These times come from this desk and from CeleYou bookings already taken. They do not read Google Calendar.
             </p>
           ) : (
             <p className="text-xs text-stone-500">

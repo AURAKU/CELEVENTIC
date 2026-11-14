@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { sha256Hex } from "@/lib/crypto/sha256-hex";
 import { resolveCeleYouPublicShare } from "@/lib/digital-business-card/access";
@@ -8,8 +9,10 @@ import {
   nfcDeviceMayReplace,
   nfcDeviceMayReportLost,
   nfcDeviceMayResume,
+  nfcDeviceMayRevoke,
   normalizeNfcDeviceStatus,
   pickCurrentNfcDevice,
+  type NfcAdminDeviceAction,
   type NfcDeviceAction,
   type NfcTapOutcome,
 } from "@/lib/digital-business-card/nfc-device";
@@ -18,6 +21,7 @@ import { shouldCountCeleYouGuestStat } from "@/lib/celeyou-share/events";
 import {
   ensureDefaultNfcDevice,
   getDigitalCardForUser,
+  recordCeleCardLifecycleEvent,
 } from "@/services/digital-business-card/digital-business-card.service";
 
 function newNfcClaimSecretHash(): string {
@@ -55,12 +59,17 @@ function toOwnerDevice(
   };
 }
 
-/** Read-only NFC lookup. Never records a tap. Used for OG unfurl. */
-export async function peekNfcDeviceCard(publicToken: string) {
-  const device = await prisma.smartCardNfcDevice.findUnique({
+/** One findUnique per request. Metadata and the tap page share this. Never keyed by hardware UID. */
+const loadNfcDeviceByPublicToken = cache(async (publicToken: string) => {
+  return prisma.smartCardNfcDevice.findUnique({
     where: { publicToken },
     include: { card: true },
   });
+});
+
+/** Read-only NFC lookup. Never records a tap. Used for OG unfurl. */
+export async function peekNfcDeviceCard(publicToken: string) {
+  const device = await loadNfcDeviceByPublicToken(publicToken);
   return device?.card ?? null;
 }
 
@@ -68,10 +77,7 @@ export async function resolveNfcDeviceTap(
   publicToken: string,
   input?: { viewerUserId?: string | null; userAgent?: string | null }
 ): Promise<NfcTapResolution> {
-  const device = await prisma.smartCardNfcDevice.findUnique({
-    where: { publicToken },
-    include: { card: true },
-  });
+  const device = await loadNfcDeviceByPublicToken(publicToken);
   if (!device?.card) return { outcome: "unknown" };
 
   const policy = await getCeleCardLifecyclePolicy();
@@ -100,7 +106,12 @@ export async function resolveNfcDeviceTap(
             cardId: device.cardId,
             campaignId: device.campaignId,
             kind: "nfc_tap",
-            meta: { deviceId: device.id, deviceType: device.deviceType },
+            meta: {
+              deviceId: device.id,
+              deviceType: device.deviceType,
+              attribution: "nfc",
+              outcome: "completed",
+            },
           },
         })
         .catch(() => undefined);
@@ -115,9 +126,10 @@ export async function resolveNfcDeviceTap(
   return { outcome };
 }
 
-export async function listNfcDevicesForUser(userId: string, cardId: string, origin?: string) {
-  const card = await getDigitalCardForUser(userId, cardId);
-  if (!card) return null;
+export async function listNfcDevicesForCard(
+  card: { id: string; displayName: string; nfcEnabled: boolean; slug: string; publicToken: string },
+  origin?: string
+) {
   await ensureDefaultNfcDevice(card);
   const devices = await prisma.smartCardNfcDevice.findMany({
     where: { cardId: card.id },
@@ -137,14 +149,39 @@ export async function listNfcDevicesForUser(userId: string, cardId: string, orig
   };
 }
 
-export async function mutateNfcDeviceForUser(
-  userId: string,
-  cardId: string,
-  input: { action: NfcDeviceAction; deviceId?: string },
-  origin?: string
-) {
+export async function listNfcDevicesForUser(userId: string, cardId: string, origin?: string) {
   const card = await getDigitalCardForUser(userId, cardId);
   if (!card) return null;
+  return listNfcDevicesForCard(card, origin);
+}
+
+function lifecycleKindForNfcAction(action: NfcAdminDeviceAction) {
+  if (action === "register") return "NfcRegistered" as const;
+  if (action === "pause") return "NfcPaused" as const;
+  if (action === "resume") return "NfcResumed" as const;
+  if (action === "lost") return "NfcLost" as const;
+  if (action === "replace") return "NfcReplaced" as const;
+  return "NfcRevoked" as const;
+}
+
+export async function applyNfcDeviceMutation(
+  card: { id: string; publicToken: string },
+  input: { action: NfcAdminDeviceAction; deviceId?: string }
+) {
+  if (input.action === "register") {
+    const existing = pickCurrentNfcDevice(
+      await prisma.smartCardNfcDevice.findMany({ where: { cardId: card.id } })
+    );
+    const device = await ensureDefaultNfcDevice(card);
+    if (!existing) {
+      await recordCeleCardLifecycleEvent({
+        cardId: card.id,
+        kind: "NfcRegistered",
+        meta: { deviceId: device.id },
+      });
+    }
+    return { ok: true as const, action: input.action, deviceId: device.id, publicToken: device.publicToken };
+  }
 
   const target =
     (input.deviceId
@@ -164,8 +201,13 @@ export async function mutateNfcDeviceForUser(
   } else if (input.action === "resume") {
     if (!nfcDeviceMayResume(status)) return { error: "This NFC card cannot be turned back on" as const };
     await prisma.smartCardNfcDevice.update({ where: { id: target.id }, data: { status: "ACTIVE" } });
-  } else if (input.action === "lost") {
-    if (!nfcDeviceMayReportLost(status)) return { error: "This NFC card cannot be marked lost" as const };
+  } else if (input.action === "lost" || input.action === "revoke") {
+    if (input.action === "revoke" && !nfcDeviceMayRevoke(status)) {
+      return { error: "This NFC card cannot be revoked" as const };
+    }
+    if (input.action === "lost" && !nfcDeviceMayReportLost(status)) {
+      return { error: "This NFC card cannot be marked lost" as const };
+    }
     await prisma.smartCardNfcDevice.update({ where: { id: target.id }, data: { status: "LOST" } });
   } else if (input.action === "replace") {
     if (!nfcDeviceMayReplace(status)) return { error: "This NFC card cannot be replaced" as const };
@@ -189,5 +231,23 @@ export async function mutateNfcDeviceForUser(
     });
   }
 
-  return listNfcDevicesForUser(userId, cardId, origin);
+  await recordCeleCardLifecycleEvent({
+    cardId: card.id,
+    kind: lifecycleKindForNfcAction(input.action),
+    meta: { deviceId: target.id, previousStatus: status },
+  });
+  return { ok: true as const, action: input.action, deviceId: target.id };
+}
+
+export async function mutateNfcDeviceForUser(
+  userId: string,
+  cardId: string,
+  input: { action: NfcDeviceAction; deviceId?: string },
+  origin?: string
+) {
+  const card = await getDigitalCardForUser(userId, cardId);
+  if (!card) return null;
+  const result = await applyNfcDeviceMutation(card, input);
+  if ("error" in result && result.error) return result;
+  return listNfcDevicesForCard(card, origin);
 }

@@ -56,7 +56,7 @@ export function GiftExperience({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const visibleMethods = useMemo(
-    () => methods.filter((item) => item.id !== "CARD"),
+    () => methods,
     [methods]
   );
 
@@ -524,9 +524,7 @@ function MethodStep({
       <StepHeading title="How would you like to pay?" step={3} onBack={onBack} />
 
       <div className="mt-5 space-y-3">
-        {methods
-          .filter((m) => m.id !== "CARD")
-          .map((m) => (
+        {methods.map((m) => (
           <button
             key={m.id}
             type="button"

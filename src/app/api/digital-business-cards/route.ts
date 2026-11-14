@@ -9,10 +9,12 @@ import { ownerMayRenewSubscription } from "@/lib/digital-business-card/billing-r
 import { pickAccountPaidEntitlement } from "@/lib/digital-business-card/lifecycle";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import {
+  CeleYouPublishLimitError,
   createDigitalCard,
   listDigitalCardsForUser,
   nfcTokensByCardId,
 } from "@/services/digital-business-card/digital-business-card.service";
+import { getCeleYouAccountIdentity } from "@/services/digital-business-card/username.service";
 import { CELECARD_BIO_MAX_CHARS, type DigitalCardSocials } from "@/lib/digital-business-card/types";
 
 const socialsSchema = digitalCardSocialsSchema;
@@ -41,11 +43,16 @@ export async function GET() {
 
   try {
     const cards = await listDigitalCardsForUser(session.user.id);
-    const [nfcTokens, policy] = await Promise.all([nfcTokensByCardId(cards), getCeleCardLifecyclePolicy()]);
+    const [nfcTokens, policy, identity] = await Promise.all([
+      nfcTokensByCardId(cards),
+      getCeleCardLifecyclePolicy(),
+      getCeleYouAccountIdentity(session.user.id),
+    ]);
     const now = new Date();
     const canRenew = ownerMayRenewSubscription(pickAccountPaidEntitlement(cards, now, policy), now);
     return NextResponse.json({
       success: true,
+      identity,
       data: cards.map((c) => ({
         ...c,
         ...celeCardOwnerShareFlags(c, policy),
@@ -76,11 +83,19 @@ export async function POST(req: Request) {
   const email =
     parsed.data.email === "" || parsed.data.email === undefined ? null : parsed.data.email;
 
-  const card = await createDigitalCard(session.user.id, {
-    ...parsed.data,
-    email,
-    socials: parsed.data.socials as DigitalCardSocials,
-  });
+  let card;
+  try {
+    card = await createDigitalCard(session.user.id, {
+      ...parsed.data,
+      email,
+      socials: parsed.data.socials as DigitalCardSocials,
+    });
+  } catch (error) {
+    if (error instanceof CeleYouPublishLimitError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    throw error;
+  }
 
   const [nfcTokens, policy] = await Promise.all([nfcTokensByCardId([card]), getCeleCardLifecyclePolicy()]);
   return NextResponse.json(

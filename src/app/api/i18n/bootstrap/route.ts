@@ -14,6 +14,7 @@ export async function GET() {
         languages: [
           { code: "en", name: "English", enabled: true, isDefault: true },
           { code: "fr", name: "French", enabled: true, isDefault: false },
+          { code: "zh", name: "Chinese (Mandarin)", enabled: true, isDefault: false },
         ],
         messages: STATIC_MESSAGE_DICTIONARIES,
         defaultLocale: DEFAULT_LOCALE,

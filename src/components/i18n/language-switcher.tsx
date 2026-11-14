@@ -24,13 +24,13 @@ export function LanguageSwitcher({
   touchFriendly = false,
   allowedLocales,
 }: LanguageSwitcherProps) {
-  const { locale, setLocale, labels, availableLocales } = useLocale();
+  const { locale, setLocale, labels, availableLocales, t } = useLocale();
   const locales = allowedLocales ?? availableLocales;
 
   if (locales.length <= 1) return null;
 
   return (
-    <div className={cn("inline-flex items-center gap-0.5", className)} role="group" aria-label="Language">
+    <div className={cn("inline-flex items-center gap-0.5", className)} role="group" aria-label={t("header.language")}>
       {locales.map((code, index) => (
         <span key={code} className="inline-flex items-center">
           {index > 0 && <span className="px-1 text-slate-300 select-none" aria-hidden>|</span>}

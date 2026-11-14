@@ -21,6 +21,9 @@ import {
 } from "@/lib/digital-business-card/billing-rules";
 import { celeCardCheckoutUi } from "@/lib/digital-business-card/checkout-outcome";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
+import { PaymentMethodPicker } from "@/components/payments/payment-method-picker";
+import { CeleYouTrialCta } from "@/components/digital-business-card/celeyou-trial-cta";
+import type { CheckoutMethodId } from "@/lib/payments/checkout-methods";
 
 type BillingCard = {
   id: string;
@@ -53,13 +56,16 @@ function statusBadge(card: BillingCard) {
   if (card.lifecycleState === "EXPIRING") return { label: "Renew soon", variant: "warning" as const };
   if (card.lifecycleState === "SUSPENDED") return { label: "Unavailable", variant: "destructive" as const };
   if (card.isLive) return { label: "Live", variant: "success" as const };
+  if (card.lifecycleState === "FREE" || card.subscriptionStatus === "FREE") {
+    return { label: "CeleYou Free", variant: "outline" as const };
+  }
   if (card.subscriptionStatus === "EXPIRED") return { label: "Ready to reactivate", variant: "warning" as const };
-  if (card.subscriptionStatus === "TRIAL") return { label: "Studio only", variant: "warning" as const };
+  if (card.subscriptionStatus === "TRIAL") return { label: "Pro trial", variant: "success" as const };
   return { label: card.subscriptionStatus, variant: "outline" as const };
 }
 
 function remainingCopy(hoursLeft: number | null, expiresAt: string | null) {
-  if (hoursLeft == null) return "No paid window yet. Activate a plan to go live.";
+  if (hoursLeft == null) return "Your public card stays on CeleYou Free. Upgrade for premium studio tools.";
   if (hoursLeft <= 0) return "Your identity, designs, and sharing link are preserved.";
   const hours = Math.max(1, Math.round(hoursLeft));
   const when = expiresAt
@@ -86,6 +92,7 @@ export function SmartCardBillingClient() {
   const [paymentPage, setPaymentPage] = useState(1);
   const [paymentTotal, setPaymentTotal] = useState(0);
   const [paymentLimit, setPaymentLimit] = useState(20);
+  const [payMethod, setPayMethod] = useState<CheckoutMethodId | "">("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -185,7 +192,7 @@ export function SmartCardBillingClient() {
       const res = await fetch(`/api/digital-business-cards/${active.id}/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId, method: payMethod || undefined }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Checkout failed");
@@ -221,14 +228,14 @@ export function SmartCardBillingClient() {
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0B8A83]">Billing</span>
           </div>
           <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">
-            Keep the public card live
+            Your digital identity stays
           </h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            CeleYou Pro is a prepaid term for hosted identity: QR, NFC, and the public page. A paid
-            term cannot be cancelled or renewed early. When it ends, your approved design, URL, and QR
-            stay saved. Premium hosting needs a new term. Concierge design is a separate one-time fee
-            and is not charged again on renewal. Reminders go out 14, 7, and 1 days before expiry, on
-            the day, then 3 and 14 days after.
+            CeleYou Free keeps a published card, username, QR, and NFC reachable. CeleYou Pro is a
+            prepaid term for premium studio tools and advanced analytics. A paid term cannot be
+            cancelled or renewed early. When it ends, your approved design, URL, and QR stay saved.
+            Concierge design is a separate one-time fee and is not charged again on renewal. Reminders
+            go out 14, 7, and 1 days before expiry, on the day, then 3 and 14 days after.
           </p>
         </div>
         <Button asChild variant="outline">
@@ -336,18 +343,21 @@ export function SmartCardBillingClient() {
                   <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
                     <p className="font-semibold">Your CeleYou is ready when you are.</p>
                     <p className="mt-1 text-amber-900/80">
-                      Your identity, designs, and sharing link are preserved. Reactivate to restore your complete digital profile.
+                      Your identity, designs, and sharing link are preserved. Reactivate to restore premium tools.
                     </p>
                   </div>
-                ) : active.lifecycleState === "DRAFT" || active.subscriptionStatus === "TRIAL" ? (
+                ) : active.subscriptionStatus === "TRIAL" ? (
                   <p className="mt-3 text-sm text-slate-600">
-                    Studio is open. The public card stays unavailable until a verified payment activates it.
+                    Your Pro trial is on. Premium studio tools stay available until the trial ends. Nothing is charged unless you buy a term.
                   </p>
                 ) : (
                   <p className="mt-3 text-sm text-slate-600">
                     {remainingCopy(active.hoursLeft, active.subscriptionExpiresAt)}
                   </p>
                 )}
+                <div className="mt-4">
+                  <CeleYouTrialCta cardId={active.id} compact />
+                </div>
                 <div className="mt-5 grid grid-cols-2 gap-2">
                   {plans.map((plan) => (
                     <button
@@ -372,6 +382,9 @@ export function SmartCardBillingClient() {
                     </button>
                   ))}
                 </div>
+                {active.canRenew !== false ? (
+                  <PaymentMethodPicker className="mt-4" value={payMethod} onChange={setPayMethod} />
+                ) : null}
                 <Button
                   type="button"
                   className="mt-4 w-full whitespace-nowrap bg-[#0B8A83] hover:bg-[#097a74]"
@@ -390,7 +403,7 @@ export function SmartCardBillingClient() {
                 <p className="mt-2 text-[11px] text-slate-500">
                   {active.canRenew === false
                     ? CELEYOU_TERM_LOCKED_HINT
-                    : `${CELEYOU_TERM_OPEN_HINT} Checkout opens Paystack. The card stays live only after payment succeeds.`}
+                    : `${CELEYOU_TERM_OPEN_HINT} Checkout opens the connected merchant. The card stays live only after payment succeeds.`}
                 </p>
               </div>
             ) : null}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Contact, Copy, CreditCard, Nfc, Share2, WalletCards } from "lucide-react";
+import { Contact, Copy, CreditCard, Mail, Nfc, QrCode, Share2, WalletCards } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capability";
 import { writeCeleCardNfcUrl } from "@/lib/digital-business-card/nfc-write";
@@ -26,7 +26,15 @@ import {
 } from "@/lib/celeyou-share/engine";
 import { contactSaveHint } from "@/lib/celeyou-share/namedrop";
 import { WALLET_PASS_CTA } from "@/lib/celeyou-share/wallet-pass";
+import {
+  celeYouEmailShareHref,
+  celeYouPrintQrPngSrc,
+  celeYouPrintQrSvgSrc,
+  celeYouWhatsAppShareHref,
+} from "@/lib/digital-business-card/share-channels";
 import { usePersistLivePlateSnapshot } from "@/lib/digital-business-card/capture-live-plate";
+import { celeYouEmailSignaturePlain } from "@/lib/celeyou-growth/signature";
+import { CELEYOU_REFERRAL_COPY, celeYouInviteUrl, sanitizeReferralHandle } from "@/lib/celeyou-growth/referral";
 
 export function DigitalCardShareDesk({
   profileUrl,
@@ -104,7 +112,10 @@ export function DigitalCardShareDesk({
   async function shareProfile() {
     const result = await engine.share({
       title: celeCardShareTitle({ displayName: vcard.displayName, title: vcard.title }),
-      text: celeCardShareMessage({ displayName: vcard.displayName }, identityShare),
+      text: celeCardShareMessage(
+        { displayName: vcard.displayName, title: vcard.title, company: vcard.company },
+        identityShare
+      ),
       url: identityShare,
       imageUrl: vcard.slug ? celeCardShareImageUrls(vcard.slug, vcard.id || undefined) : null,
       persistPlateCardId: cardId || vcard.id || null,
@@ -169,6 +180,29 @@ export function DigitalCardShareDesk({
           <Copy className="mr-2 h-4 w-4" />
           {copied === "link" ? "Copied" : COPY_PROFILE_LINK_CTA}
         </Button>
+        {ready ? (
+          <Button asChild variant="outline" size="sm">
+            <a href={celeYouWhatsAppShareHref(celeCardShareMessage({ displayName: vcard.displayName, title: vcard.title, company: vcard.company }, identityShare), identityShare)}>
+              WhatsApp
+            </a>
+          </Button>
+        ) : (
+          <Button type="button" variant="outline" size="sm" disabled>
+            WhatsApp
+          </Button>
+        )}
+        {ready ? (
+          <Button asChild variant="outline" size="sm">
+            <a href={celeYouEmailShareHref(celeCardShareTitle({ displayName: vcard.displayName, title: vcard.title }), celeCardShareMessage({ displayName: vcard.displayName, title: vcard.title, company: vcard.company }, identityShare), identityShare)}>
+              <Mail className="mr-2 h-4 w-4" />
+              Email
+            </a>
+          </Button>
+        ) : (
+          <Button type="button" variant="outline" size="sm" disabled>
+            Email
+          </Button>
+        )}
         <Button type="button" variant="outline" size="sm" disabled={!ready} onClick={saveContact}>
           <Contact className="mr-2 h-4 w-4" />
           {SAVE_CONTACT_CTA}
@@ -189,6 +223,55 @@ export function DigitalCardShareDesk({
         </Button>
       </div>
       {shareNote ? <p className="text-xs leading-relaxed text-slate-700">{shareNote}</p> : null}
+
+      {publicShare ? (
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <a href={celeYouPrintQrPngSrc(publicShare)}>
+              <QrCode className="mr-2 h-4 w-4" />
+              Download QR PNG
+            </a>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <a href={celeYouPrintQrSvgSrc(publicShare)}>Download QR SVG</a>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!ready}
+            onClick={() =>
+              void copy(
+                "signature",
+                celeYouEmailSignaturePlain({
+                  displayName: vcard.displayName,
+                  title: vcard.title,
+                  company: vcard.company,
+                  profileUrl: identityShare,
+                })
+              )
+            }
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            {copied === "signature" ? "Signature copied" : "Copy email signature"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!ready}
+            onClick={() => {
+              const handle = sanitizeReferralHandle(identityShare.split("/").filter(Boolean).pop() || "");
+              void copy("invite", celeYouInviteUrl(origin, handle));
+            }}
+          >
+            {copied === "invite" ? "Invite copied" : "Invite a colleague"}
+          </Button>
+        </div>
+      ) : null}
+      {copied === "invite" || copied === "signature" ? (
+        <p className="text-xs text-slate-500">{CELEYOU_REFERRAL_COPY}</p>
+      ) : null}
 
       <CeleYouNameDropSetup />
 

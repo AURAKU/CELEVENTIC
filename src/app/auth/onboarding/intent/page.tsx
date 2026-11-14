@@ -18,10 +18,12 @@ import {
   type OnboardingIntentOption,
 } from "@/lib/auth/onboarding-intents";
 import { ArrowRight } from "lucide-react";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 /** Post-Google OAuth intent selection for users without accountType. */
 export default function OnboardingIntentPage() {
   const router = useRouter();
+  const { t } = useLocale();
   const { data: session, status } = useSession();
   const [selected, setSelected] = useState<OnboardingIntentOption | null>(null);
   const [organizationName, setOrganizationName] = useState("");
@@ -71,7 +73,7 @@ export default function OnboardingIntentPage() {
       router.push(data.redirect ?? "/dashboard/getting-started");
       router.refresh();
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("auth.something_wrong"));
       setBooting(false);
     } finally {
       setLoading(false);
@@ -135,8 +137,8 @@ export default function OnboardingIntentPage() {
   if (booting) {
     return (
       <AuthLayout
-        title="Setting up your workspace"
-        subtitle="One moment. We're applying the choice you already made."
+        title={t("auth.workspace_setup")}
+        subtitle={t("auth.workspace_setup_body")}
       >
         <div className="space-y-3">
           <div className="h-4 rounded bg-slate-100 animate-pulse" />
@@ -149,8 +151,8 @@ export default function OnboardingIntentPage() {
   return (
     <AuthLayout
       wide
-      title="How will you use Celeventic?"
-      subtitle="Google sign-in is done. Choose one option so we can open the right home screen."
+      title={t("auth.how_use")}
+      subtitle={t("auth.google_done")}
     >
       <div className="space-y-6">
         {error && (

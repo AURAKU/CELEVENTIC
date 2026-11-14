@@ -26,6 +26,7 @@ function staticBootstrapPayload() {
     languages: [
       { code: "en", name: "English", enabled: true, isDefault: true },
       { code: "fr", name: "French", enabled: true, isDefault: false },
+      { code: "zh", name: "Chinese (Mandarin)", enabled: true, isDefault: false },
     ],
     messages: staticBase,
     defaultLocale: DEFAULT_LOCALE,
@@ -78,7 +79,9 @@ export class TranslationService {
     const dict: MessageDictionary = { ...staticBase[locale] };
     for (const row of rows) {
       const fk = fullKey(row.namespace, row.key);
-      dict[fk] = locale === "fr" ? (row.frValue ?? row.enValue) : row.enValue;
+      if (locale === "fr") dict[fk] = row.frValue ?? row.enValue;
+      else if (locale === "zh") continue;
+      else dict[fk] = row.enValue;
     }
     return dict;
   }
@@ -136,7 +139,12 @@ export class TranslationService {
     const row = await prisma.translation.findUnique({
       where: { namespace_key: { namespace, key } },
     });
-    if (!row) return interpolate(fullKey(namespace, key), params);
+    const fk = fullKey(namespace, key);
+    const staticDict = buildStaticMessageDictionaries()[locale];
+    if (locale === "zh") {
+      return interpolate(staticDict[fk] ?? row?.enValue ?? fk, params);
+    }
+    if (!row) return interpolate(staticDict[fk] ?? fk, params);
     const raw = locale === "fr" ? (row.frValue ?? row.enValue) : row.enValue;
     return interpolate(raw, params);
   }

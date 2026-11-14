@@ -211,10 +211,10 @@ function zonedParts(date: Date, timeZone: string) {
   };
 }
 
-export function formatMeetingWhen(iso: string, timeZone: string): string {
+export function formatMeetingWhen(iso: string, timeZone: string, locale = "en-GB"): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(locale, {
     timeZone,
     weekday: "short",
     day: "numeric",
@@ -225,10 +225,10 @@ export function formatMeetingWhen(iso: string, timeZone: string): string {
   }).format(date);
 }
 
-export function formatMeetingClock(iso: string, timeZone: string): string {
+export function formatMeetingClock(iso: string, timeZone: string, locale = "en-GB"): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(locale, {
     timeZone,
     hour: "2-digit",
     minute: "2-digit",
@@ -236,12 +236,13 @@ export function formatMeetingClock(iso: string, timeZone: string): string {
   }).format(date);
 }
 
-export function formatMeetingDay(iso: string, timeZone: string): { key: string; weekday: string; label: string } {
+export function formatMeetingDay(iso: string, timeZone: string, locale = "en-GB"): { key: string; weekday: string; label: string } {
   const parts = zonedParts(new Date(iso), timeZone);
-  const month = new Intl.DateTimeFormat("en-GB", { timeZone, month: "short" }).format(new Date(iso));
+  const month = new Intl.DateTimeFormat(locale, { timeZone, month: "short" }).format(new Date(iso));
+  const weekday = new Intl.DateTimeFormat(locale, { timeZone, weekday: "short" }).format(new Date(iso));
   return {
     key: `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`,
-    weekday: parts.weekdayLabel,
+    weekday,
     label: `${parts.day} ${month}`,
   };
 }
@@ -262,7 +263,8 @@ export function groupMeetingDays(slots: CeleCardMeetingSlot[]) {
 export function listOpenMeetingSlots(
   desk: CeleCardMeetingDesk,
   takenStarts: string[] = [],
-  now: Date = new Date()
+  now: Date = new Date(),
+  locale = "en-GB"
 ): CeleCardMeetingSlot[] {
   if (!desk.enabled || !desk.weekdays.length) return [];
   const taken = new Set(takenStarts.map((value) => new Date(value).getTime()).filter((value) => Number.isFinite(value)));
@@ -289,14 +291,14 @@ export function listOpenMeetingSlots(
       if (start.getTime() < earliest.getTime()) continue;
       if (taken.has(start.getTime())) continue;
       const end = new Date(start.getTime() + lengthMs);
-      const dayMeta = formatMeetingDay(start.toISOString(), desk.timezone);
+      const dayMeta = formatMeetingDay(start.toISOString(), desk.timezone, locale);
       slots.push({
         start: start.toISOString(),
         end: end.toISOString(),
         dayKey: dayMeta.key,
         weekday: dayMeta.weekday,
         dayLabel: dayMeta.label,
-        timeLabel: formatMeetingClock(start.toISOString(), desk.timezone),
+        timeLabel: formatMeetingClock(start.toISOString(), desk.timezone, locale),
       });
     }
   }

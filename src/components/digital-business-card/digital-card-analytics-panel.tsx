@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ComponentType } from "react";
+import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import {
+  CalendarClock,
   Contact,
+  CreditCard,
   Globe,
   Mail,
+  MapPin,
   MessageCircle,
   Nfc,
   Phone,
@@ -13,6 +17,7 @@ import {
   Share2,
   Users,
 } from "lucide-react";
+import { celeYouActivityLabel } from "@/lib/celeyou-share/events";
 import {
   activityRangeQuery,
   defaultActivityRange,
@@ -22,18 +27,38 @@ import {
 import { DigitalCardActivityRange } from "@/components/digital-business-card/digital-card-activity-range";
 import styles from "./digital-card-analytics-panel.module.css";
 
+const DigitalCardAnalyticsChart = dynamic(
+  () =>
+    import("@/components/digital-business-card/digital-card-analytics-chart").then(
+      (mod) => mod.DigitalCardAnalyticsChart
+    ),
+  { ssr: false, loading: () => <p className="mt-2 text-xs text-slate-500">Loading trend…</p> }
+);
+
 type Analytics = {
   viewCount: number;
   qrOpens?: number;
   nfcTaps?: number;
   vcardSaves?: number;
+  vcardDownloads?: number;
   callTaps?: number;
   whatsappTaps?: number;
   emailTaps?: number;
   websiteTaps?: number;
+  socialTaps?: number;
+  locationTaps?: number;
+  meetingOpens?: number;
+  meetingBooked?: number;
+  paymentOpens?: number;
   shares?: number;
   connects?: number;
   reconnects?: number;
+  popular?: Array<{ kind: string; label: string; count: number; outcome: string }>;
+  devices?: { phone: number; tablet: number; desktop: number; unknown: number };
+  trend?: Array<{ day: string; views: number; actions: number }>;
+  notes?: { qr: string; nfc: string; payment: string; share: string; contact: string };
+  activity?: Array<{ id: string; kind: string; createdAt: string }>;
+  nextCursor?: string | null;
 };
 
 type Metric = {
@@ -113,6 +138,7 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<ActivityDateRange>(defaultActivityRange);
   const [switching, setSwitching] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const reduceMotion = useReducedMotion();
   const views = useCountUp(data?.viewCount ?? 0, Boolean(data) && !switching);
   const rangeQuery = activityRangeQuery(range);
@@ -148,8 +174,14 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
       }
     }
     void load(false);
-    const timer = window.setInterval(() => void load(true), 15000);
-    const onFocus = () => void load(true);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void load(true);
+    }, 30000);
+    const onFocus = () => {
+      if (document.visibilityState === "hidden") return;
+      void load(true);
+    };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onFocus);
     return () => {
@@ -159,6 +191,29 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
       document.removeEventListener("visibilitychange", onFocus);
     };
   }, [cardId, rangeQuery]);
+
+  async function loadMore() {
+    if (!cardId || !data?.nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    const join = rangeQuery ? `${rangeQuery}&` : "?";
+    const res = await fetch(
+      `/api/digital-business-cards/${cardId}/analytics${join}cursor=${encodeURIComponent(data.nextCursor)}`,
+      { cache: "no-store" }
+    );
+    const json = await res.json().catch(() => ({}));
+    setLoadingMore(false);
+    if (!res.ok || !json.data) return;
+    const page = json.data as Analytics;
+    setData((current) =>
+      current
+        ? {
+            ...current,
+            activity: [...(current.activity ?? []), ...(page.activity ?? [])],
+            nextCursor: page.nextCursor ?? null,
+          }
+        : current
+    );
+  }
 
   const stages: Stage[] = useMemo(() => {
     if (!data) return [];
@@ -170,6 +225,7 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
           { key: "qr", label: "QR opens", value: data.qrOpens ?? 0, icon: QrCode },
           { key: "nfc", label: "NFC taps", value: data.nfcTaps ?? 0, icon: Nfc },
           { key: "save", label: "Save contact", value: data.vcardSaves ?? 0, icon: Contact },
+          { key: "vcf", label: "vCard downloads", value: data.vcardDownloads ?? 0, icon: Contact },
         ],
       },
       {
@@ -180,14 +236,19 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
           { key: "wa", label: "WhatsApp", value: data.whatsappTaps ?? 0, icon: MessageCircle },
           { key: "email", label: "Email", value: data.emailTaps ?? 0, icon: Mail },
           { key: "web", label: "Website", value: data.websiteTaps ?? 0, icon: Globe },
+          { key: "social", label: "Social", value: data.socialTaps ?? 0, icon: Share2 },
+          { key: "place", label: "Location", value: data.locationTaps ?? 0, icon: MapPin },
         ],
       },
       {
         id: "pass",
         label: "Pass on",
         items: [
-          { key: "share", label: "Shares", value: data.shares ?? 0, icon: Share2 },
+          { key: "share", label: "Share started", value: data.shares ?? 0, icon: Share2 },
           { key: "connect", label: "Connections", value: data.connects ?? 0, icon: Users },
+          { key: "meet", label: "Booking opened", value: data.meetingOpens ?? 0, icon: CalendarClock },
+          { key: "booked", label: "Meetings requested", value: data.meetingBooked ?? 0, icon: CalendarClock },
+          { key: "pay", label: "Payment details", value: data.paymentOpens ?? 0, icon: CreditCard },
         ],
       },
     ];
@@ -209,7 +270,7 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
         <div>
           <p className="text-sm font-semibold text-slate-900">Activity</p>
           <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-            Live counts from people who open this CeleYou and use published actions.
+            Live counts from people who open this CeleYou and use published actions. Taps are not completed payments or sent messages.
           </p>
         </div>
         <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#0B8A83]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#0B8A83]">
@@ -256,6 +317,13 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
             <p className="relative mt-1.5 text-[11px] text-white/70">{formatActivityHeroCaption(range)}</p>
           </motion.div>
 
+          {data.trend?.length ? (
+            <div className="rounded-2xl border border-slate-100 bg-white px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Engagement trend</p>
+              <DigitalCardAnalyticsChart points={data.trend} />
+            </div>
+          ) : null}
+
           {stages.map((stage, stageIndex) => (
             <div key={stage.id} className={styles.stage}>
               <p className={styles.stageLabel}>
@@ -278,6 +346,78 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
               </dl>
             </div>
           ))}
+
+          {data.popular && data.popular.length ? (
+            <div className="rounded-2xl border border-slate-100 bg-white px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Popular actions</p>
+              <ol className="mt-1.5 space-y-1">
+                {data.popular.slice(0, 6).map((row) => (
+                  <li key={row.kind} className="flex items-center justify-between text-xs text-slate-700">
+                    <span>
+                      {row.label}
+                      {row.outcome === "attempted" ? (
+                        <span className="ml-1 text-[10px] uppercase tracking-wide text-slate-400">attempted</span>
+                      ) : null}
+                    </span>
+                    <span className="tabular-nums font-semibold">{row.count}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+
+          {data.devices ? (
+            <div className="rounded-2xl border border-slate-100 bg-white px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Device mix</p>
+              <p className="mt-0.5 text-[10px] text-slate-400">Coarse categories from the browser family. Raw user agents are not stored.</p>
+              <dl className="mt-1.5 grid grid-cols-4 gap-1 text-center text-[11px] text-slate-600">
+                {(["phone", "tablet", "desktop", "unknown"] as const).map((key) => (
+                  <div key={key}>
+                    <dt className="capitalize">{key}</dt>
+                    <dd className="font-semibold tabular-nums text-slate-900">{data.devices?.[key] ?? 0}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
+
+          {data.notes ? (
+            <p className="text-[10px] leading-relaxed text-slate-500">
+              {data.notes.qr} {data.notes.nfc} {data.notes.contact} {data.notes.share} {data.notes.payment}
+            </p>
+          ) : null}
+
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Recent activity</p>
+            <ul className="mt-1.5 space-y-1">
+              {(data.activity ?? []).map((row) => (
+                <li key={row.id} className="flex items-center justify-between text-xs text-slate-600">
+                  <span>{celeYouActivityLabel(row.kind)}</span>
+                  <time className="tabular-nums text-slate-400">
+                    {new Date(row.createdAt).toLocaleString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </time>
+                </li>
+              ))}
+              {!(data.activity ?? []).length ? (
+                <li className="text-xs text-slate-500">No published actions in this window.</li>
+              ) : null}
+            </ul>
+            {data.nextCursor ? (
+              <button
+                type="button"
+                className="mt-2 text-xs font-semibold text-[#0B8A83]"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+              >
+                {loadingMore ? "Loading…" : "Load more"}
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>

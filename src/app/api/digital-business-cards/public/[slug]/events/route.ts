@@ -5,6 +5,11 @@ import { requestClientIp } from "@/lib/http/client-ip";
 import { rateLimit } from "@/lib/rate-limit";
 import { isCeleYouPublicEventKind, shouldCountCeleYouGuestStat } from "@/lib/celeyou-share/events";
 import {
+  celeYouDeviceCategory,
+  celeYouEventOutcome,
+  isAllowedAnalyticsBrand,
+} from "@/lib/digital-business-card/analytics";
+import {
   getDigitalCardBySlug,
   recordSmartCardInteraction,
 } from "@/services/digital-business-card/digital-business-card.service";
@@ -16,6 +21,8 @@ export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
   kind: z.string().min(3).max(40),
+  brand: z.string().max(32).optional(),
+  outcome: z.enum(["attempted", "completed"]).optional(),
 });
 
 async function readEventBody(req: NextRequest) {
@@ -42,6 +49,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
   const ip = requestClientIp(req);
   const limited = await rateLimit(`celecard-public-event:${ip}:${slug}`, 40, 60);
   if (!limited.success) return new NextResponse(null, { status: 204 });
+  const deduped = await rateLimit(
+    `celecard-event-dedupe:${ip}:${slug}:${parsed.data.kind}`,
+    1,
+    2
+  );
+  if (!deduped.success) return new NextResponse(null, { status: 204 });
 
   const card = await getDigitalCardBySlug(slug);
   const share = resolveCeleYouPublicShare({
@@ -64,6 +77,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
     return new NextResponse(null, { status: 204 });
   }
 
-  await recordSmartCardInteraction(card.id, parsed.data.kind, { surface: "public" });
+  await recordSmartCardInteraction(card.id, parsed.data.kind, {
+    surface: "public",
+    outcome: celeYouEventOutcome(parsed.data.kind, parsed.data.outcome),
+    device: celeYouDeviceCategory(req.headers.get("user-agent") || ""),
+    ...(isAllowedAnalyticsBrand(parsed.data.brand) ? { brand: parsed.data.brand } : {}),
+  });
   return new NextResponse(null, { status: 204 });
 }

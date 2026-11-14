@@ -13,6 +13,7 @@ import { isAdminCommerceBypass } from "@/lib/access/package-access";
 import { isQuoteOnlyInvitationPackage } from "@/lib/invitation-mvp/packages";
 import { getAppUrlFromEnv } from "@/lib/app-url";
 import { unlockPaidInvitationPackage } from "@/services/packages/unlock-paid-package.service";
+import { isCheckoutMethodId } from "@/lib/payments/checkout-methods";
 
 export async function POST(
   req: Request,
@@ -34,10 +35,11 @@ export async function POST(
     }
 
     const body = await req.json().catch(() => ({}));
-    const { displayCurrency: dc, acceptTerms, portfolioConsent } = body as {
+    const { displayCurrency: dc, acceptTerms, portfolioConsent, method } = body as {
       displayCurrency?: string;
       acceptTerms?: boolean;
       portfolioConsent?: boolean;
+      method?: string;
     };
 
     if (!acceptTerms && !adminBypass) {
@@ -133,6 +135,7 @@ export async function POST(
         amount,
         currency: "GHS",
         purpose: "INVITATION_ORDER",
+        method: isCheckoutMethodId(method) ? method : undefined,
         metadata: {
           invitationOrderId: order.id,
           templateSlug: order.templateSlug,

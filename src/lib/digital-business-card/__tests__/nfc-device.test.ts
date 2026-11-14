@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
   NFC_TAP_COPY,
@@ -37,6 +39,11 @@ describe("NFC tap outcomes", () => {
       "replaced"
     );
     assert.equal(nfcTapOutcome({ deviceStatus: null, nfcEnabled: true, guestShareable: true }), "unknown");
+    const view = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-nfc-tap-view.tsx"),
+      "utf8"
+    );
+    assert.match(view, /^"use client";/m);
   });
 
   it("still sends unpublished or courtesy identities to the public page without an NFC success", () => {

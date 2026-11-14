@@ -10,6 +10,14 @@ import {
 import { resolvePaymentProvider } from "@/lib/integrations/platform-provider-settings";
 import { sharedSecretWebhookAllowed } from "@/lib/payments/webhook-guard";
 import { parsePaystackWebhook, paystackHmacValid } from "@/lib/payments/paystack";
+import {
+  getCheckoutMethod,
+  ghsToWalletChargeMinor,
+  isCheckoutMethodId,
+  resolveInitializeChannels,
+  type CheckoutMethodId,
+} from "@/lib/payments/checkout-methods";
+import { parseStripeCheckoutEvent, stripeSignatureValid } from "@/lib/payments/stripe-wallet";
 import { nextPaymentStatus } from "@/lib/payments/payment-status";
 import { paymentMatchesTicketOrder } from "@/services/tickets/ticket-ledger.service";
 import { SMARTCARD_PAYMENT_KIND } from "@/lib/digital-business-card/plans";
@@ -90,7 +98,7 @@ class PaystackAdapter implements PaymentProviderAdapter {
         reference: params.reference,
         callback_url: params.callbackUrl || callbackUrl,
         metadata: params.metadata,
-        ...(params.channels?.length ? { channels: params.channels } : {}),
+        channels: params.channels?.length ? params.channels : ["card", "mobile_money", "bank_transfer"],
       }),
       signal: AbortSignal.timeout(20000),
     });
@@ -445,11 +453,145 @@ class HubtelAdapter implements PaymentProviderAdapter {
   }
 }
 
+class StripeAdapter implements PaymentProviderAdapter {
+  private async secretKey(): Promise<string | null> {
+    if (!(await isProviderEnabled("STRIPE"))) return null;
+    return getProviderSecret("STRIPE");
+  }
+
+  private async webhookSecret(): Promise<string | null> {
+    const creds = await getProviderCredentials("STRIPE");
+    const fromConfig =
+      typeof creds.config.webhookSecret === "string" ? creds.config.webhookSecret.trim() : "";
+    return fromConfig || process.env.STRIPE_WEBHOOK_SECRET?.trim() || null;
+  }
+
+  async initializePayment(params: PaymentInitRequest & { reference: string }): Promise<PaymentInitResponse> {
+    const secretKey = requireSecret("Stripe", await this.secretKey());
+    const creds = await getProviderCredentials("STRIPE");
+    const methodId = isCheckoutMethodId(params.method)
+      ? params.method
+      : isCheckoutMethodId(params.metadata?.checkoutMethod)
+        ? (params.metadata.checkoutMethod as CheckoutMethodId)
+        : "alipay";
+    const method = getCheckoutMethod(methodId);
+    const stripeMethod = method.stripePaymentMethod ?? "alipay";
+    const callbackUrl =
+      params.callbackUrl ||
+      (typeof creds.config.callbackUrl === "string" && creds.config.callbackUrl) ||
+      `${getAppUrlFromEnv()}/dashboard/wallet?payment=callback`;
+    const ghs = Number(params.amount);
+    const cnyMinor = ghsToWalletChargeMinor(ghs, "CNY");
+    const body = new URLSearchParams();
+    body.set("mode", "payment");
+    body.set("success_url", `${callbackUrl}${callbackUrl.includes("?") ? "&" : "?"}session_id={CHECKOUT_SESSION_ID}`);
+    body.set("cancel_url", callbackUrl);
+    body.set("client_reference_id", params.reference);
+    body.set("customer_email", params.email);
+    body.append("payment_method_types[]", stripeMethod);
+    if (stripeMethod === "wechat_pay") {
+      body.set("payment_method_options[wechat_pay][client]", "web");
+    }
+    body.append("line_items[0][quantity]", "1");
+    body.append("line_items[0][price_data][currency]", "cny");
+    body.append("line_items[0][price_data][unit_amount]", String(cnyMinor));
+    body.append("line_items[0][price_data][product_data][name]", "Celeventic");
+    body.set("metadata[celeventic_reference]", params.reference);
+    body.set("metadata[celeventic_base_currency]", "GHS");
+    body.set("metadata[celeventic_base_amount]", String(ghs));
+    body.set("metadata[celeventic_base_amount_minor]", String(Math.round(ghs * 100)));
+    body.set("metadata[celeventic_method]", methodId);
+    body.set("payment_intent_data[metadata][celeventic_reference]", params.reference);
+
+    const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+      signal: AbortSignal.timeout(20000),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      error?: { message?: string };
+      url?: string;
+      id?: string;
+    };
+    if (!res.ok || !data.url) {
+      throw new PaymentProviderError(data.error?.message || "Stripe failed to start Alipay or WeChat Pay checkout");
+    }
+    return {
+      reference: params.reference,
+      authorizationUrl: data.url,
+      provider: "STRIPE",
+    };
+  }
+
+  async verifyWebhook(payload: unknown, signature: string): Promise<boolean> {
+    const secret = await this.webhookSecret();
+    if (!secret || !signature) return false;
+    const raw = typeof payload === "string" ? payload : JSON.stringify(payload);
+    return stripeSignatureValid(raw, signature, secret);
+  }
+
+  async verifyTransaction(reference: string): Promise<{ status: PaymentStatus; amount: number }> {
+    const detailed = await this.verifyTransactionDetailed(reference);
+    return {
+      status: detailed.status === "success" ? "SUCCESSFUL" : detailed.status === "failed" ? "FAILED" : "PENDING",
+      amount: detailed.amountMinor / 100,
+    };
+  }
+
+  async parseWebhook(payload: unknown): Promise<{ reference: string | null; successful: boolean } | null> {
+    const parsed = parseStripeCheckoutEvent(payload);
+    if (!parsed) return null;
+    return { reference: parsed.reference, successful: parsed.successful };
+  }
+
+  async verifyTransactionDetailed(reference: string): Promise<ProviderVerification> {
+    const secretKey = requireSecret("Stripe", await this.secretKey());
+    const res = await fetch(
+      `https://api.stripe.com/v1/checkout/sessions?client_reference_id=${encodeURIComponent(reference)}&limit=1`,
+      { headers: { Authorization: `Bearer ${secretKey}` } }
+    );
+    const body = (await res.json()) as {
+      error?: { message?: string };
+      data?: Array<{
+        payment_status?: string;
+        status?: string;
+        amount_total?: number;
+        currency?: string;
+        metadata?: Record<string, string>;
+      }>;
+    };
+    if (!res.ok || !body.data?.[0]) {
+      throw new PaymentProviderError(body.error?.message || "Stripe verification failed");
+    }
+    const session = body.data[0];
+    const paid = session.payment_status === "paid";
+    const failed = session.status === "expired";
+    const meta = session.metadata ?? {};
+    const ghsMinor = Math.trunc(Number(meta.celeventic_base_amount_minor ?? 0));
+    return {
+      status: paid ? "success" : failed ? "failed" : "pending",
+      reference,
+      amountMinor: ghsMinor || Math.trunc(Number(session.amount_total ?? 0)),
+      currency: (meta.celeventic_base_currency || "GHS").toUpperCase(),
+      channel: meta.celeventic_method ?? "alipay",
+      paidAt: paid ? new Date().toISOString() : null,
+      feesMinor: 0,
+      gatewayResponse: session.payment_status ?? null,
+      metadata: meta,
+    };
+  }
+}
+
 export class PaymentService {
   private adapters: Record<PaymentProvider, PaymentProviderAdapter> = {
     PAYSTACK: new PaystackAdapter(),
     FLUTTERWAVE: new FlutterwaveAdapter(),
     HUBTEL: new HubtelAdapter(),
+    STRIPE: new StripeAdapter(),
   };
 
   async initializePayment(
@@ -475,7 +617,37 @@ export class PaymentService {
       };
     }
   ) {
-    const resolvedProvider = await resolvePaymentProvider(provider);
+    const methodId = isCheckoutMethodId(request.method)
+      ? request.method
+      : isCheckoutMethodId(request.metadata?.checkoutMethod)
+        ? (request.metadata?.checkoutMethod as CheckoutMethodId)
+        : null;
+    const method = methodId ? getCheckoutMethod(methodId) : null;
+
+    let resolvedProvider: PaymentProvider;
+    if (method?.rail === "STRIPE") {
+      if (!(await isProviderEnabled("STRIPE"))) {
+        throw new PaymentProviderError(
+          "Connect Stripe in Admin → Integrations to accept Alipay and WeChat Pay."
+        );
+      }
+      resolvedProvider = "STRIPE";
+    } else {
+      resolvedProvider = await resolvePaymentProvider(provider);
+    }
+
+    const hydratedRequest: PaymentInitRequest = {
+      ...request,
+      method: methodId ?? request.method,
+      channels:
+        method?.rail === "STRIPE"
+          ? request.channels
+          : resolveInitializeChannels(methodId, request.channels),
+      metadata: {
+        ...(request.metadata ?? {}),
+        ...(methodId ? { checkoutMethod: methodId } : {}),
+      },
+    };
 
     if (relations?.idempotencyKey) {
       const existing = await prisma.payment.findUnique({
@@ -487,7 +659,7 @@ export class PaymentService {
         }
         const adapter = this.adapters[existing.provider];
         const result = await adapter.initializePayment({
-          ...request,
+          ...hydratedRequest,
           reference: existing.reference,
           amount: Number(existing.baseAmount ?? existing.amount),
           currency: existing.baseCurrency ?? "GHS",
@@ -514,7 +686,7 @@ export class PaymentService {
         displayAmount: relations?.commerce?.displayAmount,
         exchangeRate: relations?.commerce?.exchangeRate,
         idempotencyKey: relations?.idempotencyKey,
-        metadata: request.metadata as Prisma.InputJsonValue | undefined,
+        metadata: hydratedRequest.metadata as Prisma.InputJsonValue | undefined,
         ticketOrderId: relations?.ticketOrderId,
         campaignId: relations?.campaignId,
         invitationOrderId: relations?.invitationOrderId,
@@ -539,7 +711,7 @@ export class PaymentService {
 
     try {
       const adapter = this.adapters[resolvedProvider];
-      const result = await adapter.initializePayment({ ...request, reference });
+      const result = await adapter.initializePayment({ ...hydratedRequest, reference });
 
       if (!result.authorizationUrl) {
         throw new PaymentProviderError(`${resolvedProvider} did not return a checkout URL`);
@@ -616,6 +788,12 @@ export class PaymentService {
         ticketOrderId: payment.ticketOrderId,
         campaignId: payment.campaignId,
       });
+    } else if (next === "FAILED") {
+      await this.recordCeleYouCheckoutFailed(payment);
+      if (payment.purpose === "EVENT_GIFT") {
+        const { giftPaymentService } = await import("@/services/gifts/gift-payment.service");
+        await giftPaymentService.markFailedFromProvider(payment.reference, next);
+      }
     } else if (payment.purpose === "EVENT_GIFT") {
       // Gifts need an explicit terminal state so the guest's pending screen can
       // stop waiting instead of spinning until it times out.
@@ -891,7 +1069,7 @@ export class PaymentService {
         );
         await unlockPaidInvitationPackage(orderId);
         if (order?.user?.email) {
-          const locale = await languageService.getUserPreference(order.userId);
+          const locale = (await languageService.getUserPreference(order.userId)) ?? "en";
           await emailTemplateService.sendLocalized("payment_confirmation", order.user.email, locale, {
             name: order.user.name,
             amount: `${payment.currency} ${payment.amount}`,
@@ -909,15 +1087,44 @@ export class PaymentService {
     }
   }
 
+  private async recordCeleYouCheckoutFailed(payment: {
+    id: string;
+    reference: string;
+    metadata: unknown;
+  }) {
+    const meta = payment.metadata as Record<string, unknown> | null;
+    if (meta?.kind !== SMARTCARD_PAYMENT_KIND) return;
+    const cardId = typeof meta.cardId === "string" ? meta.cardId : "";
+    if (!cardId) return;
+    const { recordCeleCardLifecycleEvent } = await import(
+      "@/services/digital-business-card/digital-business-card.service"
+    );
+    await recordCeleCardLifecycleEvent({
+      cardId,
+      kind: "CheckoutFailed",
+      meta: {
+        paymentId: payment.id,
+        reference: payment.reference,
+        planId: typeof meta.planId === "string" ? meta.planId : null,
+      },
+    });
+  }
+
   getAdapter(provider: PaymentProvider) {
     return this.adapters[provider];
   }
 
   detectWebhookProvider(headers: Headers, queryProvider?: string | null): PaymentProvider | null {
-    if (queryProvider === "PAYSTACK" || queryProvider === "FLUTTERWAVE" || queryProvider === "HUBTEL") {
+    if (
+      queryProvider === "PAYSTACK" ||
+      queryProvider === "FLUTTERWAVE" ||
+      queryProvider === "HUBTEL" ||
+      queryProvider === "STRIPE"
+    ) {
       return queryProvider;
     }
     if (headers.get("x-paystack-signature")) return "PAYSTACK";
+    if (headers.get("stripe-signature")) return "STRIPE";
     if (headers.get("verif-hash")) return "FLUTTERWAVE";
     if (headers.get("x-hubtel-signature") || headers.get("x-hubtel-secret")) return "HUBTEL";
     return null;

@@ -11,7 +11,6 @@ import {
   groupMeetingDays,
   guessMeetingTimezone,
   listOpenMeetingSlots,
-  meetingDurationCopy,
   meetingIcs,
   meetingSubtitle,
   type CeleCardMeetingDesk,
@@ -20,6 +19,9 @@ import {
 import type { DigitalCardReachItem } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { CELECARD_REACH_INK, celecardInkLuminance, celecardPaperTone } from "@/lib/digital-business-card/type-voice";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { htmlLang } from "@/lib/i18n/constants";
+import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
 
 function deskFromItem(item: DigitalCardReachItem): CeleCardMeetingDesk {
   try {
@@ -89,8 +91,10 @@ function MeetingBooker({
   slug?: string;
   ownerName?: string;
 }) {
+  const { t, locale } = useLocale();
+  const lang = htmlLang(locale);
   const guestZone = guessMeetingTimezone();
-  const localSlots = useMemo(() => listOpenMeetingSlots(desk), [desk]);
+  const localSlots = useMemo(() => listOpenMeetingSlots(desk, [], new Date(), lang), [desk, lang]);
   const [slots, setSlots] = useState(localSlots);
   const [dayKey, setDayKey] = useState(localSlots[0]?.dayKey ?? "");
   const [picked, setPicked] = useState<CeleCardMeetingSlot | null>(null);
@@ -106,6 +110,11 @@ function MeetingBooker({
   const paper = celecardPaperTone(theme);
   const fill = paper.accent;
   const fillInk = celecardInkLuminance(fill) < 158 ? "#fffef8" : "#16120e";
+
+  useEffect(() => {
+    if (preview || !slug || !picked) return;
+    trackCeleYouGuestEvent(slug, "meeting_open", { brand: "meeting", outcome: "attempted" });
+  }, [picked, preview, slug]);
 
   function react(kind: "name" | "reach" | "form") {
     setShake(kind);
@@ -197,12 +206,14 @@ function MeetingBooker({
           <span className="grid h-8 w-8 place-items-center rounded-full" style={{ background: fill, color: fillInk }}>
             <Check className="h-4 w-4" />
           </span>
-          Request sent
+          {t("celeyou.meet_request_sent")}
         </p>
         <p className="text-sm font-medium leading-relaxed" style={{ color: CELECARD_REACH_INK }}>
-          {formatMeetingWhen(done.start, desk.timezone)}
-          {guestZone !== desk.timezone ? ` · your ${formatMeetingWhen(done.start, guestZone)}` : ""}.{" "}
-          {ownerName ? `${ownerName.split(" ")[0]} gets a message to confirm.` : "They get a message to confirm this time."}
+          {formatMeetingWhen(done.start, desk.timezone, lang)}
+          {guestZone !== desk.timezone ? ` · ${t("celeyou.meet_your_when", { when: formatMeetingWhen(done.start, guestZone, lang) })}` : ""}.{" "}
+          {ownerName
+            ? t("celeyou.meet_confirm_named", { name: ownerName.split(" ")[0] || ownerName })
+            : t("celeyou.meet_confirm")}
         </p>
         <button
           type="button"
@@ -227,7 +238,7 @@ function MeetingBooker({
           style={{ background: fill, color: fillInk }}
         >
           <CalendarPlus className="h-4 w-4" />
-          Add to calendar
+          {t("celeyou.meet_add_calendar")}
         </button>
       </div>
     );
@@ -236,7 +247,7 @@ function MeetingBooker({
   return (
     <div className={cn("celecard-meet grid gap-3", compact ? "p-3" : "p-3.5", shake === "form" && "celecard-meet-shake")}>
       <div className="sr-only" aria-live="polite">
-        {error === "busy" ? "That time just filled" : error === "network" ? "Could not send" : shake === "name" ? "Name needed" : shake === "reach" ? "Email or phone needed" : ""}
+        {error === "busy" ? t("celeyou.meet_busy") : error === "network" ? t("celeyou.send_failed") : shake === "name" ? t("celeyou.meet_name_needed") : shake === "reach" ? t("celeyou.meet_reach_needed") : ""}
       </div>
       <div>
         <p className="text-[15px] font-semibold" style={{ color: CELECARD_REACH_INK }}>
@@ -245,7 +256,7 @@ function MeetingBooker({
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-medium" style={{ color: CELECARD_REACH_INK }}>
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" style={{ color: fill }} />
-            {meetingDurationCopy(desk.durationMin)}
+            {desk.durationMin === 60 ? t("celeyou.meet_hour") : t("celeyou.meet_minutes", { count: desk.durationMin })}
           </span>
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-3.5 w-3.5" style={{ color: fill }} />
@@ -261,9 +272,9 @@ function MeetingBooker({
 
       <div className="flex flex-wrap gap-1.5" role="list">
         {[
-          { id: "1 Day", on: step === "time", done: Boolean(dayKey) },
-          { id: "2 Time", on: step === "time", done: Boolean(picked) },
-          { id: "3 Your details", on: step === "details", done: false },
+          { id: t("celeyou.meet_step_day"), on: step === "time", done: Boolean(dayKey) },
+          { id: t("celeyou.meet_step_time"), on: step === "time", done: Boolean(picked) },
+          { id: t("celeyou.meet_step_details"), on: step === "details", done: false },
         ].map((row) => (
           <span
             key={row.id}
@@ -308,7 +319,7 @@ function MeetingBooker({
                   <span className="text-[11px] font-semibold uppercase tracking-[0.12em]">{row.weekday}</span>
                   <span className="text-lg font-semibold leading-tight">{row.label.split(" ")[0]}</span>
                   <span className="text-[10px] font-semibold">
-                    {row.slots.length} {row.slots.length === 1 ? "time" : "times"}
+                    {row.slots.length === 1 ? t("celeyou.meet_one_time") : t("celeyou.meet_n_times", { count: row.slots.length })}
                   </span>
                 </button>
               );
@@ -316,7 +327,7 @@ function MeetingBooker({
           </div>
         ) : (
           <p className="text-sm font-medium" style={{ color: CELECARD_REACH_INK }}>
-            No open times in the next {desk.horizonDays} days.
+            {t("celeyou.meet_no_times", { days: desk.horizonDays })}
           </p>
         )
       ) : null}
@@ -357,14 +368,14 @@ function MeetingBooker({
         >
           <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: fill }}>
             <Check className="h-3.5 w-3.5" />
-            You picked
+            {t("celeyou.meet_you_picked")}
           </p>
           <p className="mt-0.5 text-sm font-semibold" style={{ color: CELECARD_REACH_INK }}>
-            {formatMeetingWhen(picked.start, desk.timezone)}
+            {formatMeetingWhen(picked.start, desk.timezone, lang)}
           </p>
           {guestZone !== desk.timezone ? (
             <p className="text-[13px] font-medium" style={{ color: CELECARD_REACH_INK }}>
-              Your time {formatMeetingClockSafe(picked.start, guestZone)}
+              {t("celeyou.meet_your_time", { when: formatMeetingClockSafe(picked.start, guestZone, lang) })}
             </p>
           ) : null}
         </div>
@@ -379,12 +390,12 @@ function MeetingBooker({
             style={{ color: fill }}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
-            Change time
+            {t("celeyou.meet_change_time")}
           </button>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Your name"
+            placeholder={t("celeyou.your_name")}
             className={cn(inputClass, shake === "name" && "celecard-meet-shake")}
             style={{
               ...inputStyle,
@@ -397,7 +408,7 @@ function MeetingBooker({
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="Email"
+            placeholder={t("celeyou.email")}
             className={cn(inputClass, shake === "reach" && "celecard-meet-shake")}
             style={{
               ...inputStyle,
@@ -410,7 +421,7 @@ function MeetingBooker({
             type="tel"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
-            placeholder="Phone"
+            placeholder={t("celeyou.phone_short")}
             className={cn(inputClass, shake === "reach" && "celecard-meet-shake")}
             style={{
               ...inputStyle,
@@ -422,7 +433,7 @@ function MeetingBooker({
           <input
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            placeholder="What is this about? Optional"
+            placeholder={t("celeyou.meet_about_optional")}
             className={inputClass}
             style={inputStyle}
           />
@@ -441,7 +452,7 @@ function MeetingBooker({
             className="celecard-meet-chip inline-flex min-h-11 items-center justify-center rounded-full px-3 text-sm font-semibold disabled:opacity-60"
             style={{ background: fill, color: fillInk }}
           >
-            {busy ? "Sending…" : preview ? "Preview request" : "Request this time"}
+            {busy ? t("celeyou.sending") : preview ? t("celeyou.meet_preview") : t("celeyou.meet_request_time")}
           </button>
         </div>
       ) : null}
@@ -449,9 +460,9 @@ function MeetingBooker({
   );
 }
 
-function formatMeetingClockSafe(iso: string, timeZone: string) {
+function formatMeetingClockSafe(iso: string, timeZone: string, locale = "en-GB") {
   try {
-    return new Intl.DateTimeFormat("en-GB", {
+    return new Intl.DateTimeFormat(locale, {
       timeZone,
       weekday: "short",
       hour: "2-digit",

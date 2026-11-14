@@ -15,7 +15,7 @@ interface PreferencesToolbarProps {
   variant?: "floating" | "inline";
 }
 
-/** Combined EN|FR + GHS|USD|GBP switchers with flags */
+/** Combined language + currency switchers with flags */
 export function PreferencesToolbar({
   className,
   allowedLocales,

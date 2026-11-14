@@ -26,9 +26,9 @@ export function DemoCompanyMark({
   const motif = hashName(name) % 8;
   const initials = companyInitials(name);
   return (
-    <svg viewBox="0 0 48 48" className={cn("shrink-0", className)} aria-hidden>
+    <svg viewBox="0 0 48 48" className={cn("shrink-0", className)} data-house-seal="fit" aria-hidden>
       <rect width="48" height="48" rx="12" fill={metal} opacity="0.22" />
-      <rect x="1.1" y="1.1" width="45.8" height="45.8" rx="10.6" fill="none" stroke={accent} strokeWidth="1.5" opacity="0.88" />
+      <rect x="1" y="1" width="46" height="46" rx="11" fill="none" stroke={accent} strokeWidth="1.7" opacity="0.92" />
       {motif === 0 ? (
         <path d="M8 30c8-14 24-14 32 0" fill="none" stroke={accent} strokeWidth="2.4" strokeLinecap="round" />
       ) : null}
@@ -65,16 +65,16 @@ export function DemoCompanyMark({
           <circle cx="30" cy="30" r="3.2" fill={accent} />
         </>
       ) : null}
-      <circle cx="24" cy="24" r="11" fill="#fff" opacity="0.94" />
+      <circle cx="24" cy="24" r="13.6" fill="#fff" opacity="0.96" />
       <text
         x="24"
-        y="28.6"
+        y="29.6"
         textAnchor="middle"
         fill={accent}
-        fontSize="13"
+        fontSize="16.5"
         fontWeight="700"
         fontFamily="ui-sans-serif, system-ui, sans-serif"
-        letterSpacing="0.04em"
+        letterSpacing="0.02em"
       >
         {initials}
       </text>

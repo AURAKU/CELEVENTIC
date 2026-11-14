@@ -52,6 +52,20 @@ function Windows({ x, y, cols, rows, color }: { x: number; y: number; cols: numb
   return <g>{cells}</g>;
 }
 
+/** Guest-stage lighting. One rig for every template: key, bloom, horizon, grain. */
+export function CeleCardStageField() {
+  return (
+    <div className="celecard-stage-field" aria-hidden>
+      <span className="celecard-stage-key" />
+      <span className="celecard-stage-bloom" />
+      <span className="celecard-stage-horizon" />
+      <span className="celecard-stage-vignette" />
+      <span className="celecard-stage-grain" />
+      <span className="celecard-stage-meridian" />
+    </div>
+  );
+}
+
 export function DigitalCardAtmosphere({
   atmosphere,
   theme,

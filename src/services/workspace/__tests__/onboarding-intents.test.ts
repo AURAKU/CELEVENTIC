@@ -38,7 +38,7 @@ describe("onboarding intent routing", () => {
       onboardingService.getPostSignupRedirect("EVENT_OWNER", null, false, {
         productIntent: "celecard",
       }),
-      "/dashboard/business-card"
+      "/dashboard/business-card/start"
     );
     assert.equal(
       onboardingService.getPostSignupRedirect("EVENT_OWNER", null, false),

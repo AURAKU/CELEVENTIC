@@ -70,7 +70,10 @@ export async function GET(
         userAgent: request.headers.get("user-agent") || "",
       })
     ) {
-      void recordSmartCardInteraction(live.id, "vcard_save", { surface: "vcf" }).catch(() => undefined);
+      void recordSmartCardInteraction(live.id, "vcard_download", {
+        surface: "vcf",
+        outcome: "completed",
+      }).catch(() => undefined);
     }
   }
 

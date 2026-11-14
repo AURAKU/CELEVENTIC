@@ -31,7 +31,7 @@ describe("CeleYou share metadata", () => {
     assert.equal(celeCardShareTitle(DEMO_CARD), "Ama Serwaa on CeleYou");
     const description = celeCardShareDescription(DEMO_CARD);
     assert.equal(description, celeCardShareCommentary(DEMO_CARD));
-    assert.equal(description, "Meet Ama Serwaa, Creative Director at Folio Maison. Their live CeleYou plate.");
+    assert.equal(description, "Connect with Ama Serwaa. Creative Director at Folio Maison. Their CeleYou Card.");
     assert.equal(description.includes(" · "), false);
     assert.equal(description.includes(" - "), false);
     assert.equal(description.includes("This is my CeleYou"), false);
@@ -41,19 +41,35 @@ describe("CeleYou share metadata", () => {
     assert.equal(digitalCardOgImagePath("ama-serwaa", "card-tile"), "/card/ama-serwaa/og?v=card-tile");
     assert.equal(
       celeCardShareMessage(DEMO_CARD),
-      "Meet Ama Serwaa, Creative Director at Folio Maison. Their live CeleYou plate."
+      "Connect with Ama Serwaa. Creative Director at Folio Maison. Their CeleYou Card."
     );
     assert.equal(
       celeCardShareMessage(DEMO_CARD, "https://www.celeventic.com/u/ama-serwaa"),
-      "Meet Ama Serwaa, Creative Director at Folio Maison. Their live CeleYou plate.\nhttps://www.celeventic.com/u/ama-serwaa"
+      "Connect with Ama Serwaa. Creative Director at Folio Maison. Their CeleYou Card.\nhttps://www.celeventic.com/u/ama-serwaa"
     );
     assert.equal(
       celeCardShareClipboard(DEMO_CARD, "https://www.celeventic.com/c/demo-ama-serwaa"),
-      "Meet Ama Serwaa, Creative Director at Folio Maison. Their live CeleYou plate.\nhttps://www.celeventic.com/c/demo-ama-serwaa"
+      "Connect with Ama Serwaa. Creative Director at Folio Maison. Their CeleYou Card.\nhttps://www.celeventic.com/c/demo-ama-serwaa"
     );
     assert.equal(
       celeCardShareCommentary({ displayName: "Kojo Mensah" }),
-      "Meet Kojo Mensah. Their live CeleYou plate."
+      "Connect with Kojo Mensah. Their CeleYou Card."
+    );
+    assert.equal(
+      celeCardShareCommentary({
+        displayName: "AuraTheKing",
+        title: "CEO",
+        company: "SPARK & DRIVE",
+      }),
+      "Connect with AuraTheKing. CEO at SPARK & DRIVE. Their CeleYou Card."
+    );
+    assert.equal(
+      celeCardShareCommentary({ displayName: "Kojo Mensah", title: "Principal" }),
+      "Connect with Kojo Mensah. Principal. Their CeleYou Card."
+    );
+    assert.equal(
+      celeCardShareCommentary({ displayName: "Kojo Mensah", company: "Frost House" }),
+      "Connect with Kojo Mensah. Frost House. Their CeleYou Card."
     );
     assert.equal(celeCardQrTapPath("ama-serwaa"), "/card/ama-serwaa");
     assert.equal(celeCardStableQrUrl("demo-ama-serwaa", "https://www.celeventic.com"), "https://www.celeventic.com/c/demo-ama-serwaa");
@@ -98,12 +114,12 @@ describe("CeleYou share metadata", () => {
     assert.equal(metadata.openGraph?.title, "Ama Serwaa on CeleYou");
     assert.equal(metadata.openGraph?.description, celeCardShareCommentary(DEMO_CARD));
     assert.equal(metadata.openGraph?.siteName, "CeleYou");
-    assert.equal(metadata.openGraph?.type, "website");
+    assert.equal((metadata.openGraph as { type?: string } | undefined)?.type, "website");
     const image = Array.isArray(metadata.openGraph?.images) ? metadata.openGraph?.images[0] : metadata.openGraph?.images;
     assert.equal(typeof image === "object" && image && "width" in image ? image.width : 0, 1200);
     assert.equal(typeof image === "object" && image && "height" in image ? image.height : 0, 630);
     assert.match(String(typeof image === "object" && image && "url" in image ? image.url : ""), /\/card\/ama-serwaa\/og\?v=demo/);
-    assert.equal(typeof image === "object" && image && "type" in image ? image.type : "", "image/png");
+    assert.equal(typeof image === "object" && image && "type" in image ? image.type : "", "image/jpeg");
     assert.equal(String(metadata.openGraph?.url).includes("localhost"), false);
     const icons = metadata.icons && typeof metadata.icons === "object" && "icon" in metadata.icons ? metadata.icons : null;
     const iconList = icons && "icon" in icons ? icons.icon : undefined;
@@ -178,9 +194,15 @@ describe("CeleYou share metadata", () => {
     assert.doesNotMatch(markup, /Open this CeleYou|Download this card|Share this card/);
     assert.match(assets, /\/smartcard\//);
     assert.match(assets, /Never a remote URL/);
-    assert.match(config, /source: "\/u\/:slug\/og"/);
+    assert.match(config, /source: "\/api\/v1\/celeyou\/usernames\/availability"/);
+    const usernameOg = readFileSync(join(process.cwd(), "src/app/u/[username]/og/route.ts"), "utf8");
+    assert.match(usernameOg, /\/card\/\$\{encodeURIComponent\(slug\)\}\/og/);
     assert.match(ogRoute, /export async function HEAD/);
     assert.match(engine, /files: \[file\]/);
+    assert.match(engine, /WhatsApp, Snapchat, TikTok drop the image/);
+    assert.match(engine, /export async function copyCeleYouProfile/);
+    assert.match(engine, /"image\/png"/);
+    assert.match(engine, /"text\/plain"/);
     assert.match(engine, /celeyou-plate\.png/);
     assert.match(engine, /captureLivePlateFile/);
     assert.match(engine, /persistLivePlateSnapshot/);

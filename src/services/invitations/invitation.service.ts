@@ -426,7 +426,7 @@ export class InvitationService {
       )
     );
 
-    const locale = await languageService.getUserPreference(input.organizerId);
+    const locale = (await languageService.getUserPreference(input.organizerId)) ?? "en";
     const emailRecipients = Array.from(
       new Set(
         [input.organizerEmail, ...input.collaboratorEmails]

@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { LEGAL_CONTACT } from "@/lib/legal/constants";
+import type { AppLocale } from "@/lib/i18n/constants";
 
 export interface PublicContactSettings {
   phone: string;
@@ -26,9 +27,15 @@ export const getPublicContactSettings = unstable_cache(
   { revalidate: 120, tags: ["contact-settings"] }
 );
 
-export function formatContactPageContent(contact: PublicContactSettings, locale: "en" | "fr" = "en"): string {
+export function formatContactPageContent(
+  contact: PublicContactSettings,
+  locale: AppLocale = "en"
+): string {
   if (locale === "fr") {
     return `E-mail : ${contact.email}\nTéléphone : ${contact.phone}\nHoraires : ${contact.hours}`;
+  }
+  if (locale === "zh") {
+    return `邮箱：${contact.email}\n电话：${contact.phone}\n时间：${contact.hours}`;
   }
   return `Email: ${contact.email}\nPhone: ${contact.phone}\nHours: ${contact.hours}`;
 }

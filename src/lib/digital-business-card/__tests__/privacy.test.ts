@@ -14,6 +14,7 @@ import {
   visibilityForItem,
 } from "@/lib/digital-business-card/privacy";
 import { toGuestPublicPayload } from "@/lib/digital-business-card/access";
+import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
 import { buildVCard } from "@/lib/digital-business-card/vcard";
 
 const future = new Date(Date.now() + 86400000);
@@ -93,6 +94,20 @@ describe("CeleYou reach privacy", () => {
     const openPhone = granted.guestReach.find((item) => item.id === "phone-0");
     assert.equal(openPhone?.locked, undefined);
     assert.equal(granted.socials.momo, undefined);
+    const sections = guestIdentitySections(
+      { slug: "ama-serwaa", displayName: "Ama Serwaa", socials: guest.socials } as never,
+      guest.guestReach
+    );
+    assert.equal(
+      sections.some((section) => section.items.some((item) => item.id === "phone-0" && item.locked)),
+      true
+    );
+    const wallet = sections.find((section) => section.id === "products");
+    assert.equal(wallet?.items.some((item) => item.id === "momo-0" && item.locked && item.surface === "dock"), true);
+    assert.equal(
+      sections.some((section) => section.items.some((item) => item.brand === "instagram" && !item.locked)),
+      true
+    );
   });
 
   it("keeps protected values out of the public payload and vCard", () => {
@@ -169,5 +184,24 @@ describe("CeleYou reach privacy", () => {
       "utf8"
     );
     assert.doesNotMatch(publicUnlock, /codeHint/);
+    assert.match(publicUnlock, /itemKey/);
+    assert.match(publicUnlock, /wrong-item/);
+    assert.match(access, /wrong-item/);
+    assert.match(access, /wanted && !matchedKeys.includes/);
+    const grid = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-reach-grid.tsx"),
+      "utf8"
+    );
+    assert.match(grid, /itemKey: item.id/);
+    assert.match(grid, /is-locked/);
+    assert.match(grid, /createPortal/);
+    assert.match(grid, /z-\[200\]/);
+    assert.match(grid, /celeyou\.unhide_aria/);
+    assert.match(grid, /group.items.every\(\(item\) => item.locked\)/);
+    assert.match(grid, /allLocked/);
+    const sections = readFileSync(join(process.cwd(), "src/lib/celeyou-share/profile-sections.ts"), "utf8");
+    assert.doesNotMatch(sections, /if \(item\.locked\) continue/);
+    const socials = readFileSync(join(process.cwd(), "src/lib/digital-business-card/socials.ts"), "utf8");
+    assert.match(socials, /\$\{item\.brand\}:locked:\$\{item\.id\}/);
   });
 });

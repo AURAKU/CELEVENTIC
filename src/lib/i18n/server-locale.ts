@@ -37,10 +37,11 @@ export async function getServerI18nState(): Promise<ServerI18nState> {
   try {
     const session = await getSession();
     if (session?.user?.id) {
-      locale = await languageService.getUserPreference(session.user.id);
+      const saved = await languageService.getUserPreference(session.user.id);
+      if (saved) locale = saved;
     }
   } catch {
-    locale = DEFAULT_LOCALE;
+    // Keep the cookie locale when preference lookup fails.
   }
 
   let messages = staticMessages;
@@ -56,7 +57,7 @@ export async function getServerI18nState(): Promise<ServerI18nState> {
         en[fk] = row.enValue;
         fr[fk] = row.frValue ?? row.enValue;
       }
-      messages = mergeMessageDictionaries(staticMessages, { en, fr });
+      messages = mergeMessageDictionaries(staticMessages, { en, fr, zh: staticMessages.zh });
     }
   } catch {
     // Static bundle is sufficient for first paint.

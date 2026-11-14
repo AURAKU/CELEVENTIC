@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const schema = z.object({
-  provider: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL"]).optional().nullable(),
+  provider: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL", "STRIPE"]).optional().nullable(),
+  method: z.enum(["card", "mobile_money", "bank_transfer", "alipay", "wechat_pay"]).optional(),
   email: z.string().email(),
 });
 
@@ -42,6 +43,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         amount,
         currency: booking.currency,
         purpose: "VENDOR_BOOKING",
+        method: body.method,
         metadata: { bookingId: booking.id, vendorId: booking.vendorId },
       },
       {

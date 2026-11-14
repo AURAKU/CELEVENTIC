@@ -11,11 +11,16 @@ export async function copyText(text: string): Promise<boolean> {
 
   try {
     if (navigator.clipboard?.writeText && window.isSecureContext) {
-      await navigator.clipboard.writeText(value);
+      await Promise.race([
+        navigator.clipboard.writeText(value),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error("clipboard-timeout")), 700);
+        }),
+      ]);
       return true;
     }
   } catch {
-    // Fall through to the legacy path.
+    // Permission prompts, blocked frames, and hung Clipboard APIs fall through.
   }
 
   return copyTextLegacy(value);

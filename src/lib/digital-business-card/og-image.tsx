@@ -74,10 +74,21 @@ function solidThemeFill(background: string) {
   return hex?.[0] || "#0B8A83";
 }
 
-function pngResponse(buffer: Buffer, cacheControl: string) {
-  return new Response(new Uint8Array(buffer), {
+async function pngResponse(buffer: Buffer, cacheControl: string) {
+  let body = buffer;
+  let type = "image/png";
+  try {
+    const jpeg = await sharp(buffer).jpeg({ quality: 78, mozjpeg: true }).toBuffer();
+    if (jpeg.length > 64 && jpeg.length < buffer.length) {
+      body = jpeg;
+      type = "image/jpeg";
+    }
+  } catch {
+    /* keep png */
+  }
+  return new Response(new Uint8Array(body), {
     headers: {
-      "Content-Type": "image/png",
+      "Content-Type": type,
       "Cache-Control": cacheControl,
     },
   });
@@ -110,7 +121,7 @@ async function renderSharpPlateFallback(props: OgRenderProps): Promise<Response>
       /* keep the name plate */
     }
   }
-  return pngResponse(await image.png().toBuffer(), props.cacheControl);
+  return pngResponse(await image.png({ compressionLevel: 9 }).toBuffer(), props.cacheControl);
 }
 
 async function renderOgSafe(props: OgRenderProps): Promise<Response> {
@@ -118,7 +129,7 @@ async function renderOgSafe(props: OgRenderProps): Promise<Response> {
     const png = renderOg(props);
     const buffer = Buffer.from(await png.arrayBuffer());
     if (buffer.length < 64 || buffer[0] !== 0x89) throw new Error("empty og png");
-    return pngResponse(buffer, props.cacheControl);
+    return await pngResponse(buffer, props.cacheControl);
   } catch {
     return renderSharpPlateFallback(props);
   }
@@ -135,7 +146,7 @@ export async function livePlateOgFromSnapshot(cardId: string, cacheControl: stri
         fit: "contain",
         background: { r: 11, g: 138, b: 131, alpha: 1 },
       })
-      .png()
+      .jpeg({ quality: 78, mozjpeg: true })
       .toBuffer();
     return pngResponse(framed, cacheControl);
   } catch {

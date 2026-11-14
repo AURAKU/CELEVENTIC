@@ -46,7 +46,9 @@ export function StoryTributePage({ context, page }: InvitePageProps) {
             </EntranceReveal>
           )}
           <EntranceReveal delay={0.14}>
-            <blockquote className="inv-memorial-tribute">{event.description}</blockquote>
+            <blockquote className="inv-memorial-tribute" style={{ whiteSpace: "pre-line" }}>
+              {event.description}
+            </blockquote>
           </EntranceReveal>
           <div className="inv-divider">
             <MotifGlyph glyphId={theme.motif.placements.divider} size={36} />

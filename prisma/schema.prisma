@@ -189,6 +189,10 @@ model User {
   supportTicketsOpened       CustomerSupportTicket[]  @relation("SupportTicketRequester")
   supportTicketsAssigned     CustomerSupportTicket[]  @relation("SupportTicketAssignee")
   supportTicketMessages      CustomerSupportMessage[]
+  celeYouPrimaryCardId       String?
+  celeyouUsernames           CeleYouUsernameRecord[]
+  celeyouUsernameEvents      CeleYouUsernameEvent[]   @relation("UsernameEventSubject")
+  celeYouTrial               CeleYouTrialRecord?
 
   @@index([role])
   @@index([status])
@@ -844,6 +848,7 @@ enum PaymentProvider {
   PAYSTACK
   FLUTTERWAVE
   HUBTEL
+  STRIPE
 }
 
 enum PaymentStatus {
@@ -2225,8 +2230,8 @@ model DigitalBusinessCard {
   connectBackEnabled     Boolean  @default(true)
   /// Default Share As mode (professional, personal, …)
   defaultMode            String   @default("professional")
-  /// TRIAL | ACTIVE | EXPIRED | INACTIVE
-  subscriptionStatus     String   @default("TRIAL")
+  /// FREE | TRIAL | ACTIVE | EXPIRED | INACTIVE
+  subscriptionStatus     String   @default("FREE")
   subscriptionExpiresAt  DateTime?
   viewCount              Int      @default(0)
   offlineSnapshotVersion Int      @default(0)
@@ -2271,6 +2276,8 @@ model DigitalBusinessCard {
   connectEvents       CeleYouConnectEvent[]
   connectReminders    CeleYouConnectReminder[]
   visitorConnections  SmartCardConnection[] @relation("ConnectionVisitorCard")
+  usernameRecords     CeleYouUsernameRecord[]
+  trialActivations    CeleYouTrialRecord[]
 
   @@index([userId])
   @@index([subscriptionStatus])
@@ -2283,6 +2290,100 @@ model DigitalBusinessCard {
   @@index([claimedAt])
   @@index([unclaimedEmail])
   @@map("digital_business_cards")
+}
+
+/// Unique public handle registry. Display names stay non-unique.
+/// ACTIVE is the live @username. SLUG preserves existing /u/{card.slug} paths.
+/// ALIAS and HOLD stop hijacking after a change. RESERVED is admin/system.
+model CeleYouUsernameRecord {
+  id         String    @id @default(cuid())
+  normalized String    @unique
+  kind       String
+  userId     String?
+  cardId     String?
+  redirectTo String?
+  holdUntil  DateTime?
+  reason     String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user   User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  card   DigitalBusinessCard? @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  events CeleYouUsernameEvent[]
+
+  @@index([userId, kind])
+  @@index([kind, holdUntil])
+  @@index([cardId])
+  @@map("celeyou_usernames")
+}
+
+model CeleYouUsernameEvent {
+  id        String   @id @default(cuid())
+  recordId  String?
+  userId    String?
+  actorId   String?
+  action    String
+  username  String
+  fromValue String?
+  toValue   String?
+  reason    String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  record CeleYouUsernameRecord? @relation(fields: [recordId], references: [id], onDelete: SetNull)
+  user   User?                  @relation("UsernameEventSubject", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([username, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("celeyou_username_events")
+}
+
+/// One optional CeleYou Pro trial per account. Username or extra cards cannot reset it.
+model CeleYouTrialRecord {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  cardId        String?
+  /// pro | business
+  family        String    @default("pro")
+  /// ELIGIBLE | ACTIVE | CONVERTED | EXPIRED | BLOCKED
+  status        String    @default("ELIGIBLE")
+  startedAt     DateTime?
+  expiresAt     DateTime?
+  convertedAt   DateTime?
+  convertedPlanId String?
+  durationDays  Int       @default(7)
+  reminderDay1At DateTime?
+  reminderDay4At DateTime?
+  reminderDay6At DateTime?
+  reminderDay7At DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card DigitalBusinessCard?  @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  events CeleYouTrialEvent[]
+
+  @@index([status, expiresAt])
+  @@index([family, status])
+  @@map("celeyou_trial_records")
+}
+
+model CeleYouTrialEvent {
+  id        String   @id @default(cuid())
+  trialId   String?
+  userId    String?
+  actorId   String?
+  action    String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  trial CeleYouTrialRecord? @relation(fields: [trialId], references: [id], onDelete: SetNull)
+
+  @@index([trialId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("celeyou_trial_events")
 }
 
 /// Single-use hashed claim invite. Raw token is never stored.
@@ -2770,6 +2871,14 @@ model CeleCardLifecyclePolicy {
   planPrices          Json?
   conciergePriceGhs   Int      @default(800)
   conciergeBundledPlanId String?
+  /// Optional Pro trial length in whole days. In-flight trials keep stored expiry.
+  proTrialDays        Int      @default(7)
+  /// Future Business trial. Do not advertise until the tier is published.
+  businessTrialDays   Int      @default(14)
+  /// ISO codes Paystack may charge. Never include a currency the provider cannot collect.
+  checkoutCurrencies  Json     @default("[\"GHS\"]")
+  /// Super Admin must publish before any non-GHS catalog is charged.
+  internationalDraftPublished Boolean @default(false)
   updatedAt           DateTime @updatedAt
   updatedByUserId     String?
 

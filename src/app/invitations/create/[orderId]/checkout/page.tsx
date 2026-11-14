@@ -20,6 +20,8 @@ import {
   isQuoteOnlyInvitationPackage,
 } from "@/lib/invitation-mvp/packages";
 import { GUIDE_SUPPORT_CONTACT, guideSupportWhatsAppUrl } from "@/lib/celeventic-guide/support-contact";
+import { PaymentMethodPicker } from "@/components/payments/payment-method-picker";
+import type { CheckoutMethodId } from "@/lib/payments/checkout-methods";
 
 export default function CheckoutPage() {
   const params = useParams();
@@ -39,6 +41,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [portfolioConsent, setPortfolioConsent] = useState(false);
+  const [payMethod, setPayMethod] = useState<CheckoutMethodId | "">("");
 
   useEffect(() => {
     fetch(`/api/invitation-orders/${orderId}`)
@@ -74,6 +77,7 @@ export default function CheckoutPage() {
         displayCurrency: currency,
         acceptTerms: true,
         portfolioConsent,
+        method: payMethod || undefined,
       }),
     });
     const data = await res.json();
@@ -220,6 +224,9 @@ export default function CheckoutPage() {
             </>
           ) : (
             <>
+              {amountGhs > 0 && !adminBypass ? (
+                <PaymentMethodPicker className="mt-6" value={payMethod} onChange={setPayMethod} />
+              ) : null}
               <Button
                 className="mt-6 w-full bg-[#0B8A83] hover:bg-[#097068]"
                 size="lg"

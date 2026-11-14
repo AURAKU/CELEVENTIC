@@ -40,7 +40,7 @@ const bodySchema = z.object({
   slug: z.string().min(1).max(80),
   visitorName: z.string().min(2).max(120),
   visitorEmail: z.string().email().max(200).optional().nullable(),
-  visitorPhone: z.string().max(40).optional().nullable(),
+  visitorPhone: z.string().max(120).optional().nullable(),
   visitorCompany: z.string().max(160).optional().nullable(),
   visitorTitle: z.string().max(120).optional().nullable(),
   note: z.string().max(500).optional().nullable(),
@@ -114,6 +114,9 @@ export async function POST(req: NextRequest) {
 
   const visitorEmail = parsed.data.visitorEmail?.trim().toLowerCase() || null;
   const visitorPhone = normalizeGuestPhone(parsed.data.visitorPhone);
+  if (!visitorEmail && !visitorPhone) {
+    return NextResponse.json({ error: "Email or phone is required" }, { status: 400 });
+  }
   const since = new Date(Date.now() - GUEST_DUPLICATE_WINDOW_MS);
   const duplicateWhere = [
     visitorEmail ? { visitorEmail } : undefined,

@@ -75,6 +75,8 @@ export interface PaymentInitRequest {
   email: string;
   purpose: string;
   metadata?: Record<string, unknown>;
+  /** Guest checkout method: card, mobile_money, bank_transfer, alipay, wechat_pay */
+  method?: string;
   /** Restrict the provider checkout to specific channels, e.g. ["mobile_money"] */
   channels?: string[];
   /** Override the provider redirect target for this transaction only */

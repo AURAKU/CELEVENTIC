@@ -7,7 +7,12 @@
  * reads from this one table so a rename is a single-line change.
  */
 
-export type GiftPaymentMethodId = "MTN_MOMO" | "TELECEL_CASH" | "AIRTELTIGO_MONEY" | "CARD";
+export type GiftPaymentMethodId =
+  | "MTN_MOMO"
+  | "TELECEL_CASH"
+  | "AIRTELTIGO_MONEY"
+  | "CARD"
+  | "BANK_TRANSFER";
 
 export interface GiftPaymentMethod {
   id: GiftPaymentMethodId;
@@ -19,9 +24,9 @@ export interface GiftPaymentMethod {
   /** Paystack mobile money provider code. */
   paystackProvider: string | null;
   /** Paystack checkout channel restriction. */
-  paystackChannel: "mobile_money" | "card";
+  paystackChannel: "mobile_money" | "card" | "bank_transfer";
   /** Prisma EventGiftChannel value. */
-  channel: "MOBILE_MONEY" | "CARD";
+  channel: "MOBILE_MONEY" | "CARD" | "BANK_TRANSFER";
   /** Local dialling prefixes used to pre-select the guest's network. */
   prefixes: string[];
   accentClass: string;
@@ -74,8 +79,18 @@ export const GIFT_PAYMENT_METHODS: readonly GiftPaymentMethod[] = [
     channel: "CARD",
     prefixes: [],
     accentClass: "gift-network-card",
-    /** Guest pickers are mobile money only. Card remains for existing records. */
-    enabled: false,
+    enabled: true,
+  },
+  {
+    id: "BANK_TRANSFER",
+    label: "Bank Transfer",
+    shortLabel: "Bank",
+    paystackProvider: null,
+    paystackChannel: "bank_transfer",
+    channel: "BANK_TRANSFER",
+    prefixes: [],
+    accentClass: "gift-network-bank",
+    enabled: true,
   },
 ] as const;
 

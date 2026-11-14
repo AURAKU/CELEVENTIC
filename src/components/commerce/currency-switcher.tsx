@@ -1,12 +1,12 @@
 "use client";
 
 import { useCurrency } from "@/components/commerce/currency-provider";
-import type { DisplayCurrency } from "@/lib/commerce/constants";
+import { DISPLAY_CURRENCIES, type DisplayCurrency } from "@/lib/commerce/constants";
 import { CURRENCY_FLAGS } from "@/lib/i18n/locale-flags";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
-const OPTIONS: DisplayCurrency[] = ["GHS", "USD", "GBP"];
+const OPTIONS: DisplayCurrency[] = [...DISPLAY_CURRENCIES];
 
 interface CurrencySwitcherProps {
   className?: string;

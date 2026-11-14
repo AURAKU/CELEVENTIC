@@ -6,10 +6,19 @@ import { Button } from "@/components/ui/button";
 import {
   CELECARD_LEAD_STATUSES,
   CELECARD_LEAD_STATUS_LABEL,
+  CELECARD_LEAD_STATUS_PURPOSE,
+  emptyLeadFilterCopy,
+  emptyLeadStatusCounts,
+  leadStatusBelongsInFilter,
+  movedLeadStatusCopy,
   normalizeCeleCardLeadStatus,
+  openLeadCount,
+  type CeleCardLeadFilter,
   type CeleCardLeadStatus,
 } from "@/lib/digital-business-card/leads";
-import { celeYouConnectionSourceLabel } from "@/lib/celeyou-connect/pair";
+import { celeYouConnectionSourceLabel, looksLikeGuestPhone } from "@/lib/celeyou-connect/pair";
+import { CELEYOU_CONNECTION_SOURCES, normalizeConnectionLabel } from "@/lib/celeyou-connect/workspace";
+import { nativeOpenFor } from "@/lib/digital-business-card/socials";
 import {
   downloadMeetingIcs,
   formatMeetingDay,
@@ -32,6 +41,8 @@ type ConnectionRow = {
   note: string | null;
   ownerNote: string | null;
   createdAt: string;
+  labels?: string[];
+  reminder?: { id: string; dueAt: string; status: string; note: string | null } | null;
 };
 
 export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }) {
@@ -40,11 +51,15 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<CeleCardLeadStatus | "ALL">("ALL");
+  const [filter, setFilter] = useState<CeleCardLeadFilter>("ALL");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
+  const [source, setSource] = useState("all");
+  const [labelDraft, setLabelDraft] = useState<Record<string, string>>({});
+  const [counts, setCounts] = useState(emptyLeadStatusCounts());
 
   const load = useCallback(
     async (nextPage = 1, nextFilter = filter, nextSearch = search, signal?: AbortSignal) => {
@@ -55,6 +70,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
         const params = new URLSearchParams({ page: String(nextPage) });
         if (nextFilter !== "ALL") params.set("status", nextFilter);
         if (nextSearch.trim()) params.set("q", nextSearch.trim());
+        if (source !== "all") params.set("source", source);
         const res = await fetch(`/api/digital-business-cards/${cardId}/connections?${params}`, { signal });
         const json = await res.json().catch(() => ({}));
         if (signal?.aborted) return;
@@ -63,6 +79,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
           setTotal(json.data?.total ?? 0);
           setPageSize(json.data?.pageSize ?? 20);
           setPage(nextPage);
+          if (json.data?.counts) setCounts({ ...emptyLeadStatusCounts(), ...json.data.counts });
         } else {
           setError(typeof json.error === "string" ? json.error : "Could not load requests.");
         }
@@ -73,7 +90,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [cardId, filter, search]
+    [cardId, filter, search, source]
   );
 
   async function saveStatus(
@@ -92,12 +109,49 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Could not update that request.");
-      const nextStatus = (json.data?.status as CeleCardLeadStatus | undefined) ?? status;
-      setItems((current) =>
-        current.map((item) => (item.id === connectionId ? { ...item, status: nextStatus } : item))
+      const nextStatus = normalizeCeleCardLeadStatus(
+        (json.data?.status as string | undefined) ?? status
       );
+      setNotice(movedLeadStatusCopy(nextStatus));
+      const stays = leadStatusBelongsInFilter(nextStatus, filter);
+      setItems((current) => {
+        const merged = current.map((item) =>
+          item.id === connectionId ? { ...item, ...json.data, status: nextStatus } : item
+        );
+        return stays ? merged : merged.filter((item) => item.id !== connectionId);
+      });
+      if (!stays) setTotal((count) => Math.max(0, count - 1));
+      void load(page, filter, search);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update that request.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function patchConnection(connectionId: string, body: Record<string, unknown>) {
+    if (!cardId) return;
+    setBusyId(connectionId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/digital-business-cards/${cardId}/connections`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId, ...body }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Could not update that connection.");
+      if (body.delete) {
+        setItems((current) => current.filter((item) => item.id !== connectionId));
+        setTotal((count) => Math.max(0, count - 1));
+        return;
+      }
+      if (json.data && json.data.id) {
+        setItems((current) => current.map((item) => (item.id === connectionId ? { ...item, ...json.data } : item)));
+      }
+      void load(page, filter, search);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update that connection.");
     } finally {
       setBusyId(null);
     }
@@ -146,7 +200,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
     <section id="studio-inbox" className="celeyou-adaptive scroll-mt-16 rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-sm font-semibold text-slate-900">Connections</p>
       <p className="text-xs text-slate-500">
-        Connect Back, card exchanges, courtesy reconnects, and meeting times. Contact details appear only when the visitor chose to share them.
+        Move each person through your pipeline. Open hides Archived. Contact details appear only when the visitor chose to share them.
       </p>
       <label className="sr-only" htmlFor="studio-inbox-search">
         Search connections
@@ -168,7 +222,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
             filter === "ALL" ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]" : "border-slate-200 text-slate-500"
           }`}
         >
-          All
+          Open {openLeadCount(counts)}
         </button>
         {CELECARD_LEAD_STATUSES.map((status) => (
           <button
@@ -181,11 +235,31 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
               filter === status ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]" : "border-slate-200 text-slate-500"
             }`}
           >
-            {CELECARD_LEAD_STATUS_LABEL[status]}
+            {CELECARD_LEAD_STATUS_LABEL[status]} {counts[status]}
           </button>
         ))}
       </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {CELEYOU_CONNECTION_SOURCES.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setSource((current) => (current === item ? "all" : item))}
+            className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+              source === item ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]" : "border-slate-200 text-slate-500"
+            }`}
+          >
+            {celeYouConnectionSourceLabel(item)}
+          </button>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button type="button" size="sm" variant="outline" asChild>
+          <a href={`/api/digital-business-cards/${cardId}/connections/export`}>Export consented contacts</a>
+        </Button>
+      </div>
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
+      {notice ? <p className="mt-2 text-xs text-[#0B8A83]">{notice}</p> : null}
       {loading && items.length === 0 ? <p className="mt-3 text-xs text-slate-500">Loading…</p> : null}
       <ul className="mt-3 space-y-2">
         {items.map((item) => {
@@ -210,10 +284,15 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                 booking: meeting,
               })
             : null;
-          const whatsappConfirm = confirmCopy
+          const phoneIsNumber = Boolean(item.visitorPhone && looksLikeGuestPhone(item.visitorPhone));
+          const wechatOpen =
+            item.visitorPhone && !phoneIsNumber
+              ? nativeOpenFor("wechat", item.visitorPhone, `https://u.wechat.com/${encodeURIComponent(item.visitorPhone)}`)
+              : null;
+          const whatsappConfirm = confirmCopy && phoneIsNumber
             ? whatsappComposeHref(item.visitorPhone, confirmCopy.body)
             : null;
-          const whatsappDecline = declineCopy
+          const whatsappDecline = declineCopy && phoneIsNumber
             ? whatsappComposeHref(item.visitorPhone, declineCopy.body)
             : null;
           return (
@@ -245,15 +324,17 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
               )}
               {meeting?.note ? <p className="text-[11px] text-slate-500">{meeting.note}</p> : null}
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <label className="sr-only" htmlFor={`lead-status-${item.id}`}>
-                  Request status
+                <label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500" htmlFor={`lead-status-${item.id}`}>
+                  Stage
                 </label>
                 <select
                   id={`lead-status-${item.id}`}
-                  value={normalizeCeleCardLeadStatus(item.status)}
+                  value={leadStatus}
                   disabled={busyId === item.id}
+                  aria-describedby={`lead-status-help-${item.id}`}
+                  title={CELECARD_LEAD_STATUS_PURPOSE[leadStatus]}
                   onChange={(event) => void saveStatus(item.id, event.target.value as CeleCardLeadStatus)}
-                  className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700"
+                  className="min-h-10 min-w-[9.5rem] rounded-lg border border-slate-200 bg-white px-2 py-1 text-[12px] font-medium text-slate-700"
                 >
                   {CELECARD_LEAD_STATUSES.map((status) => (
                     <option key={status} value={status}>
@@ -266,6 +347,9 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                   · {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                 </p>
               </div>
+              <p id={`lead-status-help-${item.id}`} className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                {CELECARD_LEAD_STATUS_PURPOSE[leadStatus]}
+              </p>
               <label className="sr-only" htmlFor={`lead-note-${item.id}`}>
                 Private note
               </label>
@@ -282,6 +366,56 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                 }}
                 className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] text-slate-700"
               />
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {(item.labels || []).map((label) => (
+                  <span key={label} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                    {label}
+                  </span>
+                ))}
+                <input
+                  value={labelDraft[item.id] ?? ""}
+                  onChange={(event) => setLabelDraft((current) => ({ ...current, [item.id]: event.target.value }))}
+                  onBlur={() => {
+                    const next = normalizeConnectionLabel(labelDraft[item.id] || "");
+                    if (!next) return;
+                    const labels = Array.from(new Set([...(item.labels || []), next]));
+                    void patchConnection(item.id, { labels });
+                    setLabelDraft((current) => ({ ...current, [item.id]: "" }));
+                  }}
+                  placeholder="Add label"
+                  className="w-28 rounded-lg border border-slate-200 px-2 py-1 text-[11px]"
+                />
+                <button
+                  type="button"
+                  disabled={busyId === item.id}
+                  onClick={() => void patchConnection(item.id, { reminderHours: 24, status: "FOLLOW_UP" })}
+                  className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                >
+                  Remind in 1 day
+                </button>
+                {item.reminder ? (
+                  <button
+                    type="button"
+                    disabled={busyId === item.id}
+                    onClick={() => void patchConnection(item.id, { completeReminderId: item.reminder?.id })}
+                    className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                  >
+                    Done {new Date(item.reminder.dueAt).toLocaleDateString()}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={busyId === item.id}
+                  onClick={() => {
+                    if (window.confirm(`Remove ${item.visitorName} from this CeleYou inbox?`)) {
+                      void patchConnection(item.id, { delete: true });
+                    }
+                  }}
+                  className="text-[10px] font-semibold uppercase tracking-[0.12em] text-rose-700"
+                >
+                  Delete
+                </button>
+              </div>
               {meeting ? (
                 <div className="mt-1.5 flex flex-wrap gap-2">
                   {meetingOpen ? (
@@ -351,12 +485,19 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                     >
                       Message on WhatsApp
                     </a>
-                  ) : item.visitorPhone ? (
+                  ) : phoneIsNumber ? (
                     <a
                       href={`tel:${item.visitorPhone}`}
                       className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
                     >
                       Call
+                    </a>
+                  ) : wechatOpen?.appHref ? (
+                    <a
+                      href={wechatOpen.appHref}
+                      className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                    >
+                      Open WeChat
                     </a>
                   ) : null}
                 </div>
@@ -368,9 +509,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
         })}
       </ul>
       {items.length === 0 && !loading ? (
-        <p className="mt-3 text-xs text-slate-500">
-          {search ? "No connections match that search." : "No connections yet. Share your CeleYou card to start building your network."}
-        </p>
+        <p className="mt-3 text-xs text-slate-500">{emptyLeadFilterCopy(filter, Boolean(search))}</p>
       ) : null}
       {total > pageSize ? (
         <div className="mt-3 flex items-center justify-between gap-2">

@@ -1,16 +1,53 @@
 import { flushSync } from "react-dom";
 
-/** ISO/IEC 7810 ID-1. The held plate keeps this ratio and covers the screen. */
+/** ISO/IEC 7810 ID-1. The held plate keeps this ratio and fits on screen. */
 export const CELECARD_ID1_RATIO = 85.6 / 54;
 
+/** Keeps rounded corners and the origin mark inside the visual viewport. */
+export const CELECARD_HOLD_INSET = 12;
+
+/** ID-1 contain size: every part of the plate stays on screen. */
 export function celecardHoldCoverSize(viewportWidth: number, viewportHeight: number): {
   width: number;
   height: number;
 } {
   if (viewportWidth <= 0 || viewportHeight <= 0) return { width: 0, height: 0 };
-  const byHeight = { width: viewportHeight * CELECARD_ID1_RATIO, height: viewportHeight };
-  if (byHeight.width >= viewportWidth) return byHeight;
-  return { width: viewportWidth, height: viewportWidth / CELECARD_ID1_RATIO };
+  const width = Math.max(0, viewportWidth - CELECARD_HOLD_INSET * 2);
+  const height = Math.max(0, viewportHeight - CELECARD_HOLD_INSET * 2);
+  if (width <= 0 || height <= 0) return { width: 0, height: 0 };
+  const byWidth = { width, height: width / CELECARD_ID1_RATIO };
+  if (byWidth.height <= height) return byWidth;
+  return { width: height * CELECARD_ID1_RATIO, height };
+}
+
+/** Square scan lock so the QR fills the camera, nothing else. */
+export function celecardHoldScanSize(viewportWidth: number, viewportHeight: number): {
+  width: number;
+  height: number;
+} {
+  if (viewportWidth <= 0 || viewportHeight <= 0) return { width: 0, height: 0 };
+  const side = Math.max(
+    0,
+    Math.min(viewportWidth, viewportHeight) - CELECARD_HOLD_INSET * 2
+  );
+  return { width: side, height: side };
+}
+
+export type CeleCardHoldPresent = "scan" | "plate";
+
+export function celecardHoldPresent(hold: boolean, axis?: CeleCardHoldAxis): CeleCardHoldPresent | null {
+  void axis;
+  if (!hold) return null;
+  return "plate";
+}
+
+export function celecardHoldFitSize(
+  viewportWidth: number,
+  viewportHeight: number,
+  axis?: CeleCardHoldAxis
+): { width: number; height: number } {
+  void axis;
+  return celecardHoldCoverSize(viewportWidth, viewportHeight);
 }
 
 const HOLD_CSS_VARS = [
@@ -28,7 +65,8 @@ export function writeCelecardHoldViewportCss(target?: HTMLElement | null) {
   const vv = window.visualViewport;
   const width = vv?.width ?? window.innerWidth;
   const height = vv?.height ?? window.innerHeight;
-  const cover = celecardHoldCoverSize(width, height);
+  const axis = celecardHoldAxis(width, height);
+  const cover = celecardHoldFitSize(width, height, axis);
   root.style.setProperty("--celecard-hold-vw", `${width}px`);
   root.style.setProperty("--celecard-hold-vh", `${height}px`);
   root.style.setProperty("--celecard-hold-top", `${vv?.offsetTop ?? 0}px`);
@@ -97,13 +135,14 @@ export function celecardHoldIsActive(intent: CeleCardHoldIntent, autoHold: boole
   return autoHold;
 }
 
-/** Leaving a physical landscape resets a tap lock so auto-hold can run next time. */
+/** Leaving or entering landscape resets a tap lock so auto-hold can run. */
 export function celecardHoldIntentAfterAutoChange(
   intent: CeleCardHoldIntent,
   autoHold: boolean,
   previousAutoHold: boolean
 ): CeleCardHoldIntent {
   if (previousAutoHold && !autoHold && intent !== "auto") return "auto";
+  if (!previousAutoHold && autoHold && intent === "closed") return "auto";
   return intent;
 }
 
@@ -111,10 +150,11 @@ export function celecardToggleHoldIntent(currentlyHeld: boolean): CeleCardHoldIn
   return currentlyHeld ? "closed" : "open";
 }
 
-/** Taps on the plate background toggle hold. QR and other controls keep their own job. */
-export function celecardEventIsPlateBackground(target: EventTarget | null): boolean {
+/** Taps on the plate, including the QR tile, toggle hold. Links and fields keep their own job. */
+export function celecardEventIsPlateBackground(target: EventTarget | null, held = false): boolean {
   if (typeof Element === "undefined" || !(target instanceof Element)) return true;
-  return !target.closest("a[href], button, input, textarea, select, [data-celecard-qr]");
+  if (held) return !target.closest("input, textarea, select");
+  return !target.closest("a[href], button, input, textarea, select");
 }
 
 export function celecardPrefersReducedMotion(): boolean {

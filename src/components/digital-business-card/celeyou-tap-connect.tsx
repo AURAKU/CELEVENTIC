@@ -349,7 +349,10 @@ export function CeleYouTapConnect({
     if (!profileUrl || !card) return;
     await shareCeleYouProfile({
       title: celeCardShareTitle({ displayName: card.displayName, title: card.title }),
-      text: celeCardShareMessage({ displayName: card.displayName }, profileUrl),
+      text: celeCardShareMessage(
+        { displayName: card.displayName, title: card.title, company: card.company },
+        profileUrl
+      ),
       url: profileUrl,
       imageUrl: card.slug ? celeCardShareImageUrls(card.slug, card.id) : null,
       persistPlateCardId: card.id || null,

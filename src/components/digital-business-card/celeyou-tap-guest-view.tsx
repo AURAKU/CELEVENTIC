@@ -18,12 +18,12 @@ import {
   celeCardShareImageUrls,
   celeCardShareTitle,
 } from "@/lib/digital-business-card/share";
-import { SAVE_CONTACT_CTA, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
+import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
 import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
-import { contactSaveHint } from "@/lib/celeyou-share/namedrop";
-import { UNIVERSAL_SAVE_LEAD } from "@/lib/celeyou-proximity/universal-connect";
+import { contactSaveHintKey } from "@/lib/celeyou-share/namedrop";
 import { detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
-import { TAP_MODE_HEADING, TAP_MODE_SUPPORT } from "@/lib/celeyou-proximity/product";
+import { celeYouGuestLandingPath } from "@/lib/digital-business-card/product";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 type Landing = {
   expiresAt: string;
@@ -43,6 +43,7 @@ export function CeleYouTapGuestView({
   landing: Landing | null;
   error?: string | null;
 }) {
+  const { t } = useLocale();
   const host = landing?.host ?? null;
   const profileUrl = host ? digitalCardIdentityUrl(host.slug, origin) : "";
   const exchangeAvailable = useCeleYouExchangeAvailable(host?.slug || "", host?.isDemo);
@@ -90,13 +91,13 @@ export function CeleYouTapGuestView({
         return;
       }
       if (result !== "opened") trackCeleYouGuestEvent(host.slug, "vcard_save");
-      setSaveHint(contactSaveHint(detectTapPlatform()));
+      setSaveHint(t(contactSaveHintKey(detectTapPlatform())));
       setSaveState("saved");
       window.setTimeout(() => setSaveState("idle"), 2200);
     } catch {
       setSaveState("idle");
     }
-  }, [host, origin, saveState]);
+  }, [host, origin, saveState, t]);
 
   async function shareCard() {
     if (!host || !profileUrl) return;
@@ -112,11 +113,11 @@ export function CeleYouTapGuestView({
   async function submit() {
     if (!host) return;
     if (form.visitorName.trim().length < 2) {
-      setFormError("Enter your name.");
+      setFormError(t("celeyou.enter_name"));
       return;
     }
     if (!form.visitorEmail.trim() && !form.visitorPhone.trim()) {
-      setFormError("Add an email or phone so they can contact you.");
+      setFormError(t("celeyou.add_email_or_phone"));
       return;
     }
     setBusy(true);
@@ -141,13 +142,13 @@ export function CeleYouTapGuestView({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setFormError(typeof json.error === "string" ? json.error : "Could not send your contact.");
+        setFormError(typeof json.error === "string" ? json.error : t("celeyou.send_contact_failed"));
         return;
       }
       setDone(true);
       setFormOpen(false);
     } catch {
-      setFormError("Network error. Try again.");
+      setFormError(t("celeyou.network_error"));
     } finally {
       setBusy(false);
     }
@@ -163,21 +164,21 @@ export function CeleYouTapGuestView({
         </header>
 
         <div className="celecard-tap-heading relative z-10 mt-8 text-center">
-          <h1 className="celeyou-page-title font-display font-semibold tracking-tight">{TAP_MODE_HEADING}</h1>
-          <p className="celecard-tap-lead mt-2 text-white/70">{TAP_MODE_SUPPORT}</p>
+          <h1 className="celeyou-page-title font-display font-semibold tracking-tight">{t("celeyou.tap_heading")}</h1>
+          <p className="celecard-tap-lead mt-2 text-white/70">{t("celeyou.tap_support")}</p>
         </div>
 
         {expired ? (
           <div className="relative z-10 mt-10 space-y-4 text-center">
-            <p className="text-lg font-semibold">This connection QR has expired.</p>
+            <p className="text-lg font-semibold">{t("celeyou.tap_expired")}</p>
             <p className="text-sm text-white/65">
-              {error || "Ask the cardholder to refresh Tap Mode and scan again. No account is required."}
+              {error || t("celeyou.tap_expired_body")}
             </p>
             <Link
-              href="/digital-cards"
+              href={celeYouGuestLandingPath()}
               className="inline-flex h-11 items-center justify-center rounded-full bg-[#0B8A83] px-5 text-sm font-semibold"
             >
-              Create Your Free CeleYou
+              {t("celeyou.create_free")}
             </Link>
           </div>
         ) : (
@@ -206,12 +207,12 @@ export function CeleYouTapGuestView({
             {done ? (
               <div className="celecard-tap-receipt relative z-10 mt-8 space-y-3 rounded-[1.5rem] border border-[#7FF0E4]/30 bg-white/5 px-4 py-6 text-center">
                 <Check className="mx-auto h-7 w-7 text-[#7FF0E4]" aria-hidden />
-                <p className="font-display text-2xl font-semibold">You&apos;re Connected!</p>
-                <p className="text-sm text-white/70">{host.displayName} now has your contact details.</p>
+                <p className="font-display text-2xl font-semibold">{t("celeyou.connected")}</p>
+                <p className="text-sm text-white/70">{t("celeyou.connected_body", { name: host.displayName })}</p>
               </div>
             ) : null}
 
-            <p className="relative z-10 mt-4 text-center text-xs leading-relaxed text-white/50">{UNIVERSAL_SAVE_LEAD}</p>
+            <p className="relative z-10 mt-4 text-center text-xs leading-relaxed text-white/50">{t("celeyou.save_lead")}</p>
             {saveHint ? <p className="relative z-10 mt-2 text-center text-xs text-white/55">{saveHint}</p> : null}
 
             <div className="celecard-tap-actions relative z-10 mt-8">
@@ -221,7 +222,7 @@ export function CeleYouTapGuestView({
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#0B8A83] text-sm font-semibold"
               >
                 <Contact className="h-4 w-4" aria-hidden />
-                {saveState === "saved" ? "Saved" : SAVE_CONTACT_CTA}
+                {saveState === "saved" ? t("celeyou.saved") : t("celeyou.save_contact")}
               </button>
               {exchangeAvailable ? (
                 <DigitalCardConnectExchange
@@ -248,21 +249,21 @@ export function CeleYouTapGuestView({
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
                 >
                   <Handshake className="h-4 w-4" aria-hidden />
-                  Exchange Contact
+                  {t("celeyou.exchange_contact")}
                 </button>
               ) : (
                 <Link
                   href={`/auth/login?callbackUrl=${encodeURIComponent(`/tap/${joinCode}`)}`}
                   className="inline-flex h-11 items-center justify-center rounded-full border border-white/15 text-sm"
                 >
-                  Exchange Cards
+                  {t("celeyou.exchange_cards")}
                 </Link>
               )}
               <Link
                 href={profileUrl}
                 className="inline-flex h-11 items-center justify-center rounded-full border border-white/15 text-sm"
               >
-                View Full Card
+                {t("celeyou.view_full_card")}
               </Link>
               <button
                 type="button"
@@ -270,18 +271,18 @@ export function CeleYouTapGuestView({
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-sm"
               >
                 <Share2 className="h-4 w-4" aria-hidden />
-                Share
+                {t("celeyou.share")}
               </button>
             </div>
 
             {!exchangeAvailable ? (
               <p className="relative z-10 mt-4 text-center text-xs text-white/50">
-                Have a CeleYou?{" "}
+                {t("celeyou.have_celeyou")}{" "}
                 <Link
                   href={`/auth/login?callbackUrl=${encodeURIComponent(`/tap/${joinCode}`)}`}
                   className="font-semibold text-[#7FF0E4]"
                 >
-                  Sign in to Exchange Cards
+                  {t("celeyou.sign_in_exchange")}
                 </Link>
               </p>
             ) : null}
@@ -294,14 +295,14 @@ export function CeleYouTapGuestView({
                   void submit();
                 }}
               >
-                <p className="text-base font-semibold">Share your contact</p>
+                <p className="text-base font-semibold">{t("celeyou.share_your_contact")}</p>
                 <input
                   required
                   minLength={2}
                   maxLength={120}
                   name="visitorName"
-                  placeholder="Your Name"
-                  aria-label="Your Name"
+                  placeholder={t("celeyou.your_name")}
+                  aria-label={t("celeyou.your_name")}
                   value={form.visitorName}
                   onChange={(event) => setForm((current) => ({ ...current, visitorName: event.target.value }))}
                   className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none"
@@ -310,26 +311,28 @@ export function CeleYouTapGuestView({
                   type="email"
                   maxLength={200}
                   name="visitorEmail"
-                  placeholder="Email Address"
-                  aria-label="Email Address"
+                  placeholder={t("celeyou.email")}
+                  aria-label={t("celeyou.email")}
                   value={form.visitorEmail}
                   onChange={(event) => setForm((current) => ({ ...current, visitorEmail: event.target.value }))}
                   className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none"
                 />
                 <input
-                  maxLength={40}
+                  maxLength={120}
                   name="visitorPhone"
-                  placeholder="Phone / WhatsApp"
-                  aria-label="Phone / WhatsApp"
+                  placeholder={t("celeyou.connect_phone_placeholder")}
+                  aria-label={t("celeyou.connect_phone_placeholder")}
+                  autoComplete="tel"
+                  inputMode="text"
                   value={form.visitorPhone}
                   onChange={(event) => setForm((current) => ({ ...current, visitorPhone: event.target.value }))}
-                  className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none"
+                  className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none placeholder:text-white/45"
                 />
                 <input
                   maxLength={160}
                   name="visitorCompany"
-                  placeholder="Company"
-                  aria-label="Company"
+                  placeholder={t("celeyou.company")}
+                  aria-label={t("celeyou.company")}
                   value={form.visitorCompany}
                   onChange={(event) => setForm((current) => ({ ...current, visitorCompany: event.target.value }))}
                   className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none"
@@ -337,8 +340,8 @@ export function CeleYouTapGuestView({
                 <input
                   maxLength={120}
                   name="visitorTitle"
-                  placeholder="Job Title"
-                  aria-label="Job Title"
+                  placeholder={t("celeyou.job_title")}
+                  aria-label={t("celeyou.job_title")}
                   value={form.visitorTitle}
                   onChange={(event) => setForm((current) => ({ ...current, visitorTitle: event.target.value }))}
                   className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none"
@@ -346,8 +349,8 @@ export function CeleYouTapGuestView({
                 <textarea
                   maxLength={500}
                   name="note"
-                  placeholder="How We Met"
-                  aria-label="How We Met"
+                  placeholder={t("celeyou.how_we_met_short")}
+                  aria-label={t("celeyou.how_we_met_short")}
                   value={form.note}
                   onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))}
                   className="min-h-[72px] w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none"
@@ -370,10 +373,9 @@ export function CeleYouTapGuestView({
                     className="mt-0.5"
                   />
                   <span>
-                    By selecting Send Contact, you agree to share the details entered above with this cardholder so they
-                    can contact you. Read the{" "}
+                    {t("celeyou.tap_consent_lead")}{" "}
                     <Link href="/legal/privacy" className="font-semibold text-[#7FF0E4]">
-                      privacy policy
+                      {t("footer.privacy")}
                     </Link>
                     .
                   </span>
@@ -384,7 +386,7 @@ export function CeleYouTapGuestView({
                   disabled={busy}
                   className="h-11 w-full rounded-full bg-[#0B8A83] text-sm font-semibold disabled:opacity-50"
                 >
-                  {busy ? "Sending…" : "Send My Contact"}
+                  {busy ? t("celeyou.sending") : t("celeyou.send_my_contact")}
                 </button>
               </form>
             ) : null}
@@ -396,19 +398,19 @@ export function CeleYouTapGuestView({
                   onClick={() => void saveContact()}
                   className="inline-flex h-11 items-center justify-center rounded-full bg-[#0B8A83] text-sm font-semibold"
                 >
-                  Save {host.displayName.split(" ")[0]}&apos;s Contact
+                  {t("celeyou.save_named_contact", { name: host.displayName.split(" ")[0] })}
                 </button>
                 <Link
                   href={profileUrl}
                   className="inline-flex h-11 items-center justify-center rounded-full border border-white/15 text-sm"
                 >
-                  View {host.displayName.split(" ")[0]}&apos;s Card
+                  {t("celeyou.view_named_card", { name: host.displayName.split(" ")[0] })}
                 </Link>
                 <Link
-                  href="/digital-cards"
+                  href={celeYouGuestLandingPath()}
                   className="inline-flex h-11 items-center justify-center rounded-full border border-white/15 text-sm"
                 >
-                  Create Your Free CeleYou
+                  {t("celeyou.create_free")}
                 </Link>
               </div>
             ) : null}

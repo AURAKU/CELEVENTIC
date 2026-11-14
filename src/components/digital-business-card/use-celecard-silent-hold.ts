@@ -18,8 +18,8 @@ import {
 type WakeLockSentinelLike = { release: () => Promise<void> };
 
 /**
- * Landscape hold lives on the plate. Rotation turns the device into the card
- * with no extra graphic. Proximity or share can keep running behind it.
+ * Tap opens a contain-fit ID-1 fullscreen card. Tap, close, or Escape restores the page.
+ * Landscape and portrait both keep the full card, including the QR, on screen.
  */
 export function useCelecardSilentHold() {
   const [holdIntent, setHoldIntent] = useState<CeleCardHoldIntent>("auto");
@@ -122,7 +122,14 @@ export function useCelecardSilentHold() {
 
   const onPlateActivate = useCallback(
     (event: { target: EventTarget | null; preventDefault?: () => void }) => {
-      if (!celecardEventIsPlateBackground(event.target)) return;
+      if (
+        !celecardEventIsPlateBackground(
+          event.target,
+          celecardHoldIsActive(holdIntentRef.current, autoHoldRef.current)
+        )
+      ) {
+        return;
+      }
       event.preventDefault?.();
       toggleHold();
     },

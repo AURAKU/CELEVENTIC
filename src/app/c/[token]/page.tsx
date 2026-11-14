@@ -90,7 +90,11 @@ export default async function SmartCardShortRedirectPage({
         userAgent: ua,
       })
     ) {
-      void recordSmartCardInteraction(card.id, "qr_open").catch(() => undefined);
+      void recordSmartCardInteraction(card.id, "qr_open", {
+        attribution: "qr",
+        surface: "qr",
+        outcome: "completed",
+      }).catch(() => undefined);
     }
   }
   redirect(celeYouScanLandingUrl(card.slug, origin));

@@ -3,10 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { paymentService } from "@/services/payments/payment.service";
 import { SMARTCARD_PAYMENT_KIND } from "@/lib/digital-business-card/plans";
-import {
-  isDigitalCardLive,
-  recordCeleCardLifecycleEvent,
-} from "@/services/digital-business-card/digital-business-card.service";
+import { isDigitalCardLive } from "@/services/digital-business-card/digital-business-card.service";
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { prisma } from "@/lib/prisma";
 
@@ -33,14 +30,6 @@ export async function GET(req: Request) {
           where: { id: cardId, userId: session.user.id },
         })
       : null;
-
-    if (payment.status === "FAILED" && cardId) {
-      await recordCeleCardLifecycleEvent({
-        cardId,
-        kind: "CheckoutFailed",
-        meta: { reference, planId: typeof meta.planId === "string" ? meta.planId : null },
-      });
-    }
 
     return NextResponse.json({
       success: true,

@@ -2,6 +2,8 @@ import {
   isWithinPaidWindow,
   renewalBaseDate,
   type CeleCardLifecycleInput,
+  type CeleCardLifecyclePolicy,
+  type CeleCardLifecycleState,
 } from "@/lib/digital-business-card/lifecycle";
 import { ghsToPesewas } from "@/lib/digital-business-card/plans";
 import { paystackAmountsMatch } from "@/lib/payments/paystack";
@@ -83,4 +85,79 @@ export function refundPublicPresentation(): "courtesy" {
 
 export function upgradeUsesCatalogAmount(chargedPesewas: number, catalogPesewas: number): boolean {
   return chargedPesewas === catalogPesewas;
+}
+
+/**
+ * CeleYou prepaid checkout stays on Paystack GHS.
+ * Invitation Alipay / WeChat rails are not CeleYou subscription methods.
+ */
+export const CELEYOU_PAYSTACK_CHECKOUT_METHODS = ["card", "mobile_money", "bank_transfer"] as const;
+export type CeleYouPaystackCheckoutMethod = (typeof CELEYOU_PAYSTACK_CHECKOUT_METHODS)[number];
+
+export function isCeleYouPaystackCheckoutMethod(value: unknown): value is CeleYouPaystackCheckoutMethod {
+  return (
+    typeof value === "string" &&
+    (CELEYOU_PAYSTACK_CHECKOUT_METHODS as readonly string[]).includes(value)
+  );
+}
+
+export const CELEYOU_CHECKOUT_METHOD_MESSAGE =
+  "CeleYou checkout uses Paystack in Ghana cedis. Choose card, mobile money, or bank transfer.";
+
+/** New checkout rows get a unique key. Reuse the stored key on an open PENDING row. */
+export function newCeleYouCheckoutIdempotencyKey(cardId: string, planId: string, now = Date.now()): string {
+  return `smartcard-${cardId}-${planId}-${now}`;
+}
+
+/**
+ * Owner-facing billing phase. Prepaid terms cannot be cancelled, so there is
+ * no cancelled status. Admin deactivate stays a draft / withheld card.
+ */
+export type CeleYouBillingPhase =
+  | "pending_activation"
+  | "free"
+  | "active"
+  | "renewal_due"
+  | "expired"
+  | "suspended"
+  | "deleted";
+
+export function celeYouBillingPhase(state: CeleCardLifecycleState): CeleYouBillingPhase {
+  if (state === "ACTIVE") return "active";
+  if (state === "EXPIRING") return "renewal_due";
+  if (state === "GRACE_PERIOD" || state === "COURTESY") return "expired";
+  if (state === "FREE") return "free";
+  if (state === "SUSPENDED") return "suspended";
+  if (state === "DELETED") return "deleted";
+  return "pending_activation";
+}
+
+export type CeleYouDirectoryExpiryRange = {
+  gt?: Date;
+  gte?: Date;
+  lt?: Date;
+  lte?: Date;
+};
+
+/** Prisma-friendly expiry windows that match derived lifecycle, not stored labels. */
+export function celeYouDirectoryExpiryRange(
+  status: "active" | "expiring" | "grace" | "courtesy",
+  now: Date,
+  policy: Pick<CeleCardLifecyclePolicy, "gracePeriodDays" | "expiringSoonDays">
+): CeleYouDirectoryExpiryRange {
+  const day = 86_400_000;
+  if (status === "active") return { gt: now };
+  if (status === "expiring") {
+    return {
+      gte: now,
+      lte: new Date(now.getTime() + policy.expiringSoonDays * day),
+    };
+  }
+  if (status === "grace") {
+    return {
+      lt: now,
+      gte: new Date(now.getTime() - policy.gracePeriodDays * day),
+    };
+  }
+  return { lte: new Date(now.getTime() - policy.gracePeriodDays * day) };
 }

@@ -17,6 +17,7 @@ import {
 } from "./socials";
 import { parseCeleCardPlace } from "./maps";
 import { isCeleCardPhotoUrl } from "./portraits";
+import { callingCodeFromPhones, internationalTelHref } from "./phone-format";
 
 export type VCardPhoto = {
   type: "JPEG" | "PNG";
@@ -164,8 +165,10 @@ export function buildVCard(card: DigitalCardPublicPayload, options: BuildVCardOp
   const seenUrls = new Set<string>();
   let item = 1;
 
-  phonesForVCard(card, reach).forEach((entry, index) => {
-    const number = compactPhone(entry.value);
+  const vcardPhones = phonesForVCard(card, reach);
+  const callingCode = callingCodeFromPhones(vcardPhones.map((entry) => entry.value));
+  vcardPhones.forEach((entry, index) => {
+    const number = compactPhone(entry.value, callingCode);
     if (!number || seenTel.has(digits(number))) return;
     seenTel.add(digits(number));
     lines.push(`TEL;${vcardTelType(entry.tag, index)}:${escapeVCard(number)}`);
@@ -461,11 +464,9 @@ function httpHref(value?: string | null): string {
   return t;
 }
 
-function compactPhone(value: string): string {
-  const t = value.replace(/^tel:/i, "").trim();
-  if (!t) return "";
-  const number = t.replace(/[^\d+]/g, "");
-  return number.replace(/(?!^)\+/g, "").length >= 7 ? t : "";
+function compactPhone(value: string, callingCode?: string | null): string {
+  const href = internationalTelHref(value, callingCode);
+  return href.replace(/^tel:/i, "");
 }
 
 function digits(value: string): string {

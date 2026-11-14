@@ -13,12 +13,20 @@ export function isVisibleLivePlate(node: { getClientRects?: () => ArrayLike<unkn
   return !rects || rects.length > 0;
 }
 
+function notShareComposer(node: HTMLElement) {
+  if (typeof node.closest !== "function") return true;
+  return !node.closest(".celecard-share-layer, .celecard-share-plate");
+}
+
 export function pickLivePlateElement(root: ParentNode | null | undefined): HTMLElement | null {
   if (!root || typeof root.querySelectorAll !== "function") return null;
   const marked = Array.from(root.querySelectorAll<HTMLElement>(`[${CELEYOU_LIVE_PLATE_ATTR}]`)).filter(isVisibleLivePlate);
+  const liveMarked = marked.filter(notShareComposer);
+  if (liveMarked.length) return largestPlate(liveMarked);
   if (marked.length) return largestPlate(marked);
   const faces = Array.from(root.querySelectorAll<HTMLElement>(".celecard-face")).filter(isVisibleLivePlate);
-  return largestPlate(faces);
+  const liveFaces = faces.filter(notShareComposer);
+  return largestPlate(liveFaces.length ? liveFaces : faces);
 }
 
 function largestPlate(nodes: HTMLElement[]): HTMLElement | null {

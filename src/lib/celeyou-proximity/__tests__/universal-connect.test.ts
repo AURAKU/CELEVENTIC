@@ -119,8 +119,8 @@ describe("CeleYou Universal Connect", () => {
     assert.match(host, /universalConnectActionOrder/);
     assert.doesNotMatch(host, /CeleYou starts AirDrop/);
     assert.doesNotMatch(host, /direct AirDrop/);
-    assert.match(guest, /UNIVERSAL_SAVE_LEAD/);
-    assert.match(guest, /contactSaveHint/);
+    assert.match(guest, /celeyou\.save_lead/);
+    assert.match(guest, /contactSaveHintKey/);
     assert.doesNotMatch(guest, /automatically saved/);
     assert.doesNotMatch(save, /automatically/);
     assert.equal(TAP_TO_SHARE_CTA, "Tap to Share");

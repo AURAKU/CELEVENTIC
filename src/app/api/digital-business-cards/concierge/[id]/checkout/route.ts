@@ -5,10 +5,11 @@ import { getAppUrlFromEnv } from "@/lib/app-url";
 import { paymentService, PaymentProviderError } from "@/services/payments/payment.service";
 import { prisma } from "@/lib/prisma";
 import { CELECARD_CONCIERGE_PAYMENT_KIND, SMARTCARD_CURRENCY } from "@/lib/digital-business-card/plans";
+import { isCheckoutMethodId } from "@/lib/payments/checkout-methods";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id || !session.user.email) {
     return NextResponse.json({ error: "Sign in with the invited email to pay for concierge." }, { status: 401 });
@@ -29,6 +30,9 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     data: { customerUserId: order.customerUserId || session.user.id, status: "AWAITING_PAYMENT" },
   });
 
+  const body = (await req.json().catch(() => ({}))) as { method?: unknown };
+  const method = isCheckoutMethodId(body.method) ? body.method : undefined;
+
   try {
     const result = await paymentService.initializePayment(
       session.user.id,
@@ -39,6 +43,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
         currency: SMARTCARD_CURRENCY,
         email: session.user.email,
         purpose: "ADVERTISING",
+        method,
         callbackUrl: `${getAppUrlFromEnv()}/dashboard/business-card/concierge?payment=callback`,
         metadata: {
           kind: CELECARD_CONCIERGE_PAYMENT_KIND,

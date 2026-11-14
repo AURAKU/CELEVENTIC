@@ -30,7 +30,13 @@ export type CeleCardAdminAction =
   | "duplicate_design"
   | "send_invitation"
   | "save_draft"
-  | "remind_renewal";
+  | "remind_renewal"
+  | "nfc_register"
+  | "nfc_pause"
+  | "nfc_resume"
+  | "nfc_lost"
+  | "nfc_replace"
+  | "nfc_revoke";
 
 export const CELECARD_ACTION_PERMISSION: Record<CeleCardAdminAction, (typeof Permission)[keyof typeof Permission]> = {
   activate: Permission.CELECARD_ACTIVATE,
@@ -47,6 +53,12 @@ export const CELECARD_ACTION_PERMISSION: Record<CeleCardAdminAction, (typeof Per
   send_invitation: Permission.CELECARD_SUPPORT,
   save_draft: Permission.CELECARD_EDIT,
   remind_renewal: Permission.CELECARD_SUPPORT,
+  nfc_register: Permission.CELECARD_EDIT,
+  nfc_pause: Permission.CELECARD_EDIT,
+  nfc_resume: Permission.CELECARD_EDIT,
+  nfc_lost: Permission.CELECARD_EDIT,
+  nfc_replace: Permission.CELECARD_EDIT,
+  nfc_revoke: Permission.CELECARD_EDIT,
 };
 
 export const CELECARD_BULK_ENABLED_ACTIONS = ["preview", "invite", "notify", "assign_template"] as const;

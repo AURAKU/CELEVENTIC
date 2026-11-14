@@ -29,15 +29,15 @@ export const CELEYOU_TIER_CATALOG: CeleYouTierDefinition[] = [
   {
     id: "free",
     label: "CeleYou Free",
-    published: false,
+    published: true,
     proposedMonthlyGhs: 0,
-    notes: "Studio-only identity. Not a live public hosting plan.",
+    notes: "Permanent public identity. One published card, QR, NFC destination, and basic profile. Does not expire.",
     entitlements: {
       premiumTemplates: false,
       multipleCards: 1,
       advancedAnalytics: false,
-      connectBack: false,
-      twoWayExchange: false,
+      connectBack: true,
+      twoWayExchange: true,
       followUpAutomation: false,
       crmIntegrations: false,
       contactEnrichment: 0,
@@ -67,7 +67,7 @@ export const CELEYOU_TIER_CATALOG: CeleYouTierDefinition[] = [
     label: "CeleYou Business",
     published: false,
     proposedMonthlyGhs: 99,
-    notes: "Proposed GH₵99/month. Requires approval before any checkout uses this amount.",
+    notes: "Unpublished. Future 14-day Business trial is not advertised. Price not authorized for checkout.",
     entitlements: {
       premiumTemplates: true,
       multipleCards: true,

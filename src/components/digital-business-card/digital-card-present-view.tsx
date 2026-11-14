@@ -23,6 +23,8 @@ import {
 } from "@/components/digital-business-card/digital-card-continuity-view";
 import { useEmbeddedCardShare } from "@/components/digital-business-card/use-embedded-card-share";
 import { useCelecardSilentHold } from "@/components/digital-business-card/use-celecard-silent-hold";
+import { celeYouGuestLandingPath } from "@/lib/digital-business-card/product";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 type FullscreenNode = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -75,6 +77,7 @@ export function DigitalCardPresentView({
   hostCardId?: string | null;
   proximityDiscoverable?: boolean;
 }) {
+  const { t } = useLocale();
   const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), card.socials.design);
   const motionMood = celecardMotionMood(theme, card.socials.design?.motion);
   const router = useRouter();
@@ -144,8 +147,8 @@ export function DigitalCardPresentView({
       <main className="grid min-h-[100dvh] place-items-center bg-stone-950 px-4 text-center text-stone-100">
         <div>
           <DigitalCardUnavailableView mode={card.presentationMode} />
-          <Link href="/digital-cards" className="mt-4 inline-block text-sm text-[#7dd3c7]">
-            See templates
+          <Link href={celeYouGuestLandingPath()} className="mt-4 inline-block text-sm text-[#7dd3c7]">
+            {t("celeyou.cta_secondary")}
           </Link>
         </div>
       </main>
@@ -186,10 +189,10 @@ export function DigitalCardPresentView({
           onClick={closePresent}
           className="pointer-events-auto inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.14em]"
           style={{ background: "rgba(0,0,0,0.28)", color: "#fffef8" }}
-          aria-label="Close card mode"
+          aria-label={t("celeyou.close_card_mode")}
         >
           <X className="h-3.5 w-3.5" />
-          {landscape ? null : <span>Close</span>}
+          {landscape ? null : <span>{t("celeyou.close")}</span>}
         </button>
         <div className="pointer-events-auto flex shrink-0 items-center gap-2">
           {landscape ? (
@@ -197,7 +200,7 @@ export function DigitalCardPresentView({
               href={profileUrl}
               className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full"
               style={{ color: theme.accent, background: theme.accentSoft }}
-              aria-label="Open profile"
+              aria-label={t("celeyou.open_profile")}
             >
               <UserRound className="h-4 w-4" />
             </Link>
@@ -207,7 +210,7 @@ export function DigitalCardPresentView({
               className="inline-flex min-h-10 flex-nowrap items-center whitespace-nowrap rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.14em]"
               style={{ color: theme.accent, background: theme.accentSoft }}
             >
-              Open profile
+              {t("celeyou.open_profile")}
             </Link>
           )}
           {canFs ? (
@@ -216,7 +219,7 @@ export function DigitalCardPresentView({
               onClick={() => void toggleFullscreen()}
               className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full"
               style={{ background: "rgba(0,0,0,0.28)", color: "#fffef8" }}
-              aria-label={nativeFs ? "Exit fullscreen" : "Enter fullscreen"}
+              aria-label={nativeFs ? t("celeyou.exit_fullscreen") : t("celeyou.enter_fullscreen")}
             >
               {nativeFs ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
@@ -232,7 +235,7 @@ export function DigitalCardPresentView({
                 if ((event.target as HTMLElement | null)?.closest("a")) return;
                 void sendFromCard();
               }}
-              aria-label="Tap this card to send the profile from this phone"
+              aria-label={t("celeyou.tap_send_aria")}
               className={`block cursor-pointer ${
                 landscape
                   ? sharingLive
@@ -266,12 +269,12 @@ export function DigitalCardPresentView({
           style={{ color: theme.muted }}
         >
           {sent === "shared"
-            ? "Sent from this phone. Their phone opens the same profile."
+            ? t("celeyou.present_sent")
             : sent === "copied"
-              ? "Link copied. Hand it to them or keep the plate facing their camera."
+              ? t("celeyou.present_copied")
               : sent === "unavailable"
-                ? "Keep the plate facing their camera. They scan and the profile opens."
-                : "Bring their phone to this card. They scan the plate and the profile opens. They do not need CeleYou. Tap the card to send it from this phone."}
+                ? t("celeyou.present_scan")
+                : t("celeyou.present_idle")}
         </p>
         )}
         {landscape ? null : (
@@ -293,7 +296,7 @@ export function DigitalCardPresentView({
           className="absolute inset-x-0 bottom-0 top-14 z-20 grid place-items-center bg-black/45 px-6 text-center"
         >
           <span className="rounded-2xl bg-white/95 px-5 py-4 text-sm font-semibold text-stone-900 shadow-xl">
-            Tap to fill the screen
+            {t("celeyou.tap_fill_screen")}
           </span>
         </button>
       ) : null}
@@ -318,10 +321,11 @@ function ScanPlate({
   avatarUrl?: string | null;
   compact?: boolean;
 }) {
+  const { t } = useLocale();
   return (
     <Link
       href={href}
-      aria-label={`Open ${displayName} CeleYou`}
+      aria-label={t("celeyou.open_named_celeyou", { name: displayName })}
       className={`flex shrink-0 flex-col items-center rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B8A83] ${compact ? "gap-1" : "mt-3 gap-1.5"}`}
     >
       <span
@@ -329,7 +333,7 @@ function ScanPlate({
         style={{ color: accent }}
       >
         <QrCode className="h-3 w-3" />
-        Scan
+        {t("celeyou.scan")}
       </span>
       <CeleCardQrBadge
         qrSrc={qrSrc}

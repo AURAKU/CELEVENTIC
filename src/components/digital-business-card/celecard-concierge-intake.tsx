@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PaymentMethodPicker } from "@/components/payments/payment-method-picker";
+import type { CheckoutMethodId } from "@/lib/payments/checkout-methods";
 
 type Quote = {
   catalog: { conciergePriceGhs: number; plans: { id: string; label: string; priceGhs: number }[] };
@@ -25,6 +27,7 @@ export function CeleCardConciergeIntake() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [payMethod, setPayMethod] = useState<CheckoutMethodId | "">("");
 
   useEffect(() => {
     const params = new URLSearchParams({
@@ -70,7 +73,11 @@ export function CeleCardConciergeIntake() {
   async function pay() {
     if (!orderId) return;
     setBusy(true);
-    const res = await fetch(`/api/digital-business-cards/concierge/${orderId}/checkout`, { method: "POST" });
+    const res = await fetch(`/api/digital-business-cards/concierge/${orderId}/checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method: payMethod || undefined }),
+    });
     const payload = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) {
@@ -152,6 +159,7 @@ export function CeleCardConciergeIntake() {
           <p className="text-sm text-slate-600">
             Sign in with this email to pay. After verified payment, staff design and activate the card. Complimentary waivers never write a payment row.
           </p>
+          <PaymentMethodPicker value={payMethod} onChange={setPayMethod} />
           <Button type="button" onClick={pay} disabled={busy}>
             {busy ? "Opening checkout…" : `Pay GH₵${quote?.quote.totalGhs ?? ""}`}
           </Button>

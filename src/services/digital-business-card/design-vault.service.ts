@@ -9,6 +9,8 @@ import {
   identityFromCard,
   parseDesignConfig,
 } from "@/lib/digital-business-card/design-vault";
+import { compactCeleCardDesign } from "@/lib/digital-business-card/design";
+import { normalizeSocials } from "@/lib/digital-business-card/socials";
 import { resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { getDigitalCardForUser, recordCeleCardLifecycleEvent } from "./digital-business-card.service";
 
@@ -105,11 +107,20 @@ export async function restoreDesignVersion(userId: string, cardId: string, versi
   const identity = identityFromCard(card);
   const config = parseDesignConfig(source.config, source.themeId);
   const theme = resolveDigitalCardTheme(config.themeId);
+  const socials = normalizeSocials(card.socials);
+  const design = compactCeleCardDesign({
+    ...(config.design ?? {}),
+    ...(config.faceLead ? { faceLead: config.faceLead } : {}),
+  });
+  if (design) socials.design = design;
+  else delete socials.design;
+  if (config.portraitFrame) socials.portraitFrame = config.portraitFrame;
   const updated = await prisma.digitalBusinessCard.update({
     where: { id: cardId },
     data: {
       themeId: theme.id,
       publishedDesignVersionId: source.id,
+      socials,
     },
   });
   await prisma.smartCardDesignVersion.update({

@@ -7,6 +7,7 @@ import { parseCeleCardPlace, type CeleCardPlace } from "@/lib/digital-business-c
 import type { DigitalCardReachItem } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { launchGuestReach } from "@/components/digital-business-card/digital-card-smart-link";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 export function locationPreviewItems(values: string[]): DigitalCardReachItem[] {
   const items: DigitalCardReachItem[] = [];
@@ -70,9 +71,10 @@ function PlacePreview({
       },
     [item.copyValue, item.href, item.subtitle, item.title]
   );
+  const { t } = useLocale();
   const mapHeight = compact ? "h-40" : "h-52";
   const [mapReady, setMapReady] = useState(false);
-  const openLabel = `Open in ${place.provider}`;
+  const openLabel = t("celeyou.open_in", { provider: place.provider });
 
   return (
     <article className="overflow-hidden rounded-[1.2rem] ring-1 ring-black/8">

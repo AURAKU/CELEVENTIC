@@ -47,13 +47,11 @@ export async function GET(req: Request) {
       ctaLabel: checkout.ctaLabel,
       privacyNote: checkout.privacyNote,
       campaign: checkout.campaign,
-      methods: listEnabledGiftPaymentMethods()
-        .filter((method) => method.id !== "CARD")
-        .map((method) => ({
-          id: method.id,
-          label: method.label,
-          shortLabel: method.shortLabel,
-        })),
+      methods: listEnabledGiftPaymentMethods().map((method) => ({
+        id: method.id,
+        label: method.label,
+        shortLabel: method.shortLabel,
+      })),
     };
 
     assertNoPrivateGiftData(payload, "inviteGiftCheckout");

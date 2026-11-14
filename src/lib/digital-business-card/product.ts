@@ -53,6 +53,13 @@ export const SMARTCARD_HERO_SUPPORT =
 export const SMARTCARD_CTA_PRIMARY = "Design my CeleYou";
 export const SMARTCARD_CTA_SECONDARY = "View templates";
 
+/** Public CeleYou landing. Guests create an account and browse templates. No login to look. */
+export const CELEYOU_PUBLIC_LANDING_PATH = "/digital-cards";
+
+export function celeYouGuestLandingPath(): string {
+  return CELEYOU_PUBLIC_LANDING_PATH;
+}
+
 /** Short redirect path for Smart QR / share links (resolves to live /card/[slug]). */
 export const SMARTCARD_SHORT_PATH = "/c";
 /** Short redirect path for NFC tap tokens. */

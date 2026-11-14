@@ -8,6 +8,14 @@ import {
   CELECARD_CONCIERGE_SOLD_SEPARATELY,
   overlaySmartCardPlanPrices,
 } from "@/lib/digital-business-card/plans";
+import {
+  CELEYOU_BUSINESS_TRIAL_DAYS,
+  CELEYOU_DRAFT_CONCIERGE,
+  CELEYOU_DRAFT_INTERNATIONAL_PRO,
+  CELEYOU_PRO_TRIAL_DAYS,
+  celeYouProPriceLabel,
+} from "@/lib/digital-business-card/freemium";
+import { CELEYOU_DISPLAY_CURRENCIES, celeYouCheckoutCurrency } from "@/lib/digital-business-card/currencies";
 
 type PlanPrices = { monthly: number; quarter: number; half: number; yearly: number };
 
@@ -155,6 +163,57 @@ export function CeleCardPricingForm({ canEdit }: { canEdit: boolean }) {
             onChange={(e) => setCatalog({ ...catalog, conciergePriceGhs: Number(e.target.value) || 0 })}
           />
         </label>
+      </section>
+
+      <section className="rounded-2xl border bg-white p-5">
+        <h2 className="text-sm font-semibold">4. International draft prices</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          USD, GBP, and CNY rows are drafts until Super Admin publishes a payable currency and the
+          provider can collect it. Checkout stays Paystack Ghana cedis. These amounts are not charged.
+        </p>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-xs">
+            <thead>
+              <tr className="text-slate-500">
+                <th className="py-1 pr-3 font-medium">Period</th>
+                {CELEYOU_DISPLAY_CURRENCIES.filter((code) => code !== "GHS").map((code) => (
+                  <th key={code} className="py-1 pr-3 font-medium">
+                    {code}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {PLAN_FIELDS.map((field) => (
+                <tr key={field.id} className="border-t border-slate-100">
+                  <td className="py-1.5 pr-3">{field.label}</td>
+                  {CELEYOU_DISPLAY_CURRENCIES.filter((code) => code !== "GHS").map((code) => (
+                    <td key={code} className="py-1.5 pr-3">
+                      {celeYouProPriceLabel(field.id, code)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              <tr className="border-t border-slate-100">
+                <td className="py-1.5 pr-3">Concierge one-time</td>
+                <td className="py-1.5 pr-3">${CELEYOU_DRAFT_CONCIERGE.USD}</td>
+                <td className="py-1.5 pr-3">£{CELEYOU_DRAFT_CONCIERGE.GBP}</td>
+                <td className="py-1.5 pr-3">¥{CELEYOU_DRAFT_CONCIERGE.CNY}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ul className="mt-3 space-y-1 text-xs text-slate-500">
+          {CELEYOU_DISPLAY_CURRENCIES.map((code) => (
+            <li key={code}>
+              {code}: {celeYouCheckoutCurrency(code).reason}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-xs text-slate-500">
+          Pro trial {CELEYOU_PRO_TRIAL_DAYS} days. Future Business trial {CELEYOU_BUSINESS_TRIAL_DAYS} days, unpublished.
+          Changing trial length does not rewrite in-flight expiries.
+        </p>
       </section>
 
       {canEdit ? (
