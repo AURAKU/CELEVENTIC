@@ -92,7 +92,7 @@ export function LegalPageLayout({
                   {version && effectiveDate && <span> · </span>}
                   {effectiveDate && (
                     <span>
-                      {t("legal.effective")} {formatDate(effectiveDate)}
+                      {t("legal.effective")} {formatDate(effectiveDate, undefined, locale)}
                     </span>
                   )}
                 </p>

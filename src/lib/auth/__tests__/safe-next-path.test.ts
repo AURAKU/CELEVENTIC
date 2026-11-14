@@ -4,6 +4,7 @@ import {
   safeNextPath,
   smartCardLoginPath,
   smartCardSignupPath,
+  smartCardStartPath,
   smartCardStudioPath,
 } from "../safe-next-path";
 
@@ -26,14 +27,15 @@ describe("safeNextPath", () => {
 });
 
 describe("SmartCard signup destinations", () => {
-  it("sends new users to register with studio as next", () => {
+  it("sends new users to register with first-card onboarding as next", () => {
     const href = smartCardSignupPath("yearly", "spotlight");
     assert.equal(href.startsWith("/auth/register?"), true);
     const params = new URLSearchParams(href.split("?")[1]);
     assert.equal(params.get("intent"), "smartcard");
     assert.equal(params.get("plan"), "yearly");
     assert.equal(params.get("theme"), "spotlight");
-    assert.equal(params.get("next"), "/dashboard/business-card?plan=yearly&theme=spotlight");
+    assert.equal(params.get("next"), "/dashboard/business-card/start?plan=yearly&theme=spotlight");
+    assert.equal(smartCardStartPath(), "/dashboard/business-card/start");
   });
 
   it("opens studio with plan and theme for signed-in users", () => {

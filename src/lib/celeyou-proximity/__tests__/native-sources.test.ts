@@ -31,7 +31,7 @@ describe("CeleYou native BLE sources", () => {
     );
     assert.match(v1, /proximityV1Action\("request"\)/);
     const dashboard = readFileSync(join(process.cwd(), "src/components/dashboard/role-dashboards.tsx"), "utf8");
-    assert.match(dashboard, /Tap to Connect/);
+    assert.match(dashboard, /dashboard\.nav_tap_to_connect/);
     const service = readFileSync(
       join(process.cwd(), "src/services/digital-business-card/proximity.service.ts"),
       "utf8"

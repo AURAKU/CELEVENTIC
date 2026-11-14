@@ -8,9 +8,11 @@ import {
   type DigitalCardSocials,
 } from "@/lib/digital-business-card/types";
 import { resolveDigitalCardTheme, type DigitalCardThemeId } from "@/lib/digital-business-card/themes";
+import { CELEYOU_ORIGINAL_THEME_ID } from "@/lib/digital-business-card/brand-lock";
 import {
   CeleYouPaidTermLockedError,
   DEFAULT_CELECARD_LIFECYCLE_POLICY,
+  celeCardPublicPresentation,
   celeYouPaidTermIsRunning,
   isCeleCardFullyPublic,
   isWithinPaidWindow,
@@ -20,8 +22,29 @@ import {
   type CeleCardLifecycleInput,
   type CeleCardLifecyclePolicy,
 } from "@/lib/digital-business-card/lifecycle";
+import {
+  CELEYOU_FREE_PUBLISH_LIMIT_MESSAGE,
+  canPublishAnotherCeleYou,
+  celeYouAccessTier,
+  inferLegacyCeleYouTrial,
+} from "@/lib/digital-business-card/freemium";
 import { pickCurrentNfcDevice } from "@/lib/digital-business-card/nfc-device";
+import {
+  CELEYOU_ANALYTICS_TREND_MAX_ROWS,
+  CELEYOU_CONTACT_ATTRIBUTION,
+  CELEYOU_NFC_ATTRIBUTION,
+  CELEYOU_PAYMENT_ATTRIBUTION,
+  CELEYOU_QR_ATTRIBUTION,
+  CELEYOU_SHARE_ATTRIBUTION,
+  buildCeleYouTrendSeries,
+  celeYouDeviceBreakdown,
+  celeYouPopularLinks,
+  celeYouTrendWindow,
+  clampAnalyticsRangeDays,
+  sanitizeCeleYouActivityMeta,
+} from "@/lib/digital-business-card/analytics";
 import { isReservedCeleYouShareToken } from "@/lib/digital-business-card/share-identity";
+import { bridgeCardSlug } from "@/services/digital-business-card/username.service";
 import { randomBytes } from "node:crypto";
 import { sha256Hex } from "@/lib/crypto/sha256-hex";
 import { pesewasMatch } from "@/lib/digital-business-card/plans";
@@ -118,6 +141,7 @@ export function toPublicPayload(card: {
   adminDeactivatedAt?: Date | null;
   deletedAt?: Date | null;
   lastActivatedAt?: Date | null;
+  lastCourtesyAt?: Date | null;
 }, policy: CeleCardLifecyclePolicy = DEFAULT_CELECARD_LIFECYCLE_POLICY): DigitalCardPublicPayload {
   const theme = resolveDigitalCardTheme(card.themeId);
   return {
@@ -139,7 +163,51 @@ export function toPublicPayload(card: {
     connectBackEnabled: card.connectBackEnabled !== false,
     defaultMode: card.defaultMode || "professional",
     isLive: isDigitalCardLive(card, new Date(), policy),
-    presentationMode: isDigitalCardLive(card, new Date(), policy) ? "live" : "unavailable",
+    presentationMode: celeCardPublicPresentation(card, new Date(), policy),
+  };
+}
+
+export class CeleYouPublishLimitError extends Error {
+  readonly status = 409;
+  constructor(message = CELEYOU_FREE_PUBLISH_LIMIT_MESSAGE) {
+    super(message);
+    this.name = "CeleYouPublishLimitError";
+  }
+}
+
+async function celeYouUserAccess(userId: string) {
+  const cards = await prisma.digitalBusinessCard.findMany({
+    where: { userId, deletedAt: null },
+    select: {
+      id: true,
+      isPublished: true,
+      subscriptionStatus: true,
+      subscriptionExpiresAt: true,
+      lastActivatedAt: true,
+    },
+  });
+  const trial = await prisma.celeYouTrialRecord.findUnique({ where: { userId } }).catch(() => null);
+  const snapshot = trial
+    ? {
+        userId,
+        family: trial.family === "business" ? ("business" as const) : ("pro" as const),
+        status: trial.status as "ELIGIBLE" | "ACTIVE" | "CONVERTED" | "EXPIRED" | "BLOCKED",
+        startedAt: trial.startedAt,
+        expiresAt: trial.expiresAt,
+        convertedAt: trial.convertedAt,
+        durationDays: trial.durationDays,
+      }
+    : inferLegacyCeleYouTrial(userId, cards);
+  const paid = cards.find((item) => isWithinPaidWindow(item)) ?? cards[0];
+  const dummy = {
+    isPublished: false,
+    subscriptionStatus: "FREE",
+    subscriptionExpiresAt: null,
+    lastActivatedAt: null,
+  };
+  return {
+    tier: celeYouAccessTier({ card: paid || dummy, trial: snapshot }),
+    publishedCount: cards.filter((item) => item.isPublished).length,
   };
 }
 
@@ -380,7 +448,7 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
   if (displayName.length < 2) {
     throw new Error("displayName required");
   }
-  const theme = resolveDigitalCardTheme(input.themeId);
+  const theme = resolveDigitalCardTheme(input.themeId ?? CELEYOU_ORIGINAL_THEME_ID);
   const slugSeed = {
     displayName,
     company: input.company?.trim() || null,
@@ -390,9 +458,17 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
   const entitlement = household
     ? accountEntitlementWrite(household)
     : {
-        subscriptionStatus: "TRIAL",
-        subscriptionExpiresAt: trialExpiryFromNow(),
+        subscriptionStatus: "FREE",
+        subscriptionExpiresAt: null,
       };
+  const access = await celeYouUserAccess(userId);
+  const wantsPublish = input.isPublished ?? true;
+  const isPublished =
+    wantsPublish &&
+    canPublishAnotherCeleYou({ tier: access.tier, publishedCount: access.publishedCount });
+  if (wantsPublish && !isPublished && input.isPublished === true) {
+    throw new CeleYouPublishLimitError();
+  }
   let created: Awaited<ReturnType<typeof prisma.digitalBusinessCard.create>> | null = null;
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const slug = await allocateDigitalCardSlug(input.slug || displayName, slugSeed);
@@ -411,7 +487,7 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
           socials: (input.socials ?? {}) as object,
           themeId: theme.id,
           avatarUrl: input.avatarUrl || null,
-          isPublished: input.isPublished ?? true,
+          isPublished,
           nfcEnabled: input.nfcEnabled ?? true,
           ...entitlement,
         },
@@ -422,6 +498,7 @@ export async function createDigitalCard(userId: string, input: UpsertDigitalCard
     }
   }
   if (!created) throw new Error("Could not allocate a unique public link");
+  await bridgeCardSlug({ id: created.id, userId: created.userId, slug: created.slug });
   await ensureDefaultNfcDevice(created);
   await recordCeleCardLifecycleEvent({
     cardId: created.id,
@@ -455,6 +532,12 @@ export async function updateDigitalCard(userId: string, id: string, input: Upser
       title: input.title !== undefined ? input.title : existing.title,
     });
   }
+  if (input.isPublished === true && !existing.isPublished) {
+    const access = await celeYouUserAccess(userId);
+    if (!canPublishAnotherCeleYou({ tier: access.tier, publishedCount: access.publishedCount })) {
+      throw new CeleYouPublishLimitError();
+    }
+  }
   const nextTheme = theme.id;
   if (nextTheme !== existing.themeId) {
     await prisma.smartCardDesignVersion
@@ -469,7 +552,7 @@ export async function updateDigitalCard(userId: string, id: string, input: Upser
       })
       .catch(() => undefined);
   }
-  return prisma.digitalBusinessCard.update({
+  const updated = await prisma.digitalBusinessCard.update({
     where: { id: existing.id },
     data: {
       slug,
@@ -490,6 +573,15 @@ export async function updateDigitalCard(userId: string, id: string, input: Upser
         input.proximityDiscoverable !== undefined ? input.proximityDiscoverable : undefined,
     },
   });
+  if (updated.slug !== existing.slug) {
+    await bridgeCardSlug({
+      id: updated.id,
+      userId: updated.userId,
+      slug: updated.slug,
+      previousSlug: existing.slug,
+    });
+  }
+  return updated;
 }
 
 /** Paid activation only, never called from a free studio PATCH. */
@@ -540,6 +632,11 @@ export async function activateDigitalCardFromPayment(input: {
   const wasLive = isDigitalCardLive(existing, now, policy);
   const base = renewalBaseDate(existing, now, policy);
   const expires = smartCardExpiryFromNow(months, base);
+  const { renewalMustNotShorten } = await import("@/lib/digital-business-card/billing-rules");
+  if (!renewalMustNotShorten(existing.subscriptionExpiresAt, expires, now)) {
+    console.error("[smartcard.activate] refused to shorten paid term", existing.id);
+    return existing;
+  }
   const updated = await prisma.digitalBusinessCard.update({
     where: { id: existing.id },
     data: {
@@ -563,7 +660,53 @@ export async function activateDigitalCardFromPayment(input: {
       amountGhs: input.amountGhs,
     },
   });
+  await notifyCeleYouBillingOutcome({
+    userId: input.userId,
+    cardId: existing.id,
+    displayName: existing.displayName,
+    paymentId: input.paymentId,
+    renewed: wasLive,
+    expires,
+  });
+  await import("@/services/digital-business-card/trial.service")
+    .then(({ convertCeleYouTrialToPaid }) =>
+      convertCeleYouTrialToPaid({ userId: input.userId, planId: plan?.id ?? input.planId })
+    )
+    .catch(() => undefined);
   return updated;
+}
+
+async function notifyCeleYouBillingOutcome(input: {
+  userId: string;
+  cardId: string;
+  displayName: string;
+  paymentId?: string | null;
+  renewed: boolean;
+  expires: Date;
+}) {
+  try {
+    const { notificationService } = await import("@/services/notifications/notification.service");
+    const day = input.expires.toISOString().slice(0, 10);
+    const type = input.renewed ? "CELECARD_RENEWED" : "CELECARD_ACTIVATED";
+    const link = `/dashboard/business-card/billing?card=${input.cardId}&term=${day}${
+      input.paymentId ? `&payment=${input.paymentId}` : ""
+    }`;
+    const already = await prisma.notification.findFirst({
+      where: { userId: input.userId, type, link },
+      select: { id: true },
+    });
+    if (already) return;
+    await notificationService.notify(input.userId, {
+      title: input.renewed ? "CeleYou renewed" : "CeleYou is live",
+      message: input.renewed
+        ? `${input.displayName} stays live until ${day}.`
+        : `${input.displayName} is active until ${day}.`,
+      type,
+      link,
+    });
+  } catch {
+    /* Notification must never block activation. */
+  }
 }
 
 /** Admin / test bypass. Still requires an authenticated platform admin at the route. */
@@ -662,8 +805,14 @@ export async function recordDigitalCardGuestOpen(input: {
   ) {
     return false;
   }
+  const { celeYouDeviceCategory } = await import("@/lib/digital-business-card/analytics");
   await incrementDigitalCardView(input.cardId);
-  await recordSmartCardInteraction(input.cardId, "profile_open", { surface: "profile" });
+  await recordSmartCardInteraction(input.cardId, "profile_open", {
+    surface: "profile",
+    attribution: "profile",
+    outcome: "completed",
+    device: celeYouDeviceCategory(input.userAgent || ""),
+  });
   return true;
 }
 
@@ -675,13 +824,8 @@ export async function recordSmartCardInteraction(cardId: string, kind: string, m
     .catch(() => undefined);
 }
 
-function sanitizeActivityMeta(meta: unknown): { surface?: string; reason?: string } {
-  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return {};
-  const row = meta as Record<string, unknown>;
-  const surface = typeof row.surface === "string" && row.surface.length <= 40 ? row.surface : undefined;
-  const allowedReason = ["unpublished", "suspended", "inactive", "deleted"];
-  const reason = typeof row.reason === "string" && allowedReason.includes(row.reason) ? row.reason : undefined;
-  return { ...(surface ? { surface } : {}), ...(reason ? { reason } : {}) };
+function sanitizeActivityMeta(meta: unknown) {
+  return sanitizeCeleYouActivityMeta(meta);
 }
 
 type ActivityWindow = { from?: Date | null; to?: Date | null };
@@ -731,9 +875,12 @@ export async function getDigitalCardAnalyticsForUser(
 ) {
   const card = await getDigitalCardForUser(userId, cardId);
   if (!card) return null;
-  const when = createdAtWindow(input);
+  const clamped =
+    input?.from && input?.to ? clampAnalyticsRangeDays(input.from, input.to) : { from: input?.from, to: input?.to };
+  const windowInput = { ...input, from: clamped.from, to: clamped.to };
+  const when = createdAtWindow(windowInput);
   const ranged = Boolean(when);
-  const activity = await listDigitalCardActivityForUser(userId, cardId, input);
+  const activity = await listDigitalCardActivityForUser(userId, cardId, windowInput);
   if (input?.cursor) {
     return {
       viewCount: ranged ? 0 : card.viewCount,
@@ -741,7 +888,10 @@ export async function getDigitalCardAnalyticsForUser(
       nextCursor: activity?.nextCursor ?? null,
     };
   }
-  const [grouped, connectionCount] = await Promise.all([
+  const trendBounds = ranged
+    ? { from: windowInput.from ?? undefined, to: windowInput.to ?? undefined }
+    : celeYouTrendWindow();
+  const [grouped, connectionCount, trendRows] = await Promise.all([
     prisma.smartCardInteraction.groupBy({
       by: ["kind"],
       where: { cardId, ...when },
@@ -750,25 +900,55 @@ export async function getDigitalCardAnalyticsForUser(
     prisma.smartCardConnection.count({
       where: { cardId, status: { not: "ARCHIVED" }, ...when },
     }),
+    prisma.smartCardInteraction.findMany({
+      where: {
+        cardId,
+        createdAt: {
+          ...(trendBounds.from ? { gte: trendBounds.from } : {}),
+          ...(trendBounds.to ? { lte: trendBounds.to } : {}),
+        },
+      },
+      orderBy: { createdAt: "asc" },
+      take: CELEYOU_ANALYTICS_TREND_MAX_ROWS,
+      select: { kind: true, createdAt: true, meta: true },
+    }),
   ]);
   const byKind: Record<string, number> = {};
   for (const row of grouped) {
     byKind[row.kind] = row._count._all;
   }
+  const trendFrom = trendBounds.from ?? celeYouTrendWindow().from;
+  const trendTo = trendBounds.to ?? new Date();
   return {
     viewCount: ranged ? byKind.profile_open ?? 0 : card.viewCount,
     qrOpens: byKind.qr_open ?? 0,
     nfcTaps: byKind.nfc_tap ?? 0,
     vcardSaves: byKind.vcard_save ?? 0,
+    vcardDownloads: byKind.vcard_download ?? 0,
     callTaps: byKind.call_tap ?? 0,
     whatsappTaps: byKind.whatsapp_tap ?? 0,
     emailTaps: byKind.email_tap ?? 0,
     websiteTaps: byKind.website_tap ?? 0,
+    socialTaps: byKind.social_tap ?? 0,
+    locationTaps: byKind.location_tap ?? 0,
+    meetingOpens: byKind.meeting_open ?? 0,
+    meetingBooked: byKind.meeting_booked ?? 0,
+    paymentOpens: byKind.payment_open ?? 0,
     shares: byKind.share_tap ?? 0,
     connects: connectionCount,
     reconnects: 0,
     byKind,
+    popular: celeYouPopularLinks(byKind),
+    devices: celeYouDeviceBreakdown(trendRows),
+    trend: buildCeleYouTrendSeries(trendRows, trendFrom, trendTo),
     ranged,
+    notes: {
+      qr: CELEYOU_QR_ATTRIBUTION,
+      nfc: CELEYOU_NFC_ATTRIBUTION,
+      payment: CELEYOU_PAYMENT_ATTRIBUTION,
+      share: CELEYOU_SHARE_ATTRIBUTION,
+      contact: CELEYOU_CONTACT_ATTRIBUTION,
+    },
     activity: activity?.items ?? [],
     nextCursor: activity?.nextCursor ?? null,
   };

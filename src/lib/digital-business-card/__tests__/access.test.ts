@@ -91,17 +91,17 @@ describe("CeleYou public access policy", () => {
     assert.equal(publicPayloadExposesOwnerSecrets(payload), false);
   });
 
-  it("withholds an expired trial from anonymous visitors", () => {
+  it("keeps an expired trial on Free guest presentation without auto-charging", () => {
     const expiredTrial = source({
       subscriptionStatus: "TRIAL",
       subscriptionExpiresAt: past,
       lastActivatedAt: null,
     });
-    assert.equal(isCeleCardPubliclyReachable(expiredTrial), false);
+    assert.equal(isCeleCardPubliclyReachable(expiredTrial), true);
     const payload = toGuestPublicPayload(expiredTrial);
-    assert.equal(payload.presentationMode, "unavailable");
-    assert.equal(payload.email, null);
-    assert.equal(payload.displayName, "");
+    assert.equal(payload.presentationMode, "live");
+    assert.equal(payload.displayName, "Ama Serwaa");
+    assert.equal(payload.isLive, true);
   });
 
   it("keeps a published paid card live during the grace window", () => {

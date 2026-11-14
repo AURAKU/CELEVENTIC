@@ -9,9 +9,18 @@ import { CELECARD_LEAD_STATUSES } from "@/lib/digital-business-card/leads";
 import { meetingReplyCopy, parseMeetingBooking } from "@/lib/digital-business-card/meetings";
 import { communicationService } from "@/services/communications/communication.service";
 import {
-  listCardConnections,
   updateCardConnectionStatus,
 } from "@/services/digital-business-card/courtesy-reconnect.service";
+import {
+  cancelOwnerReminder,
+  completeOwnerReminder,
+  deleteOwnerConnection,
+  listOwnerConnections,
+  scheduleOwnerReminder,
+  syncLeadStatusEffects,
+  toOwnerConnectionView,
+  updateOwnerConnectionLabels,
+} from "@/services/celeyou-connect/workspace.service";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +29,14 @@ const patchSchema = z.object({
   status: z.enum(CELECARD_LEAD_STATUSES).optional(),
   ownerNote: z.string().max(1000).nullable().optional(),
   meetingReply: z.enum(["confirm", "decline"]).optional(),
+  labels: z.array(z.string().max(24)).max(8).optional(),
+  delete: z.boolean().optional(),
+  reminderHours: z.union([z.literal(1), z.literal(24), z.literal(72), z.literal(168)]).optional(),
+  reminderPreset: z.enum(["1d", "tomorrow", "3d", "7d"]).optional(),
+  reminderDueAt: z.string().datetime().optional(),
+  reminderNote: z.string().max(200).nullable().optional(),
+  completeReminderId: z.string().min(8).max(80).optional(),
+  cancelReminderId: z.string().min(8).max(80).optional(),
 });
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -27,15 +44,13 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await ctx.params;
   const page = Number(req.nextUrl.searchParams.get("page") || "1");
-  const status = req.nextUrl.searchParams.get("status");
-  const q = req.nextUrl.searchParams.get("q");
-  const data = await listCardConnections(
-    session.user.id,
-    id,
-    Number.isFinite(page) ? page : 1,
-    status,
-    q
-  );
+  const data = await listOwnerConnections(session.user.id, id, {
+    page: Number.isFinite(page) ? page : 1,
+    status: req.nextUrl.searchParams.get("status"),
+    query: req.nextUrl.searchParams.get("q"),
+    source: req.nextUrl.searchParams.get("source"),
+    label: req.nextUrl.searchParams.get("label"),
+  });
   if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ success: true, data });
 }
@@ -62,6 +77,45 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     return NextResponse.json({ error: "Too many inbox updates. Try again later." }, { status: 429 });
   }
 
+  if (parsed.data.delete) {
+    const deleted = await deleteOwnerConnection(session.user.id, id, parsed.data.connectionId);
+    if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if ("error" in deleted) return NextResponse.json({ error: deleted.error }, { status: 400 });
+    return NextResponse.json({ success: true, data: { deleted: true, id: deleted.id } });
+  }
+  if (parsed.data.completeReminderId) {
+    const done = await completeOwnerReminder(session.user.id, id, parsed.data.completeReminderId);
+    if (!done) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if ("error" in done) return NextResponse.json({ error: done.error }, { status: 400 });
+    return NextResponse.json({ success: true, data: { reminder: done.reminder } });
+  }
+  if (parsed.data.cancelReminderId) {
+    const cancelled = await cancelOwnerReminder(session.user.id, id, parsed.data.cancelReminderId);
+    if (!cancelled) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if ("error" in cancelled) return NextResponse.json({ error: cancelled.error }, { status: 400 });
+    return NextResponse.json({ success: true, data: { reminder: cancelled.reminder } });
+  }
+  if (parsed.data.reminderHours || parsed.data.reminderPreset || parsed.data.reminderDueAt) {
+    const reminder = await scheduleOwnerReminder(session.user.id, id, parsed.data.connectionId, {
+      hours: parsed.data.reminderHours,
+      preset: parsed.data.reminderPreset,
+      dueAt: parsed.data.reminderDueAt,
+      note: parsed.data.reminderNote,
+      promoteFollowUp: true,
+    });
+    if (!reminder) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if ("error" in reminder) return NextResponse.json({ error: reminder.error }, { status: 400 });
+  }
+  if (parsed.data.labels) {
+    const labeled = await updateOwnerConnectionLabels(
+      session.user.id,
+      id,
+      parsed.data.connectionId,
+      parsed.data.labels
+    );
+    if (!labeled) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if ("error" in labeled) return NextResponse.json({ error: labeled.error }, { status: 400 });
+  }
   const nextStatus =
     parsed.data.meetingReply === "confirm"
       ? "WON"
@@ -78,6 +132,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     );
     if (!result) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
+    await syncLeadStatusEffects(session.user.id, id, parsed.data.connectionId, nextStatus);
   }
   if (parsed.data.ownerNote !== undefined) {
     const owned = await prisma.digitalBusinessCard.findFirst({
@@ -108,7 +163,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
   }
   if (!result || !("connection" in result)) {
-    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+    const fallback = await prisma.smartCardConnection.findFirst({
+      where: { id: parsed.data.connectionId, cardId: id },
+    });
+    if (!fallback) return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+    result = { connection: fallback };
   }
 
   if (parsed.data.meetingReply) {
@@ -134,5 +193,20 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
   }
 
-  return NextResponse.json({ success: true, data: result.connection });
+  const fresh = await prisma.smartCardConnection.findFirst({
+    where: { id: parsed.data.connectionId, cardId: id },
+    include: {
+      reminders: {
+        where: { status: { in: ["SCHEDULED", "DUE"] } },
+        orderBy: { dueAt: "asc" },
+        take: 1,
+      },
+    },
+  });
+  const view = fresh
+    ? toOwnerConnectionView(fresh)
+    : result.connection
+      ? toOwnerConnectionView({ ...result.connection, reminders: [] })
+      : result.connection;
+  return NextResponse.json({ success: true, data: view });
 }

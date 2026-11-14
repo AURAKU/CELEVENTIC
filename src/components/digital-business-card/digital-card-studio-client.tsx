@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   CreditCard,
@@ -18,14 +19,37 @@ import { DigitalCardFace } from "@/components/digital-business-card/digital-card
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
 import { DigitalCardDesignDesk } from "@/components/digital-business-card/digital-card-design-desk";
 import { DIGITAL_CARD_THEMES, resolveDigitalCardTheme, type DigitalCardThemeId } from "@/lib/digital-business-card/themes";
-import { applyCeleCardDesign, compactCeleCardDesign, type CeleCardDesign } from "@/lib/digital-business-card/design";
+import { CELEYOU_ORIGINAL_THEME_ID } from "@/lib/digital-business-card/brand-lock";
+import {
+  celeCardOwnerStartPath,
+  ownerNeedsFirstCardActivation,
+} from "@/lib/digital-business-card/activation";
+import {
+  applyCeleCardDesign,
+  compactCeleCardDesign,
+  designAfterThemeChange,
+  type CeleCardDesign,
+} from "@/lib/digital-business-card/design";
+import {
+  clearCeleYouStudioDraft,
+  readCeleYouStudioDraft,
+  studioDraftMayServerAutosave,
+  writeCeleYouStudioDraft,
+} from "@/lib/digital-business-card/studio-draft";
+import { useStudioAutosave } from "@/hooks/use-studio-autosave";
 import {
   compactMeetingDesk,
   defaultMeetingDesk,
   persistMeetingDesk,
   type CeleCardMeetingDesk,
 } from "@/lib/digital-business-card/meetings";
-import { celecardCompanyDisplayLines, celecardPlateDisplayName, celecardTitleDisplayLines, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
+import {
+  compactBusinessProfile,
+  defaultBusinessProfile,
+  persistBusinessProfile,
+  type CeleYouBusinessProfile,
+} from "@/lib/digital-business-card/business-profile";
+import { celecardCompanyDisplayLines, celecardPlateDisplayName, celecardTitleDisplayLines } from "@/lib/digital-business-card/type-voice";
 import { SMARTCARD_PLANS, type SmartCardPlan, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
 import {
   CELEYOU_TERM_LOCKED_CTA,
@@ -35,7 +59,6 @@ import {
 import { celeYouCameraScanUrl, celeYouNfcScanUrl } from "@/lib/digital-business-card/share-identity";
 import {
   CELECARD_BIO_MAX_CHARS,
-  DIGITAL_CARD_TRIAL_DAYS,
   clipCeleCardBio,
   digitalCardIdentityUrl,
   digitalCardQrImageSrc,
@@ -88,13 +111,14 @@ import { DigitalCardReachGrid } from "@/components/digital-business-card/digital
 import { DigitalCardPortraitField } from "@/components/digital-business-card/digital-card-portrait-field";
 import { DigitalCardCompanyLogoField } from "@/components/digital-business-card/digital-card-company-logo-field";
 import { DigitalCardSlugField } from "@/components/digital-business-card/digital-card-slug-field";
+import { CeleYouUsernameField } from "@/components/digital-business-card/celeyou-username-field";
 import { DigitalCardLiveTermRibbon } from "@/components/digital-business-card/digital-card-subscription-countdown";
 import { DigitalCardPrivacyDesk } from "@/components/digital-business-card/digital-card-privacy-desk";
 import { DigitalCardDesignVault } from "@/components/digital-business-card/digital-card-design-vault";
 import { DigitalCardConnectionInbox } from "@/components/digital-business-card/digital-card-connection-inbox";
 import { DigitalCardConnectAutomations } from "@/components/digital-business-card/digital-card-connect-automations";
 import { DigitalCardShareDesk } from "@/components/digital-business-card/digital-card-share-desk";
-import { DigitalCardAnalyticsPanel } from "@/components/digital-business-card/digital-card-analytics-panel";
+import { DigitalCardStudioPreview } from "@/components/digital-business-card/digital-card-studio-preview";
 import { DigitalCardStudioNotice } from "@/components/digital-business-card/digital-card-studio-notice";
 import { celeCardCheckoutUi } from "@/lib/digital-business-card/checkout-outcome";
 import { applyReachVisibilityPreview, type ReachVisibility } from "@/lib/digital-business-card/privacy-preview";
@@ -107,6 +131,14 @@ import { digitalCardPresentPath } from "@/lib/digital-business-card/share";
 import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { getCeleYouShareOrigin } from "@/lib/app-url";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
+
+const DigitalCardAnalyticsPanel = dynamic(
+  () =>
+    import("@/components/digital-business-card/digital-card-analytics-panel").then(
+      (mod) => mod.DigitalCardAnalyticsPanel
+    ),
+  { ssr: false }
+);
 
 type CardRow = {
   id: string;
@@ -216,7 +248,7 @@ const emptyForm = {
   phoneTags: [""] as Array<ContactKindTag | "">,
   websites: [""],
   socials: emptyDigitalCardSocialForm(),
-  themeId: "elegant-frost" as DigitalCardThemeId,
+  themeId: CELEYOU_ORIGINAL_THEME_ID as DigitalCardThemeId,
   slug: "",
   isPublished: true,
   nfcEnabled: true,
@@ -231,7 +263,130 @@ const emptyForm = {
   companyLogoUrl: null as string | null,
   design: {} as CeleCardDesign,
   meeting: defaultMeetingDesk() as CeleCardMeetingDesk,
+  business: defaultBusinessProfile() as CeleYouBusinessProfile,
 };
+
+type StudioForm = typeof emptyForm;
+
+function formFromCard(card: CardRow): StudioForm {
+  const socials = normalizeSocials(card.socials);
+  const emails = collectCardEmails({ email: card.email, socials });
+  const phones = collectCardPhones({ phone: card.phone, socials });
+  const websites = collectCardWebsites({ website: card.website, socials });
+  const emailTags = collectTaggedEmails({ email: card.email, socials }).map((item) => item.tag ?? "");
+  const phoneTags = collectTaggedPhones({ phone: card.phone, socials }).map((item) => item.tag ?? "");
+  return {
+    displayName: card.displayName,
+    title: card.title ?? "",
+    company: card.company ?? "",
+    bio: card.bio ?? "",
+    emails: emails.length ? emails : [""],
+    emailTags: emails.length ? emailTags : [""],
+    phones: phones.length ? phones : [""],
+    phoneTags: phones.length ? phoneTags : [""],
+    websites: websites.length ? websites : [""],
+    socials: toDigitalCardSocialForm(socials),
+    themeId: (card.themeId as DigitalCardThemeId) || CELEYOU_ORIGINAL_THEME_ID,
+    slug: card.slug,
+    isPublished: card.isPublished,
+    nfcEnabled: card.nfcEnabled,
+    proximityDiscoverable: card.proximityDiscoverable !== false,
+    avatarUrl: card.avatarUrl,
+    stackOrder: socials.stackOrder ?? [],
+    dockOrder: socials.dockOrder ?? [],
+    payQr: toPayQrMap(socials),
+    reachVisibility: (socials.reachVisibility ?? {}) as Record<string, ReachVisibility>,
+    portraitFrame: resolveCeleCardPortraitFrame(
+      resolveDigitalCardTheme((card.themeId as DigitalCardThemeId) || CELEYOU_ORIGINAL_THEME_ID),
+      socials.portraitFrame
+    ),
+    companyLogoUrl: socials.companyLogoUrl ?? null,
+    design: compactCeleCardDesign(socials.design) ?? {},
+    meeting: compactMeetingDesk(socials.meeting) ?? defaultMeetingDesk(),
+    business: compactBusinessProfile(socials.business),
+    linkKinds: chatKindsMapForSocials(socials),
+  };
+}
+
+function studioSocialsFromForm(form: StudioForm) {
+  const emails = form.emails.map((value) => value.trim()).filter(Boolean);
+  const phones = form.phones.map((value) => value.trim()).filter(Boolean);
+  const websites = form.websites.map((value) => value.trim()).filter(Boolean);
+  const emailTags = compactAlignedTags(form.emails, form.emailTags);
+  const phoneTags = compactAlignedTags(form.phones, form.phoneTags);
+  const socials = {
+    ...compactDigitalCardSocials(
+      {
+        ...form.socials,
+        website: websites,
+      },
+      form.payQr
+    ),
+    ...(emails.length ? { emails } : {}),
+    ...(emailTags.some(Boolean) ? { emailTags } : {}),
+    ...(phones.length ? { phones } : {}),
+    ...(phoneTags.some(Boolean) ? { phoneTags } : {}),
+    linkKinds: compactChatLinkKindsFromForm(form.socials, form.linkKinds),
+    ...(form.stackOrder.length ? { stackOrder: form.stackOrder } : {}),
+    ...(form.dockOrder.length ? { dockOrder: form.dockOrder } : {}),
+    portraitFrame: form.portraitFrame,
+  } as Record<string, unknown>;
+  const design = compactCeleCardDesign(form.design);
+  if (design) socials.design = design;
+  else delete socials.design;
+  const companyLogoUrl = persistCompanyLogoUrl(form.companyLogoUrl);
+  if (companyLogoUrl) socials.companyLogoUrl = companyLogoUrl;
+  else delete socials.companyLogoUrl;
+  const meeting = persistMeetingDesk(form.meeting);
+  if (meeting) socials.meeting = meeting;
+  else delete socials.meeting;
+  const business = persistBusinessProfile(form.business);
+  if (business) socials.business = business;
+  else delete socials.business;
+  if (Object.keys(form.reachVisibility).length) {
+    socials.reachVisibility = form.reachVisibility;
+  } else {
+    delete socials.reachVisibility;
+  }
+  return { emails, phones, websites, socials };
+}
+
+function studioPayloadFromForm(form: StudioForm, includePublish: boolean) {
+  const { emails, phones, websites, socials } = studioSocialsFromForm(form);
+  return {
+    displayName: form.displayName.trim(),
+    title: form.title.trim() || null,
+    company: form.company.trim() || null,
+    bio: clipCeleCardBio(form.bio.trim()) || null,
+    email: emails[0] || null,
+    phone: phones[0] || null,
+    website: websites[0] || null,
+    socials,
+    themeId: form.themeId,
+    slug: form.slug.trim() || undefined,
+    nfcEnabled: form.nfcEnabled,
+    proximityDiscoverable: form.proximityDiscoverable,
+    avatarUrl: form.avatarUrl,
+    ...(includePublish ? { isPublished: form.isPublished } : {}),
+  };
+}
+
+function overlayStudioDraft(server: StudioForm, raw: unknown, published: boolean): { form: StudioForm; restored: boolean } {
+  if (!raw || typeof raw !== "object") return { form: server, restored: false };
+  const draft = raw as Partial<StudioForm>;
+  if (typeof draft.displayName !== "string") return { form: server, restored: false };
+  return {
+    form: {
+      ...server,
+      ...draft,
+      emails: Array.isArray(draft.emails) ? draft.emails : server.emails,
+      phones: Array.isArray(draft.phones) ? draft.phones : server.phones,
+      websites: Array.isArray(draft.websites) ? draft.websites : server.websites,
+      isPublished: published,
+    },
+    restored: true,
+  };
+}
 
 export function DigitalCardStudioClient() {
   const [cards, setCards] = useState<CardRow[]>([]);
@@ -246,6 +401,10 @@ export function DigitalCardStudioClient() {
   const [plans, setPlans] = useState<SmartCardPlan[]>(SMARTCARD_PLANS);
   const [paying, setPaying] = useState(false);
   const [slugCustomized, setSlugCustomized] = useState(false);
+  const [accountUsername, setAccountUsername] = useState("");
+  const [savedUsername, setSavedUsername] = useState<string | null>(null);
+  const [usernameConfirming, setUsernameConfirming] = useState(false);
+  const [baseline, setBaseline] = useState("");
   const themeFromQuery = useRef<DigitalCardThemeId | null>(null);
   const activeIdRef = useRef<string | null>(null);
   const noticeTimer = useRef<number>(0);
@@ -287,6 +446,22 @@ export function DigitalCardStudioClient() {
         }
       }
       const list = (json.data ?? []) as CardRow[];
+      const identity = (json as { identity?: { username?: string | null } }).identity;
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (
+          params.get("studio") !== "1" &&
+          params.get("welcome") !== "1" &&
+          ownerNeedsFirstCardActivation(list)
+        ) {
+          window.location.replace(
+            celeCardOwnerStartPath(params.get("plan"), params.get("theme"))
+          );
+          return;
+        }
+      }
+      setSavedUsername(identity?.username ?? null);
+      setAccountUsername(identity?.username ?? "");
       setCards(list);
       const wanted =
         typeof window !== "undefined"
@@ -380,51 +555,22 @@ export function DigitalCardStudioClient() {
   function selectCard(card: CardRow) {
     setActiveId(card.id);
     setSlugCustomized(true);
-    const socials = normalizeSocials(card.socials);
-    const emails = collectCardEmails({ email: card.email, socials });
-    const phones = collectCardPhones({ phone: card.phone, socials });
-    const websites = collectCardWebsites({ website: card.website, socials });
-    const emailTags = collectTaggedEmails({ email: card.email, socials }).map((item) => item.tag ?? "");
-    const phoneTags = collectTaggedPhones({ phone: card.phone, socials }).map((item) => item.tag ?? "");
-    setForm({
-      displayName: card.displayName,
-      title: card.title ?? "",
-      company: card.company ?? "",
-      bio: card.bio ?? "",
-      emails: emails.length ? emails : [""],
-      emailTags: emails.length ? emailTags : [""],
-      phones: phones.length ? phones : [""],
-      phoneTags: phones.length ? phoneTags : [""],
-      websites: websites.length ? websites : [""],
-      socials: toDigitalCardSocialForm(socials),
-      themeId: (card.themeId as DigitalCardThemeId) || "elegant-frost",
-      slug: card.slug,
-      isPublished: card.isPublished,
-      nfcEnabled: card.nfcEnabled,
-      proximityDiscoverable: card.proximityDiscoverable !== false,
-      avatarUrl: card.avatarUrl,
-      stackOrder: socials.stackOrder ?? [],
-      dockOrder: socials.dockOrder ?? [],
-      payQr: toPayQrMap(socials),
-      reachVisibility: (socials.reachVisibility ?? {}) as Record<string, ReachVisibility>,
-      portraitFrame: resolveCeleCardPortraitFrame(
-        resolveDigitalCardTheme((card.themeId as DigitalCardThemeId) || "elegant-frost"),
-        socials.portraitFrame
-      ),
-      companyLogoUrl: socials.companyLogoUrl ?? null,
-      design: compactCeleCardDesign(socials.design) ?? {},
-      meeting: compactMeetingDesk(socials.meeting) ?? defaultMeetingDesk(),
-      linkKinds: chatKindsMapForSocials(socials),
-    });
+    const server = formFromCard(card);
+    const draft = readCeleYouStudioDraft<StudioForm>(card.id);
+    const next = overlayStudioDraft(server, draft?.value, card.isPublished);
+    setForm(next.form);
+    setBaseline(JSON.stringify(server));
+    if (next.restored) {
+      note("Unsaved studio changes restored. Save to publish them.");
+    }
   }
 
   const active = useMemo(() => cards.find((c) => c.id === activeId) ?? null, [cards, activeId]);
-  const publicUrl = form.slug ? digitalCardIdentityUrl(form.slug, origin) : "";
+  const publicUrl = (accountUsername || form.slug) ? digitalCardIdentityUrl(accountUsername || form.slug, origin) : "";
   const shareUrl = active?.publicToken ? celeYouCameraScanUrl(active.publicToken, origin) : publicUrl.startsWith("http") ? publicUrl : "";
   const nfcShareUrl = active?.nfcPublicToken ? celeYouNfcScanUrl(active.nfcPublicToken, origin) : shareUrl;
   const qrSrc = shareUrl.startsWith("http") ? digitalCardQrImageSrc(shareUrl) : null;
   const previewTheme = applyCeleCardDesign(resolveDigitalCardTheme(form.themeId), form.design);
-  const previewVoice = celecardTypeVoice(previewTheme, form.design.lettering);
   const reachPreview = useMemo(
     () =>
       listDigitalCardReachItems({
@@ -447,6 +593,7 @@ export function DigitalCardStudioClient() {
           stackOrder: form.stackOrder,
           dockOrder: form.dockOrder,
           meeting: persistMeetingDesk(form.meeting),
+          business: persistBusinessProfile(form.business),
         },
       }),
     [form]
@@ -455,64 +602,73 @@ export function DigitalCardStudioClient() {
     () => applyReachVisibilityPreview(reachPreview, form.reachVisibility),
     [reachPreview, form.reachVisibility]
   );
+  const publishedOnServer = active?.isPublished === true;
+  const unsaved = Boolean(baseline) && JSON.stringify(form) !== baseline;
+  const mayServerAutosave =
+    Boolean(activeId) &&
+    studioDraftMayServerAutosave(publishedOnServer) &&
+    form.displayName.trim().length >= 2;
+
+  useEffect(() => {
+    if (!activeId) return;
+    writeCeleYouStudioDraft(activeId, form, publishedOnServer);
+  }, [activeId, form, publishedOnServer]);
+
+  useEffect(() => {
+    if (!unsaved) return;
+    const onLeave = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onLeave);
+    return () => window.removeEventListener("beforeunload", onLeave);
+  }, [unsaved]);
+
+  const persistStudioDraft = useCallback(
+    async (nextForm: StudioForm) => {
+      if (!activeId) return;
+      const res = await fetch(`/api/digital-business-cards/${activeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(studioPayloadFromForm(nextForm, false)),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((json as { error?: string }).error || "Draft save failed");
+      setBaseline(JSON.stringify(nextForm));
+    },
+    [activeId]
+  );
+
+  const autosave = useStudioAutosave({
+    value: form,
+    enabled: mayServerAutosave,
+    resetKey: activeId,
+    saveOnEnable: unsaved,
+    save: persistStudioDraft,
+  });
+
+  const saveStatus =
+    autosave.status === "saving"
+      ? "Saving draft…"
+      : autosave.status === "error"
+        ? "Draft save failed"
+        : unsaved
+          ? publishedOnServer
+            ? "Unsaved. Save to publish."
+            : "Unsaved draft"
+          : autosave.status === "saved" && !publishedOnServer
+            ? "Draft saved"
+            : null;
 
   async function save() {
+    if (form.displayName.trim().length < 2) {
+      setError("Add a name before saving.");
+      return;
+    }
     setSaving(true);
     setMessage(null);
     setError(null);
-    const emails = form.emails.map((value) => value.trim()).filter(Boolean);
-    const phones = form.phones.map((value) => value.trim()).filter(Boolean);
-    const websites = form.websites.map((value) => value.trim()).filter(Boolean);
-    const emailTags = compactAlignedTags(form.emails, form.emailTags);
-    const phoneTags = compactAlignedTags(form.phones, form.phoneTags);
-    const socials = {
-      ...compactDigitalCardSocials(
-        {
-          ...form.socials,
-          website: websites,
-        },
-        form.payQr
-      ),
-      ...(emails.length ? { emails } : {}),
-      ...(emailTags.some(Boolean) ? { emailTags } : {}),
-      ...(phones.length ? { phones } : {}),
-      ...(phoneTags.some(Boolean) ? { phoneTags } : {}),
-      linkKinds: compactChatLinkKindsFromForm(form.socials, form.linkKinds),
-      ...(form.stackOrder.length ? { stackOrder: form.stackOrder } : {}),
-      ...(form.dockOrder.length ? { dockOrder: form.dockOrder } : {}),
-      portraitFrame: form.portraitFrame,
-    };
-    const design = compactCeleCardDesign(form.design);
-    if (design) socials.design = design;
-    else delete socials.design;
-    const companyLogoUrl = persistCompanyLogoUrl(form.companyLogoUrl);
-    if (companyLogoUrl) socials.companyLogoUrl = companyLogoUrl;
-    else delete socials.companyLogoUrl;
-    const meeting = persistMeetingDesk(form.meeting);
-    if (meeting) socials.meeting = meeting;
-    else delete socials.meeting;
-    if (Object.keys(form.reachVisibility).length) {
-      socials.reachVisibility = form.reachVisibility;
-    } else {
-      delete socials.reachVisibility;
-    }
-
-    const payload = {
-      displayName: form.displayName.trim(),
-      title: form.title.trim() || null,
-      company: form.company.trim() || null,
-      bio: clipCeleCardBio(form.bio.trim()) || null,
-      email: emails[0] || null,
-      phone: phones[0] || null,
-      website: websites[0] || null,
-      socials,
-      themeId: form.themeId,
-      slug: form.slug.trim() || undefined,
-      isPublished: form.isPublished,
-      nfcEnabled: form.nfcEnabled,
-      proximityDiscoverable: form.proximityDiscoverable,
-      avatarUrl: form.avatarUrl,
-    };
+    const payload = studioPayloadFromForm(form, true);
 
     try {
       const res = await fetch(
@@ -530,10 +686,15 @@ export function DigitalCardStudioClient() {
         setSlug(savedSlug);
         setSlugCustomized(true);
       }
+      const savedId = typeof json.data?.id === "string" ? json.data.id : activeId;
+      if (savedId) clearCeleYouStudioDraft(savedId);
+      setBaseline(JSON.stringify(form));
       note(
         activeId
-          ? "Card updated."
-          : `Card saved. Design for ${DIGITAL_CARD_TRIAL_DAYS} days. Pay a plan to go live.`
+          ? form.isPublished
+            ? "Published changes are live."
+            : "Draft saved. It is not on the public page yet."
+          : "Card saved. Your public identity stays on CeleYou Free. Try Pro for 7 days after you publish."
       );
       await load();
       if (!activeId && json.data?.id) {
@@ -613,6 +774,7 @@ export function DigitalCardStudioClient() {
     setActiveId(null);
     setSlugCustomized(false);
     setForm(emptyForm);
+    setBaseline(JSON.stringify(emptyForm));
     note("New card ready. Add a name, then save.");
   }
 
@@ -636,6 +798,9 @@ export function DigitalCardStudioClient() {
           </p>
         </div>
         <div className="celecard-studio-toolbar">
+          {saveStatus ? (
+            <p className="celecard-studio-save-status text-[11px] font-medium text-[#0B8A83]">{saveStatus}</p>
+          ) : null}
           <Button type="button" variant="outline" className="celecard-studio-new" onClick={startNew}>
             <Plus className="mr-2 h-4 w-4" />
             New card
@@ -647,7 +812,7 @@ export function DigitalCardStudioClient() {
             disabled={saving || form.displayName.trim().length < 2}
           >
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Save
+            {publishedOnServer && unsaved ? "Publish changes" : form.isPublished ? "Save" : "Save draft"}
           </Button>
         </div>
       </div>
@@ -801,6 +966,64 @@ export function DigitalCardStudioClient() {
                   placeholder="Ama Mensah"
                 />
                 <PlateNameHint name={form.displayName} />
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  Full name sits on the plate and can match other people. Your username is the unique public address.
+                </p>
+              </div>
+              <div className="celecard-studio-identity-wide space-y-2">
+                <CeleYouUsernameField
+                  value={accountUsername}
+                  onChange={(username) => {
+                    setAccountUsername(username);
+                    setUsernameConfirming(false);
+                  }}
+                  displayName={form.displayName}
+                  company={form.company}
+                  profession={form.title}
+                  currentUsername={savedUsername}
+                  publicOrigin={origin}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={saving || accountUsername.trim().length < 3}
+                  onClick={() => {
+                    void (async () => {
+                      const res = await fetch("/api/digital-business-cards/username", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          username: accountUsername,
+                          confirm: usernameConfirming,
+                          displayName: form.displayName,
+                          company: form.company,
+                          profession: form.title,
+                          primaryCardId: activeId,
+                        }),
+                      });
+                      const json = (await res.json().catch(() => ({}))) as {
+                        error?: string;
+                        needsConfirm?: boolean;
+                        data?: { username?: string | null };
+                      };
+                      if (res.status === 409 && json.needsConfirm) {
+                        setUsernameConfirming(true);
+                        setError(json.error ?? "Confirm this username change.");
+                        return;
+                      }
+                      if (!res.ok) {
+                        setError(json.error ?? "Could not save that username.");
+                        return;
+                      }
+                      setUsernameConfirming(false);
+                      setSavedUsername(json.data?.username ?? accountUsername);
+                      note("Username saved. QR and NFC links stay the same.");
+                    })();
+                  }}
+                >
+                  {usernameConfirming ? "Confirm new username" : "Save username"}
+                </Button>
               </div>
               <div className="celecard-studio-identity-wide space-y-2">
                 <Label htmlFor="title">Title / role</Label>
@@ -835,7 +1058,7 @@ export function DigitalCardStudioClient() {
                       placeholder="Aura Group"
                     />
                     <p className="text-[11px] leading-relaxed text-slate-500">
-                      Upload a square PNG or JPEG. It sits beside the company name on the card.
+                      Upload a square PNG or JPEG. It sits on the profile picture on the card.
                     </p>
                     <CompanyPlateHint name={form.company} />
                   </div>
@@ -869,21 +1092,18 @@ export function DigitalCardStudioClient() {
                   design={form.design}
                   portraitFrame={form.portraitFrame}
                   onPortraitFrameChange={(portraitFrame) => setForm((f) => ({ ...f, portraitFrame }))}
-                  onThemeChange={(themeId) => {
+                  onThemeChange={(themeId, options) => {
                     const next = resolveDigitalCardTheme(themeId);
-                    setForm((f) => ({
-                      ...f,
-                      themeId,
-                      portraitFrame: celecardPortraitFrame(next),
-                      design: {
-                        paperUrl: f.design.paperUrl,
-                        paperTone: f.design.paperTone,
-                        paperWeight: f.design.paperWeight,
-                        composition: next.composition,
-                        atmosphere: next.atmosphere ?? "none",
-                        ornament: next.ornament ?? "foil",
-                      },
-                    }));
+                    const keepFinish = options?.keepFinish !== false;
+                    setForm((f) => {
+                      const current = resolveDigitalCardTheme(f.themeId);
+                      return {
+                        ...f,
+                        themeId,
+                        portraitFrame: keepFinish ? f.portraitFrame : celecardPortraitFrame(next),
+                        design: designAfterThemeChange(f.design, next, keepFinish, current),
+                      };
+                    });
                   }}
                   onDesignChange={(design) => setForm((f) => ({ ...f, design }))}
                   onError={setError}
@@ -984,7 +1204,7 @@ export function DigitalCardStudioClient() {
                   Meetings
                 </Label>
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Guests pick a date and time on your card. You get a studio message, a notification, and email. Confirm or decline from Requests and they are messaged.
+                  Guests pick a date and time on your card. Times come from this CeleYou desk and from meetings already booked here. CeleYou does not read Google Calendar or Outlook. Add a Calendly or Cal.com page under Other pages if you use an external calendar. Confirm or decline from Connections and they are messaged.
                 </p>
                 <DigitalCardMeetingDesk
                   value={form.meeting}
@@ -1002,6 +1222,57 @@ export function DigitalCardStudioClient() {
                     />
                   </div>
                 ) : null}
+                <div className="rounded-2xl border border-slate-200 p-3">
+                  <label className="flex items-start gap-2 text-sm text-slate-800">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={form.business.enabled}
+                      onChange={(event) =>
+                        setForm((f) => ({
+                          ...f,
+                          business: { ...f.business, enabled: event.target.checked },
+                        }))
+                      }
+                    />
+                    <span>
+                      <span className="font-medium">Show business extras</span>
+                      <span className="mt-0.5 block text-xs text-slate-500">
+                        Optional hours and services. Personal cards can stay off. Website, location, payments, and booking already live on the card.
+                      </span>
+                    </span>
+                  </label>
+                  {form.business.enabled ? (
+                    <div className="mt-3 space-y-2">
+                      <input
+                        value={form.business.hours}
+                        onChange={(event) =>
+                          setForm((f) => ({ ...f, business: { ...f.business, hours: event.target.value } }))
+                        }
+                        placeholder="Mon–Fri 9:00–17:00 Accra"
+                        className={studioInputClass}
+                      />
+                      <input
+                        value={form.business.services.join(", ")}
+                        onChange={(event) =>
+                          setForm((f) => ({
+                            ...f,
+                            business: {
+                              ...f.business,
+                              services: event.target.value
+                                .split(",")
+                                .map((item) => item.trim())
+                                .filter(Boolean)
+                                .slice(0, 6),
+                            },
+                          }))
+                        }
+                        placeholder="Brand design, Photography, Consulting"
+                        className={studioInputClass}
+                      />
+                    </div>
+                  ) : null}
+                </div>
               </div>
               <DigitalCardSlugField
                 value={form.slug}
@@ -1258,34 +1529,27 @@ export function DigitalCardStudioClient() {
               </div>
             </section>
 
-            <div
-              className="rounded-2xl p-4"
-              style={{
-                background: DIGITAL_CARD_THEMES.find((t) => t.id === form.themeId)?.stageBackground,
-              }}
-            >
-              <p
-                className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]"
-                style={{ color: previewTheme.accent, fontFamily: previewVoice.origin }}
-              >
-                Live preview
-              </p>
-              <DigitalCardFace
-                themeId={form.themeId}
-                displayName={form.displayName || "Your name"}
-                title={form.title || "Your title"}
-                company={form.company || "Company"}
-                avatarUrl={form.avatarUrl}
-                qrSrc={qrSrc}
-                qrHref={form.slug ? digitalCardIdentityUrl(form.slug) : null}
-                compact
-                portraitFrame={form.portraitFrame}
-                companyLogo
-                companyLogoUrl={form.companyLogoUrl}
-                design={form.design}
-              />
-              {guestPreviewReach.length ? (
-                <div className="mt-4">
+            <DigitalCardStudioPreview
+              status={saveStatus}
+              stageBackground={previewTheme.stageBackground}
+              plate={
+                <DigitalCardFace
+                  themeId={form.themeId}
+                  displayName={form.displayName || "Your name"}
+                  title={form.title || "Your title"}
+                  company={form.company || "Company"}
+                  avatarUrl={form.avatarUrl}
+                  qrSrc={qrSrc}
+                  qrHref={form.slug ? digitalCardIdentityUrl(form.slug) : null}
+                  compact
+                  portraitFrame={form.portraitFrame}
+                  companyLogo
+                  companyLogoUrl={form.companyLogoUrl}
+                  design={form.design}
+                />
+              }
+              guest={
+                guestPreviewReach.length ? (
                   <DigitalCardReachGrid
                     items={guestPreviewReach}
                     theme={DIGITAL_CARD_THEMES.find((t) => t.id === form.themeId) ?? DIGITAL_CARD_THEMES[0]}
@@ -1293,9 +1557,11 @@ export function DigitalCardStudioClient() {
                     slug={form.slug || undefined}
                     ownerName={form.displayName}
                   />
-                </div>
-              ) : null}
-            </div>
+                ) : (
+                  <p className="text-[11px] text-slate-500">Add contact details to preview the guest page.</p>
+                )
+              }
+            />
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
               {form.slug ? (

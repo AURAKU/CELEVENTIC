@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { runSmartCardRenewalReminders } from "@/services/digital-business-card/smartcard-renewal.service";
+import {
+  expireCeleYouProTrials,
+  runCeleYouTrialReminders,
+} from "@/services/digital-business-card/trial.service";
 
 function cronAuthorized(req: Request) {
   const secret = process.env.CRON_SECRET || process.env.SMARTCARD_CRON_SECRET;
@@ -15,8 +19,13 @@ export async function POST(req: Request) {
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const data = await runSmartCardRenewalReminders();
-  return NextResponse.json({ success: true, data });
+  const trialReminders = await runCeleYouTrialReminders();
+  const expiredTrials = await expireCeleYouProTrials();
+  const renewals = await runSmartCardRenewalReminders();
+  return NextResponse.json({
+    success: true,
+    data: { ...renewals, expiredTrials, trialReminders },
+  });
 }
 
 export async function GET(req: Request) {

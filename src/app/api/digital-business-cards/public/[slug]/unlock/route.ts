@@ -18,21 +18,22 @@ export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
   code: z.string().min(4).max(8),
+  itemKey: z.string().min(1).max(80).optional(),
 });
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
+  const json = await req.json().catch(() => null);
+  const parsed = bodySchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Enter a four-character code" }, { status: 400 });
+  }
+
   const ip = requestClientIp(req);
   const perCard = await rateLimit(`celecard-unlock:${slug}:${ip}`, 5, 300);
   const perIp = await rateLimit(`celecard-unlock-ip:${ip}`, 20, 300);
   if (!perCard.success || !perIp.success) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
-  }
-
-  const json = await req.json().catch(() => null);
-  const parsed = bodySchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Enter a four-character code" }, { status: 400 });
   }
 
   if (isDemoCardSlug(slug)) {
@@ -50,9 +51,22 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
     card.id,
     req.cookies.get(celeCardGrantCookieName(card.id))?.value
   );
-  const result = await unlockCeleCardWithCode(card.id, parsed.data.code, existing?.itemKeys ?? []);
+  const result = await unlockCeleCardWithCode(
+    card.id,
+    parsed.data.code,
+    existing?.itemKeys ?? [],
+    parsed.data.itemKey
+  );
   if (!result.ok) {
-    return NextResponse.json({ error: "That code did not unlock anything" }, { status: 401 });
+    return NextResponse.json(
+      {
+        error:
+          result.reason === "wrong-item"
+            ? "That code does not unveil this"
+            : "That code did not unlock anything",
+      },
+      { status: 401 }
+    );
   }
 
   const response = NextResponse.json({ ok: true });

@@ -7,6 +7,7 @@ import {
   type CeleCardPortraitFrame,
 } from "@/lib/digital-business-card/portrait-frame";
 import { CeleCardQrCenterOverlay } from "@/lib/digital-business-card/qr-center-overlay";
+import { celecardCompanyDisplayLines } from "@/lib/digital-business-card/type-voice";
 
 function isEmbeddedImage(src?: string | null): src is string {
   return Boolean(src && src.startsWith("data:image/"));
@@ -15,8 +16,10 @@ function isEmbeddedImage(src?: string | null): src is string {
 export type CeleCardPlateBitmapProps = {
   width: number;
   height: number;
-  /** Crop the ID-1 plate to fill the tile. Used for 1200×630 social previews. */
+  /** Crop the ID-1 plate to fill the tile. */
   cover?: boolean;
+  /** Letterbox the full ID-1 plate. iMessage must see name, title, company, and QR, not a headshot. */
+  contain?: boolean;
   displayName: string;
   title?: string | null;
   company?: string | null;
@@ -46,11 +49,19 @@ function coverPlateSize(tileW: number, tileH: number) {
   return { width: tileW, height: Math.round(tileW / CELECARD_CARD_ASPECT) };
 }
 
-/** Satori-safe live plate. OG tiles cover-crop; export keeps the full ID-1 face. */
+function containPlateSize(tileW: number, tileH: number) {
+  if (tileW / tileH > CELECARD_CARD_ASPECT) {
+    return { width: Math.round(tileH * CELECARD_CARD_ASPECT), height: tileH };
+  }
+  return { width: tileW, height: Math.round(tileW / CELECARD_CARD_ASPECT) };
+}
+
+/** Satori-safe live plate. OG tiles letterbox the full ID-1 face. Export keeps the uncropped card. */
 export function CeleCardPlateBitmap({
   width,
   height,
   cover = false,
+  contain = false,
   displayName,
   title,
   company,
@@ -62,7 +73,7 @@ export function CeleCardPlateBitmap({
   paperSrc,
   companyLogoSrc,
 }: CeleCardPlateBitmapProps) {
-  const plate = cover ? coverPlateSize(width, height) : { width, height };
+  const plate = cover ? coverPlateSize(width, height) : contain ? containPlateSize(width, height) : { width, height };
   const s = plate.height / 558;
   const photo = Math.max(120, Math.round(188 * s));
   const qr = Math.max(128, Math.round(196 * s));
@@ -71,7 +82,7 @@ export function CeleCardPlateBitmap({
   const initials = initialsOf(displayName) || "CC";
   const photoRadius = celecardPortraitFrameRadius(resolveCeleCardPortraitFrame(theme, portraitFrame), photo);
   const role = title?.trim() || "";
-  const house = company?.trim() || "";
+  const houseLines = company?.trim() ? celecardCompanyDisplayLines(company.trim(), { uppercase: true }) : [];
   const plateTop = Math.round((height - plate.height) / 2);
   const plateLeft = Math.round((width - plate.width) / 2);
 
@@ -134,9 +145,9 @@ export function CeleCardPlateBitmap({
             style={{
               position: "absolute",
               top: Math.round(14 * s),
-              right: Math.round(14 * s),
-              bottom: Math.round(14 * s),
               left: Math.round(14 * s),
+              width: plate.width - Math.round(28 * s),
+              height: plate.height - Math.round(28 * s),
               borderRadius: Math.round(20 * s),
               border: `1px solid ${theme.border}`,
               opacity: 0.55,
@@ -146,9 +157,9 @@ export function CeleCardPlateBitmap({
             style={{
               position: "absolute",
               top: Math.round(22 * s),
-              right: Math.round(22 * s),
-              bottom: Math.round(22 * s),
               left: Math.round(22 * s),
+              width: plate.width - Math.round(44 * s),
+              height: plate.height - Math.round(44 * s),
               borderRadius: Math.round(16 * s),
               border: `1px solid ${theme.accent}`,
               opacity: 0.4,
@@ -167,31 +178,40 @@ export function CeleCardPlateBitmap({
               style={{
                 width: photo,
                 height: photo,
-                borderRadius: photoRadius,
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#ffffff",
-                border: `${Math.max(2, Math.round(3 * s))}px solid ${theme.accent}`,
+                position: "relative",
                 flexShrink: 0,
+                display: "flex",
               }}
             >
-              {isEmbeddedImage(photoSrc) ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={photoSrc} alt="" width={photo} height={photo} style={{ objectFit: "cover" }} />
-              ) : isEmbeddedImage(markSrc) ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={markSrc}
-                  alt=""
-                  width={Math.round(photo * 0.88)}
-                  height={Math.round(photo * 0.88)}
-                  style={{ objectFit: "contain" }}
-                />
-              ) : (
-                <div style={{ fontSize: Math.round(52 * s), fontWeight: 700, color: theme.accent }}>{initials}</div>
-              )}
+              <div
+                style={{
+                  width: photo,
+                  height: photo,
+                  borderRadius: photoRadius,
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#ffffff",
+                  border: `${Math.max(2, Math.round(3 * s))}px solid ${theme.accent}`,
+                }}
+              >
+                {isEmbeddedImage(photoSrc) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photoSrc} alt="" width={photo} height={photo} style={{ objectFit: "cover" }} />
+                ) : isEmbeddedImage(markSrc) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={markSrc}
+                    alt=""
+                    width={Math.round(photo * 0.88)}
+                    height={Math.round(photo * 0.88)}
+                    style={{ objectFit: "contain" }}
+                  />
+                ) : (
+                  <div style={{ fontSize: Math.round(52 * s), fontWeight: 700, color: theme.accent }}>{initials}</div>
+                )}
+              </div>
             </div>
             <div
               style={{
@@ -218,47 +238,57 @@ export function CeleCardPlateBitmap({
                 <div
                   style={{
                     marginTop: Math.round(10 * s),
+                    marginLeft: Math.round(-8 * s),
                     fontSize: Math.round(22 * s),
                     fontStyle: "italic",
                     color: theme.muted,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {role}
                 </div>
               ) : null}
-              {house ? (
+              {houseLines.length ? (
                 <div
                   style={{
-                    marginTop: Math.round(10 * s),
+                    marginTop: Math.round(8 * s),
                     display: "flex",
-                    alignItems: "center",
+                    flexDirection: "column",
+                    marginLeft: Math.round(-8 * s),
                   }}
                 >
+                  {houseLines.map((line) => (
+                    <div
+                      key={line}
+                      style={{
+                        fontSize: Math.round(houseLines.length > 1 ? 17 * s : 18 * s),
+                        letterSpacing: houseLines.length > 1 ? 1.6 : 3,
+                        lineHeight: 1.15,
+                        textTransform: "uppercase",
+                        color: theme.accent,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {line}
+                    </div>
+                  ))}
                   {isEmbeddedImage(companyLogoSrc) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={companyLogoSrc}
                       alt=""
-                      width={Math.round(28 * s)}
-                      height={Math.round(28 * s)}
+                      width={Math.round(44 * s)}
+                      height={Math.round(44 * s)}
                       style={{
-                        objectFit: "cover",
-                        borderRadius: Math.round(8 * s),
-                        marginRight: Math.round(10 * s),
+                        marginTop: Math.round(7 * s),
+                        marginLeft: Math.round(-26 * s),
+                        objectFit: "contain",
+                        borderRadius: 999,
+                        background: "#ffffff",
+                        border: `${Math.max(2, Math.round(2 * s))}px solid ${theme.accent}`,
                       }}
                     />
                   ) : null}
-                  <div
-                    style={{
-                      fontSize: Math.round(18 * s),
-                      letterSpacing: 3,
-                      textTransform: "uppercase",
-                      color: theme.accent,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {house}
-                  </div>
                 </div>
               ) : null}
             </div>
@@ -323,7 +353,7 @@ export function CeleCardPlateBitmap({
               position: "absolute",
               top: Math.round(-10 * s),
               left: 0,
-              right: 0,
+              width: plate.width,
               display: "flex",
               justifyContent: "center",
             }}

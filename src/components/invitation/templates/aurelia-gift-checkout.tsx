@@ -250,7 +250,7 @@ export function AureliaGiftCheckout({
     if (data.qrImageUrl) setResolvedQrImageUrl(data.qrImageUrl);
     if (data.campaign) setCampaign(data.campaign);
     if (Array.isArray(data.methods) && data.methods.length) {
-      setMethods(data.methods.filter((item) => item.id !== "CARD"));
+      setMethods(data.methods);
     }
   }, []);
 
@@ -276,7 +276,7 @@ export function AureliaGiftCheckout({
         if (cancelled) return;
         setCampaign(payload.data.campaign as PublicGiftCampaignView);
         if (Array.isArray(payload.data.methods) && payload.data.methods.length) {
-          setMethods(payload.data.methods.filter((item: MethodOption) => item.id !== "CARD"));
+          setMethods(payload.data.methods);
         }
         return;
       }
@@ -689,9 +689,7 @@ export function AureliaGiftCheckout({
 
           <p className={styles.giftLabel}>Pay with</p>
           <div className={styles.giftMethods}>
-            {methods
-              .filter((option) => option.id !== "CARD")
-              .map((option) => {
+            {methods.map((option) => {
                 const selected = method === option.id;
                 return (
                   <button

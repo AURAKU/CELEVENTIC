@@ -9,8 +9,10 @@ import { usePagination } from "@/hooks/use-pagination";
 import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 import { EVENT_TYPES } from "@/lib/constants";
 import type { PublicDiscoverEvent } from "@/lib/discovery/public-event";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 export function DiscoverEventsClient() {
+  const { t } = useLocale();
   const { page, setPage, resetPage, appendToParams } = usePagination(PUBLIC_GRID_LIMIT);
   const [events, setEvents] = useState<PublicDiscoverEvent[]>([]);
   const [total, setTotal] = useState(0);
@@ -45,17 +47,17 @@ export function DiscoverEventsClient() {
     <section id="public-events">
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Open to the public</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">{t("discover.open_public")}</p>
           <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            Events you can join
+            {t("discover.events_join")}
           </h2>
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-600 lg:text-lg">
-            Browse celebrations an admin has listed for the public. Open the guest page, or get tickets when the host is selling them.
+            {t("discover.events_join_body")}
           </p>
         </div>
         {total > 0 ? (
           <p className="text-base font-semibold text-slate-500">
-            {total} {total === 1 ? "event" : "events"}
+            {total} {total === 1 ? t("discover.event_one") : t("discover.event_many")}
           </p>
         ) : null}
       </div>
@@ -70,7 +72,7 @@ export function DiscoverEventsClient() {
               : "border border-slate-200 bg-white text-slate-700 hover:border-brand-400"
           }`}
         >
-          All events
+          {t("discover.all_events")}
         </button>
         {EVENT_TYPES.map((type) => (
           <button

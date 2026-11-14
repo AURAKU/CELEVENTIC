@@ -52,9 +52,9 @@ export type DigitalCardFaceProps = {
   qrHref?: string | null;
   /** Tap the QR only. Dummy previews send explorers to the template gallery. */
   qrBadgeHref?: string | null;
-  /** Dummy or saved company mark next to the house name. */
+  /** Dummy or saved company mark on the portrait. */
   companyLogo?: boolean;
-  /** Cropped owner upload that sits beside the company name. */
+  /** Cropped owner upload that sits on the profile picture. */
   companyLogoUrl?: string | null;
   className?: string;
   compact?: boolean;
@@ -62,6 +62,8 @@ export type DigitalCardFaceProps = {
   portraitFrame?: CeleCardPortraitFrame | null;
   /** Owner overrides for layout, atmosphere, ornament, and blended paper. */
   design?: CeleCardDesign | null;
+  /** Portrait hold flips to a camera-ready QR. Landscape hold keeps the ID-1 plate. */
+  present?: "card" | "scan";
 };
 
 function initialsOf(name: string) {
@@ -574,8 +576,8 @@ function FaceFitTitle({
       const cardW = face?.clientWidth || width * 3.2;
       const maxPx = cardW * 0.029;
       const minPx = cardW * 0.0215;
-      const maxHeight = cardW * (lines.length > 2 ? 0.096 : lines.length > 1 ? 0.072 : 0.038) + 2;
-      el.style.whiteSpace = "normal";
+      const maxHeight = cardW * 0.038 + 2;
+      el.style.whiteSpace = "nowrap";
       let lo = minPx;
       let hi = maxPx;
       let best = minPx;
@@ -651,7 +653,7 @@ function FaceFitCompany({
       const cardW = face?.clientWidth || width * 3.2;
       const maxPx = cardW * 0.0265;
       const minPx = cardW * 0.0185;
-      const maxHeight = cardW * (lines.length > 2 ? 0.084 : lines.length > 1 ? 0.064 : 0.034) + 2;
+      const maxHeight = cardW * (lines.length > 2 ? 0.09 : lines.length > 1 ? 0.078 : 0.034) + 2;
       el.style.whiteSpace = "normal";
       let lo = minPx;
       let hi = maxPx;
@@ -713,25 +715,22 @@ function FaceIdentity({
   title,
   company,
   compact,
-  companyLogo,
-  companyLogoUrl,
   nameClassName,
   nameStyle,
   design,
+  companyLogoUrl,
 }: {
   theme: DigitalCardTheme;
   displayName: string;
   title?: string | null;
   company?: string | null;
   compact?: boolean;
-  companyLogo?: boolean;
-  companyLogoUrl?: string | null;
   mark?: boolean;
   nameClassName?: string;
   nameStyle?: CSSProperties;
   design?: CeleCardDesign | null;
+  companyLogoUrl?: string | null;
 }) {
-  const showCompanyMark = celeCardShowsCompanyMark(company);
   const voice = celecardTypeVoice(theme, design?.lettering);
   const stacked = celecardNameShouldStack(displayName, voice.stacksDisplayName, compact);
   const companyUppercase = voice.companyTransform === "uppercase";
@@ -743,7 +742,7 @@ function FaceIdentity({
   const nameLines = celecardDisplayNameLines(displayName, stacked);
   const fitCqw = celecardNameFitCqw(displayName, stacked, compact) * celeCardNameScaleFactor(design?.nameScale);
   return (
-    <div className="min-w-0 flex-1">
+    <div className="relative min-w-0 flex-1 overflow-visible">
       <FaceFitName
         lines={nameLines}
         spokenName={displayName}
@@ -786,30 +785,22 @@ function FaceIdentity({
         />
       ) : null}
       {company ? (
-        <FaceFitCompany
-          company={company}
-          compact={compact}
-          showMark={showCompanyMark}
-          mark={
-            showCompanyMark ? (
-              <CeleCardCompanyMark
-                url={companyLogoUrl}
-                name={company}
-                accent={theme.accent}
-                metal={theme.border}
-                allowGenerated
-                className="celecard-company-mark"
-              />
-            ) : null
-          }
-          uppercase={companyUppercase}
-          style={{
-            color: theme.accent,
-            fontFamily: voice.origin,
-            letterSpacing: companyLines.length > 1 ? "0.06em" : voice.companyTracking,
-            fontSize: `${celecardCompanyFitCqw(company, { uppercase: companyUppercase, compact })}cqw`,
-          }}
-        />
+        <>
+          <FaceFitCompany
+            company={company}
+            compact={compact}
+            showMark={false}
+            mark={null}
+            uppercase={companyUppercase}
+            style={{
+              color: theme.accent,
+              fontFamily: voice.origin,
+              letterSpacing: companyLines.length > 1 ? "0.06em" : voice.companyTracking,
+              fontSize: `${celecardCompanyFitCqw(company, { uppercase: companyUppercase, compact })}cqw`,
+            }}
+          />
+          <FaceCompanyBadge company={company} companyLogoUrl={companyLogoUrl} theme={theme} />
+        </>
       ) : null}
     </div>
   );
@@ -871,6 +862,28 @@ function FacePortraitImg({
   );
 }
 
+function FaceCompanyBadge({
+  company,
+  companyLogoUrl,
+  theme,
+}: {
+  company?: string | null;
+  companyLogoUrl?: string | null;
+  theme: DigitalCardTheme;
+}) {
+  if (!celeCardShowsCompanyMark(company) || !company) return null;
+  return (
+    <CeleCardCompanyMark
+      url={companyLogoUrl}
+      name={company}
+      accent={theme.accent}
+      metal={theme.border}
+      allowGenerated
+      className="celecard-company-mark celecard-company-mark-by-portrait rounded-full"
+    />
+  );
+}
+
 function FacePhoto({
   avatarUrl,
   theme,
@@ -909,14 +922,16 @@ function FacePhoto({
     <FacePortraitImg src={avatarUrl || ""} alt={`${displayName} portrait`} className={well} />
   );
   return (
-    <span
-      className={cn("relative shrink-0 overflow-hidden p-[0.55cqw]", box, well)}
-      style={{
-        background: `linear-gradient(145deg, ${theme.border} 0%, ${theme.accent} 46%, ${theme.border} 100%)`,
-        boxShadow: `0 1px 0 rgba(255,255,255,0.38), 0 10px 22px rgba(8,10,16,0.22), inset 0 1px 0 rgba(255,255,255,0.28)`,
-      }}
-    >
-      {mark}
+    <span className={cn("relative shrink-0", box)}>
+      <span
+        className={cn("relative block h-full w-full overflow-hidden p-[0.55cqw]", well)}
+        style={{
+          background: `linear-gradient(145deg, ${theme.border} 0%, ${theme.accent} 46%, ${theme.border} 100%)`,
+          boxShadow: `0 1px 0 rgba(255,255,255,0.38), 0 10px 22px rgba(8,10,16,0.22), inset 0 1px 0 rgba(255,255,255,0.28)`,
+        }}
+      >
+        {mark}
+      </span>
     </span>
   );
 }
@@ -932,13 +947,15 @@ function FacePortraitPanel({
 }) {
   if (isCeleCardPhotoUrl(avatarUrl) && avatarUrl) {
     return (
-      <div className="celecard-portrait-panel h-full w-full overflow-hidden">
-        <FacePortraitImg src={avatarUrl} alt={`${displayName} portrait`} />
+      <div className="celecard-portrait-panel relative h-full w-full">
+        <div className="h-full w-full overflow-hidden">
+          <FacePortraitImg src={avatarUrl} alt={`${displayName} portrait`} />
+        </div>
       </div>
     );
   }
   return (
-    <div className="flex h-full w-full items-center justify-center" style={{ background: plateFill(theme) }}>
+    <div className="celecard-portrait-panel relative flex h-full w-full items-center justify-center" style={{ background: plateFill(theme) }}>
       <DigitalCardHouseAvatar theme={theme} avatarUrl={avatarUrl} className="h-[72%] w-[72%]" />
     </div>
   );
@@ -987,9 +1004,8 @@ function CardPlate({
       title={title}
       company={company}
       compact={compact}
-      companyLogo={companyLogo}
-      companyLogoUrl={companyLogoUrl}
       design={design}
+      companyLogoUrl={companyLogoUrl}
       nameClassName="[overflow-wrap:normal] [word-break:normal]"
       nameStyle={{
         textShadow: emboss,
@@ -1054,7 +1070,11 @@ function CardPlate({
               composition === "iconic" ? "w-[40%]" : "w-[36%]"
             )}
           >
-            <FacePortraitPanel avatarUrl={avatarUrl} theme={theme} displayName={displayName} />
+            <FacePortraitPanel
+              avatarUrl={avatarUrl}
+              theme={theme}
+              displayName={displayName}
+            />
           </div>
         ) : null}
 
@@ -1104,6 +1124,32 @@ function CardPlate({
   );
 }
 
+function ScanPlate({
+  theme,
+  qrSrc,
+  displayName,
+  avatarUrl,
+}: {
+  theme: DigitalCardTheme;
+  qrSrc?: string | null;
+  displayName: string;
+  avatarUrl?: string | null;
+}) {
+  return (
+    <div className="celecard-scan-body">
+      <CeleCardQrBadge
+        qrSrc={qrSrc}
+        theme={theme}
+        avatarUrl={avatarUrl}
+        displayName={displayName}
+        sizeClass="celecard-scan-qr"
+        padClass="p-0"
+        ink={theme.qrInk}
+      />
+    </div>
+  );
+}
+
 export function DigitalCardFace({
   themeId,
   displayName,
@@ -1119,6 +1165,7 @@ export function DigitalCardFace({
   companyLogo,
   companyLogoUrl,
   design,
+  present = "card",
 }: DigitalCardFaceProps) {
   const pathname = usePathname();
   const openHref = celeYouCardOpenHref(qrHref, pathname);
@@ -1158,6 +1205,7 @@ export function DigitalCardFace({
     <div
       className="celecard-face celecard-foil relative overflow-hidden rounded-[1.15rem] border"
       data-celeyou-live-plate="true"
+      data-present={present === "scan" ? "scan" : undefined}
       data-compact={compact ? "true" : undefined}
       data-composition={composition}
       data-face-lead={lead}
@@ -1206,23 +1254,29 @@ export function DigitalCardFace({
         <DigitalCardAtmosphere atmosphere={theme.atmosphere ?? "none"} theme={theme} compact={compact} />
       </div>
       <OrnamentLayer theme={theme} compact={compact} />
-      <CeleCardOrigin theme={theme} />
-      <CeleCardWordmark theme={theme} compact={compact} />
-      <CardPlate
-        theme={theme}
-        displayName={displayName}
-        title={title}
-        company={company}
-        initials={initials}
-        avatarUrl={avatarUrl}
-        qrSrc={qrSrc}
-        qrHref={qrBadgeHref ?? null}
-        compact={compact}
-        portraitFrame={portraitFrame}
-        companyLogo={companyLogo}
-        companyLogoUrl={companyLogoUrl}
-        design={design}
-      />
+      {present === "scan" ? (
+        <ScanPlate theme={theme} qrSrc={qrSrc} displayName={displayName} avatarUrl={avatarUrl} />
+      ) : (
+        <>
+          <CeleCardOrigin theme={theme} />
+          <CeleCardWordmark theme={theme} compact={compact} />
+          <CardPlate
+            theme={theme}
+            displayName={displayName}
+            title={title}
+            company={company}
+            initials={initials}
+            avatarUrl={avatarUrl}
+            qrSrc={qrSrc}
+            qrHref={qrBadgeHref ?? null}
+            compact={compact}
+            portraitFrame={portraitFrame}
+            companyLogo={companyLogo}
+            companyLogoUrl={companyLogoUrl}
+            design={design}
+          />
+        </>
+      )}
     </div>
   );
 

@@ -40,7 +40,7 @@ export function digitalCardPresentUrl(slug: string, origin?: string): string {
   return `${origin.replace(/\/$/, "")}${path}`;
 }
 
-export const CELECARD_PLATE_SHARE_GEN = "p3";
+export const CELECARD_PLATE_SHARE_GEN = "p4";
 
 export function digitalCardOgImagePath(slug: string, version?: string | number | null): string {
   const base = `/card/${encodeURIComponent(slug)}/og`;
@@ -108,15 +108,15 @@ export function celeCardShareRoleLine(
   return title || company;
 }
 
-/** Plate caption. Name, role, live CeleYou. Never email, phone, or gender titles. */
+/** Share caption. Name, role, CeleYou Card. Never email, phone, or gender titles. */
 export function celeCardShareCommentary(
   card: Pick<CeleCardShareFields, "displayName" | "title" | "company">
 ): string {
   const name = card.displayName.trim();
   const role = celeCardShareRoleLine(card);
-  if (name && role) return `Meet ${name}, ${role}. Their live CeleYou plate.`;
-  if (name) return `Meet ${name}. Their live CeleYou plate.`;
-  return `A live CeleYou plate. ${SMARTCARD_BRAND_TAGLINE}`;
+  if (name && role) return `Connect with ${name}. ${role}. Their CeleYou Card.`;
+  if (name) return `Connect with ${name}. Their CeleYou Card.`;
+  return `Connect with this CeleYou Card. ${SMARTCARD_BRAND_TAGLINE}`;
 }
 
 /** Link preview subtitle on WhatsApp, iMessage, X, LinkedIn. Matches the share caption. */
@@ -127,7 +127,7 @@ export function celeCardShareDescription(
   return celeCardShareCommentary(card);
 }
 
-/** Native share body. Plate commentary, then the live URL on its own line. */
+/** Native share body. Card commentary, then the live URL on its own line. */
 export function celeCardShareMessage(
   card: Pick<CeleCardShareFields, "displayName" | "title" | "company">,
   url?: string | null
@@ -139,7 +139,7 @@ export function celeCardShareMessage(
 }
 
 export function celeCardShareClipboard(
-  card: Pick<CeleCardShareFields, "displayName">,
+  card: Pick<CeleCardShareFields, "displayName" | "title" | "company">,
   url: string
 ): string {
   return celeCardShareMessage(card, url);
@@ -199,13 +199,13 @@ export function buildCeleCardShareMetadata(input: {
     description,
     alternates: { canonical },
     icons: {
-      icon: [{ url: image, type: "image/png", sizes: `${CELECARD_OG_WIDTH}x${CELECARD_OG_HEIGHT}` }],
-      apple: [{ url: image, type: "image/png" }],
+      icon: [{ url: image, type: "image/jpeg", sizes: `${CELECARD_OG_WIDTH}x${CELECARD_OG_HEIGHT}` }],
+      apple: [{ url: image, type: "image/jpeg" }],
     },
     openGraph: {
       title,
       description,
-      type: "profile",
+      type: "website",
       url: canonical,
       siteName: SMARTCARD_PRODUCT_SHORT_NAME,
       images: [
@@ -215,7 +215,7 @@ export function buildCeleCardShareMetadata(input: {
           width: CELECARD_OG_WIDTH,
           height: CELECARD_OG_HEIGHT,
           alt: `${input.card.displayName} ${SMARTCARD_PRODUCT_SHORT_NAME}`,
-          type: "image/png",
+          type: "image/jpeg",
         },
       ],
     },

@@ -93,10 +93,10 @@ describe("CeleYou meeting desk", () => {
       join(process.cwd(), "src/components/digital-business-card/digital-card-connection-inbox.tsx"),
       "utf8"
     );
-    assert.match(drop, /Request this time/);
-    assert.match(drop, /You picked/);
-    assert.match(drop, /1 Day/);
-    assert.match(drop, /gets a message to confirm/);
+    assert.match(drop, /celeyou\.meet_request_time/);
+    assert.match(drop, /celeyou\.meet_you_picked/);
+    assert.match(drop, /celeyou\.meet_step_day/);
+    assert.match(drop, /celeyou\.meet_confirm_named/);
     assert.match(drop, /celecardPaperTone/);
     assert.match(drop, /celecard-meet-chip/);
     assert.match(drop, /CELECARD_REACH_INK/);

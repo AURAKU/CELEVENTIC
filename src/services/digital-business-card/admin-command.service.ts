@@ -18,12 +18,17 @@ import {
   isCeleCardFullyPublic,
   type CeleCardLifecyclePolicy,
 } from "@/lib/digital-business-card/lifecycle";
+import { celeYouBillingPhase, celeYouDirectoryExpiryRange } from "@/lib/digital-business-card/billing-rules";
+import { listCeleYouPaymentsForCard } from "@/services/digital-business-card/smartcard-billing.service";
 import { DIGITAL_CARD_THEMES, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { getSmartCardPlan, smartCardExpiryFromNow } from "@/lib/digital-business-card/plans";
 import { getCeleCardCatalog } from "@/services/digital-business-card/catalog.service";
 import { clipCeleCardBio, digitalCardPublicUrl } from "@/lib/digital-business-card/types";
 import { celeCardStableQrUrl, digitalCardExportImagePath } from "@/lib/digital-business-card/share";
 import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
+import { celeYouPrintQrPngSrc, celeYouPrintQrSvgSrc } from "@/lib/digital-business-card/share-channels";
+import { nfcActionFromAdminAction } from "@/lib/digital-business-card/nfc-device";
+import { applyNfcDeviceMutation, listNfcDevicesForCard } from "@/services/digital-business-card/nfc-device.service";
 import {
   canGrantComplimentary,
   canPerformCeleCardAction,
@@ -250,6 +255,7 @@ function serializeDirectoryCard(
     lastUpdatedDate: card.updatedAt.toISOString(),
     administrativeRestrictions: directoryRestrictions(card),
     lifecycle,
+    billingPhase: celeYouBillingPhase(lifecycle),
     presentation,
     themeId: card.themeId,
     unclaimed,
@@ -271,6 +277,7 @@ export async function listCeleCardAdminDirectory(input: {
   const q = (input.search ?? "").trim();
   const status = (input.status ?? "").trim().toLowerCase();
   const now = new Date();
+  const policy = await getCeleCardLifecyclePolicy();
   const where: Prisma.DigitalBusinessCardWhereInput = {};
   if (status !== "deleted") {
     where.deletedAt = null;
@@ -296,13 +303,17 @@ export async function listCeleCardAdminDirectory(input: {
     where.isPublished = true;
     where.adminSuspendedAt = null;
     where.adminDeactivatedAt = null;
-  } else if (status === "courtesy") where.subscriptionStatus = "EXPIRED";
-  else if (status === "expiring") {
+    where.subscriptionExpiresAt = celeYouDirectoryExpiryRange("active", now, policy);
+  } else if (status === "grace") {
+    where.subscriptionStatus = "EXPIRED";
+    where.isPublished = true;
+    where.subscriptionExpiresAt = celeYouDirectoryExpiryRange("grace", now, policy);
+  } else if (status === "courtesy" || status === "expired") {
+    where.subscriptionStatus = "EXPIRED";
+    where.subscriptionExpiresAt = celeYouDirectoryExpiryRange("courtesy", now, policy);
+  } else if (status === "expiring" || status === "renewal_due") {
     where.subscriptionStatus = "ACTIVE";
-    where.subscriptionExpiresAt = {
-      gte: now,
-      lte: new Date(now.getTime() + 14 * 86_400_000),
-    };
+    where.subscriptionExpiresAt = celeYouDirectoryExpiryRange("expiring", now, policy);
   } else if (status === "deleted") where.deletedAt = { not: null };
 
   const sort = (input.sort ?? "createdAt:desc").toLowerCase();
@@ -328,7 +339,6 @@ export async function listCeleCardAdminDirectory(input: {
     prisma.digitalBusinessCard.count({ where }),
   ]);
   const origin = getCeleYouShareOrigin();
-  const policy = await getCeleCardLifecyclePolicy();
   return paginatedResult(
     rows.map((row) => serializeDirectoryCard(row, origin, policy)),
     total,
@@ -353,6 +363,8 @@ export async function getCeleCardCommandOverview() {
     courtesyReconnects,
     conciergeOpen,
     cards,
+    publishedCards,
+    engagementRows,
   ] = await Promise.all([
     prisma.digitalBusinessCard.count({ where: { deletedAt: null } }),
     prisma.digitalBusinessCard.count({ where: { deletedAt: null, adminSuspendedAt: { not: null } } }),
@@ -388,6 +400,14 @@ export async function getCeleCardCommandOverview() {
       },
       take: 2000,
     }),
+    prisma.digitalBusinessCard.count({
+      where: { deletedAt: null, isPublished: true, adminSuspendedAt: null },
+    }),
+    prisma.smartCardInteraction.groupBy({
+      by: ["kind"],
+      where: { createdAt: { gte: new Date(now.getTime() - 30 * 86_400_000) } },
+      _count: { _all: true },
+    }),
   ]);
   const totals: Record<string, number> = {
     DRAFT: 0,
@@ -420,6 +440,21 @@ export async function getCeleCardCommandOverview() {
     conciergeOpen,
     courtesyReconnects,
     totals,
+    publishedCards,
+    engagement: (() => {
+      const byKind: Record<string, number> = {};
+      for (const row of engagementRows) byKind[row.kind] = row._count._all;
+      return {
+        windowDays: 30,
+        profileOpens: byKind.profile_open ?? 0,
+        qrOpens: byKind.qr_open ?? 0,
+        nfcTaps: byKind.nfc_tap ?? 0,
+        contactDownloads: byKind.vcard_download ?? 0,
+        contactTaps: byKind.vcard_save ?? 0,
+        paymentOpens: byKind.payment_open ?? 0,
+        shares: byKind.share_tap ?? 0,
+      };
+    })(),
     prepaidNote: "CeleYou Pro plans are prepaid terms, not contractual monthly recurring revenue. Concierge design is a separate one-time fee.",
     plans: catalog.plans.map((plan) => ({
       id: plan.id,
@@ -700,6 +735,7 @@ export async function applyCeleCardAdminAction(
     planId?: string | null;
     months?: number | null;
     approvalRef?: string | null;
+    deviceId?: string | null;
     correlationId?: string | null;
   }
 ) {
@@ -940,6 +976,44 @@ export async function applyCeleCardAdminAction(
     return card;
   }
 
+  const nfcAction = nfcActionFromAdminAction(input.action);
+  if (nfcAction) {
+    if (nfcAction === "lost" || nfcAction === "replace" || nfcAction === "revoke") {
+      requireReason(input.reason, "reason");
+    }
+    const previousToken = card.publicToken;
+    const previousSlug = card.slug;
+    const result = await applyNfcDeviceMutation(card, {
+      action: nfcAction,
+      deviceId: input.deviceId || undefined,
+    });
+    if (!("ok" in result) || !result.ok) {
+      throw new CeleCardAdminError(
+        "error" in result && result.error ? result.error : "NFC action failed",
+        409,
+        "nfc_conflict"
+      );
+    }
+    const desk = await listNfcDevicesForCard(card, getCeleYouShareOrigin());
+    await audit({
+      actor,
+      action: "UPDATE",
+      cardId: card.id,
+      customerId: card.userId,
+      kind: input.action,
+      previous: { slug: previousSlug, publicToken: previousToken },
+      next: {
+        nfcAction,
+        deviceId: result.deviceId,
+        slugUnchanged: true,
+        qrTokenUnchanged: true,
+      },
+      reason: input.reason?.trim() || null,
+      correlationId: input.correlationId,
+    });
+    return { ...card, nfc: desk, slugUnchanged: card.slug === previousSlug, tokenUnchanged: card.publicToken === previousToken };
+  }
+
   throw new CeleCardAdminError("Unknown action.", 400);
 }
 
@@ -967,12 +1041,22 @@ export async function getCeleCardAdminDetail(cardId: string) {
     orderBy: { createdAt: "desc" },
     take: 40,
   });
+  const payments = await listCeleYouPaymentsForCard({
+    cardId,
+    userId: card.userId,
+    page: 1,
+    limit: 20,
+  }).catch(() => ({ items: [], total: 0, page: 1, limit: 20 }));
   return {
     card: serializeDirectoryCard(card, origin, policy),
     owner: isUnclaimedHolderEmail(card.user?.email)
       ? { id: null, name: card.displayName, email: card.unclaimedEmail, unclaimed: true }
       : card.user,
     designs: card.designVersions,
+    payments: payments.items,
+    paymentTotal: payments.total,
+    paymentPage: payments.page,
+    paymentLimit: payments.limit,
     entitlements: card.entitlementGrants.map((row) => ({
       id: row.id,
       kind: row.kind,
@@ -1013,8 +1097,11 @@ export async function getCeleCardAdminDetail(cardId: string) {
         variant: "guide",
         download: true,
       }),
+      qrPngSrc: celeYouPrintQrPngSrc(celeCardStableQrUrl(card.publicToken, origin)),
+      qrSvgSrc: celeYouPrintQrSvgSrc(celeCardStableQrUrl(card.publicToken, origin)),
       cardImageSrc: digitalCardExportImagePath(card.slug),
     },
+    nfc: await listNfcDevicesForCard(card, origin),
     profile: {
       displayName: card.displayName,
       title: card.title,

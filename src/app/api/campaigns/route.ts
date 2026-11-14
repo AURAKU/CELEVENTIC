@@ -68,6 +68,7 @@ export async function POST(req: Request) {
         campaignId: z.string(),
         eventId: z.string(),
         email: z.string().email(),
+        method: z.enum(["card", "mobile_money", "bank_transfer", "alipay", "wechat_pay"]).optional(),
       });
       const data = sendSchema.parse(body);
       await verifyEventAccess(data.eventId, session.user.id, session.user.role);
@@ -94,6 +95,7 @@ export async function POST(req: Request) {
           amount: preview.estimatedCost,
           email: data.email,
           purpose: "BULK_MESSAGING",
+          method: data.method,
           metadata: { eventId: data.eventId, campaignId: data.campaignId },
         },
         { campaignId: data.campaignId }

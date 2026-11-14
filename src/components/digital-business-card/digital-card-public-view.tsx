@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Check,
@@ -12,10 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { DigitalCardFace } from "@/components/digital-business-card/digital-card-face";
 import { DigitalCardReachGrid } from "@/components/digital-business-card/digital-card-reach-grid";
-import { DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
+import { CeleCardStageField, DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
 import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { applyCeleCardDesign } from "@/lib/digital-business-card/design";
-import { celecardAccentOnStage, celecardDockFinish, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
+import { CELECARD_REACH_INK, celecardAccentOnStage, celecardDockFinish, celecardKickerInk, celecardReachPlate, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import { digitalCardIdentityUrl, digitalCardQrImageSrc, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import { listDigitalCardReachItems } from "@/lib/digital-business-card/socials";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
@@ -23,28 +24,34 @@ import {
   DigitalCardContinuityView,
   DigitalCardUnavailableView,
 } from "@/components/digital-business-card/digital-card-continuity-view";
-import { SMARTCARD_BRAND_TAGLINE, SMARTCARD_PRODUCT_NAME } from "@/lib/digital-business-card/product";
-import { APP_TAGLINE, FOOTER_POWERED_BY } from "@/lib/constants";
+import { SMARTCARD_BRAND_TAGLINE } from "@/lib/digital-business-card/product";
+import { demoCardPreviewExplorePath } from "@/lib/digital-business-card/demo-card";
+import { COMPANY_NAME } from "@/lib/constants";
 import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
 import {
-  celeCardShareClipboard,
   celeCardShareCommentary,
   celeCardShareImageUrls,
   celeCardShareMessage,
   celeCardShareTitle,
 } from "@/lib/digital-business-card/share";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
-import { CONNECT_BACK_ARIA, CONNECT_BACK_CTA } from "@/lib/celeyou-share/guest-actions";
+import { useLocale } from "@/components/i18n/locale-provider";
 import {
   DigitalCardConnectExchange,
   useCeleYouExchangeAvailable,
 } from "@/components/digital-business-card/digital-card-connect-exchange";
-import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
+import { formatGuestAbout, guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
 import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
-import { SAVE_CONTACT_CTA, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
-import { contactSaveHint } from "@/lib/celeyou-share/namedrop";
+import { copyCeleYouProfile, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
+import { contactSaveHintKey } from "@/lib/celeyou-share/namedrop";
 import { detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
 import { useCelecardSilentHold } from "@/components/digital-business-card/use-celecard-silent-hold";
+import { celecardHoldPresent } from "@/lib/digital-business-card/hold-viewport";
+
+function GuestLayer({ children }: { children: ReactNode }) {
+  if (typeof document === "undefined") return null;
+  return createPortal(children, document.body);
+}
 
 export function DigitalCardPublicView({
   card,
@@ -53,6 +60,7 @@ export function DigitalCardPublicView({
   card: DigitalCardPublicPayload;
   origin: string;
 }) {
+  const { t } = useLocale();
   const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), card.socials.design);
   const motionMood = celecardMotionMood(theme, card.socials.design?.motion);
   const typeVoice = celecardTypeVoice(theme, card.socials.design?.lettering);
@@ -67,19 +75,26 @@ export function DigitalCardPublicView({
   const copyInk = darkStage ? "rgba(250,246,239,0.94)" : "rgba(28,25,23,0.92)";
   const faintInk = darkStage ? "rgba(250,246,239,0.88)" : "rgba(28,25,23,0.82)";
   const headingInk = celecardAccentOnStage(theme.accent, darkStage);
+  const kickerInk = celecardKickerInk(theme.accent, darkStage);
   const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
   const profileUrl = digitalCardIdentityUrl(card.slug, origin);
   const qrSrc = scanUrl ? digitalCardQrImageSrc(scanUrl) : "";
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [saveHint, setSaveHint] = useState<string | null>(null);
   const [connectOpen, setConnectOpen] = useState(false);
   const [connectDone, setConnectDone] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
-  const { hold, holdAxis, holdReady, holdIntent, setHoldIntent, toggleHold, onPlateActivate } = useCelecardSilentHold();
+  const { hold, holdAxis, setHoldIntent, onPlateActivate } = useCelecardSilentHold();
+  const holdPresent = celecardHoldPresent(hold, holdAxis);
+  const dockRef = useRef<HTMLDivElement>(null);
+  const holdCloseRef = useRef<HTMLButtonElement>(null);
+  const holdFrameRef = useRef<HTMLDivElement>(null);
+  const sheetOpen = shareOpen || connectOpen;
   const [form, setForm] = useState({
     visitorName: "",
     visitorEmail: "",
@@ -108,13 +123,14 @@ export function DigitalCardPublicView({
         return;
       }
       if (result !== "opened") trackCeleYouGuestEvent(card.slug, "vcard_save");
-      setSaveHint(contactSaveHint(detectTapPlatform()));
+      setSaveHint(t(contactSaveHintKey(detectTapPlatform())));
       setSaveState("saved");
       window.setTimeout(() => setSaveState("idle"), 2200);
+      window.setTimeout(() => setSaveHint(null), 5200);
     } catch {
       setSaveState("idle");
     }
-  }, [card, origin, saveState]);
+  }, [card, origin, saveState, t]);
 
   const plateShareUrls = useMemo(() => celeCardShareImageUrls(card.slug, card.id), [card.slug, card.id]);
   const shareCommentary = celeCardShareCommentary(card);
@@ -127,6 +143,8 @@ export function DigitalCardPublicView({
       text: celeCardShareMessage(card, shareUrl),
       url: shareUrl,
       imageUrl: plateShareUrls,
+      persistPlateCardId: card.id || null,
+      capturePlate: true,
     });
     setSharing(false);
     if (result === "cancelled") return;
@@ -135,21 +153,39 @@ export function DigitalCardPublicView({
       setShareOpen(false);
     }
     if (result === "copied" || result === "unavailable") {
-      if (result === "unavailable") {
-        await navigator.clipboard.writeText(celeCardShareClipboard(card, shareUrl)).catch(() => undefined);
-      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [card, plateShareUrls, profileUrl, scanUrl]);
+
+  const copyCard = useCallback(async () => {
+    const shareUrl = profileUrl || scanUrl;
+    setCopying(true);
+    const result = await copyCeleYouProfile({
+      title: celeCardShareTitle(card),
+      text: celeCardShareMessage(card, shareUrl),
+      url: shareUrl,
+      imageUrl: plateShareUrls,
+      persistPlateCardId: card.id || null,
+      capturePlate: true,
+    });
+    setCopying(false);
+    if (result === "copied") {
+      trackCeleYouGuestEvent(card.slug, "share_tap");
+      setShareOpen(false);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   }, [card, plateShareUrls, profileUrl, scanUrl]);
 
   const submitConnect = useCallback(async () => {
+    if (connecting) return;
     if (!form.consent) {
-      setConnectError("Consent is required");
+      setConnectError(t("celeyou.consent_required"));
       return;
     }
     if (!form.visitorEmail.trim() && !form.visitorPhone.trim()) {
-      setConnectError("Email or phone is required");
+      setConnectError(t("celeyou.contact_required"));
       return;
     }
     setConnecting(true);
@@ -173,17 +209,17 @@ export function DigitalCardPublicView({
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
-        setConnectError(data.error || "Could not connect");
+        setConnectError(data.error || t("celeyou.connect_failed"));
         return;
       }
       setConnectDone(true);
       setConnectOpen(false);
     } catch {
-      setConnectError("Network error. Try again.");
+      setConnectError(t("celeyou.network_error"));
     } finally {
       setConnecting(false);
     }
-  }, [card.slug, form]);
+  }, [card.slug, connecting, form, t]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -206,8 +242,42 @@ export function DigitalCardPublicView({
     if (hold) {
       setConnectOpen(false);
       setShareOpen(false);
+      window.setTimeout(() => holdCloseRef.current?.focus(), 20);
+    } else {
+      holdFrameRef.current?.focus();
     }
   }, [hold]);
+
+  useEffect(() => {
+    const el = dockRef.current;
+    if (!el) return;
+    const stage = el.closest(".celecard-stage") as HTMLElement | null;
+    const apply = () => {
+      const height = Math.ceil(el.getBoundingClientRect().height);
+      stage?.style.setProperty("--celecard-dock-h", `${height}px`);
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    window.visualViewport?.addEventListener("resize", apply);
+    return () => {
+      observer.disconnect();
+      window.visualViewport?.removeEventListener("resize", apply);
+    };
+  }, [hold, connectDone, exchangeAvailable]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (sheetOpen) document.body.dataset.celecardSheet = "true";
+    else delete document.body.dataset.celecardSheet;
+    const html = document.documentElement;
+    const prev = html.style.overflow;
+    if (sheetOpen) html.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prev;
+      delete document.body.dataset.celecardSheet;
+    };
+  }, [sheetOpen]);
 
   if (!card.isLive) {
     if (card.presentationMode === "courtesy") {
@@ -221,28 +291,35 @@ export function DigitalCardPublicView({
       className={`celecard-stage relative min-h-app-viewport overflow-hidden ${hold ? "pb-0" : ""}`}
       data-celecard-mood={motionMood}
       data-celecard-guest=""
-      data-celecard-hold={holdReady ? (hold ? "true" : "false") : undefined}
+      data-celecard-stage={darkStage ? "dark" : "light"}
+      data-celecard-hold={hold ? "true" : "false"}
       data-celecard-hold-axis={hold ? holdAxis : undefined}
+      data-celecard-hold-present={holdPresent ?? undefined}
+      data-celecard-sheet={sheetOpen ? "true" : undefined}
+      role={hold ? "dialog" : undefined}
+      aria-modal={hold ? true : undefined}
+      aria-label={hold ? t("celeyou.fullscreen_card") : undefined}
       style={{
         background: theme.stageBackground,
         ["--celecard-accent" as string]: theme.accent,
+        ["--celecard-stage-light" as string]: darkStage ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.78)",
+        ["--celecard-stage-shade" as string]: darkStage ? "rgba(0,0,0,0.46)" : "rgba(15,23,42,0.12)",
       }}
     >
-      <div className="celecard-atmo pointer-events-none absolute inset-0 opacity-[0.22]" aria-hidden>
+      <CeleCardStageField />
+      <div className="celecard-atmo pointer-events-none absolute inset-0" aria-hidden>
         <DigitalCardAtmosphere atmosphere={theme.atmosphere ?? "none"} theme={theme} />
       </div>
 
       <div className="celecard-guest-column">
+        <h1 className="sr-only">{card.displayName}</h1>
         <div
+          ref={holdFrameRef}
           className="celecard-hold-frame celecard-enter celecard-d2"
           role="button"
           tabIndex={0}
           aria-pressed={hold}
-          aria-label={
-            hold
-              ? "Show the full CeleYou. The QR stays ready to scan."
-              : "Hold this card up. The plate fills the screen."
-          }
+          aria-label={hold ? t("celeyou.show_page") : t("celeyou.hold_qr")}
           onClick={onPlateActivate}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -262,30 +339,51 @@ export function DigitalCardPublicView({
               companyLogo
               companyLogoUrl={card.socials.companyLogoUrl}
               design={card.socials.design}
+              present={holdPresent === "scan" ? "scan" : "card"}
             />
           </div>
         </div>
 
         <div className="celecard-guest-rest">
         <header className="celecard-guest-intro relative z-10">
-          {saveHint ? (
-            <p className="text-xs leading-relaxed" style={{ color: faintInk, fontFamily: typeVoice.meta }}>
-              {saveHint}
-            </p>
-          ) : null}
+          <p className="sr-only">{card.displayName}{card.company ? ` · ${card.company}` : ""}</p>
         </header>
 
         {sections.length ? (
           <div className="celecard-enter celecard-d3 flex flex-col gap-6">
-            {sections.map((section) => (
+            {sections.map((section) => {
+              const sectionTitle = t(`celeyou.section_${section.id}`);
+              return (
               <section key={section.id} className="celecard-guest-section">
-                <h2 className="celecard-guest-kicker" style={{ color: headingInk }}>
-                  {section.label}
+                <h2
+                  className="celecard-guest-kicker"
+                  data-voice={typeVoice.originStyle}
+                  data-rule={typeVoice.rule}
+                  data-section={section.id}
+                  data-span={sectionTitle.length > 18 ? "wide" : "tight"}
+                  style={{
+                    color: kickerInk,
+                    fontFamily: typeVoice.origin,
+                    ["--kicker-accent" as string]: theme.accent,
+                  }}
+                >
+                  <span className="celecard-guest-kicker-rule" aria-hidden />
+                  <span className="celecard-guest-kicker-label">{sectionTitle}</span>
+                  <span className="celecard-guest-kicker-rule" aria-hidden />
                 </h2>
                 {section.body ? (
-                  <p className="celecard-guest-copy" style={{ color: copyInk }}>
-                    {section.body}
-                  </p>
+                  <blockquote
+                    className="celecard-guest-about"
+                    data-voice={typeVoice.originStyle}
+                    data-rule={typeVoice.rule}
+                    style={{
+                      ...celecardReachPlate(theme, darkStage),
+                      ["--about-accent" as string]: theme.accent,
+                      fontFamily: typeVoice.heading,
+                    }}
+                  >
+                    <p className="celecard-guest-copy">{formatGuestAbout(section.body)}</p>
+                  </blockquote>
                 ) : null}
                 {section.items.length ? (
                   <DigitalCardReachGrid
@@ -296,16 +394,17 @@ export function DigitalCardPublicView({
                   />
                 ) : null}
               </section>
-            ))}
+            );
+            })}
           </div>
         ) : null}
 
         {connectDone ? (
           <div className="celecard-enter rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-5 text-center">
             <Check className="mx-auto h-6 w-6 text-emerald-600" aria-hidden />
-            <p className="mt-2 font-display text-lg font-semibold text-emerald-900">You&apos;re connected</p>
+            <p className="mt-2 font-display text-lg font-semibold text-emerald-900">{t("celeyou.connected")}</p>
             <p className="mt-1 text-sm text-emerald-800">
-              {card.displayName} now has your contact too.
+              {t("celeyou.connected_body", { name: card.displayName })}
             </p>
           </div>
         ) : null}
@@ -314,9 +413,9 @@ export function DigitalCardPublicView({
 
       <footer className="celecard-guest-footer" data-tone={darkStage ? "dark" : "light"}>
         <Link
-          href="/digital-cards"
+          href={demoCardPreviewExplorePath()}
           className="celecard-guest-brand"
-          aria-label={`${SMARTCARD_PRODUCT_NAME}. Create your CeleYou`}
+          aria-label={t("celeyou.create_aria")}
         >
           <CeleYouMarkIcon className="celecard-guest-mark overflow-visible" />
           <span className="celecard-guest-brand-copy">
@@ -326,16 +425,70 @@ export function DigitalCardPublicView({
               <sup>®</sup>
             </span>
             <span className="celecard-guest-brand-tag">{SMARTCARD_BRAND_TAGLINE}</span>
-            <span className="celecard-guest-brand-cta">Create your CeleYou</span>
+            <span className="celecard-guest-brand-cta">{t("celeyou.create_yours")}</span>
           </span>
         </Link>
-        <p className="celecard-guest-powered">
-          <span className="celecard-guest-powered-by">{FOOTER_POWERED_BY}</span>
-          <span className="celecard-guest-powered-tag">{APP_TAGLINE}</span>
-        </p>
+        <Link
+          href="/"
+          className="celecard-guest-powered"
+          aria-label={t("celeyou.powered_aria", { name: COMPANY_NAME })}
+          data-celecard-origin={dock.originStyle}
+          data-foil={dock.foil ? "true" : "false"}
+          style={{
+            ["--celecard-powered-accent" as string]: headingInk,
+            ["--celecard-powered-metal" as string]: theme.border,
+            ["--celecard-powered-ink" as string]: dock.ghostFg,
+            background:
+              dock.originStyle === "neon"
+                ? `linear-gradient(180deg, ${theme.accent}1f 0%, rgba(2,6,23,0.55) 100%)`
+                : dock.ghostBg,
+            color: dock.ghostFg,
+            borderColor:
+              dock.originStyle === "neon"
+                ? `${theme.accent}88`
+                : `color-mix(in srgb, ${theme.border} 55%, ${dock.ghostBorder})`,
+            borderRadius: dock.actionRadius,
+            fontFamily: dock.font,
+            letterSpacing: dock.tracking,
+            textTransform: dock.labelTransform,
+            boxShadow:
+              dock.originStyle === "neon"
+                ? `0 0 18px ${theme.accent}40, inset 0 1px 0 ${theme.accent}55`
+                : dock.foil
+                  ? "inset 0 1px 0 rgba(255,255,255,0.55), 0 6px 14px rgba(15,23,42,0.06)"
+                  : "0 6px 14px rgba(15,23,42,0.05)",
+          }}
+        >
+          <span className="celecard-guest-powered-lead">{t("celeyou.powered_by")}</span>
+          <span className="celecard-guest-powered-rule" aria-hidden />
+          <span className="celecard-guest-powered-mark">{COMPANY_NAME}</span>
+        </Link>
       </footer>
 
+      <button
+        ref={holdCloseRef}
+        type="button"
+        className="celecard-hold-close"
+        aria-label={t("celeyou.close_fullscreen")}
+        onClick={(event) => {
+          event.stopPropagation();
+          setHoldIntent("closed");
+        }}
+      >
+        <X className="h-5 w-5" aria-hidden />
+      </button>
+
+      {saveHint ? (
+        <div className="celecard-save-toast" role="status">
+          <p style={{ color: faintInk }}>{saveHint}</p>
+          <button type="button" onClick={() => setSaveHint(null)} aria-label={t("celeyou.dismiss")}>
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
+
       <div
+        ref={dockRef}
         className="celecard-dock-bar pointer-events-none fixed inset-x-0 bottom-0 z-40 px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-8 sm:px-6 lg:px-8 sm:pt-10"
         style={{ background: dock.veil }}
       >
@@ -355,7 +508,7 @@ export function DigitalCardPublicView({
             type="button"
             onClick={downloadVCard}
             data-kind="save"
-            aria-label="Save filled details to contacts on this device"
+            aria-label={t("celeyou.save_aria")}
             aria-busy={saveState === "saving"}
             className="celecard-action"
             style={{
@@ -372,7 +525,7 @@ export function DigitalCardPublicView({
             </span>
             <span className="celecard-action-copy">
               <span className="celecard-action-label">
-                {saveState === "saved" ? "Saved" : SAVE_CONTACT_CTA}
+                {saveState === "saved" ? t("celeyou.file_ready") : t("celeyou.save_contact")}
               </span>
             </span>
           </button>
@@ -380,7 +533,7 @@ export function DigitalCardPublicView({
             <button
               type="button"
               data-kind="ghost"
-              aria-label={CONNECT_BACK_ARIA}
+              aria-label={t("celeyou.connect_back_aria")}
               className="celecard-action"
               style={{
                 backgroundColor: dock.ghostBg,
@@ -399,7 +552,7 @@ export function DigitalCardPublicView({
                 <Handshake />
               </span>
               <span className="celecard-action-copy">
-                <span className="celecard-action-label">{CONNECT_BACK_CTA}</span>
+                <span className="celecard-action-label">{t("celeyou.connect_back")}</span>
               </span>
             </button>
           ) : null}
@@ -422,7 +575,7 @@ export function DigitalCardPublicView({
             type="button"
             data-kind="ghost"
             className="celecard-action"
-            aria-label="Share this live CeleYou plate"
+            aria-label={t("celeyou.share_aria")}
             style={{
               backgroundColor: dock.ghostBg,
               color: dock.ghostFg,
@@ -439,20 +592,21 @@ export function DigitalCardPublicView({
             <span className="celecard-action-mark" aria-hidden>
               <Share2 />
             </span>
-            <span className="celecard-action-label">{copied ? "Copied" : "Share"}</span>
+            <span className="celecard-action-label">{copied ? t("celeyou.copied") : t("celeyou.share")}</span>
           </button>
         </div>
         </div>
       </div>
 
       {shareOpen ? (
+        <GuestLayer>
         <div
-          className="celecard-share-layer fixed inset-0 z-50 grid place-items-end bg-black/55 p-3 sm:place-items-center"
+          className="celecard-share-layer celecard-guest-overlay fixed inset-0 z-[200] grid place-items-center bg-black/70 p-3 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
           role="dialog"
           aria-modal
           aria-labelledby="celecard-share-title"
         >
-          <button type="button" className="absolute inset-0" aria-label="Close share" onClick={() => setShareOpen(false)} />
+          <button type="button" className="absolute inset-0" aria-label={t("celeyou.close_share")} onClick={() => setShareOpen(false)} />
           <div
             className="relative z-10 w-full max-w-sm overflow-hidden rounded-[1.7rem] border p-4 shadow-2xl"
             style={{ background: "rgba(255,251,245,0.98)", borderColor: theme.border, color: "#1c1917" }}
@@ -460,15 +614,15 @@ export function DigitalCardPublicView({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p id="celecard-share-title" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0B8A83]">
-                  Share this CeleYou
+                  {t("celeyou.share_this")}
                 </p>
-                <p className="mt-1 text-[15px] font-semibold tracking-tight">Live plate</p>
+                <p className="mt-1 text-[15px] font-semibold tracking-tight">{t("celeyou.live_card")}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShareOpen(false)}
                 className="grid h-8 w-8 place-items-center rounded-full bg-black/5"
-                aria-label="Close share"
+                aria-label={t("celeyou.close_share")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -497,39 +651,35 @@ export function DigitalCardPublicView({
             <div className="mt-4 grid gap-2">
               <button
                 type="button"
-                disabled={sharing}
+                disabled={sharing || copying}
                 onClick={() => void shareCard()}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white"
                 style={{ background: "#0B8A83" }}
               >
                 <Share2 className="h-4 w-4" />
-                {sharing ? "Preparing plate…" : "Share plate"}
+                {sharing ? t("celeyou.preparing_card") : t("celeyou.share_card")}
               </button>
               <button
                 type="button"
-                onClick={async () => {
-                  const shareUrl = profileUrl || scanUrl;
-                  await navigator.clipboard.writeText(celeCardShareClipboard(card, shareUrl)).catch(() => undefined);
-                  trackCeleYouGuestEvent(card.slug, "share_tap");
-                  setCopied(true);
-                  setShareOpen(false);
-                  window.setTimeout(() => setCopied(false), 2000);
-                }}
+                disabled={sharing || copying}
+                onClick={() => void copyCard()}
                 className="inline-flex min-h-11 items-center justify-center rounded-full border text-sm font-semibold"
                 style={{ borderColor: "rgba(28,25,23,0.14)", color: "#0B8A83" }}
               >
-                Copy link
+                {copying ? t("celeyou.copying") : t("celeyou.copy_link")}
               </button>
             </div>
           </div>
         </div>
+        </GuestLayer>
       ) : null}
 
       {card.connectBackEnabled && !card.isDemo && connectOpen && !connectDone ? (
-        <div className="celecard-connect-layer fixed inset-0 z-50 grid place-items-end bg-black/55 p-3 sm:place-items-center" role="dialog" aria-modal aria-labelledby="celecard-connect-title">
-          <button type="button" className="absolute inset-0" aria-label="Close connect" onClick={() => setConnectOpen(false)} />
+        <GuestLayer>
+        <div className="celecard-connect-layer celecard-guest-overlay fixed inset-0 z-[200] grid place-items-center bg-black/70 p-3 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]" role="dialog" aria-modal aria-labelledby="celecard-connect-title">
+          <button type="button" className="absolute inset-0" aria-label={t("celeyou.close_connect")} onClick={() => setConnectOpen(false)} />
           <form
-            className="celecard-sheet relative z-10 mb-[max(4.5rem,env(safe-area-inset-bottom))] w-full max-w-md space-y-3 rounded-[1.6rem] border p-4 shadow-2xl sm:mb-0"
+            className="celecard-sheet relative z-10 w-full max-w-md space-y-3 rounded-[1.6rem] border p-4 shadow-2xl"
             style={{
               borderColor: theme.border,
               background: darkStage ? "rgba(16,18,24,0.96)" : "#fffbf5",
@@ -545,61 +695,112 @@ export function DigitalCardPublicView({
               className="text-base font-semibold"
               style={{ fontFamily: typeVoice.heading, color: darkStage ? "#f8f4ec" : "#1c1917" }}
             >
-              Connect Back
+              {t("celeyou.connect_back")}
             </p>
             <p className="text-xs font-medium" style={{ color: copyInk, fontFamily: typeVoice.meta }}>
-              Share your details with consent. No Celeventic account required.
+              {t("celeyou.connect_back_intro")}
             </p>
+            <label className="grid gap-1 text-xs font-semibold" style={{ color: copyInk }}>
+              <span>{t("celeyou.your_name")} <span className="font-medium opacity-70">({t("celeyou.required")})</span></span>
             <input
               required
               name="visitorName"
-              placeholder="Your name"
+              placeholder={t("celeyou.your_name")}
+              autoComplete="name"
               value={form.visitorName}
               onChange={(e) => setForm((f) => ({ ...f, visitorName: e.target.value }))}
-              className="w-full rounded-xl border px-3 py-2.5 text-sm"
-              style={{ borderColor: theme.border, background: darkStage ? "rgba(255,255,255,0.06)" : "#fff", color: "inherit" }}
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm font-medium ${darkStage ? "placeholder:text-white/45" : "placeholder:text-stone-500"}`}
+              style={{
+                borderColor: darkStage ? "rgba(255,255,255,0.22)" : "rgba(28,25,23,0.16)",
+                background: darkStage ? "rgba(255,255,255,0.10)" : "#fff",
+                color: darkStage ? "#f8f4ec" : CELECARD_REACH_INK,
+              }}
             />
+            </label>
+            <label className="grid gap-1 text-xs font-semibold" style={{ color: copyInk }}>
+              <span>{t("celeyou.email")} <span className="font-medium opacity-70">({t("celeyou.email_or_phone_needed")})</span></span>
             <input
               type="email"
               name="visitorEmail"
-              placeholder="Email"
+              placeholder={t("celeyou.email")}
+              autoComplete="email"
+              inputMode="email"
               value={form.visitorEmail}
               onChange={(e) => setForm((f) => ({ ...f, visitorEmail: e.target.value }))}
-              className="w-full rounded-xl border px-3 py-2.5 text-sm"
-              style={{ borderColor: theme.border, background: darkStage ? "rgba(255,255,255,0.06)" : "#fff", color: "inherit" }}
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm ${darkStage ? "placeholder:text-white/45" : "placeholder:text-stone-500"}`}
+              style={{
+                borderColor: darkStage ? "rgba(255,255,255,0.22)" : "rgba(28,25,23,0.16)",
+                background: darkStage ? "rgba(255,255,255,0.10)" : "#fff",
+                color: darkStage ? "#f8f4ec" : CELECARD_REACH_INK,
+              }}
             />
+            </label>
+            <label className="grid gap-1 text-xs font-semibold" style={{ color: copyInk }}>
+              <span>{t("celeyou.connect_phone_placeholder")} <span className="font-medium opacity-70">({t("celeyou.email_or_phone_needed")})</span></span>
             <input
+              type="tel"
               name="visitorPhone"
-              placeholder="Phone / WhatsApp"
+              placeholder={t("celeyou.connect_phone_placeholder")}
+              autoComplete="tel"
+              inputMode="tel"
+              maxLength={120}
               value={form.visitorPhone}
               onChange={(e) => setForm((f) => ({ ...f, visitorPhone: e.target.value }))}
-              className="w-full rounded-xl border px-3 py-2.5 text-sm"
-              style={{ borderColor: theme.border, background: darkStage ? "rgba(255,255,255,0.06)" : "#fff", color: "inherit" }}
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm ${darkStage ? "placeholder:text-white/45" : "placeholder:text-stone-500"}`}
+              style={{
+                borderColor: darkStage ? "rgba(255,255,255,0.22)" : "rgba(28,25,23,0.16)",
+                background: darkStage ? "rgba(255,255,255,0.10)" : "#fff",
+                color: darkStage ? "#f8f4ec" : CELECARD_REACH_INK,
+              }}
             />
+            </label>
+            <label className="grid gap-1 text-xs font-semibold" style={{ color: copyInk }}>
+              <span>{t("celeyou.company")} <span className="font-medium opacity-70">({t("celeyou.optional")})</span></span>
             <input
               name="visitorCompany"
-              placeholder="Company (optional)"
+              placeholder={t("celeyou.company_optional")}
+              autoComplete="organization"
               value={form.visitorCompany}
               onChange={(e) => setForm((f) => ({ ...f, visitorCompany: e.target.value }))}
-              className="w-full rounded-xl border px-3 py-2.5 text-sm"
-              style={{ borderColor: theme.border, background: darkStage ? "rgba(255,255,255,0.06)" : "#fff", color: "inherit" }}
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm ${darkStage ? "placeholder:text-white/45" : "placeholder:text-stone-500"}`}
+              style={{
+                borderColor: darkStage ? "rgba(255,255,255,0.22)" : "rgba(28,25,23,0.16)",
+                background: darkStage ? "rgba(255,255,255,0.10)" : "#fff",
+                color: darkStage ? "#f8f4ec" : CELECARD_REACH_INK,
+              }}
             />
+            </label>
+            <label className="grid gap-1 text-xs font-semibold" style={{ color: copyInk }}>
+              <span>{t("celeyou.job_title")} <span className="font-medium opacity-70">({t("celeyou.optional")})</span></span>
             <input
               name="visitorTitle"
-              placeholder="Job title (optional)"
+              placeholder={t("celeyou.job_optional")}
+              autoComplete="organization-title"
               value={form.visitorTitle}
               onChange={(e) => setForm((f) => ({ ...f, visitorTitle: e.target.value }))}
-              className="w-full rounded-xl border px-3 py-2.5 text-sm"
-              style={{ borderColor: theme.border, background: darkStage ? "rgba(255,255,255,0.06)" : "#fff", color: "inherit" }}
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm ${darkStage ? "placeholder:text-white/45" : "placeholder:text-stone-500"}`}
+              style={{
+                borderColor: darkStage ? "rgba(255,255,255,0.22)" : "rgba(28,25,23,0.16)",
+                background: darkStage ? "rgba(255,255,255,0.10)" : "#fff",
+                color: darkStage ? "#f8f4ec" : CELECARD_REACH_INK,
+              }}
             />
+            </label>
+            <label className="grid gap-1 text-xs font-semibold" style={{ color: copyInk }}>
+              <span>{t("celeyou.how_we_met_short")} <span className="font-medium opacity-70">({t("celeyou.optional")})</span></span>
             <textarea
               name="note"
-              placeholder="How we met (optional)"
+              placeholder={t("celeyou.how_we_met")}
               value={form.note}
               onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-              className="min-h-[72px] w-full rounded-xl border px-3 py-2.5 text-sm"
-              style={{ borderColor: theme.border, background: darkStage ? "rgba(255,255,255,0.06)" : "#fff", color: "inherit" }}
+              className={`min-h-[72px] w-full rounded-xl border px-3 py-2.5 text-sm ${darkStage ? "placeholder:text-white/45" : "placeholder:text-stone-500"}`}
+              style={{
+                borderColor: darkStage ? "rgba(255,255,255,0.22)" : "rgba(28,25,23,0.16)",
+                background: darkStage ? "rgba(255,255,255,0.10)" : "#fff",
+                color: darkStage ? "#f8f4ec" : CELECARD_REACH_INK,
+              }}
             />
+            </label>
             <label className="flex items-start gap-2 text-xs" style={{ color: copyInk }}>
               <input
                 type="checkbox"
@@ -608,7 +809,7 @@ export function DigitalCardPublicView({
                 onChange={(e) => setForm((f) => ({ ...f, consent: e.target.checked }))}
                 className="mt-0.5"
               />
-              <span>I agree to share these details with {card.displayName} through CeleYou.</span>
+              <span>{t("celeyou.consent", { name: card.displayName })}</span>
             </label>
             <input
               tabIndex={-1}
@@ -619,7 +820,7 @@ export function DigitalCardPublicView({
               value={form.website}
               onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
             />
-            {connectError ? <p className="text-xs text-rose-600">{connectError}</p> : null}
+            {connectError ? <p className="text-xs text-rose-600" role="alert">{connectError}</p> : null}
             <div className="flex gap-2">
               <Button
                 type="submit"
@@ -627,7 +828,7 @@ export function DigitalCardPublicView({
                 style={{ background: dock.saveBg, color: dock.saveFg }}
                 className="border-0 hover:brightness-110"
               >
-                {connecting ? "Connecting…" : "Send contact"}
+                {connecting ? t("celeyou.connecting") : t("celeyou.send_contact")}
               </Button>
               <Button
                 type="button"
@@ -639,11 +840,12 @@ export function DigitalCardPublicView({
                   background: dock.ghostBg,
                 }}
               >
-                Cancel
+                {t("celeyou.cancel")}
               </Button>
             </div>
           </form>
         </div>
+        </GuestLayer>
       ) : null}
     </main>
   );

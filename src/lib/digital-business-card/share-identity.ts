@@ -2,6 +2,7 @@ import {
   celeYouGuestOrigin,
   celeYouProductionOrigin,
   isApprovedCeleYouShareOrigin,
+  isCeleventicDomain,
   isLocalHost,
   isPrivateNetworkHost,
 } from "@/lib/app-url";
@@ -25,6 +26,7 @@ export type CeleYouShareIdentityInput = {
   slug: string;
   publicToken: string;
   nfcToken: string;
+  username?: string | null;
   origin?: string;
 };
 
@@ -39,8 +41,8 @@ export type CeleYouShareIdentity = {
 
 /**
  * One CeleYou has three distinct public artifacts:
- * profile URL (/u/{slug}), Smart QR (/c/{publicToken}), NFC tap (/n/{nfcToken}).
- * Tap-to-Connect sessions add a fourth, ephemeral join code.
+ * profile URL (/u/{username or slug}), Smart QR (/c/{publicToken}), NFC tap (/n/{nfcToken}).
+ * Username changes never rotate QR or NFC tokens. Tap-to-Connect adds a fourth, ephemeral join code.
  */
 /**
  * Absolute URL encoded into every activated-card QR.
@@ -111,17 +113,42 @@ export function celeYouAbsoluteGuestPayload(raw: string, origin?: string): strin
         return `${live}${path}`;
       }
       if (isLocalHost(parsed.hostname) || isPrivateNetworkHost(parsed.hostname)) {
-        return `${live}${path}`;
+        return isCeleYouGuestPath(parsed.pathname) ? `${live}${path}` : null;
       }
-      return value;
+      if (isCeleventicDomain(parsed.hostname) && (parsed.protocol === "https:" || parsed.protocol === "http:")) {
+        parsed.protocol = "https:";
+        parsed.username = "";
+        parsed.password = "";
+        return parsed.toString();
+      }
+      return null;
     } catch {
-      return value;
+      return null;
     }
   }
   if (isCeleYouGuestPath(value.split("?")[0] ?? "") || value.startsWith("/c/") || value.startsWith("/n/") || value.startsWith("/card/") || value.startsWith("/u/")) {
     return `${live}${value.startsWith("/") ? value : `/${value}`}`;
   }
   return null;
+}
+
+/** Public `/api/qr/image?data=` destinations. Celeventic and CeleYou hosts only. */
+export function isAllowedPublicQrDestination(raw: string): boolean {
+  const value = raw.trim();
+  if (!value) return false;
+  if (/^(javascript|data|file|ftp|blob):/i.test(value)) return false;
+  const absolute = celeYouAbsoluteGuestPayload(value);
+  if (!absolute) return false;
+  try {
+    const parsed = new URL(absolute);
+    if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && isLocalHost(parsed.hostname))) {
+      return false;
+    }
+    if (parsed.username || parsed.password) return false;
+    return isCeleventicDomain(parsed.hostname) || isLocalHost(parsed.hostname) || isCeleYouGuestPath(parsed.pathname);
+  } catch {
+    return false;
+  }
 }
 
 /** Profile, Smart QR, and NFC card use different URLs and the same public identity. */
@@ -131,7 +158,7 @@ export function shareArtifactsLandOnSameProfile(identity: CeleYouShareIdentity):
   const encoded = encodeURIComponent(slug);
   try {
     return (
-      identity.profileUrl.includes(`/u/${encoded}`) &&
+      /\/u\/[^/]+$/.test(new URL(identity.profileUrl).pathname) &&
       /\/c\/[^/]+$/.test(new URL(identity.qrUrl).pathname) &&
       /\/n\/[^/]+$/.test(new URL(identity.nfcUrl).pathname) &&
       celeYouScanLandingUrl(slug).includes(`/card/${encoded}`)
@@ -147,7 +174,7 @@ export function celeYouShareIdentity(input: CeleYouShareIdentityInput): CeleYouS
     slug: input.slug,
     publicToken: input.publicToken,
     nfcToken: input.nfcToken,
-    profileUrl: digitalCardIdentityUrl(input.slug, origin),
+    profileUrl: digitalCardIdentityUrl((input.username || "").trim() || input.slug, origin),
     qrUrl: celeYouCameraScanUrl(input.publicToken, origin),
     nfcUrl: celeYouNfcScanUrl(input.nfcToken, origin),
   };

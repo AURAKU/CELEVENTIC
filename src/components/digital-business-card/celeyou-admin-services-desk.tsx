@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
 import { CeleCardCommandDirectory } from "@/components/digital-business-card/celecard-command-directory";
+import { CeleCardUsernameDirectory } from "@/components/digital-business-card/celecard-username-directory";
 import { CeleCardPricingForm } from "@/components/digital-business-card/celecard-pricing-form";
 import { CeleCardAdminPolicyForm } from "@/components/digital-business-card/celecard-admin-policy-form";
 import { CeleCardTapAdminForm } from "@/components/digital-business-card/celecard-tap-admin-form";
@@ -67,7 +68,18 @@ type Snapshot = {
     expiringSoon: number;
     pendingConnectionRequests: number;
     conciergeOpen?: number;
+    publishedCards?: number;
     prepaidNote: string;
+    engagement?: {
+      windowDays: number;
+      profileOpens: number;
+      qrOpens: number;
+      nfcTaps: number;
+      contactDownloads: number;
+      contactTaps: number;
+      paymentOpens: number;
+      shares: number;
+    };
   };
   policy: CeleCardLifecyclePolicy;
   plans: Array<{ id: string; label: string; months: number; priceGhs: number }>;
@@ -79,11 +91,12 @@ type Snapshot = {
   };
 };
 
-type TabId = "overview" | "cards" | "billing" | "attention";
+type TabId = "overview" | "cards" | "usernames" | "billing" | "attention";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "cards", label: "Cards" },
+  { id: "usernames", label: "Usernames" },
   { id: "billing", label: "Billing and policy" },
   { id: "attention", label: "Needs attention" },
 ];
@@ -260,6 +273,10 @@ export function CeleYouAdminServicesDesk({ canEditPrices = false }: { canEditPri
                   ["Suspended", data.overview.suspendedCards],
                   ["Connect requests", data.overview.pendingConnectionRequests],
                   ["Concierge open", data.overview.conciergeOpen ?? 0],
+                  ["Published", data.overview.publishedCards ?? 0],
+                  ["QR links (30d)", data.overview.engagement?.qrOpens ?? 0],
+                  ["NFC tags (30d)", data.overview.engagement?.nfcTaps ?? 0],
+                  ["vCard files (30d)", data.overview.engagement?.contactDownloads ?? 0],
                 ].map(([label, count]) => (
                   <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4">
                     <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">{label}</p>
@@ -339,6 +356,7 @@ export function CeleYouAdminServicesDesk({ canEditPrices = false }: { canEditPri
           ) : null}
 
           {tab === "cards" ? <CeleCardCommandDirectory /> : null}
+          {tab === "usernames" ? <CeleCardUsernameDirectory /> : null}
 
           {tab === "billing" ? (
             <div className="space-y-6">

@@ -5,9 +5,11 @@ import type { AccountType, EventCollaboratorRole, UserRole } from "@prisma/clien
 import { createAuditLog } from "@/lib/audit";
 import { complianceService } from "@/services/legal/compliance.service";
 import {
-  celeCardOwnerStudioPath,
+  celeCardOwnerStartPath,
   isCeleCardProductIntent,
 } from "@/lib/digital-business-card/access";
+import { parseCeleYouUsername } from "@/lib/digital-business-card/username";
+import { claimCeleYouUsername } from "@/services/digital-business-card/username.service";
 
 const ACCOUNT_ROLE_MAP: Record<AccountType, UserRole> = {
   ORGANIZER: "ORGANIZER",
@@ -46,7 +48,7 @@ export class OnboardingService {
     options?: { vendorCategory?: string; productIntent?: string | null }
   ) {
     if (isCeleCardProductIntent(options?.productIntent)) {
-      return celeCardOwnerStudioPath();
+      return celeCardOwnerStartPath();
     }
     if (accountType === "VENDOR") {
       const category = options?.vendorCategory?.trim();
@@ -67,10 +69,7 @@ export class OnboardingService {
     const role = this.mapAccountTypeToRole(input.accountType);
     const username = input.username?.trim().toLowerCase();
 
-    if (username) {
-      const taken = await prisma.user.findUnique({ where: { username } });
-      if (taken) throw new Error("Username already taken");
-    }
+    const requestedUsername = username || undefined;
 
     if (input.email) {
       const email = input.email.toLowerCase();
@@ -106,7 +105,7 @@ export class OnboardingService {
         passwordHash: input.passwordHash,
         role,
         accountType: input.accountType,
-        username,
+        username: undefined,
         companyName: input.companyName,
         organizationId,
         onboardingCompletedAt: celeCardFirst ? new Date() : null,
@@ -133,7 +132,7 @@ export class OnboardingService {
     }
 
     if (input.accountType === "ORGANIZER" || input.accountType === "ORGANIZATION") {
-      const slug = username ?? `${slugify(input.name)}-${generateToken(4)}`;
+      const slug = requestedUsername ?? `${slugify(input.name)}-${generateToken(4)}`;
       await prisma.organizerProfile.create({
         data: {
           userId: user.id,
@@ -143,6 +142,19 @@ export class OnboardingService {
           country: input.country ?? "GH",
           isPublic: input.accountType === "ORGANIZER" || input.accountType === "ORGANIZATION",
         },
+      });
+    }
+
+    if (requestedUsername) {
+      const parsed = parseCeleYouUsername(requestedUsername);
+      if (!parsed.ok) throw new Error(parsed.message);
+      await claimCeleYouUsername({
+        userId: user.id,
+        username: parsed.username,
+        actorId: user.id,
+        seed: { displayName: input.name, company: input.companyName },
+      }).catch(() => {
+        throw new Error("Username already taken");
       });
     }
 

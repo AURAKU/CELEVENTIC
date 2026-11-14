@@ -13,6 +13,49 @@
   --celeyou-stage-pad-end: max(1rem, env(safe-area-inset-right, 0px));
   --celeyou-stage-pad-top: max(1.15rem, env(safe-area-inset-top, 0px));
   --celeyou-stage-pad-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  --celeyou-ink: #1c1917;
+  --celeyou-paper: #fffef8;
+  --celeyou-primary: #0b8a83;
+  --celeyou-focus: 0 0 0 3px rgba(11, 138, 131, 0.35);
+  --celeyou-radius: 999px;
+  --celeyou-elevate: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.celeyou-btn {
+  min-height: var(--celeyou-touch);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.celeyou-btn:focus-visible,
+.celeyou-input:focus-visible {
+  outline: none;
+  box-shadow: var(--celeyou-focus);
+}
+
+.celeyou-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.celeyou-btn-primary,
+.celeyou-btn-copy,
+.celeyou-btn-pay {
+  color: var(--celeyou-paper);
+}
+
+.celeyou-btn-ghost {
+  background: var(--celeyou-paper);
+  color: var(--celeyou-ink);
+}
+
+.celeyou-input {
+  min-height: var(--celeyou-touch);
+}
+
+.celeyou-pay-card,
+.celeyou-locked-card {
+  color: var(--celeyou-ink);
 }
 
 .celeyou-adaptive,
@@ -433,7 +476,7 @@ body:has(.celecard-tap-scanner) {
 }
 
 /*
- * Public cards may cover-fill on landscape hold.
+ * Public cards fit the whole ID-1 plate on landscape hold.
  * Tap Mode must keep the connection QR, code, and actions visible.
  */
 .celecard-stage:has(.celecard-tap-shell)[data-celecard-hold="true"],

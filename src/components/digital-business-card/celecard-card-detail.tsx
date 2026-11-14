@@ -27,6 +27,17 @@ type Detail = {
   };
   owner: { id: string | null; name: string; email: string | null; unclaimed?: boolean } | null;
   designs: { id: string; label: string; themeId: string; status: string; createdAt: string }[];
+  payments?: {
+    id: string;
+    reference: string;
+    status: string;
+    amount: number;
+    currency: string;
+    createdAt: string;
+    planId: string | null;
+    planLabel: string | null;
+  }[];
+  paymentTotal?: number;
   entitlements: {
     id: string;
     kind: string;
@@ -43,7 +54,26 @@ type Detail = {
   connections: { id: string; visitorName: string; status: string; createdAt: string }[];
   activity: { id: string; kind: string; createdAt: string }[];
   privacy: { accessCodeCount: number; accessGrantCount: number; accessRequestCount: number; connectionCount: number };
-  sharing: { publicUrl: string; canonicalUrl: string; qrImageSrc: string; cardImageSrc: string };
+  sharing: {
+    publicUrl: string;
+    canonicalUrl: string;
+    qrImageSrc: string;
+    qrPngSrc?: string;
+    qrSvgSrc?: string;
+    cardImageSrc: string;
+  };
+  nfc?: {
+    devices: {
+      id: string;
+      name: string;
+      status: string;
+      nfcUrl: string;
+      tapCount: number;
+      lastTapAt: string | null;
+      createdAt: string;
+    }[];
+    activeDevice: { id: string; status: string; nfcUrl: string } | null;
+  };
   profile: {
     displayName: string;
     title: string | null;
@@ -272,19 +302,63 @@ export function CeleCardCardDetail({ cardId }: { cardId: string }) {
             ))}
             {!data.entitlements.length ? <li>No manual entitlements.</li> : null}
           </ul>
+          <div className="border-t border-slate-100 pt-3">
+            <p className="text-sm font-semibold">Payment history</p>
+            <p className="mb-2 text-xs text-slate-500">
+              {(data.paymentTotal ?? data.payments?.length ?? 0)} Paystack records for this card. Failed charges stay failed until a verified success arrives.
+            </p>
+            <ul className="space-y-2 text-sm">
+              {(data.payments ?? []).map((row) => (
+                <li key={row.id}>
+                  {row.status} · {row.currency} {row.amount} · {row.planLabel || row.planId || "plan"} · {row.reference}
+                </li>
+              ))}
+              {!(data.payments ?? []).length ? <li>No Paystack records yet.</li> : null}
+            </ul>
+          </div>
         </section>
       ) : null}
 
       {tab === "Sharing" ? (
-        <section className="space-y-2 rounded-2xl border bg-white p-5 text-sm">
+        <section className="space-y-4 rounded-2xl border bg-white p-5 text-sm">
           <p>Public URL: {data.sharing.publicUrl}</p>
-          <p>Canonical URL: {data.sharing.canonicalUrl}</p>
+          <p>Canonical QR: {data.sharing.canonicalUrl}</p>
+          <p className="text-xs text-slate-500">
+            Design edits keep this QR and NFC destination. Hardware tag UID is never used as login.
+          </p>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={() => navigator.clipboard.writeText(data.sharing.publicUrl)}>
               Copy Public URL
             </Button>
-            <Button asChild variant="outline"><a href={data.sharing.qrImageSrc}>Generate QR</a></Button>
+            <Button asChild variant="outline"><a href={data.sharing.qrPngSrc || data.sharing.qrImageSrc}>Download QR PNG</a></Button>
+            {data.sharing.qrSvgSrc ? (
+              <Button asChild variant="outline"><a href={data.sharing.qrSvgSrc}>Download QR SVG</a></Button>
+            ) : null}
             <Button asChild variant="outline"><a href={data.sharing.cardImageSrc}>Shareable card image</a></Button>
+          </div>
+          <div className="space-y-2 border-t border-slate-100 pt-3">
+            <p className="font-medium text-slate-900">NFC cards</p>
+            <p className="text-xs text-slate-500">
+              Encode the NFC URL as an NDEF URL record. Chrome on Android can write from the owner studio. iPhone and desktop copy the link into an NFC writer.
+            </p>
+            <ul className="space-y-2">
+              {(data.nfc?.devices ?? []).map((device) => (
+                <li key={device.id} className="rounded-xl border border-slate-200 px-3 py-2">
+                  <p>{device.name} · {device.status} · {device.tapCount} taps</p>
+                  <p className="break-all font-mono text-[11px] text-slate-500">{device.nfcUrl}</p>
+                </li>
+              ))}
+              {!data.nfc?.devices?.length ? <li>No NFC card registered yet.</li> : null}
+            </ul>
+            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for lost, replace, or revoke (required)" />
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={busy} variant="outline" onClick={() => act("nfc_register")}>Register NFC</Button>
+              <Button disabled={busy} variant="outline" onClick={() => act("nfc_pause")}>Pause</Button>
+              <Button disabled={busy} variant="outline" onClick={() => act("nfc_resume")}>Resume</Button>
+              <Button disabled={busy} variant="outline" onClick={() => act("nfc_lost")}>Mark lost</Button>
+              <Button disabled={busy} variant="outline" onClick={() => act("nfc_replace")}>Replace</Button>
+              <Button disabled={busy} variant="outline" onClick={() => act("nfc_revoke")}>Revoke</Button>
+            </div>
           </div>
         </section>
       ) : null}

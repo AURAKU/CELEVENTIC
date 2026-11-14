@@ -3,6 +3,10 @@ export const NFC_STUDIO_PATH = "/dashboard/business-card/nfc";
 export type NfcDeviceStatus = "ACTIVE" | "DISABLED" | "LOST" | "REPLACED";
 export type NfcTapOutcome = "open" | "profile" | "paused" | "lost" | "replaced" | "unknown";
 export type NfcDeviceAction = "pause" | "resume" | "lost" | "replace";
+export type NfcAdminDeviceAction = NfcDeviceAction | "register" | "revoke";
+
+/** Hardware UID is inventory only. Taps authenticate with the NDEF URL token, never a tag serial. */
+export const NFC_HARDWARE_UID_IS_NOT_AUTH = true;
 
 export const NFC_TAP_COPY: Record<Exclude<NfcTapOutcome, "open" | "profile">, { heading: string; body: string }> = {
   paused: {
@@ -80,4 +84,18 @@ export function nfcDeviceMayReportLost(status: NfcDeviceStatus): boolean {
 
 export function nfcDeviceMayReplace(status: NfcDeviceStatus): boolean {
   return status === "ACTIVE" || status === "DISABLED" || status === "LOST";
+}
+
+export function nfcDeviceMayRevoke(status: NfcDeviceStatus): boolean {
+  return status === "ACTIVE" || status === "DISABLED";
+}
+
+export function nfcActionFromAdminAction(action: string): NfcAdminDeviceAction | null {
+  if (action === "nfc_register") return "register";
+  if (action === "nfc_pause") return "pause";
+  if (action === "nfc_resume") return "resume";
+  if (action === "nfc_lost") return "lost";
+  if (action === "nfc_replace") return "replace";
+  if (action === "nfc_revoke") return "revoke";
+  return null;
 }

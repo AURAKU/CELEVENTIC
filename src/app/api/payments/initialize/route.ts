@@ -17,7 +17,9 @@ const initSchema = z.object({
     "CONTRIBUTION",
   ]),
   /** Optional override, when omitted, platform default provider is used */
-  provider: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL"]).optional().nullable(),
+  provider: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL", "STRIPE"]).optional().nullable(),
+  method: z.enum(["card", "mobile_money", "bank_transfer", "alipay", "wechat_pay"]).optional(),
+  channels: z.array(z.string()).optional(),
   metadata: z.record(z.unknown()).optional(),
   ticketOrderId: z.string().optional(),
   campaignId: z.string().optional(),
@@ -39,6 +41,8 @@ export async function POST(req: Request) {
         currency: data.currency,
         email: data.email,
         purpose: data.purpose,
+        method: data.method,
+        channels: data.channels,
         metadata: data.metadata,
       },
       { ticketOrderId: data.ticketOrderId, campaignId: data.campaignId }

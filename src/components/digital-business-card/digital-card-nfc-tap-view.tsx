@@ -1,12 +1,19 @@
+"use client";
+
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
-import { NFC_TAP_COPY, type NfcTapOutcome } from "@/lib/digital-business-card/nfc-device";
+import type { NfcTapOutcome } from "@/lib/digital-business-card/nfc-device";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 export function DigitalCardNfcTapView({
   outcome,
 }: {
   outcome: Exclude<NfcTapOutcome, "open" | "profile">;
 }) {
-  const copy = NFC_TAP_COPY[outcome];
+  const { t } = useLocale();
+  const copy = {
+    heading: t(`celeyou.nfc_${outcome}_heading`),
+    body: t(`celeyou.nfc_${outcome}_body`),
+  };
   return (
     <main className="min-h-app-viewport grid place-items-center bg-stone-100 px-4">
       <div className="max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center">

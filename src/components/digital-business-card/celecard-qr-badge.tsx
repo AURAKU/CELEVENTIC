@@ -48,7 +48,7 @@ export function CeleCardQrBadge({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={qrSrc}
-          alt=""
+          alt={href ? "" : `${displayName || "CeleYou"} scan QR`}
           className="h-full w-full origin-center object-cover"
           style={{ transform: `scale(${CELECARD_QR_TILE_FILL})` }}
         />

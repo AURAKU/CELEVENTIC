@@ -32,6 +32,7 @@ import { useEventContext } from "@/hooks/use-event-context";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
 import { CountrySelect } from "@/components/ui/country-select";
 import { AvatarPicker } from "@/components/settings/avatar-picker";
+import { CeleYouUsernameSettings } from "@/components/digital-business-card/celeyou-username-settings";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
 import { isAdminRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -344,6 +345,8 @@ function AccountSection() {
           {message && <SectionMessage tone={message.tone}>{message.text}</SectionMessage>}
         </CardContent>
       </Card>
+
+      <CeleYouUsernameSettings displayName={name} />
 
       <div className="grid sm:grid-cols-2 gap-3">
         <QuickLink

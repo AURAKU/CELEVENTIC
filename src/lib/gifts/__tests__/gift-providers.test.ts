@@ -65,9 +65,9 @@ test("checkout is restricted to the channel the guest picked", () => {
   const enabled = listEnabledGiftPaymentMethods();
   assert.deepEqual(
     enabled.map((m) => m.id),
-    ["MTN_MOMO", "TELECEL_CASH", "AIRTELTIGO_MONEY"]
+    ["MTN_MOMO", "TELECEL_CASH", "AIRTELTIGO_MONEY", "CARD", "BANK_TRANSFER"]
   );
-  assert.equal(enabled.some((m) => m.id === "CARD"), false);
+  assert.deepEqual(paystackChannelsFor("BANK_TRANSFER"), ["bank_transfer"]);
   assert.ok(enabled.every((m) => m.enabled));
 });
 

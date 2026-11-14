@@ -5,6 +5,7 @@ import { APP_NAME, APP_TAGLINE, BRAND, BRAND_MOTTO } from "@/lib/constants";
 import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
 import { INSPECTOR_ATTR_GUARD_SCRIPT } from "@/lib/dev/inspector-attr-guard";
 import { getSafeServerI18nState } from "@/lib/i18n/server-locale";
+import { htmlLang } from "@/lib/i18n/constants";
 import "./globals.css";
 import "./celeyou-adaptive.css";
 
@@ -40,7 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { locale, messages } = await getSafeServerI18nState();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={htmlLang(locale)} suppressHydrationWarning>
       <head>
         {process.env.NODE_ENV === "development" ? (
           <script

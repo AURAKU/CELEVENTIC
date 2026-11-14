@@ -1,5 +1,6 @@
 import { readFile } from "fs/promises";
 import path from "path";
+import sharp from "sharp";
 import { generateBrandedQrPng } from "@/lib/qr/branded-qr-generator";
 import { isCeleventicDomain, isLocalHost } from "@/lib/app-url";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
@@ -35,6 +36,22 @@ function bufferToDataUrl(buffer: Buffer | null | undefined): string | null {
   return `data:${mime};base64,${buffer.toString("base64")}`;
 }
 
+/** PNG data URL only. WebP/AVIF crash Satori (`u2 is not iterable`) and WhatsApp then uses the site icon. */
+async function bufferToPngDataUrl(buffer: Buffer | null | undefined): Promise<string | null> {
+  if (!buffer || buffer.length < 32) return null;
+  try {
+    const png = await sharp(buffer)
+      .rotate()
+      .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
+      .png()
+      .toBuffer();
+    if (png.length < 32 || png.length > MAX_SATORI_IMAGE_BYTES) return null;
+    return `data:image/png;base64,${png.toString("base64")}`;
+  } catch {
+    return bufferToDataUrl(buffer);
+  }
+}
+
 export function isSatoriSafeImageSrc(src?: string | null): src is string {
   return Boolean(src && src.startsWith("data:image/"));
 }
@@ -51,7 +68,7 @@ export async function localCeleCardPhotoDataUrl(rel: string): Promise<string | n
   const uploadRel = uploadRelativePath(pathname);
   if (uploadRel) {
     try {
-      return bufferToDataUrl(await readUploadFile(uploadRel));
+      return bufferToPngDataUrl(await readUploadFile(uploadRel));
     } catch {
       return null;
     }
@@ -59,7 +76,7 @@ export async function localCeleCardPhotoDataUrl(rel: string): Promise<string | n
   if (!SAFE_PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return null;
   try {
     const filePath = path.join(process.cwd(), "public", pathname.replace(/^\/+/, ""));
-    return bufferToDataUrl(await readFile(filePath));
+    return bufferToPngDataUrl(await readFile(filePath));
   } catch {
     return null;
   }
@@ -103,7 +120,7 @@ async function httpToDataUrl(url: string): Promise<string | null> {
     });
     if (!res.ok) return null;
     const buffer = Buffer.from(await res.arrayBuffer());
-    return bufferToDataUrl(buffer);
+    return bufferToPngDataUrl(buffer);
   } catch {
     return null;
   } finally {
@@ -127,8 +144,13 @@ export async function celeCardPlateBitmapAssets(
 /** Always a data URL. Never a remote URL — Satori HTTP fetches crash the OG pipe. */
 export async function safeCeleCardPhotoSrc(avatarUrl: string | null | undefined): Promise<string | null> {
   if (!avatarUrl || avatarUrl.startsWith("house:")) return null;
-  if (avatarUrl.startsWith("data:image/")) {
+  if (avatarUrl.startsWith("data:image/png")) {
     return avatarUrl.length > MAX_SATORI_IMAGE_BYTES * 1.4 ? null : avatarUrl;
+  }
+  if (avatarUrl.startsWith("data:image/")) {
+    const comma = avatarUrl.indexOf(",");
+    if (comma < 0) return null;
+    return bufferToPngDataUrl(Buffer.from(avatarUrl.slice(comma + 1), "base64"));
   }
   if (avatarUrl.startsWith("/") && !avatarUrl.startsWith("//")) {
     return localCeleCardPhotoDataUrl(avatarUrl);
@@ -142,7 +164,7 @@ export async function celeCardGuideQrDataUrl(destination: string, size: 512 | 10
   if (!/^https?:\/\//i.test(destination)) return null;
   try {
     const png = await generateBrandedQrPng(destination, null, size, "guide");
-    return bufferToDataUrl(png);
+    return bufferToPngDataUrl(png);
   } catch {
     return null;
   }

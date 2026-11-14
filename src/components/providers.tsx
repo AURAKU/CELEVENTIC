@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import { CookieConsent } from "@/components/legal/cookie-consent";
 import { CurrencyProvider } from "@/components/commerce/currency-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { LocaleDock } from "@/components/i18n/locale-dock";
 import type { AppLocale } from "@/lib/i18n/constants";
 import type { LocaleMessages } from "@/lib/i18n/static-messages";
 
@@ -19,6 +20,7 @@ export function Providers({ children, initialLocale, initialMessages }: Provider
       <LocaleProvider initialLocale={initialLocale} initialMessages={initialMessages}>
         <CurrencyProvider>
           {children}
+          <LocaleDock />
           <CookieConsent />
         </CurrencyProvider>
       </LocaleProvider>

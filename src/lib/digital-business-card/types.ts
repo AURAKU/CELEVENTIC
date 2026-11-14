@@ -14,7 +14,7 @@ export {
   socialValueList,
 } from "./socials";
 
-export type DigitalCardSubscriptionStatus = "TRIAL" | "ACTIVE" | "EXPIRED" | "INACTIVE";
+export type DigitalCardSubscriptionStatus = "FREE" | "TRIAL" | "ACTIVE" | "EXPIRED" | "INACTIVE";
 
 export type DigitalCardPresentationMode = "live" | "courtesy" | "suspended" | "unavailable";
 
@@ -47,8 +47,8 @@ export type DigitalCardPublicPayload = {
 };
 
 export { DIGITAL_CARD_MONTHLY_PRICE_GHS } from "./plans";
-/** Studio design window. Published profiles stay guest-shareable during this window. */
-export const DIGITAL_CARD_TRIAL_DAYS = 14;
+/** Optional CeleYou Pro trial. Existing in-flight expiries stay on the stored timestamp. */
+export const DIGITAL_CARD_TRIAL_DAYS = 7;
 
 /** About line on the plate and in studio. Server and browser share this cap. */
 export const CELECARD_BIO_MAX_CHARS = 300;
@@ -66,7 +66,7 @@ export function digitalCardPublicUrl(slug: string, origin?: string): string {
   return `${origin.replace(/\/$/, "")}${path}`;
 }
 
-/** Canonical zero-install identity URL. Rewrites to /card/{slug}. */
+/** Canonical zero-install identity URL. Username when set, otherwise the card slug. */
 export function digitalCardIdentityUrl(slug: string, origin?: string): string {
   const path = `${DIGITAL_CARD_IDENTITY_PATH}/${encodeURIComponent(slug)}`;
   if (!origin) return path;

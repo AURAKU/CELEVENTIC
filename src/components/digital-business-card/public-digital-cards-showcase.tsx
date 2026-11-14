@@ -32,29 +32,38 @@ import {
   type DigitalCardThemeCategory,
 } from "@/lib/digital-business-card/themes";
 import { SMARTCARD_PLANS, type SmartCardPlan, type SmartCardPlanId } from "@/lib/digital-business-card/plans";
+import {
+  CELEYOU_DISPLAY_CURRENCIES,
+  celeYouCheckoutCurrency,
+  formatCeleYouMoney,
+  type CeleYouDisplayCurrency,
+} from "@/lib/digital-business-card/currencies";
+import { celeYouProDisplay, CELEYOU_DRAFT_CONCIERGE } from "@/lib/digital-business-card/freemium";
 import { demoForTheme, SMARTCARD_HERO_FAN } from "@/lib/digital-business-card/demos";
 import {
   SMARTCARD_AUTOMATIONS,
   SMARTCARD_BRAND_TAGLINE,
-  SMARTCARD_CTA_PRIMARY,
-  SMARTCARD_CTA_SECONDARY,
-  SMARTCARD_HERO_LINE,
-  SMARTCARD_HERO_SUPPORT,
 } from "@/lib/digital-business-card/product";
 import {
   demoCardPreviewExplorePath,
   demoCardPreviewQrSrc,
 } from "@/lib/digital-business-card/demo-card";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 const CAPABILITY_ICONS = {
-  "Smart QR": QrCode,
-  "NFC Tap": Nfc,
-  "Offline snapshot": WifiOff,
-  "Wallet Ready": Wallet,
-  "Connect Back": Handshake,
-  "Paid activation": Banknote,
+  smart_qr: QrCode,
+  nfc_tap: Nfc,
+  offline: WifiOff,
+  wallet: Wallet,
+  connect: Handshake,
+  paid: Banknote,
 } as const;
+
+function automationCopyKey(id: string, part: "title" | "body") {
+  const slug = id === "live-everywhere" ? "live" : id === "connect-back" ? "connect" : id;
+  return `celeyou.auto_${slug}_${part}`;
+}
 
 const HERO_FAN_SLOTS = [
   { rotate: -17, x: "-24%", y: 18, z: 1, scale: 0.9 },
@@ -226,10 +235,12 @@ export function PublicDigitalCardsShowcase({
   dummyLiveCta?: ReactNode;
 }) {
   const { data: session, status } = useSession();
+  const { t } = useLocale();
   const [filter, setFilter] = useState<"all" | DigitalCardThemeCategory>("all");
   const [planId, setPlanId] = useState<SmartCardPlanId>("yearly");
   const [plans, setPlans] = useState<SmartCardPlan[]>(SMARTCARD_PLANS);
   const [conciergePriceGhs, setConciergePriceGhs] = useState(800);
+  const [currency, setCurrency] = useState<CeleYouDisplayCurrency>("GHS");
   const themes = useMemo(
     () =>
       filter === "all"
@@ -238,6 +249,12 @@ export function PublicDigitalCardsShowcase({
     [filter]
   );
   const selectedPlan = plans.find((p) => p.id === planId) ?? plans[plans.length - 1] ?? SMARTCARD_PLANS[3];
+  const checkout = celeYouCheckoutCurrency(currency);
+  const selectedDisplay = celeYouProDisplay(selectedPlan.id, currency);
+  const conciergeLabel = formatCeleYouMoney(
+    currency === "GHS" ? conciergePriceGhs : CELEYOU_DRAFT_CONCIERGE[currency],
+    currency
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -293,10 +310,10 @@ export function PublicDigitalCardsShowcase({
           <div>
             <CeleYouBrandMark variant="chip" tone="dark" className="mb-4" markClassName="h-10 w-10" />
             <h2 className="font-display text-3xl font-bold leading-[1.1] tracking-tight text-balance text-white sm:text-4xl lg:text-[2.85rem]">
-              {SMARTCARD_HERO_LINE}
+              {t("celeyou.hero_line")}
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300 sm:text-base">
-              {SMARTCARD_HERO_SUPPORT}
+              {t("celeyou.hero_support")}
             </p>
             <p className="mt-3 inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.08em] text-teal-200/85">
               <span className="h-px w-7 bg-teal-300/45" aria-hidden />
@@ -306,7 +323,7 @@ export function PublicDigitalCardsShowcase({
             <div className="mt-7 flex flex-wrap gap-3">
               <Button asChild className="min-h-11 bg-[#0B8A83] px-5 text-white hover:bg-[#097a74]">
                 <Link href={registerHref}>
-                  {SMARTCARD_CTA_PRIMARY}
+                  {t("celeyou.cta_primary")}
                   <ArrowUpRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
@@ -316,7 +333,7 @@ export function PublicDigitalCardsShowcase({
                   variant="outline"
                   className="min-h-11 border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white"
                 >
-                  <Link href={loginHref}>Sign in with your Celeventic account</Link>
+                  <Link href={loginHref}>{t("celeyou.sign_in_account")}</Link>
                 </Button>
               )}
               <Button
@@ -324,28 +341,26 @@ export function PublicDigitalCardsShowcase({
                 variant="outline"
                 className="min-h-11 border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white"
               >
-                <a href="#smartcard-themes">{SMARTCARD_CTA_SECONDARY}</a>
+                <a href="#smartcard-themes">{t("celeyou.cta_secondary")}</a>
               </Button>
               {dummyLiveCta}
             </div>
             <ul className="mt-7 flex flex-wrap gap-2">
-              {(Object.keys(CAPABILITY_ICONS) as (keyof typeof CAPABILITY_ICONS)[]).map((label) => {
-                const Icon = CAPABILITY_ICONS[label];
+              {(Object.keys(CAPABILITY_ICONS) as (keyof typeof CAPABILITY_ICONS)[]).map((id) => {
+                const Icon = CAPABILITY_ICONS[id];
                 return (
                   <li
-                    key={label}
+                    key={id}
                     className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-slate-200"
                   >
                     <Icon className="h-3.5 w-3.5 text-teal-300" aria-hidden />
-                    {label}
+                    {t(`celeyou.cap_${id}`)}
                   </li>
                 );
               })}
             </ul>
             <p className="mt-4 max-w-lg text-xs leading-relaxed text-slate-100 sm:text-[13px]">
-              Any iPhone or Android camera can scan the QR. An NFC tap on a Celeventic card opens the
-              same live page. Socials, number, WhatsApp, and website. One stop, in the
-              theme they activated.
+              {t("celeyou.scan_body")}
             </p>
           </div>
           <HeroFan />
@@ -354,18 +369,45 @@ export function PublicDigitalCardsShowcase({
 
       <div id="smartcard-plans" className="mt-12 scroll-mt-24">
         <div className="mb-6 max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0B8A83]">CeleYou Pro</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0B8A83]">CeleYou plans</p>
           <h3 className="mt-1 font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Prepaid hosting. Not lifetime access.
+            {t("celeyou.plans_title")}
           </h3>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Pay for the months you want the public card, QR, NFC, and Connect Back live. When the term
-            ends, your design, URL, and QR stay saved. Premium hosting needs a new term.
+            {t("celeyou.plans_body")}
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-5 flex flex-wrap items-center gap-2" role="group" aria-label={t("celeyou.plan_currency")}>
+          {CELEYOU_DISPLAY_CURRENCIES.map((code) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => setCurrency(code)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                currency === code
+                  ? "border-[#0B8A83] bg-[#0B8A83] text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              {code}
+            </button>
+          ))}
+        </div>
+        {!checkout.payable ? (
+          <p className="mb-4 max-w-2xl text-xs leading-relaxed text-amber-800">
+            {currency === "CNY" ? t("celeyou.plan_currency_cny") : t("celeyou.plan_currency_draft", { code: currency })}
+          </p>
+        ) : null}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <article className="relative flex h-full min-w-0 flex-col items-start whitespace-normal rounded-2xl border border-slate-200 bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t("celeyou.plan_free")}</p>
+            <p className="mt-2 font-display text-3xl font-bold text-slate-900">{formatCeleYouMoney(0, currency)}</p>
+            <p className="whitespace-normal text-xs leading-snug text-slate-500">Forever</p>
+            <p className="mt-3 whitespace-normal text-xs leading-snug text-slate-600">{t("celeyou.plan_free_blurb")}</p>
+          </article>
           {plans.map((plan) => {
             const active = plan.id === planId;
+            const display = celeYouProDisplay(plan.id, currency);
             return (
               <button
                 key={plan.id}
@@ -379,27 +421,36 @@ export function PublicDigitalCardsShowcase({
               >
                 {plan.badge ? (
                   <span className="absolute right-3 top-3 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                    {plan.badge}
+                    {t("celeyou.plan_popular")}
                   </span>
                 ) : null}
                 <p className={`text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 ${plan.badge ? "pr-24" : ""}`}>
-                  {plan.label}
+                  {t(`celeyou.plan_${plan.id}`)}
                 </p>
-                <p className="mt-2 font-display text-3xl font-bold text-slate-900">GH₵{plan.priceGhs}</p>
+                <p className="mt-2 font-display text-3xl font-bold text-slate-900">{display.priceLabel}</p>
                 <p className="whitespace-normal text-xs leading-snug text-slate-500">
-                  {plan.durationLabel ?? `${plan.months} months`} · GH₵{plan.perMonthGhs}/mo
+                  {t(
+                    plan.id === "monthly"
+                      ? "celeyou.plan_1_month"
+                      : plan.id === "quarter"
+                        ? "celeyou.plan_3_months"
+                        : plan.id === "half"
+                          ? "celeyou.plan_6_months"
+                          : "celeyou.plan_12_months"
+                  )}{" "}
+                  · {display.perMonthLabel}/mo
                 </p>
-                {plan.savePercent > 0 ? (
+                {display.savePercent > 0 ? (
                   <p className="mt-1 whitespace-normal text-[11px] font-semibold leading-snug text-[#0B8A83]">
-                    Save about {plan.savePercent}% · GH₵{plan.saveGhs}
+                    Save about {display.savePercent}% · {display.saveLabel}
                   </p>
                 ) : (
-                  <p className="mt-1 whitespace-normal text-[11px] leading-snug text-slate-400">Flexible start</p>
+                  <p className="mt-1 whitespace-normal text-[11px] leading-snug text-slate-400">{t("celeyou.plan_flexible")}</p>
                 )}
-                <p className="mt-3 whitespace-normal text-xs leading-snug text-slate-600">{plan.blurb}</p>
+                <p className="mt-3 whitespace-normal text-xs leading-snug text-slate-600">{t(`celeyou.plan_blurb_${plan.id}`)}</p>
                 <span className={`mt-4 inline-flex items-center gap-1 text-xs font-semibold ${active ? "text-[#0B8A83]" : "text-slate-400"}`}>
                   {active ? <Check className="h-3.5 w-3.5" /> : null}
-                  {active ? "Selected" : "Select"}
+                  {active ? t("celeyou.plan_selected") : t("celeyou.plan_select")}
                 </span>
               </button>
             );
@@ -408,24 +459,29 @@ export function PublicDigitalCardsShowcase({
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button asChild className="bg-[#0B8A83] hover:bg-[#097a74]">
             <Link href={registerHref}>
-              Continue with {selectedPlan.label} · GH₵{selectedPlan.priceGhs}
+              {checkout.payable
+                ? t("celeyou.plan_continue", { label: t(`celeyou.plan_${selectedPlan.id}`), price: selectedPlan.priceGhs })
+                : `Continue with ${t(`celeyou.plan_${selectedPlan.id}`)}`}
               <ArrowUpRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
-          <p className="text-xs text-slate-500">Paystack checkout in the studio. The card goes live when payment clears.</p>
+          <p className="text-xs text-slate-500">
+            {checkout.payable
+              ? t("celeyou.plan_paystack")
+              : `${checkout.reason} Displayed ${selectedDisplay.priceLabel}. Checkout still charges GH₵${selectedPlan.priceGhs}.`}
+          </p>
         </div>
+        <p className="mt-3 max-w-2xl text-xs text-slate-500">{t("celeyou.plan_trial_note")}</p>
         <article className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0B8A83]">Concierge</p>
           <h4 className="mt-1 font-display text-lg font-semibold text-slate-900">
-            Professional Concierge Design — GH₵{conciergePriceGhs} one-time
+            Professional Concierge Design. {conciergeLabel} one-time
           </h4>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-            One-time design and setup fee. Your approved design remains saved to your account. An
-            active CeleYou subscription is required for premium hosting and subscription-dependent
-            features. Subscription sold separately.
+            {t("celeyou.concierge_body")}
           </p>
           <Button asChild variant="outline" className="mt-4">
-            <Link href="/celecard/concierge">Request concierge design</Link>
+            <Link href="/celecard/concierge">{t("celeyou.concierge_cta")}</Link>
           </Button>
         </article>
       </div>
@@ -436,8 +492,8 @@ export function PublicDigitalCardsShowcase({
             <div className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#0B8A83]/10 text-[#0B8A83]">
               <Zap className="h-4 w-4" aria-hidden />
             </div>
-            <h4 className="font-display text-base font-semibold text-slate-900">{item.title}</h4>
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">{item.body}</p>
+            <h4 className="font-display text-base font-semibold text-slate-900">{t(automationCopyKey(item.id, "title"))}</h4>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">{t(automationCopyKey(item.id, "body"))}</p>
           </article>
         ))}
       </div>
@@ -445,19 +501,17 @@ export function PublicDigitalCardsShowcase({
       <div id="smartcard-themes" className="mt-14 scroll-mt-24">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0B8A83]">Theme collection</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0B8A83]">{t("celeyou.themes_kicker")}</p>
             <h3 className="mt-1 font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              World-art identities. Not cheap color swaps.
+              {t("celeyou.themes_title")}
             </h3>
             <p className="mt-2 text-sm text-slate-600 sm:text-base">
-              Pop Art, Art Deco, Ukiyo-e, Afrofuturism, cel-shade, marquee. Original compositions
-              inspired by movements the world already knows. No licensed characters. Every face has
-              its own dummy identity so the gallery never looks copy-pasted.
+              {t("celeyou.themes_body")}
             </p>
           </div>
           <Button asChild className="shrink-0 bg-[#0B8A83] hover:bg-[#097a74]">
             <Link href={registerHref}>
-              Open CeleYou studio
+              {t("celeyou.open_studio")}
               <Sparkles className="ml-1 h-4 w-4" />
             </Link>
           </Button>

@@ -58,7 +58,8 @@ describe("CurrencyService.ensureCurrenciesSeeded", () => {
       await service.ensureCurrenciesSeeded();
 
       const currencies = await prisma.currency.findMany();
-      assert.equal(currencies.length, 3, "expected the 3 default currencies to be seeded");
+      assert.equal(currencies.length, 4, "expected GHS, USD, GBP, and CNY to be seeded");
+      assert.ok(currencies.some((c) => c.code === "CNY" && c.symbol === "¥"));
       assert.equal(createManySpy.count, 1, "createMany should run exactly once for an empty table");
       assert.equal(rateCreateManySpy.count, 1, "exchange rate createMany should run exactly once");
 
@@ -79,8 +80,8 @@ describe("CurrencyService.ensureCurrenciesSeeded", () => {
     }
   });
 
-  it("never writes when currencies already exist (read-only path)", async () => {
-    // Simulate a table that was already seeded by a prior process/deploy.
+  it("never createMany-reseeds when currencies already exist, and adds CNY once if missing", async () => {
+    // Simulate a table that was already seeded by a prior process/deploy (GHS only).
     await prisma.currency.create({
       data: { code: "GHS", symbol: "₵", name: "Ghana Cedi", enabled: true, isDefault: true },
     });
@@ -93,9 +94,16 @@ describe("CurrencyService.ensureCurrenciesSeeded", () => {
       await service.ensureCurrenciesSeeded();
       const currencies = await prisma.currency.findMany();
 
-      assert.equal(currencies.length, 1, "pre-existing row must be untouched. No reseed over existing data");
+      assert.ok(currencies.some((c) => c.code === "GHS"), "pre-existing GHS must be kept");
+      assert.ok(currencies.some((c) => c.code === "CNY"), "CNY must be added additively on existing DBs");
       assert.equal(createManySpy.count, 0, "createMany must never run when the table is already non-empty");
       assert.equal(rateCreateManySpy.count, 0, "exchange rate createMany must never run when currencies already exist");
+
+      const countAfter = currencies.length;
+      await service.ensureCurrenciesSeeded();
+      await service.ensureCurrenciesSeeded();
+      const again = await prisma.currency.findMany();
+      assert.equal(again.length, countAfter, "subsequent calls must not insert more currency rows");
     } finally {
       createManySpy.restore();
       rateCreateManySpy.restore();
@@ -112,7 +120,9 @@ describe("CurrencyService.ensureCurrenciesSeeded", () => {
 
       assert.equal(createManySpy.count, 1);
       assert.ok(currencies.some((c) => c.code === "GHS" && c.isDefault));
+      assert.ok(currencies.some((c) => c.code === "CNY"));
       assert.ok(rates.some((r) => r.targetCurrency === "USD"));
+      assert.ok(rates.some((r) => r.targetCurrency === "CNY"));
 
       // A second read-heavy round trip through the public API must not write again.
       await service.getEnabledCurrencies();

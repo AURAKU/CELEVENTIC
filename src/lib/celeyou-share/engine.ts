@@ -7,6 +7,7 @@ import {
 
 export const SHARE_MY_CELEYOU = "Share my CeleYou";
 export const SHARE_MY_CARD_CTA = "Share My Card";
+export const SHARE_CARD_CTA = "Share Card";
 export const NEARBY_SHARE_CTA = "Nearby Share";
 export const SHARE_VIA_APPS_CTA = "Share via Apps";
 export const SAVE_CONTACT_CTA = "Save Contact";
@@ -145,7 +146,7 @@ export type ShareProfileInput = {
   title: string;
   text: string;
   url: string;
-  /** Live plate PNG, then OG tile. Instagram, Snapchat, WhatsApp, and iMessage need the file. */
+  /** Live plate PNG, then OG tile. WhatsApp, iMessage, Snapchat, TikTok, X, and similar need the file. */
   imageUrl?: string | string[] | null;
   /** Already captured ID-1 plate. Wins over fetch. */
   imageFile?: File | Blob | null;
@@ -153,6 +154,11 @@ export type ShareProfileInput = {
   capturePlate?: boolean | (() => Promise<File | null>);
   /** Owner card id. Stores the capture so OG unfurl uses the same live plate. */
   persistPlateCardId?: string | null;
+  /**
+   * When false, keep the URL in the share `url` field only.
+   * Wallet sharing uses this so destinations do not paste the link twice.
+   */
+  includeUrlInText?: boolean;
 };
 
 export type ShareProfileResult = "shared" | "copied" | "cancelled" | "unavailable";
@@ -251,6 +257,62 @@ function canSharePayload(nav: Navigator, payload: ShareData) {
   }
 }
 
+function clipboardItemCtor(): typeof ClipboardItem | null {
+  return typeof ClipboardItem === "undefined" ? null : ClipboardItem;
+}
+
+async function asClipboardPng(file: File): Promise<Blob> {
+  if (file.type === "image/png") return file;
+  return new Blob([await file.arrayBuffer()], { type: "image/png" });
+}
+
+/**
+ * Copy the live ID-1 plate plus the card URL. Chrome/Edge keep both.
+ * Safari may accept only the PNG; the plate still carries the QR.
+ */
+export async function copyCeleYouProfile(
+  input: ShareProfileInput,
+  nav: Navigator | null | undefined = typeof navigator !== "undefined" ? navigator : null
+): Promise<"copied" | "unavailable"> {
+  if (!input.url || !nav?.clipboard) return "unavailable";
+  const text = shareCaption(input.text, input.url);
+  const filePromise = resolveLivePlateFile(input);
+  const Item = clipboardItemCtor();
+  const write = typeof nav.clipboard.write === "function" ? nav.clipboard.write.bind(nav.clipboard) : null;
+
+  if (write && Item) {
+    const image = filePromise.then((file) => {
+      if (!file) throw new Error("no-plate");
+      return asClipboardPng(file);
+    });
+    const plain = Promise.resolve(new Blob([text], { type: "text/plain" }));
+    try {
+      await write([new Item({ "image/png": image, "text/plain": plain })]);
+      return "copied";
+    } catch {
+      try {
+        await write([new Item({ "image/png": image })]);
+        return "copied";
+      } catch {
+        /* text fallback */
+      }
+    }
+  }
+
+  try {
+    if (typeof nav.clipboard.writeText !== "function") return "unavailable";
+    await Promise.race([
+      nav.clipboard.writeText(text),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("clipboard-timeout")), 1200);
+      }),
+    ]);
+    return "copied";
+  } catch {
+    return "unavailable";
+  }
+}
+
 async function tryNativeShare(nav: Navigator, payload: ShareData): Promise<ShareProfileResult | "failed"> {
   try {
     await nav.share(payload);
@@ -266,19 +328,22 @@ export async function shareCeleYouProfile(
   nav: Navigator | null | undefined = typeof navigator !== "undefined" ? navigator : null
 ): Promise<ShareProfileResult> {
   if (!input.url) return "unavailable";
-  const text = shareCaption(input.text, input.url);
   const file = await resolveLivePlateFile(input);
+  const text =
+    input.includeUrlInText === false && !file ? input.text : shareCaption(input.text, input.url);
   if (nav && typeof nav.share === "function") {
     if (file) {
-      const withPlate = { title: input.title, text, files: [file] };
-      if (canSharePayload(nav, withPlate)) {
-        const plateOnly = await tryNativeShare(nav, withPlate);
-        if (plateOnly !== "failed") return plateOnly;
+      // WhatsApp, Snapchat, TikTok drop the image if `url` is a separate share field.
+      // The live card URL stays in `text` so the caption still carries the link.
+      const plateAndLink = { title: input.title, text, files: [file] };
+      if (canSharePayload(nav, plateAndLink)) {
+        const attached = await tryNativeShare(nav, plateAndLink);
+        if (attached !== "failed") return attached;
       }
-      const withPlateAndUrl = { title: input.title, text, url: input.url, files: [file] };
-      if (canSharePayload(nav, withPlateAndUrl)) {
-        const mixed = await tryNativeShare(nav, withPlateAndUrl);
-        if (mixed !== "failed") return mixed;
+      const platePlusUrl = { title: input.title, text, files: [file], url: input.url };
+      if (canSharePayload(nav, platePlusUrl)) {
+        const withUrl = await tryNativeShare(nav, platePlusUrl);
+        if (withUrl !== "failed") return withUrl;
       }
     }
     try {
@@ -288,20 +353,7 @@ export async function shareCeleYouProfile(
       if (isShareAbort(error)) return "cancelled";
     }
   }
-  try {
-    if (nav?.clipboard && typeof nav.clipboard.writeText === "function") {
-      await Promise.race([
-        nav.clipboard.writeText(text),
-        new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error("clipboard-timeout")), 1200);
-        }),
-      ]);
-      return "copied";
-    }
-  } catch {
-    return "unavailable";
-  }
-  return "unavailable";
+  return copyCeleYouProfile({ ...input, imageFile: file, capturePlate: false }, nav);
 }
 
 /**

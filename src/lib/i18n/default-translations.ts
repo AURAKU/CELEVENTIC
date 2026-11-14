@@ -35,6 +35,9 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "header", key: "templates", enValue: "Templates", frValue: "Modèles" },
   { namespace: "header", key: "pricing", enValue: "Pricing", frValue: "Tarifs" },
   { namespace: "header", key: "discover", enValue: "Discover", frValue: "Découvrir" },
+  { namespace: "header", key: "language", enValue: "Language", frValue: "Langue" },
+  { namespace: "header", key: "currency", enValue: "Currency", frValue: "Devise" },
+  { namespace: "header", key: "preferences", enValue: "Language and currency", frValue: "Langue et devise" },
 
   // ── Footer ──
   { namespace: "footer", key: "tagline", enValue: "The Intelligent Event Operating System. Plan, invite, sell tickets, and manage guests. all in one premium platform.", frValue: "Le système d'exploitation événementiel intelligent. Planifiez, invitez, vendez des billets et gérez vos invités. sur une plateforme premium." },
@@ -293,6 +296,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "admin", key: "translations_subtitle", enValue: "Edit English and French copy across the platform", frValue: "Modifier les textes anglais et français sur la plateforme" },
   { namespace: "admin", key: "english", enValue: "English", frValue: "Anglais" },
   { namespace: "admin", key: "french", enValue: "French", frValue: "Français" },
+  { namespace: "admin", key: "chinese", enValue: "Chinese", frValue: "Chinois" },
   { namespace: "admin", key: "namespace", enValue: "Namespace", frValue: "Espace de noms" },
   { namespace: "admin", key: "key", enValue: "Key", frValue: "Clé" },
 

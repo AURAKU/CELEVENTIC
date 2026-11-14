@@ -266,7 +266,16 @@ function Mark({
         </>
       );
     default:
-      return <image href={CELEYOU_MARK_SRC} x="4" y="4" width="92" height="92" />;
+      return (
+        <image
+          href={CELEYOU_MARK_SRC}
+          x="4"
+          y="4"
+          width="92"
+          height="92"
+          preserveAspectRatio="xMidYMid meet"
+        />
+      );
   }
 }
 

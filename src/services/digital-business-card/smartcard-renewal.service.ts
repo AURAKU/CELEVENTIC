@@ -15,6 +15,8 @@ import { recordCeleCardLifecycleEvent } from "./digital-business-card.service";
 
 export const SMARTCARD_RENEWAL_WINDOWS = [72, 48, 24] as const;
 export type SmartCardRenewalWindow = (typeof SMARTCARD_RENEWAL_WINDOWS)[number] | 0;
+export const SMARTCARD_RENEWAL_SCAN_PAGE_SIZE = 100;
+export const SMARTCARD_RENEWAL_SCAN_MAX = 5_000;
 
 export function celeCardReminderLegacyLink(cardId: string) {
   return `/dashboard/business-card/billing?card=${cardId}`;
@@ -82,29 +84,43 @@ export async function runSmartCardRenewalReminders(now = new Date()) {
   const maxBefore = Math.max(0, ...policy.reminderOffsetsDays);
   const horizon = new Date(now.getTime() + maxBefore * 86_400_000);
   const afterHorizon = new Date(now.getTime() - 31 * 86_400_000);
-  const cards = await prisma.digitalBusinessCard.findMany({
-    where: {
-      deletedAt: null,
-      adminSuspendedAt: null,
-      subscriptionStatus: { in: ["ACTIVE", "EXPIRED"] },
-      subscriptionExpiresAt: { not: null, lte: horizon, gte: afterHorizon },
-    },
-    include: {
-      user: { select: { id: true, email: true, phone: true, name: true } },
-    },
-    take: 200,
-  });
+  const where = {
+    deletedAt: null,
+    adminSuspendedAt: null,
+    subscriptionStatus: { in: ["ACTIVE", "EXPIRED"] },
+    subscriptionExpiresAt: { not: null, lte: horizon, gte: afterHorizon },
+  };
 
   const results = {
-    scanned: cards.length,
+    scanned: 0,
     expired: 0,
     courtesy: 0,
     reminded: 0,
     skipped: 0,
     channelErrors: 0,
+    pages: 0,
   };
 
-  for (const card of cards) {
+  let cursor: string | undefined;
+  let scanned = 0;
+
+  while (scanned < SMARTCARD_RENEWAL_SCAN_MAX) {
+    const batch = await prisma.digitalBusinessCard.findMany({
+      where,
+      include: {
+        user: { select: { id: true, email: true, phone: true, name: true } },
+      },
+      orderBy: { id: "asc" },
+      take: SMARTCARD_RENEWAL_SCAN_PAGE_SIZE,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+    });
+    if (!batch.length) break;
+    results.pages += 1;
+    scanned += batch.length;
+    results.scanned = scanned;
+    cursor = batch[batch.length - 1]?.id;
+
+    for (const card of batch) {
     if (!card.subscriptionExpiresAt) continue;
     const offset = dueReminderOffsetDays(card.subscriptionExpiresAt, now, policy.reminderOffsetsDays);
     if (offset === null) {
@@ -194,6 +210,9 @@ export async function runSmartCardRenewalReminders(now = new Date()) {
     }
 
     results.reminded += 1;
+    }
+
+    if (batch.length < SMARTCARD_RENEWAL_SCAN_PAGE_SIZE) break;
   }
 
   return results;

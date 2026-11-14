@@ -21,7 +21,8 @@ const schema = z.object({
       "GENERAL",
     ])
     .optional(),
-  paymentMethod: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL"]).optional(),
+  paymentMethod: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL", "STRIPE"]).optional(),
+  method: z.enum(["card", "mobile_money", "bank_transfer", "alipay", "wechat_pay"]).optional(),
 });
 
 export async function POST(req: Request) {
@@ -56,6 +57,7 @@ export async function POST(req: Request) {
         amount: data.amount,
         email: data.email,
         purpose: "CONTRIBUTION",
+        method: data.method,
         metadata: {
           eventId: event.id,
           contributor: data.contributor,

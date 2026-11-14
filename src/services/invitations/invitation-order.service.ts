@@ -564,7 +564,7 @@ export class InvitationOrderService {
       await productionNotificationService.notify(order.userId, "ORDER_RECEIVED", { orderId });
     }
 
-    const userLocale = await languageService.getUserPreference(order.userId);
+    const userLocale = (await languageService.getUserPreference(order.userId)) ?? "en";
     if (order.user.email) {
       await emailTemplateService.sendLocalized("invitation_ready", order.user.email, userLocale, {
         name: order.user.name,

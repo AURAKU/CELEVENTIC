@@ -12,6 +12,7 @@ export interface ProviderCredentials {
 
 const ENV_SECRET_MAP: Record<string, string> = {
   PAYSTACK: "PAYSTACK_SECRET_KEY",
+  STRIPE: "STRIPE_SECRET_KEY",
   RESEND: "RESEND_API_KEY",
   SMS: "SMS_PROVIDER_API_KEY",
   WHATSAPP: "WHATSAPP_BUSINESS_TOKEN",

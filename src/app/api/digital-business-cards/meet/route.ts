@@ -17,7 +17,11 @@ import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
 import { notificationService } from "@/services/notifications/notification.service";
 import { communicationService } from "@/services/communications/communication.service";
-import { createSmartCardConnection, getDigitalCardBySlug } from "@/services/digital-business-card/digital-business-card.service";
+import {
+  createSmartCardConnection,
+  getDigitalCardBySlug,
+  recordSmartCardInteraction,
+} from "@/services/digital-business-card/digital-business-card.service";
 
 export const dynamic = "force-dynamic";
 
@@ -129,6 +133,10 @@ export async function POST(req: NextRequest) {
       source: "meeting",
       tags: ["meeting"],
     });
+    await recordSmartCardInteraction(card.id, "meeting_booked", {
+      surface: "meeting",
+      outcome: "completed",
+    }).catch(() => undefined);
 
     const owner = await prisma.user.findUnique({
       where: { id: card.userId },

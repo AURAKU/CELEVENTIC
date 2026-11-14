@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { DEFAULT_LOCALE, type AppLocale } from "@/lib/i18n/constants";
+import { isAppLocale, type AppLocale } from "@/lib/i18n/constants";
 
 const MVP_LANGUAGES = [
   { code: "en", name: "English", enabled: true, isDefault: true },
   { code: "fr", name: "French", enabled: true, isDefault: false },
+  { code: "zh", name: "Chinese (Mandarin)", enabled: true, isDefault: false },
   { code: "tw", name: "Twi", enabled: false, isDefault: false },
   { code: "ga", name: "Ga", enabled: false, isDefault: false },
   { code: "ee", name: "Ewe", enabled: false, isDefault: false },
@@ -16,6 +17,20 @@ export class LanguageService {
   async ensureLanguagesSeeded() {
     if (!languagesSeedPromise) {
       languagesSeedPromise = (async () => {
+        const zh = await prisma.language.findUnique({ where: { code: "zh" } });
+        if (!zh) {
+          await prisma.language.upsert({
+            where: { code: "zh" },
+            update: { name: "Chinese (Mandarin)", enabled: true, isDefault: false },
+            create: { code: "zh", name: "Chinese (Mandarin)", enabled: true, isDefault: false },
+          });
+        } else if (!zh.enabled) {
+          await prisma.language.update({
+            where: { code: "zh" },
+            data: { enabled: true, name: "Chinese (Mandarin)" },
+          });
+        }
+
         const existing = await prisma.language.count();
         if (existing >= MVP_LANGUAGES.length) return;
 
@@ -42,10 +57,10 @@ export class LanguageService {
     });
   }
 
-  async getUserPreference(userId: string): Promise<AppLocale> {
+  async getUserPreference(userId: string): Promise<AppLocale | null> {
     const pref = await prisma.userLanguagePreference.findUnique({ where: { userId } });
-    if (pref?.languageCode === "fr") return "fr";
-    return DEFAULT_LOCALE;
+    if (pref?.languageCode && isAppLocale(pref.languageCode)) return pref.languageCode;
+    return null;
   }
 
   async setUserPreference(userId: string, languageCode: AppLocale) {

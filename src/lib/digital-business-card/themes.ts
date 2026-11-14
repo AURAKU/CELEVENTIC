@@ -1,7 +1,11 @@
 /**
  * SmartCard theme system. Token-based compositions (not color swaps alone).
  * Legacy IDs remain valid so existing cards keep rendering.
+ * elegant-frost is the original CeleYou plate. Do not change its default
+ * layout, teal, or gold without explicit brand approval.
  */
+
+import { CELEYOU_ORIGINAL_THEME_ID } from "@/lib/digital-business-card/brand-lock";
 
 export type DigitalCardThemeCategory =
   | "executive"
@@ -246,7 +250,7 @@ export const DIGITAL_CARD_THEMES: DigitalCardTheme[] = [
     tagline: "Soft sky frame with gold edge. Classic first impression",
     previewLabel: "Elegant",
     category: "luxury",
-    stageBackground: "linear-gradient(160deg, #e8f1f8 0%, #f7fafc 55%, #eef4f8 100%)",
+    stageBackground: "radial-gradient(130% 88% at 50% -12%, #f7fbff 0%, #e8eef4 38%, #d7e2ea 72%, #c9d6e0 100%)",
     cardBackground: "linear-gradient(145deg, #f4f9fc 0%, #e8f0f6 100%)",
     accent: "#0B8A83",
     accentSoft: "rgba(11,138,131,0.12)",
@@ -1621,7 +1625,7 @@ export function resolveDigitalCardTheme(id: string | null | undefined): DigitalC
   const theme =
     id && id in DIGITAL_CARD_THEME_BY_ID
       ? DIGITAL_CARD_THEME_BY_ID[id as DigitalCardThemeId]
-      : DIGITAL_CARD_THEME_BY_ID["elegant-frost"];
+      : DIGITAL_CARD_THEME_BY_ID[CELEYOU_ORIGINAL_THEME_ID as DigitalCardThemeId];
   return {
     ...theme,
     ornament: theme.ornament && theme.ornament !== "none" ? theme.ornament : "foil",

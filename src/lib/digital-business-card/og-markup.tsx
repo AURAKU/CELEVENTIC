@@ -4,16 +4,16 @@ import {
   type CeleCardPlateBitmapProps,
 } from "@/lib/digital-business-card/plate-bitmap";
 
-export type CeleCardOgMarkupProps = Omit<CeleCardPlateBitmapProps, "width" | "height" | "cover">;
+export type CeleCardOgMarkupProps = Omit<CeleCardPlateBitmapProps, "width" | "height" | "cover" | "contain">;
 
-/** 1200×630 share tile: the live ID-1 plate only. Cover-fills so crawlers never pick the site logo. */
+/** 1200×630 share tile: the full ID-1 plate (photo, name, title, company, QR). Never a headshot crop. */
 export function CeleCardOgMarkup(props: CeleCardOgMarkupProps) {
   return (
     <CeleCardPlateBitmap
       {...props}
       width={CELECARD_OG_WIDTH}
       height={CELECARD_OG_HEIGHT}
-      cover
+      contain
     />
   );
 }

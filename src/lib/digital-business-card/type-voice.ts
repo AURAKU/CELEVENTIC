@@ -413,12 +413,21 @@ function celecardPhraseDisplayLines(
 
 /**
  * Plate presentation only. The saved company field stays in full.
- * Long house names wrap onto two (or three) even lines instead of being squeezed onto one.
+ * The house mark now sits on the portrait, so three-word names use the freed
+ * column: line one next to the photo, line two beneath.
  */
 export function celecardCompanyDisplayLines(
   name: string,
   options?: CeleCardPhraseOptions
 ): string[] {
+  const trimmed = name.replace(/\s+/g, " ").trim();
+  if (!trimmed) return [];
+  const uppercase = Boolean(options?.uppercase);
+  const words = trimmed.split(" ");
+  if (words.length >= 3 && words.length < 6) {
+    const first = celecardBestPhraseBreak(words, uppercase);
+    return [words.slice(0, first).join(" "), words.slice(first).join(" ")].filter(Boolean);
+  }
   return celecardPhraseDisplayLines(name, "company", options);
 }
 
@@ -428,19 +437,21 @@ export function celecardCompanyFitCqw(name: string, options?: CeleCardPhraseOpti
   const uppercase = Boolean(options?.uppercase);
   const compact = Boolean(options?.compact);
   const longest = Math.max(1, ...lines.map((line) => celecardPhraseVisualLen(line, uppercase)));
-  const column = compact ? 30 : 34;
+  const column = compact ? 36 : 44;
   const fitted = column / (longest * (uppercase ? 0.72 : 0.62));
-  const cap = lines.length > 1 ? (compact ? 2.25 : 2.38) : compact ? 2.45 : 2.65;
+  const cap = lines.length > 1 ? (compact ? 2.32 : 2.48) : compact ? 2.45 : 2.65;
   const floor = compact ? 1.85 : 1.95;
   return Math.round(Math.max(floor, Math.min(cap, fitted)) * 100) / 100;
 }
 
 /**
  * Plate presentation only. The saved title field stays in full.
- * Long roles wrap onto two even lines instead of being compressed onto one.
+ * The house mark left this row, so the role stays on one line and fills that width.
  */
 export function celecardTitleDisplayLines(name: string, options?: CeleCardPhraseOptions): string[] {
-  return celecardPhraseDisplayLines(name, "title", options);
+  void options;
+  const trimmed = name.replace(/\s+/g, " ").trim();
+  return trimmed ? [trimmed] : [];
 }
 
 export function celecardTitleFitCqw(name: string, options?: CeleCardPhraseOptions): number {
@@ -449,9 +460,9 @@ export function celecardTitleFitCqw(name: string, options?: CeleCardPhraseOption
   const uppercase = Boolean(options?.uppercase);
   const compact = Boolean(options?.compact);
   const longest = Math.max(1, ...lines.map((line) => celecardPhraseVisualLen(line, uppercase)));
-  const column = compact ? 32 : 36;
+  const column = compact ? 36 : 42;
   const fitted = column / (longest * (uppercase ? 0.72 : 0.64));
-  const cap = lines.length > 1 ? (compact ? 2.4 : 2.55) : compact ? 2.7 : 2.9;
+  const cap = compact ? 2.7 : 2.9;
   const floor = compact ? 2.05 : 2.15;
   return Math.round(Math.max(floor, Math.min(cap, fitted)) * 100) / 100;
 }
@@ -530,13 +541,56 @@ export function celecardInkLuminance(color: string) {
   return hexLum(toHexRgb(...rgb));
 }
 
+function channelLum(hex: string) {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return 0;
+  const [r, g, b] = rgb.map((channel) => {
+    const srgb = channel / 255;
+    return srgb <= 0.03928 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG contrast ratio between two hex colors. */
+export function celecardContrastRatio(a: string, b: string) {
+  const light = Math.max(channelLum(a), channelLum(b));
+  const dark = Math.min(channelLum(a), channelLum(b));
+  return (light + 0.05) / (dark + 0.05);
+}
+
 function inkOn(hex: string) {
   return hexLum(hex) < 158 ? "#fff8ef" : "#16120e";
+}
+
+/** Type color that stays readable on this fill. Light fill gets dark ink. Dark fill gets cream. */
+export function celecardInkOn(fill: string) {
+  return inkOn(fill);
+}
+
+function ctaPair(fill: string) {
+  return { background: fill, color: inkOn(fill) };
+}
+
+/** Wallet and guest CTAs on a plate. Never cream type on a pale fill, never a fill that vanishes into the paper. */
+export function celecardCtaOnPaper(accent: string, paper: string) {
+  const cream = "#fffef8";
+  const ink = "#16120e";
+  const accentLum = celecardInkLuminance(accent);
+  const paperLum = celecardInkLuminance(paper);
+  const fill = Math.abs(accentLum - paperLum) < 48 ? cream : accent;
+  const pair = ctaPair(fill);
+  if (celecardContrastRatio(pair.color, pair.background) >= 4.5) return pair;
+  return ctaPair(celecardInkLuminance(paper) < 140 ? cream : ink);
 }
 
 /** Reach pills are always light paper. Type is always dark, on every template. */
 export const CELECARD_REACH_INK = "#1c1917";
 export const CELECARD_REACH_MUTED = "#44403c";
+
+/** Actions on cream payment cards. Dark ink on light paper, never accent-on-accent. */
+export function celecardActionOnWell() {
+  return { background: "#fffef8", color: CELECARD_REACH_INK, borderColor: "rgba(28,25,23,0.16)" };
+}
 /** Studio, dashboard, and forms. Never plate cream or mint on light paper. */
 export const CELECARD_PAPER_INK = CELECARD_REACH_INK;
 export const CELECARD_PAPER_MUTED = "#3f3a36";
@@ -582,6 +636,18 @@ export function celecardAccentOnStage(accent: string, darkStage: boolean) {
   if (darkStage && lum < 88) return "#f4e6c8";
   if (!darkStage && lum > PAPER_ACCENT_LUM_MAX) return celecardPaperAccent(accent);
   return accent;
+}
+
+/** Guest section lockups. House hue, never a washed gray. */
+export function celecardKickerInk(accent: string, darkStage: boolean) {
+  const ink = celecardAccentOnStage(accent, darkStage);
+  const rgb = parseHexRgb(ink);
+  if (!rgb) return ink;
+  const [r, g, b] = rgb;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  if (max - min >= 18) return ink;
+  return darkStage ? "#f4e6c8" : CELECARD_PAPER_LABEL;
 }
 
 export type CeleCardDockFinish = {

@@ -29,12 +29,13 @@ describe("CeleYou Tap Mode guest exchange", () => {
 
   it("opens a guest connection page without requiring an account", () => {
     const view = source("src/components/digital-business-card/celeyou-tap-guest-view.tsx");
-    assert.match(view, /SAVE_CONTACT_CTA/);
-    assert.match(view, /UNIVERSAL_SAVE_LEAD/);
-    assert.match(view, /Exchange Contact/);
-    assert.match(view, /View Full Card/);
-    assert.match(view, /Send My Contact/);
-    assert.match(view, /Create Your Free CeleYou/);
+    assert.match(view, /celeyou\.save_contact/);
+    assert.match(view, /celeyou\.save_lead/);
+    assert.match(view, /celeyou\.connect_phone_placeholder/);
+    assert.match(view, /celeyou\.exchange_contact/);
+    assert.match(view, /celeyou\.view_full_card/);
+    assert.match(view, /celeyou\.send_my_contact/);
+    assert.match(view, /celeyou\.create_free/);
     assert.match(view, /@\{host\.slug\}/);
     assert.match(view, /tapJoinCode: joinCode/);
     assert.match(view, /onExchanged/);
@@ -63,6 +64,8 @@ describe("CeleYou Tap Mode guest exchange", () => {
     assert.doesNotMatch(host, /visitorPhone/);
     assert.equal(tapGuestFirstName("Ama Serwaa"), "Ama");
     assert.equal(normalizeGuestPhone("+233 24 123 4567"), "+233241234567");
+    assert.equal(normalizeGuestPhone("foliohouse"), "foliohouse");
+    assert.equal(normalizeGuestPhone("wxid_ama_house"), "wxid_ama_house");
   });
 
   it("labels inbox sources honestly and never invents NFC from a public visit", () => {
@@ -73,6 +76,8 @@ describe("CeleYou Tap Mode guest exchange", () => {
     assert.equal(celeYouConnectionSourceLabel("public_profile"), "Public Profile");
     const inbox = source("src/components/digital-business-card/digital-card-connection-inbox.tsx");
     assert.match(inbox, /celeYouConnectionSourceLabel/);
+    assert.match(inbox, /looksLikeGuestPhone/);
+    assert.match(inbox, /Open WeChat/);
     assert.doesNotMatch(inbox, /Physical NFC.*connect_back/);
   });
 

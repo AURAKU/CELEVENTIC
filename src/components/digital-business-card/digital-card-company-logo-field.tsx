@@ -97,7 +97,7 @@ export function DigitalCardCompanyLogoField({
       <input
         ref={inputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,image/avif,.png,.jpg,.jpeg,.webp,.gif,.heic"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,image/avif,.png,.jpg,.jpeg,.webp,.gif,.heic,.avif"
         className="sr-only"
         onChange={(event) => {
           const file = event.target.files?.[0];

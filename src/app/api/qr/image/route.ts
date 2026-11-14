@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
-import { buildVerifyUrl, parseQrToken } from "@/lib/qr/parse-qr-payload";
+import { parseQrToken } from "@/lib/qr/parse-qr-payload";
 import { generateBrandedQrPng } from "@/lib/qr/branded-qr-generator";
 import {
   QR_EXPORT_SIZES,
@@ -62,9 +62,17 @@ export async function GET(req: Request) {
     }
 
     if (rawData) {
-      const { celeYouAbsoluteGuestPayload } = await import("@/lib/digital-business-card/share-identity");
+      const { isAllowedPublicQrDestination, celeYouAbsoluteGuestPayload } = await import(
+        "@/lib/digital-business-card/share-identity"
+      );
+      if (!isAllowedPublicQrDestination(rawData)) {
+        return NextResponse.json({ error: "destination not allowed" }, { status: 400 });
+      }
       const guestPayload = celeYouAbsoluteGuestPayload(rawData);
-      const url = guestPayload || (rawData.startsWith("http") ? rawData : buildVerifyUrl(rawData));
+      const url = guestPayload;
+      if (!url) {
+        return NextResponse.json({ error: "destination not allowed" }, { status: 400 });
+      }
       const requestedCenter = toSafePublicQrCenterPath(searchParams.get("center"));
       const requestedLogoSize = parseQrLogoSizeQuery(searchParams.get("logoSize"));
       const pinnedCenter =

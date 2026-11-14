@@ -2,7 +2,7 @@
 
 import { useLocale } from "@/components/i18n/locale-provider";
 import { useCurrency } from "@/components/commerce/currency-provider";
-import type { DisplayCurrency } from "@/lib/commerce/constants";
+import { DISPLAY_CURRENCIES, type DisplayCurrency } from "@/lib/commerce/constants";
 import type { AppLocale } from "@/lib/i18n/constants";
 import { LOCALE_FLAGS } from "@/lib/i18n/locale-flags";
 import { CURRENCY_FLAGS } from "@/lib/i18n/locale-flags";
@@ -20,14 +20,14 @@ interface HeaderPreferencesDropdownsProps {
   compact?: boolean;
 }
 
-const CURRENCIES: DisplayCurrency[] = ["GHS", "USD", "GBP"];
+const CURRENCIES: DisplayCurrency[] = [...DISPLAY_CURRENCIES];
 
 /** Compact language + currency dropdowns for dashboard/marketing headers */
 export function HeaderPreferencesDropdowns({
   className,
   compact = false,
 }: HeaderPreferencesDropdownsProps) {
-  const { locale, setLocale, labels, availableLocales } = useLocale();
+  const { locale, setLocale, labels, availableLocales, t } = useLocale();
   const { currency, setCurrency, loading: ratesLoading } = useCurrency();
 
   return (
@@ -39,7 +39,7 @@ export function HeaderPreferencesDropdowns({
               "h-9 w-auto min-w-[4.5rem] gap-1 border-slate-200/80 bg-white/90 px-2.5 text-xs font-semibold touch-manipulation",
               compact && "h-10 min-h-[44px] sm:min-h-9"
             )}
-            aria-label="Language"
+            aria-label={t("header.language")}
           >
             <SelectValue>
               <span className="inline-flex items-center gap-1.5">
@@ -72,7 +72,7 @@ export function HeaderPreferencesDropdowns({
             compact && "h-10 min-h-[44px] sm:min-h-9",
             ratesLoading && "opacity-70"
           )}
-          aria-label="Currency"
+          aria-label={t("header.currency")}
         >
           <SelectValue>
             <span className="inline-flex items-center gap-1.5">

@@ -1,7 +1,10 @@
+"use client";
+
 import { ReactNode } from "react";
 import { Sparkles, Calendar, Palette, QrCode } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -16,22 +19,27 @@ interface AuthLayoutProps {
   showGuideSteps?: boolean;
 }
 
-const highlights = [
-  { icon: Calendar, label: "Invitations, RSVP & QR" },
-  { icon: Palette, label: "Templates that play live" },
-  { icon: QrCode, label: "Admission on the day" },
-];
+const HIGHLIGHTS = [
+  { icon: Calendar, key: "auth.highlight_invite" },
+  { icon: Palette, key: "auth.highlight_templates" },
+  { icon: QrCode, key: "auth.highlight_admission" },
+] as const;
 
 export function AuthLayout({
   children,
   title,
   subtitle,
   wide,
-  panelEyebrow = "Event Operating System",
-  panelTitle = "Start in two minutes",
-  panelBody = "Tell us who you are, create your account, then we'll show you exactly what to do next. No walkthrough call needed.",
+  panelEyebrow,
+  panelTitle,
+  panelBody,
   showGuideSteps = true,
 }: AuthLayoutProps) {
+  const { t } = useLocale();
+  const eyebrow = panelEyebrow ?? t("auth.tagline");
+  const heading = panelTitle ?? t("auth.start_two_minutes");
+  const body = panelBody ?? t("auth.start_body");
+
   return (
     <div className="min-h-app-viewport flex">
       <div className="hidden lg:flex lg:w-[42%] xl:w-[46%] auth-panel relative flex-col justify-between p-10 xl:p-14 text-white overflow-hidden">
@@ -46,55 +54,55 @@ export function AuthLayout({
         <div className="relative space-y-8">
           <div className="inline-flex items-center gap-2 badge-pill bg-white/10 text-gold-400 border border-white/10">
             <Sparkles className="h-3.5 w-3.5" />
-            {panelEyebrow}
+            {eyebrow}
           </div>
           <h1 className="font-display text-4xl xl:text-5xl font-bold leading-tight">
-            {panelTitle.includes(" ") ? (
+            {heading.includes(" ") ? (
               <>
-                {panelTitle.split(" ").slice(0, -1).join(" ")}{" "}
-                <span className="text-gradient-gold">{panelTitle.split(" ").slice(-1)}</span>
+                {heading.split(" ").slice(0, -1).join(" ")}{" "}
+                <span className="text-gradient-gold">{heading.split(" ").slice(-1)}</span>
               </>
             ) : (
-              panelTitle
+              heading
             )}
           </h1>
-          <p className="text-slate-200 text-lg max-w-md leading-relaxed">{panelBody}</p>
+          <p className="text-slate-200 text-lg max-w-md leading-relaxed">{body}</p>
           {showGuideSteps ? (
             <ol className="space-y-3 text-sm text-slate-300 max-w-md">
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">
                   1
                 </span>
-                Choose how you&apos;ll use Celeventic
+                {t("auth.guide_step_1")}
               </li>
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">
                   2
                 </span>
-                Create your account with email, phone, or Google
+                {t("auth.guide_step_2")}
               </li>
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">
                   3
                 </span>
-                Follow one clear next step. Event, invitation, or guest RSVP
+                {t("auth.guide_step_3")}
               </li>
             </ol>
           ) : null}
           <div className="flex flex-wrap gap-3 pt-2">
-            {highlights.map((item) => (
+            {HIGHLIGHTS.map((item) => (
               <div
-                key={item.label}
+                key={item.key}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/8 border border-white/10 backdrop-blur-sm"
               >
                 <item.icon className="h-4 w-4 text-brand-400" />
-                <span className="text-sm font-medium text-slate-300">{item.label}</span>
+                <span className="text-sm font-medium text-slate-300">{t(item.key)}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="relative text-sm text-slate-300">Trusted by hosts, planners, and guests</p>
+        <p className="relative text-sm text-slate-300">{t("auth.trusted_hosts")}</p>
       </div>
 
       <div className="flex-1 flex items-start lg:items-center justify-center bg-mesh p-4 sm:p-6 lg:p-8 min-h-0 overflow-y-auto">

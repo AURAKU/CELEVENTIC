@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowDown, ArrowUp, LayoutGrid, Rows3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DigitalCardBrandMark } from "@/components/digital-business-card/digital-card-brand-mark";
@@ -40,6 +41,19 @@ export function DigitalCardReachOrderEditor({
     emit(items.map((item) => (item.id === id ? { ...item, surface } : item)));
   }
 
+  function moveTo(id: string, targetId: string, surface: DigitalCardReachSurface) {
+    if (id === targetId) return;
+    const stackItems = items.filter((item) => item.surface === "stack");
+    const dockItems = items.filter((item) => item.surface === "dock");
+    const group = surface === "stack" ? [...stackItems] : [...dockItems];
+    const from = group.findIndex((item) => item.id === id);
+    const to = group.findIndex((item) => item.id === targetId);
+    if (from < 0 || to < 0) return;
+    const [row] = group.splice(from, 1);
+    group.splice(to, 0, row);
+    emit(surface === "stack" ? [...group, ...dockItems] : [...stackItems, ...group]);
+  }
+
   if (!items.length) {
     return (
       <p className={cn("text-xs text-slate-500", className)}>
@@ -56,6 +70,7 @@ export function DigitalCardReachOrderEditor({
         items={stack}
         surface="stack"
         onMove={move}
+        onMoveTo={moveTo}
         onSurface={setSurface}
       />
       <Group
@@ -64,6 +79,7 @@ export function DigitalCardReachOrderEditor({
         items={dock}
         surface="dock"
         onMove={move}
+        onMoveTo={moveTo}
         onSurface={setSurface}
       />
     </div>
@@ -76,6 +92,7 @@ function Group({
   items,
   surface,
   onMove,
+  onMoveTo,
   onSurface,
 }: {
   title: string;
@@ -83,8 +100,10 @@ function Group({
   items: DigitalCardReachItem[];
   surface: DigitalCardReachSurface;
   onMove: (id: string, direction: -1 | 1, surface: DigitalCardReachSurface) => void;
+  onMoveTo: (id: string, targetId: string, surface: DigitalCardReachSurface) => void;
   onSurface: (id: string, surface: DigitalCardReachSurface) => void;
 }) {
+  const [dragging, setDragging] = useState<string | null>(null);
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{title}</p>
@@ -94,7 +113,18 @@ function Group({
           items.map((item, index) => (
             <li
               key={item.id}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-1.5"
+              draggable
+              onDragStart={() => setDragging(item.id)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => {
+                if (dragging) onMoveTo(dragging, item.id, surface);
+                setDragging(null);
+              }}
+              aria-grabbed={dragging === item.id}
+              className={cn(
+                "flex cursor-grab items-center gap-2 rounded-xl border bg-white px-2 py-1.5 active:cursor-grabbing",
+                dragging === item.id ? "border-[#0B8A83]" : "border-slate-200"
+              )}
             >
               <DigitalCardBrandMark id={reachBrandMarkId(item)} className="h-8 w-8 rounded-lg shadow-none" />
               <span className="min-w-0 flex-1">

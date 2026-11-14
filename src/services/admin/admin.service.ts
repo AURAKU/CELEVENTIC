@@ -140,6 +140,10 @@ export class AdminService {
         data: { status: "SUSPENDED" },
       });
     }
+    const { holdUsernamesForDeletedAccount } = await import(
+      "@/services/digital-business-card/username.service"
+    );
+    await holdUsernamesForDeletedAccount(userId, userId).catch(() => undefined);
     return prisma.user.delete({ where: { id: userId } });
   }
 

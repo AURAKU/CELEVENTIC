@@ -5,6 +5,7 @@ import type {
   DigitalCardOrnament,
   DigitalCardTheme,
 } from "@/lib/digital-business-card/themes";
+import { stripIdentityFromDesign } from "@/lib/digital-business-card/brand-lock";
 
 export type CeleCardPaperWeight = "subtle" | "balanced" | "rich";
 export type CeleCardPaperTone = "light" | "dark";
@@ -324,7 +325,8 @@ export function compactCeleCardDesign(raw: unknown): CeleCardDesign | undefined 
   if (grain) out.grain = grain;
   const motion = pickToken(record.motion, MOTION_IDS);
   if (motion) out.motion = motion;
-  return Object.keys(out).length ? out : undefined;
+  if (!Object.keys(out).length) return undefined;
+  return stripIdentityFromDesign(out);
 }
 
 function textIsDark(color: string) {
@@ -397,6 +399,40 @@ export function celeCardFaceLead(
   if (composition === "type-first") return "name";
   if (composition === "grid") return "name";
   return "photo";
+}
+
+/**
+ * Keep paper always. Keep the current layout and finish unless the owner
+ * asked to take the next look. Identity (name, photo, company, QR, logo)
+ * is never stored here and is stripped if it appears.
+ */
+export function designAfterThemeChange(
+  previous: CeleCardDesign,
+  nextTheme: DigitalCardTheme,
+  keepFinish = true,
+  previousTheme?: DigitalCardTheme
+): CeleCardDesign {
+  const safePrevious = stripIdentityFromDesign(previous);
+  const paper: CeleCardDesign = {
+    paperUrl: safePrevious.paperUrl,
+    paperTone: safePrevious.paperTone,
+    paperWeight: safePrevious.paperWeight,
+  };
+  if (!keepFinish) {
+    return stripIdentityFromDesign({
+      ...paper,
+      composition: nextTheme.composition,
+      atmosphere: nextTheme.atmosphere ?? "none",
+      ornament: nextTheme.ornament ?? "foil",
+    });
+  }
+  return stripIdentityFromDesign({
+    ...safePrevious,
+    ...paper,
+    composition: safePrevious.composition ?? previousTheme?.composition,
+    atmosphere: safePrevious.atmosphere ?? previousTheme?.atmosphere ?? "none",
+    ornament: safePrevious.ornament ?? previousTheme?.ornament ?? "foil",
+  });
 }
 
 export function celeCardPaperStyle(theme: DigitalCardTheme, design?: CeleCardDesign | null) {

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Calendar, Mail, Ticket, DollarSign, Users, QrCode, Plus, Sparkles, Heart, Smartphone, Share2,
@@ -13,6 +15,7 @@ import {
 } from "@/components/dashboard/recent-events-list";
 import { formatCurrency } from "@/lib/utils";
 import { FreePlanReminder } from "@/components/billing/free-plan-reminder";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 interface DashboardStats {
   eventsCreated: number;
@@ -40,37 +43,38 @@ export function EventOwnerDashboard({
   isAdmin,
   canEditEvents,
 }: OwnerDashboardProps) {
+  const { t } = useLocale();
   return (
     <div className="space-y-8">
       <HeroBanner
         firstName={firstName}
-        subtitle="Here's progress on your events, guests, invitations, and next steps."
+        subtitle={t("dashboard.progress_subtitle")}
         primaryHref="/dashboard/events/create"
-        primaryLabel="Create Event"
+        primaryLabel={t("dashboard.create_event")}
         secondaryHref="/dashboard/business-card/tap"
-        secondaryLabel="Tap to Connect"
+        secondaryLabel={t("dashboard.nav_tap_to_connect")}
       />
       {!isAdmin && <FreePlanReminder />}
       <StatsRow stats={stats} />
       <div className="grid lg:grid-cols-3 gap-6">
         <RecentEventsList
           events={events}
-          emptyTitle="You haven't created an event yet"
-          emptyDesc="Start with your event type, then add guests and send invitations."
+          emptyTitle={t("dashboard.empty_events_title")}
+          emptyDesc={t("dashboard.empty_events_desc")}
           userId={userId}
           isAdmin={isAdmin}
           canEdit={canEditEvents ?? true}
         />
         <QuickActions
           actions={[
-            { href: "/dashboard/business-card/tap", label: "Tap to Connect", icon: Smartphone },
-            { href: "/dashboard/business-card#share", label: "Share my CeleYou", icon: Share2 },
-            { href: "/dashboard/events/create", label: "Create Event", icon: Calendar },
-            { href: "/dashboard/guests", label: "Add Guests", icon: Users },
-            { href: "/dashboard/invitations", label: "Create Invitation", icon: Mail },
-            { href: "/dashboard/qr-admission", label: "Open QR Scanner", icon: QrCode },
-            { href: "/marketplace", label: "Find Vendor", icon: Sparkles },
-            { href: "/dashboard/wallet", label: "View Wallet", icon: DollarSign },
+            { href: "/dashboard/business-card/tap", label: t("dashboard.nav_tap_to_connect"), icon: Smartphone },
+            { href: "/dashboard/business-card#share", label: t("dashboard.share_celeyou"), icon: Share2 },
+            { href: "/dashboard/events/create", label: t("dashboard.create_event"), icon: Calendar },
+            { href: "/dashboard/guests", label: t("dashboard.add_guests"), icon: Users },
+            { href: "/dashboard/invitations", label: t("dashboard.create_invitation"), icon: Mail },
+            { href: "/dashboard/qr-admission", label: t("dashboard.open_qr"), icon: QrCode },
+            { href: "/marketplace", label: t("dashboard.find_vendor"), icon: Sparkles },
+            { href: "/dashboard/wallet", label: t("dashboard.view_wallet"), icon: DollarSign },
           ]}
         />
       </div>
@@ -86,39 +90,40 @@ export function OrganizerDashboard({
   isAdmin,
   canEditEvents,
 }: OwnerDashboardProps) {
+  const { t } = useLocale();
   return (
     <div className="space-y-8">
       <HeroBanner
         firstName={firstName}
-        subtitle="Client events, deadlines, and vendor coordination at a glance."
+        subtitle={t("dashboard.organizer_subtitle")}
         primaryHref="/dashboard/events/create"
-        primaryLabel="Create Event"
+        primaryLabel={t("dashboard.create_event")}
         secondaryHref="/dashboard/business-card/tap"
-        secondaryLabel="Tap to Connect"
+        secondaryLabel={t("dashboard.nav_tap_to_connect")}
       />
       {!isAdmin && <FreePlanReminder />}
       <StatsRow stats={stats} />
       <div className="grid lg:grid-cols-3 gap-6">
         <RecentEventsList
           events={events}
-          emptyTitle="No client events yet"
-          emptyDesc="Create an event or accept a workspace invitation to get started."
+          emptyTitle={t("dashboard.empty_client_title")}
+          emptyDesc={t("dashboard.empty_client_desc")}
           secondaryHref="/dashboard/invitations/workspace"
-          secondaryLabel="Pending collaboration invites"
+          secondaryLabel={t("dashboard.pending_collab")}
           userId={userId}
           isAdmin={isAdmin}
           canEdit={canEditEvents ?? true}
         />
         <QuickActions
           actions={[
-            { href: "/dashboard/business-card/tap", label: "Tap to Connect", icon: Smartphone },
-            { href: "/dashboard/business-card#share", label: "Share my CeleYou", icon: Share2 },
-            { href: "/dashboard/events/create", label: "Create Event", icon: Calendar },
-            { href: "/dashboard/organizers", label: "Organizer Directory", icon: Users },
-            { href: "/dashboard/events", label: "Invite Client", icon: Mail },
-            { href: "/dashboard/messages", label: "Messages", icon: Mail },
-            { href: "/marketplace", label: "Find Vendor", icon: Sparkles },
-            { href: "/dashboard/campaigns", label: "Send Campaign", icon: Mail },
+            { href: "/dashboard/business-card/tap", label: t("dashboard.nav_tap_to_connect"), icon: Smartphone },
+            { href: "/dashboard/business-card#share", label: t("dashboard.share_celeyou"), icon: Share2 },
+            { href: "/dashboard/events/create", label: t("dashboard.create_event"), icon: Calendar },
+            { href: "/dashboard/organizers", label: t("dashboard.organizer_directory"), icon: Users },
+            { href: "/dashboard/events", label: t("dashboard.invite_client"), icon: Mail },
+            { href: "/dashboard/messages", label: t("dashboard.nav_messages"), icon: Mail },
+            { href: "/marketplace", label: t("dashboard.find_vendor"), icon: Sparkles },
+            { href: "/dashboard/campaigns", label: t("dashboard.send_campaign"), icon: Mail },
           ]}
         />
       </div>
@@ -134,36 +139,37 @@ export function OrganizationDashboard({
   isAdmin,
   canEditEvents,
 }: OwnerDashboardProps) {
+  const { t } = useLocale();
   return (
     <div className="space-y-8">
       <HeroBanner
         firstName={firstName}
-        subtitle="Manage your organization's events, team, and permissions."
+        subtitle={t("dashboard.org_subtitle")}
         primaryHref="/dashboard/events/create"
-        primaryLabel="Create Event"
+        primaryLabel={t("dashboard.create_event")}
         secondaryHref="/dashboard/business-card/tap"
-        secondaryLabel="Tap to Connect"
+        secondaryLabel={t("dashboard.nav_tap_to_connect")}
       />
       {!isAdmin && <FreePlanReminder />}
       <StatsRow stats={stats} />
       <div className="grid lg:grid-cols-3 gap-6">
         <RecentEventsList
           events={events}
-          emptyTitle="No organization events yet"
-          emptyDesc="Create your first event, then invite your team to collaborate."
+          emptyTitle={t("dashboard.empty_org_title")}
+          emptyDesc={t("dashboard.empty_org_desc")}
           userId={userId}
           isAdmin={isAdmin}
           canEdit={canEditEvents ?? true}
         />
         <QuickActions
           actions={[
-            { href: "/dashboard/business-card/tap", label: "Tap to Connect", icon: Smartphone },
-            { href: "/dashboard/business-card#share", label: "Share my CeleYou", icon: Share2 },
-            { href: "/dashboard/settings?tab=team", label: "Invite Team", icon: Users },
-            { href: "/dashboard/settings?tab=organization", label: "Organization Settings", icon: Calendar },
-            { href: "/dashboard/events/create", label: "Create Event", icon: Plus },
-            { href: "/dashboard/settings?tab=permissions", label: "Permissions", icon: Users },
-            { href: "/dashboard/wallet", label: "Event Wallet", icon: DollarSign },
+            { href: "/dashboard/business-card/tap", label: t("dashboard.nav_tap_to_connect"), icon: Smartphone },
+            { href: "/dashboard/business-card#share", label: t("dashboard.share_celeyou"), icon: Share2 },
+            { href: "/dashboard/settings?tab=team", label: t("dashboard.invite_team"), icon: Users },
+            { href: "/dashboard/settings?tab=organization", label: t("dashboard.nav_organization"), icon: Calendar },
+            { href: "/dashboard/events/create", label: t("dashboard.create_event"), icon: Plus },
+            { href: "/dashboard/settings?tab=permissions", label: t("dashboard.nav_permissions"), icon: Users },
+            { href: "/dashboard/wallet", label: t("dashboard.nav_wallet"), icon: DollarSign },
           ]}
         />
       </div>
@@ -172,23 +178,24 @@ export function OrganizationDashboard({
 }
 
 export function VendorDashboardHome({ firstName }: { firstName: string }) {
+  const { t } = useLocale();
   return (
     <div className="space-y-8">
       <HeroBanner
         firstName={firstName}
-        subtitle="Manage leads, quotes, bookings, and your marketplace profile."
+        subtitle={t("dashboard.vendor_subtitle")}
         primaryHref="/dashboard/vendor-portal"
-        primaryLabel="Open Vendor Portal"
+        primaryLabel={t("dashboard.open_vendor_portal")}
       />
       <Card>
         <CardContent className="py-12">
           <EmptyState
             icon={Sparkles}
-            title="Your vendor dashboard lives in the portal"
-            description="Track leads, respond to quotes, manage bookings, and update your portfolio."
-            actionLabel="Open Vendor Portal"
+            title={t("dashboard.vendor_empty_title")}
+            description={t("dashboard.vendor_empty_desc")}
+            actionLabel={t("dashboard.open_vendor_portal")}
             actionHref="/dashboard/vendor-portal"
-            secondaryLabel="Marketplace Profile"
+            secondaryLabel={t("dashboard.marketplace_profile")}
             secondaryHref="/marketplace"
           />
         </CardContent>
@@ -212,6 +219,7 @@ function HeroBanner({
   secondaryHref?: string;
   secondaryLabel?: string;
 }) {
+  const { t } = useLocale();
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-600 via-brand-500 to-accent-500 p-6 sm:p-8 text-white shadow-[0_12px_40px_rgba(11,138,131,0.3)]">
       <div className="absolute inset-0 grid-pattern opacity-10" />
@@ -219,10 +227,10 @@ function HeroBanner({
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="h-4 w-4 text-gold-400" />
-            <span className="text-sm font-medium text-white/80">Home</span>
+            <span className="text-sm font-medium text-white/80">{t("dashboard.home_kicker")}</span>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            Welcome back, {firstName}
+            {t("dashboard.welcome_back", { name: firstName })}
           </h1>
           <p className="text-white/70 mt-1">{subtitle}</p>
         </div>
@@ -250,14 +258,15 @@ function HeroBanner({
 }
 
 function StatsRow({ stats }: { stats: DashboardStats }) {
+  const { t, locale } = useLocale();
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-      <StatCard title="Events" value={stats.eventsCreated} icon={Calendar} />
-      <StatCard title="Invitations" value={stats.invitationsGenerated} icon={Mail} />
-      <StatCard title="Tickets Sold" value={stats.ticketsSold} icon={Ticket} />
-      <StatCard title="Revenue" value={formatCurrency(stats.revenue)} icon={DollarSign} />
-      <StatCard title="RSVP Accepted" value={stats.rsvpAccepted} icon={Users} />
-      <StatCard title="QR Scans" value={stats.qrScans} icon={QrCode} />
+      <StatCard title={t("dashboard.stat_events")} value={stats.eventsCreated} icon={Calendar} />
+      <StatCard title={t("dashboard.stat_invitations")} value={stats.invitationsGenerated} icon={Mail} />
+      <StatCard title={t("dashboard.stat_tickets")} value={stats.ticketsSold} icon={Ticket} />
+      <StatCard title={t("dashboard.stat_revenue")} value={formatCurrency(stats.revenue, "GHS", locale)} icon={DollarSign} />
+      <StatCard title={t("dashboard.stat_rsvp")} value={stats.rsvpAccepted} icon={Users} />
+      <StatCard title={t("dashboard.stat_scans")} value={stats.qrScans} icon={QrCode} />
     </div>
   );
 }
@@ -267,12 +276,13 @@ function QuickActions({
 }: {
   actions: { href: string; label: string; icon: typeof Calendar }[];
 }) {
+  const { t } = useLocale();
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Heart className="h-4 w-4 text-brand-500" />
-          Quick Actions
+          {t("dashboard.quick_actions")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">

@@ -81,7 +81,7 @@ describe("CeleYou launch catalog", () => {
     assert.equal(business?.proposedMonthlyGhs, 99);
     assert.deepEqual(
       publishedCeleYouTiers().map((tier) => tier.id),
-      ["pro"]
+      ["free", "pro"]
     );
   });
 
@@ -123,6 +123,8 @@ describe("CeleYou launch catalog", () => {
     );
     assert.match(subscribe, /planId: z\.enum\(\["monthly", "quarter", "half", "yearly"\]\)/);
     assert.doesNotMatch(subscribe, /amountGhs/);
+    assert.doesNotMatch(subscribe, /alipay|wechat_pay/);
     assert.match(subscribe, /getCeleCardCatalog/);
+    assert.match(subscribe, /findOpenCeleYouCheckout/);
   });
 });

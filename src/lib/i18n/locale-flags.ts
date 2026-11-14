@@ -4,10 +4,12 @@ import type { DisplayCurrency } from "@/lib/commerce/constants";
 export const LOCALE_FLAGS: Record<AppLocale, string> = {
   en: "🇬🇧",
   fr: "🇫🇷",
+  zh: "🇨🇳",
 };
 
 export const CURRENCY_FLAGS: Record<DisplayCurrency, string> = {
   GHS: "🇬🇭",
   USD: "🇺🇸",
   GBP: "🇬🇧",
+  CNY: "🇨🇳",
 };

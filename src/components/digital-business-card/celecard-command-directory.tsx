@@ -133,12 +133,14 @@ export function CeleCardCommandDirectory() {
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="expiring">Expiring</SelectItem>
-            <SelectItem value="courtesy">Courtesy</SelectItem>
+            <SelectItem value="draft">Pending activation</SelectItem>
+            <SelectItem value="expiring">Renewal due</SelectItem>
+            <SelectItem value="grace">Grace</SelectItem>
+            <SelectItem value="courtesy">Expired</SelectItem>
             <SelectItem value="deactivated">Deactivated</SelectItem>
             <SelectItem value="suspended">Suspended</SelectItem>
             <SelectItem value="unclaimed">Unclaimed</SelectItem>
+            <SelectItem value="deleted">Deleted</SelectItem>
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={setSort}>

@@ -11,6 +11,10 @@ interface UseStudioAutosaveOptions<T> {
   save: (value: T) => Promise<void>;
   /** Serialize for dirty detection; defaults to JSON.stringify */
   serialize?: (value: T) => string;
+  /** When this changes, forget the previous baseline so a different record cannot inherit status. */
+  resetKey?: string | null;
+  /** Persist immediately when the hook becomes enabled instead of treating the first value as already saved. */
+  saveOnEnable?: boolean;
 }
 
 /**
@@ -22,6 +26,8 @@ export function useStudioAutosave<T>({
   debounceMs = 1800,
   save,
   serialize = (v) => JSON.stringify(v),
+  resetKey = null,
+  saveOnEnable = false,
 }: UseStudioAutosaveOptions<T>) {
   const [status, setStatus] = useState<StudioSaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -63,8 +69,17 @@ export function useStudioAutosave<T>({
   }, [enabled, save, serialize]);
 
   useEffect(() => {
+    lastSavedSerialized.current = null;
+    setStatus("idle");
+  }, [resetKey]);
+
+  useEffect(() => {
     if (!enabled) return;
     if (lastSavedSerialized.current === null) {
+      if (saveOnEnable) {
+        void flush();
+        return;
+      }
       lastSavedSerialized.current = serialize(value);
       setStatus("idle");
       return;
@@ -80,7 +95,7 @@ export function useStudioAutosave<T>({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [value, enabled, debounceMs, flush, serialize]);
+  }, [value, enabled, debounceMs, flush, serialize, saveOnEnable]);
 
   const saveNow = useCallback(async () => {
     if (timerRef.current) clearTimeout(timerRef.current);

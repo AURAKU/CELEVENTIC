@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { useCurrency } from "@/components/commerce/currency-provider";
-import type { DisplayCurrency } from "@/lib/commerce/constants";
+import { DISPLAY_CURRENCIES } from "@/lib/commerce/constants";
 import type { AppLocale } from "@/lib/i18n/constants";
 import { LOCALE_FLAGS, CURRENCY_FLAGS } from "@/lib/i18n/locale-flags";
 import { cn } from "@/lib/utils";
@@ -14,9 +14,11 @@ interface PreferencesMenuProps {
   compact?: boolean;
   /** Topbar social pattern: globe icon only, no currency chip */
   iconOnly?: boolean;
+  /** Header/admin chrome. When true, the floating LocaleDock hides itself. */
+  chrome?: boolean;
 }
 
-const CURRENCIES: DisplayCurrency[] = ["GHS", "USD", "GBP"];
+const CURRENCIES = DISPLAY_CURRENCIES;
 
 /** Orbital globe mark, modern, brand-aligned, readable at 16 to 18px */
 function GlobeMark({ className }: { className?: string }) {
@@ -97,8 +99,13 @@ function GlobeMark({ className }: { className?: string }) {
 }
 
 /** Single control, tap to open language & currency picker (avoids crowded header). */
-export function PreferencesMenu({ className, compact = false, iconOnly = false }: PreferencesMenuProps) {
-  const { locale, setLocale, labels, availableLocales } = useLocale();
+export function PreferencesMenu({
+  className,
+  compact = false,
+  iconOnly = false,
+  chrome = true,
+}: PreferencesMenuProps) {
+  const { locale, setLocale, labels, availableLocales, t } = useLocale();
   const { currency, setCurrency, loading: ratesLoading } = useCurrency();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -124,7 +131,11 @@ export function PreferencesMenu({ className, compact = false, iconOnly = false }
   const showLanguage = availableLocales.length > 1;
 
   return (
-    <div ref={rootRef} className={cn("relative shrink-0", className)}>
+    <div
+      ref={rootRef}
+      className={cn("relative shrink-0", className)}
+      {...(chrome ? { "data-celeventic-prefs": "" } : {})}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -148,7 +159,7 @@ export function PreferencesMenu({ className, compact = false, iconOnly = false }
         )}
         aria-expanded={open}
         aria-haspopup="dialog"
-        aria-label="Language and currency"
+        aria-label={t("header.preferences")}
       >
         {iconOnly ? (
           <GlobeMark className="h-5 w-5 text-[#0B8A83]" />
@@ -193,10 +204,10 @@ export function PreferencesMenu({ className, compact = false, iconOnly = false }
       {open && (
         <div
           role="dialog"
-          aria-label="Preferences"
+          aria-label={t("header.preferences")}
           className={cn(
             "absolute right-0 top-[calc(100%+0.55rem)] z-[100]",
-            "w-[min(17rem,calc(100vw-2rem))] overflow-hidden",
+            "w-[min(18.75rem,calc(100vw-2rem))] overflow-hidden",
             "rounded-[1.25rem] p-[1px]",
             "bg-gradient-to-br from-teal-400/30 via-white to-orange-400/25",
             "shadow-[0_16px_40px_rgba(15,23,42,0.14)]"
@@ -206,7 +217,7 @@ export function PreferencesMenu({ className, compact = false, iconOnly = false }
             {showLanguage && (
               <div className="space-y-2">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  Language
+                  {t("header.language")}
                 </p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {availableLocales.map((code) => (
@@ -234,9 +245,9 @@ export function PreferencesMenu({ className, compact = false, iconOnly = false }
 
             <div className={cn("space-y-2", showLanguage && "mt-4 pt-4 border-t border-slate-100")}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                Currency
+                {t("header.currency")}
               </p>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 {CURRENCIES.map((c) => (
                   <button
                     key={c}

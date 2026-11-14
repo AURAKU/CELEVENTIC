@@ -28,8 +28,16 @@ export function smartCardStudioPath(plan?: string | null, theme?: string | null)
   return qs ? `/dashboard/business-card?${qs}` : "/dashboard/business-card";
 }
 
+export function smartCardStartPath(plan?: string | null, theme?: string | null): string {
+  const params = new URLSearchParams();
+  if (plan) params.set("plan", plan);
+  if (theme) params.set("theme", theme);
+  const qs = params.toString();
+  return qs ? `/dashboard/business-card/start?${qs}` : "/dashboard/business-card/start";
+}
+
 export function smartCardSignupPath(plan?: string | null, theme?: string | null): string {
-  const next = smartCardStudioPath(plan, theme);
+  const next = smartCardStartPath(plan, theme);
   const params = new URLSearchParams({
     intent: "smartcard",
     next,

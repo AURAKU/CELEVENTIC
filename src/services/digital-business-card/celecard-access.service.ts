@@ -141,7 +141,8 @@ export async function revokeCeleCardAccessCode(cardId: string, codeId: string) {
 export async function unlockCeleCardWithCode(
   cardId: string,
   code: string,
-  alreadyGranted: Iterable<string> = []
+  alreadyGranted: Iterable<string> = [],
+  itemKey?: string | null
 ) {
   const normalized = normalizeAccessCode(code);
   if (!normalized) return { ok: false as const, reason: "invalid" };
@@ -162,7 +163,17 @@ export async function unlockCeleCardWithCode(
   if (match.maxRedemptions != null && match.redemptionCount >= match.maxRedemptions) {
     return { ok: false as const, reason: "exhausted" };
   }
-  const itemKeys = [...new Set([...alreadyGranted, ...asItemKeys(match.itemKeys)])].filter(Boolean);
+  const matchedKeys = asItemKeys(match.itemKeys);
+  const wanted = itemKey?.trim() || "";
+  if (wanted && !matchedKeys.includes(wanted)) {
+    await prisma.smartCardInteraction
+      .create({
+        data: { cardId, kind: "access_code_fail", meta: { kind: normalized.kind, itemKey: wanted } },
+      })
+      .catch(() => undefined);
+    return { ok: false as const, reason: "wrong-item" };
+  }
+  const itemKeys = [...new Set([...alreadyGranted, ...matchedKeys])].filter(Boolean);
   const issued = await issueCeleCardGrant({ cardId, itemKeys, source: "CODE" });
   await prisma.smartCardAccessCode.update({
     where: { id: match.id },

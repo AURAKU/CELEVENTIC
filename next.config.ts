@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
   // Allows building to a scratch dir (NEXT_DIST_DIR=.next-verify) without clobbering
   // the .next that a running `next start` is serving from.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+  },
   // Disable Next's gzip TransformStream layer. Media is served by Nginx; HTML compression
   // can be handled at the reverse proxy. Reduces one TransformStream pipeline involved in
   // `controller[kState].transformAlgorithm is not a function` races under Node < 24.15.
@@ -47,10 +50,29 @@ const nextConfig: NextConfig = {
       { source: "/api/v1/proximity/sessions", destination: "/api/digital-business-cards/proximity/sessions" },
       { source: "/api/v1/proximity/exchange", destination: "/api/digital-business-cards/proximity/exchange" },
       { source: "/api/v1/proximity/history", destination: "/api/digital-business-cards/proximity/history" },
-      { source: "/u/:slug/contact.vcf", destination: "/card/:slug/contact.vcf" },
-      { source: "/u/:slug/wallet", destination: "/card/:slug/wallet" },
-      { source: "/u/:slug/og", destination: "/card/:slug/og" },
-      { source: "/u/:slug", destination: "/card/:slug" },
+      { source: "/api/v1/celeyou/usernames/availability", destination: "/api/digital-business-cards/usernames/availability" },
+    ];
+  },
+  poweredByHeader: false,
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-DNS-Prefetch-Control", value: "off" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(), geolocation=(), payment=()",
+          },
+        ],
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
     ];
   },
   async redirects() {

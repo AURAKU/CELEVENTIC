@@ -11,6 +11,8 @@ function webhookSignature(headers: Headers, provider: PaymentProvider): string {
       return headers.get("verif-hash") ?? "";
     case "HUBTEL":
       return headers.get("x-hubtel-signature") ?? headers.get("x-hubtel-secret") ?? "";
+    case "STRIPE":
+      return headers.get("stripe-signature") ?? "";
     default:
       return "";
   }
@@ -76,7 +78,7 @@ export async function POST(req: Request) {
     const provider = paymentService.detectWebhookProvider(req.headers, queryProvider);
     if (!provider) {
       return NextResponse.json(
-        { error: "Unable to detect payment provider. Pass ?provider=PAYSTACK|FLUTTERWAVE|HUBTEL or use provider signature headers." },
+        { error: "Unable to detect payment provider. Pass ?provider=PAYSTACK|STRIPE or use provider signature headers." },
         { status: 400 }
       );
     }

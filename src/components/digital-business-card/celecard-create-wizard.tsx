@@ -233,7 +233,7 @@ export function CeleCardCreateWizard() {
               <div className="min-w-0 flex-1 space-y-1">
                 <Input value={company} onChange={(e) => setCompany(e.target.value)} />
                 <p className="text-[11px] leading-relaxed text-slate-500">
-                  Upload a square mark. It sits beside the company name on the card.
+                  Upload a square mark. It sits on the profile picture on the card.
                 </p>
               </div>
             </div>

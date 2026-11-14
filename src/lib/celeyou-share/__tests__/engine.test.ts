@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
   CeleYouSmartShareEngine,
+  copyCeleYouProfile,
   detectSmartShareCapability,
   shareCeleYouProfile,
 } from "@/lib/celeyou-share/engine";
@@ -12,7 +13,7 @@ import {
   recipientMatrixNeverClaimsPhoneNfcP2P,
 } from "@/lib/celeyou-share/recipient-matrix";
 import { guestPrimaryActions, guestReachEventKind } from "@/lib/celeyou-share/guest-actions";
-import { guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
+import { formatGuestAbout, guestIdentitySections } from "@/lib/celeyou-share/profile-sections";
 import { celeYouShareIdentity } from "@/lib/digital-business-card/share-identity";
 import {
   buildCeleYouWalletPass,
@@ -53,8 +54,8 @@ describe("CeleYou Smart Share Engine", () => {
     assert.equal(engine.route()[0], engine.capability.recommended);
     assert.equal(engine.route().includes("qr"), true);
     assert.equal(engine.route().includes("https-link"), true);
-    assert.equal(celeYouActivityLabel("nfc_tap"), "NFC card opened");
-    assert.equal(celeYouActivityLabel("qr_open"), "QR opened");
+    assert.equal(celeYouActivityLabel("nfc_tap"), "NFC tag opened");
+    assert.equal(celeYouActivityLabel("qr_open"), "Smart QR link opened");
     const identity = celeYouShareIdentity({
       slug: "kojo-mensah",
       publicToken: "cmqr_kojo",
@@ -157,6 +158,11 @@ describe("CeleYou Smart Share Engine", () => {
       ["about", "contact", "portfolio"]
     );
     assert.equal(sections[0]?.body, "Creative director in Accra.");
+    assert.equal(
+      formatGuestAbout("“Spark and Drive with Confidence! Affordable cars.”"),
+      "Spark and Drive with Confidence! Affordable cars."
+    );
+    assert.equal(formatGuestAbout("Studio bio without quotes"), "Studio bio without quotes");
     const pay = guestIdentitySections(card, [
       {
         id: "bank-0",
@@ -167,7 +173,93 @@ describe("CeleYou Smart Share Engine", () => {
         surface: "stack",
       },
     ]);
-    assert.equal(pay.find((section) => section.id === "products")?.label, "Payment Channels & Wallet");
+    const products = pay.find((section) => section.id === "products");
+    assert.equal(products?.label, "Payment Channels & Wallet");
+    assert.equal(products?.items[0]?.surface, "dock");
+    const hiddenWallet = guestIdentitySections(card, [
+      {
+        id: "momo-0",
+        brand: "momo",
+        title: "MTN MoMo",
+        subtitle: "Needs a code",
+        href: "",
+        surface: "stack",
+        locked: true,
+        visibility: "CODE_PROTECTED",
+      },
+      {
+        id: "bank-0",
+        brand: "bank",
+        title: "CalBank",
+        subtitle: null,
+        href: "",
+        surface: "stack",
+      },
+    ]).find((section) => section.id === "products");
+    assert.equal(hiddenWallet?.items.every((item) => item.surface === "dock"), true);
+    assert.equal(hiddenWallet?.items.some((item) => item.id === "momo-0" && item.locked), true);
+    const desk = guestIdentitySections(card, [
+      {
+        id: "location-0",
+        brand: "location",
+        title: "Accra",
+        subtitle: null,
+        href: "https://maps.google.com/?q=Accra",
+        surface: "stack",
+      },
+      {
+        id: "instagram-0",
+        brand: "instagram",
+        title: "Instagram",
+        subtitle: null,
+        href: "https://instagram.com/ama",
+        surface: "dock",
+      },
+    ]);
+    assert.equal(desk.find((section) => section.id === "business")?.label, "Business");
+    assert.equal(desk.find((section) => section.id === "social")?.label, "Social");
+    assert.equal(
+      guestIdentitySections(card, [
+        {
+          id: "momo-0",
+          brand: "momo",
+          title: "MTN MoMo",
+          subtitle: null,
+          href: "tel:0240000000",
+          surface: "dock",
+        },
+      ]).find((section) => section.id === "products")?.label,
+      "Payment Channels & Wallet"
+    );
+    const hidden = guestIdentitySections(card, [
+      {
+        id: "instagram-0",
+        brand: "instagram",
+        title: "Instagram",
+        subtitle: "Needs a code",
+        href: "",
+        surface: "dock",
+        locked: true,
+        visibility: "CODE_PROTECTED",
+      },
+      {
+        id: "phone-0",
+        brand: "phone",
+        title: "Mobile",
+        subtitle: null,
+        href: "tel:+233240000000",
+        surface: "stack",
+      },
+    ]);
+    assert.equal(hidden.some((section) => section.id === "social"), true);
+    assert.equal(
+      hidden.find((section) => section.id === "social")?.items.some((item) => item.id === "instagram-0" && item.locked),
+      true
+    );
+    assert.equal(
+      hidden.find((section) => section.id === "contact")?.items.some((item) => item.id === "phone-0"),
+      true
+    );
   });
 
   it("keeps SHARE MY CELEYOU actions on the studio desk without claiming phone NFC", () => {
@@ -190,7 +282,7 @@ describe("CeleYou Smart Share Engine", () => {
       join(process.cwd(), "src/components/digital-business-card/digital-card-analytics-panel.tsx"),
       "utf8"
     );
-    assert.doesNotMatch(analytics, /Load more/);
+    assert.match(analytics, /Load more/);
     assert.match(analytics, /Live counts from people who open this CeleYou/);
     assert.doesNotMatch(analytics, /A nearby phone is not a tap/);
   });
@@ -268,6 +360,74 @@ describe("CeleYou Smart Share Engine", () => {
     }
   });
 
+  it("keeps the plate file and adds url only when files-only share is rejected", async () => {
+    const payloads: Array<Record<string, unknown>> = [];
+    const plate = new File([new Uint8Array(128).fill(3)], "celeyou-plate.png", { type: "image/png" });
+    const result = await shareCeleYouProfile(
+      {
+        title: "Kojo Mensah on CeleYou",
+        text: "Kojo Mensah on CeleYou.",
+        url: "https://www.celeventic.com/u/kojo-mensah",
+        capturePlate: async () => plate,
+      },
+      {
+        share: async (payload: ShareData) => {
+          payloads.push(payload as Record<string, unknown>);
+        },
+        canShare: (payload?: ShareData) => Boolean(payload?.files?.length && payload?.url),
+      } as Navigator
+    );
+    assert.equal(result, "shared");
+    assert.equal(payloads.length, 1);
+    assert.equal(payloads[0]?.url, "https://www.celeventic.com/u/kojo-mensah");
+    assert.match(String(payloads[0]?.text), /https:\/\/www\.celeventic\.com\/u\/kojo-mensah/);
+    const files = payloads[0]?.files as File[] | undefined;
+    assert.equal(files?.[0]?.name, "celeyou-plate.png");
+  });
+
+  it("copies the live plate PNG together with the card link", async () => {
+    const written: Array<Record<string, Promise<Blob> | Blob>> = [];
+    const plate = new File([new Uint8Array(128).fill(9)], "celeyou-plate.png", { type: "image/png" });
+    const PreviousItem = globalThis.ClipboardItem;
+    class FakeClipboardItem {
+      constructor(public items: Record<string, Promise<Blob> | Blob>) {
+        written.push(items);
+      }
+    }
+    globalThis.ClipboardItem = FakeClipboardItem as unknown as typeof ClipboardItem;
+    try {
+      const result = await copyCeleYouProfile(
+        {
+          title: "Kojo Mensah on CeleYou",
+          text: "Connect with Kojo Mensah. Their CeleYou Card.",
+          url: "https://www.celeventic.com/u/kojo-mensah",
+          capturePlate: async () => plate,
+        },
+        {
+          clipboard: {
+            write: async () => undefined,
+            writeText: async () => {
+              throw new Error("should-use-write");
+            },
+          },
+        } as unknown as Navigator
+      );
+      assert.equal(result, "copied");
+      assert.ok(written[0]?.["image/png"]);
+      assert.ok(written[0]?.["text/plain"]);
+      const textPart = written[0]?.["text/plain"];
+      const textBlob = textPart instanceof Promise ? await textPart : textPart;
+      assert.match(await textBlob.text(), /https:\/\/www\.celeventic\.com\/u\/kojo-mensah/);
+      const imagePart = written[0]?.["image/png"];
+      const imageBlob = imagePart instanceof Promise ? await imagePart : imagePart;
+      assert.equal(imageBlob.type, "image/png");
+      assert.equal(imageBlob.size, 128);
+    } finally {
+      if (PreviousItem) globalThis.ClipboardItem = PreviousItem;
+      else delete (globalThis as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+    }
+  });
+
   it("uses the OG plate tile when the export PNG is missing", async () => {
     const requested: string[] = [];
     const previousFetch = globalThis.fetch;
@@ -330,7 +490,7 @@ describe("CeleYou Smart Share Engine", () => {
     );
     assert.equal(guestReachEventKind({ brand: "email", href: "mailto:ama@folio.test" }), "email_tap");
     assert.equal(guestReachEventKind({ brand: "website", href: "https://folio.test" }), "website_tap");
-    assert.equal(guestReachEventKind({ brand: "linkedin", href: "https://linkedin.com/in/ama" }), null);
+    assert.equal(guestReachEventKind({ brand: "linkedin", href: "https://linkedin.com/in/ama" }), "social_tap");
     assert.equal(guestReachEventKind({ brand: "phone", href: "tel:+233", locked: true }), null);
     assert.equal(
       shouldCountCeleYouGuestStat({ ownerUserId: "owner", viewerUserId: "owner", userAgent: "Mozilla/5.0 Safari" }),

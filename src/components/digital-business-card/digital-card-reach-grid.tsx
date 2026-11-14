@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { createPortal } from "react-dom";
 import { ArrowUpRight, Check, ChevronDown, Copy, EyeOff, Lock, QrCode, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DigitalCardBrandMark } from "@/components/digital-business-card/digital-card-brand-mark";
@@ -18,6 +20,7 @@ import {
   isPayNetwork,
   isQrShareNetwork,
   parseBankAccount,
+  brandReachLabel,
   phoneGroupBrandMarkId,
   reachAccountPreview,
   reachBrandMarkId,
@@ -27,36 +30,130 @@ import {
   type DigitalCardReachItem,
 } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
-import { CELECARD_REACH_INK, CELECARD_REACH_MUTED, celecardReachPlate } from "@/lib/digital-business-card/type-voice";
+import { CELECARD_REACH_INK, CELECARD_REACH_MUTED, celecardCtaOnPaper, celecardReachPlate } from "@/lib/digital-business-card/type-voice";
 import { guestReachEventKind } from "@/lib/celeyou-share/guest-actions";
 import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
+import { copyText } from "@/lib/clipboard";
+import { isVerifiedPayAppHref } from "@/lib/digital-business-card/wallet-quality";
 
 async function writeClipboard(value: string) {
-  try {
-    await navigator.clipboard.writeText(value);
-    return true;
-  } catch {
-    try {
-      const field = document.createElement("textarea");
-      field.value = value;
-      field.setAttribute("readonly", "");
-      field.style.position = "fixed";
-      field.style.opacity = "0";
-      document.body.appendChild(field);
-      field.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(field);
-      return ok;
-    } catch {
-      return false;
-    }
+  return copyText(value);
+}
+
+type Translate = (key: string, params?: Record<string, string | number>) => string;
+
+const REACH_BRAND_KEYS: Record<string, string> = {
+  email: "celeyou.reach_mail",
+  phone: "celeyou.reach_call",
+  website: "celeyou.reach_website",
+  location: "celeyou.reach_location",
+  other: "celeyou.reach_pages",
+  meeting: "celeyou.reach_meetings",
+};
+
+function localizeReachTitle(t: Translate, brand: string, fallback: string) {
+  const key = REACH_BRAND_KEYS[brand];
+  return key ? t(key) : fallback;
+}
+
+function localizeReachHint(t: Translate, item: DigitalCardReachItem, hint: string | null) {
+  if (item.locked) {
+    return item.visibility === "CODE_PROTECTED" ? t("celeyou.needs_code") : t("celeyou.needs_request");
   }
+  if (item.kindTag === "personal") return t("celeyou.kind_personal");
+  if (item.kindTag === "business") return t("celeyou.kind_business");
+  if (item.linkKind === "number") return t("celeyou.kind_chat");
+  if (item.linkKind === "username") return t("celeyou.kind_username");
+  if (item.linkKind === "group") return t("celeyou.kind_group");
+  if (item.linkKind === "channel") return t("celeyou.kind_channel");
+  if (hint && hint === brandReachLabel(item.brand)) {
+    return localizeReachTitle(t, item.brand, hint);
+  }
+  return hint;
+}
+
+function localizeGroupCopy(t: Translate, group: DigitalCardReachGroup) {
+  const copy = reachGroupCopy(group);
+  if (group.items.length === 1) {
+    return {
+      title: copy.title,
+      subtitle: localizeReachHint(t, group.items[0], copy.subtitle),
+    };
+  }
+  const title = localizeReachTitle(t, group.brand, copy.title);
+  if (usesChatLinkKinds(group.brand)) {
+    const counts = { number: 0, username: 0, group: 0, channel: 0 };
+    for (const item of group.items) {
+      if (item.linkKind) counts[item.linkKind] += 1;
+    }
+    const parts: string[] = [];
+    if (counts.number) parts.push(counts.number === 1 ? t("celeyou.kind_chat") : t("celeyou.kind_chats"));
+    if (counts.username) parts.push(counts.username === 1 ? t("celeyou.kind_username") : t("celeyou.kind_usernames"));
+    if (counts.group) parts.push(counts.group === 1 ? t("celeyou.kind_group") : t("celeyou.kind_groups"));
+    if (counts.channel) parts.push(counts.channel === 1 ? t("celeyou.kind_channel") : t("celeyou.kind_channels"));
+    if (parts.length) return { title, subtitle: parts.join(", ") };
+  }
+  const unitKey =
+    group.brand === "email"
+      ? "celeyou.n_addresses"
+      : group.brand === "phone"
+        ? "celeyou.n_numbers"
+        : group.brand === "website"
+          ? "celeyou.n_sites"
+          : group.brand === "location"
+            ? "celeyou.n_places"
+            : group.brand === "other"
+              ? "celeyou.n_pages"
+              : group.brand === "meeting"
+                ? "celeyou.n_times"
+                : isPayNetwork(group.brand)
+                  ? "celeyou.n_wallets"
+                  : "celeyou.n_profiles";
+  return { title, subtitle: t(unitKey, { count: group.items.length }) };
+}
+
+function chatSectionLabel(t: Translate, id: string, count: number) {
+  if (id === "number") return count === 1 ? t("celeyou.kind_chat") : t("celeyou.kind_chats");
+  if (id === "username") return count === 1 ? t("celeyou.kind_username") : t("celeyou.kind_usernames");
+  if (id === "group") return count === 1 ? t("celeyou.kind_group") : t("celeyou.kind_groups");
+  if (id === "channel") return count === 1 ? t("celeyou.kind_channel") : t("celeyou.kind_channels");
+  if (id === "more") return t("celeyou.kind_more");
+  return null;
+}
+
+function bankFieldKey(label: string) {
+  if (label === "Bank name") return "celeyou.field_bank_name";
+  if (label === "Account name") return "celeyou.field_account_name";
+  if (label === "Account number") return "celeyou.field_account_number";
+  if (label === "Account type") return "celeyou.field_account_type";
+  return "";
+}
+
+function bankTypeValue(t: Translate, value: string) {
+  const key =
+    value === "Savings"
+      ? "celeyou.bank_type_savings"
+      : value === "Current"
+        ? "celeyou.bank_type_current"
+        : value === "Checking"
+          ? "celeyou.bank_type_checking"
+          : value === "Business"
+            ? "celeyou.bank_type_business"
+            : value === "Other"
+              ? "celeyou.bank_type_other"
+              : "";
+  return key ? t(key) : value;
+}
+
+function GuestOverlay({ children }: { children: ReactNode }) {
+  if (typeof document === "undefined") return null;
+  return createPortal(children, document.body);
 }
 
 function trackGuestReach(item: DigitalCardReachItem, slug?: string, preview?: boolean) {
   if (!slug || preview) return;
   const kind = guestReachEventKind(item);
-  if (kind) trackCeleYouGuestEvent(slug, kind);
+  if (kind) trackCeleYouGuestEvent(slug, kind, { brand: item.brand, outcome: "attempted" });
 }
 
 function isLocationGroup(group: DigitalCardReachGroup) {
@@ -65,6 +162,20 @@ function isLocationGroup(group: DigitalCardReachGroup) {
 
 function isMeetingGroup(group: DigitalCardReachGroup) {
   return group.brand === "meeting";
+}
+
+function ReachTitleText({ text }: { text: string }) {
+  const at = text.lastIndexOf("@");
+  if (at > 0 && at < text.length - 1 && !/\s/.test(text)) {
+    return (
+      <>
+        {text.slice(0, at + 1)}
+        <wbr />
+        {text.slice(at + 1)}
+      </>
+    );
+  }
+  return text;
 }
 
 function HiddenReachGlyph({
@@ -112,6 +223,7 @@ export function DigitalCardReachGrid({
   const [openId, setOpenId] = useState<string | null>(null);
   const [qrItem, setQrItem] = useState<DigitalCardReachItem | null>(null);
   const [accessItem, setAccessItem] = useState<DigitalCardReachItem | null>(null);
+  const { t } = useLocale();
   const dockMenuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const darkStage = stageIsDark(theme.stageBackground);
@@ -148,7 +260,7 @@ export function DigitalCardReachGrid({
       {dock.length ? (
         <div className={cn("grid", compact ? "gap-2" : "gap-2.5")}>
           <nav
-            aria-label="Profiles"
+            aria-label={t("celeyou.profiles_nav")}
             className={cn(
               "flex items-center gap-2 px-1 sm:gap-2.5",
               compact
@@ -159,7 +271,10 @@ export function DigitalCardReachGrid({
             {dock.map((group, index) => (
               <span
                 key={group.id}
-                className={compact ? undefined : "celecard-dock-item"}
+                className={cn(
+                  compact ? undefined : "celecard-dock-item",
+                  group.items.every((item) => item.locked) ? "is-locked" : null
+                )}
                 style={compact ? undefined : ({ "--celecard-i": index } as CSSProperties)}
               >
                 <DockTap
@@ -188,10 +303,10 @@ export function DigitalCardReachGrid({
                 </p>
                 <p className={cn("mt-0.5 font-medium", compact ? "text-[11px]" : "text-[12px]")} style={{ color: CELECARD_REACH_MUTED }}>
                   {isLocationGroup(openDock)
-                    ? "See the place, then open it in maps"
+                    ? t("celeyou.see_place")
                     : usesChatLinkKinds(openDock.brand)
-                      ? `Choose which ${reachGroupCopy(openDock).title} to open`
-                      : "Choose which profile to open"}
+                      ? t("celeyou.choose_chat", { title: reachGroupCopy(openDock).title })
+                      : t("celeyou.choose_profile")}
                 </p>
               </div>
               {isLocationGroup(openDock) ? (
@@ -227,7 +342,7 @@ export function DigitalCardReachGrid({
       ) : null}
 
       {stack.length ? (
-        <div className={cn("grid", compact ? "gap-2" : "celecard-stack gap-2.5")}>
+        <div className={compact ? "grid gap-2" : "celecard-stack"}>
           {stack.map((group) => (
             <div key={group.id} className={compact ? undefined : "celecard-stack-item"}>
               <StackTap
@@ -280,6 +395,7 @@ function ChoiceList({
   accent?: string;
   trackSlug?: string;
 }) {
+  const { t } = useLocale();
   const sections = usesChatLinkKinds(group.brand) ? arrangeChatChoices(group.items) : [{ id: "all", label: null, items: group.items }];
   return (
     <div role="menu" className={cn("grid", compact ? "gap-1 p-1.5" : "gap-1.5 p-2")}>
@@ -287,11 +403,13 @@ function ChoiceList({
         <div key={section.id} className="grid gap-1">
           {section.label ? (
             <p className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#44403c" }}>
-              {section.label}
+              {chatSectionLabel(t, section.id, section.items.length) || section.label}
             </p>
           ) : null}
           {section.items.map((item) => {
         const choice = reachAccountPreview(item);
+        const title = choice.title;
+        const hint = localizeReachHint(t, item, choice.hint);
         return (
           <ReachTarget
             key={item.id}
@@ -300,16 +418,17 @@ function ChoiceList({
             trackSlug={trackSlug}
             onOpenQr={onOpenQr}
             onOpenAccess={onOpenAccess}
-            aria-label={choice.hint ? `${choice.title} ${choice.hint}` : choice.title}
+            aria-label={hint ? `${title} ${hint}` : title}
             className={cn(
-              "flex items-center gap-2.5 rounded-2xl px-2 py-2 transition hover:bg-black/[0.04]",
-              compact ? "min-h-11" : "min-h-12"
+              "celecard-reach-choice rounded-2xl px-2 py-2 transition hover:bg-black/[0.04]",
+              compact ? "is-compact" : "is-live",
+              item.locked ? "is-locked" : null
             )}
           >
             <span className="relative shrink-0">
               <DigitalCardBrandMark
                 id={reachBrandMarkId(item)}
-                className={compact ? "h-9 w-9 rounded-[11px]" : "h-10 w-10 rounded-[12px]"}
+                className={compact ? "h-9 w-9 rounded-[11px]" : "h-9 w-9 rounded-[11px] sm:h-10 sm:w-10 sm:rounded-[12px]"}
                 color={item.brand === "phone" ? accent : undefined}
               />
               {item.brand === "phone" ? null : (
@@ -321,23 +440,21 @@ function ChoiceList({
                 </span>
               )}
             </span>
-            <span className="min-w-0 flex-1 text-left">
-              <span className={cn("block truncate font-semibold tracking-tight", compact ? "text-[12px]" : "text-[14px]")}>
-                {choice.title}
+            <span className="celecard-reach-copy">
+              <span className={cn("celecard-reach-title", compact ? "text-[12px]" : null)}>
+                <ReachTitleText text={title} />
               </span>
-              {choice.hint ? (
+              {hint ? (
                 <span
                   className={cn(
-                    "mt-0.5 block truncate font-medium",
+                    "celecard-reach-hint",
                     item.kindTag || item.linkKind
-                      ? "text-[9px] uppercase tracking-[0.14em]"
-                      : compact
-                        ? "text-[10px]"
-                        : "text-[11px]"
+                      ? "uppercase tracking-[0.14em]"
+                      : null
                   )}
                   style={{ color: "#44403c" }}
                 >
-                  {choice.hint}
+                  {hint}
                 </span>
               ) : null}
             </span>
@@ -345,7 +462,7 @@ function ChoiceList({
               <HiddenReachGlyph item={item} className={compact ? "h-3.5 w-3.5 opacity-45" : "h-4 w-4 opacity-45"} />
             ) : item.qrUrl ? (
               <QrCode className={compact ? "h-3.5 w-3.5 opacity-45" : "h-4 w-4 opacity-45"} aria-hidden />
-            ) : item.brand === "bank" ? (
+            ) : isPayNetwork(item.brand) ? (
               <Copy className={compact ? "h-3.5 w-3.5 opacity-45" : "h-4 w-4 opacity-45"} aria-hidden />
             ) : (
               <ArrowUpRight className={compact ? "h-3.5 w-3.5 opacity-45" : "h-4 w-4 opacity-45"} aria-hidden />
@@ -380,8 +497,11 @@ function DockTap({
   onOpenAccess?: (item: DigitalCardReachItem) => void;
   trackSlug?: string;
 }) {
+  const { t } = useLocale();
+  const copy = localizeGroupCopy(t, group);
   const one = group.items.length === 1;
-  const placeLocked = isLocationGroup(group) && group.items.every((item) => item.locked);
+  const allLocked = group.items.every((item) => item.locked);
+  const placeLocked = isLocationGroup(group) && allLocked;
   const expands = !one || (isLocationGroup(group) && !placeLocked);
   const mark = (
     <span className="relative inline-flex">
@@ -389,15 +509,14 @@ function DockTap({
         id={group.brand === "phone" ? phoneGroupBrandMarkId(group.items) : group.brand}
         className={compact ? "h-10 w-10 rounded-[12px]" : "h-11 w-11 rounded-[13px] sm:h-12 sm:w-12 sm:rounded-[14px]"}
       />
-      {one && group.items[0]?.locked ? (
+      {allLocked ? (
         <span
           className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-white text-stone-700 shadow ring-1 ring-black/10"
           aria-hidden
         >
           <HiddenReachGlyph item={group.items[0]} className="h-2.5 w-2.5" />
         </span>
-      ) : null}
-      {one ? null : (
+      ) : one ? null : (
         <span
           className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-bold leading-none text-white shadow"
           style={{ background: theme.accent }}
@@ -426,29 +545,34 @@ function DockTap({
         trackSlug={trackSlug}
         onOpenQr={onOpenQr}
         onOpenAccess={onOpenAccess}
-        aria-label={`${item.title}${item.subtitle ? ` ${item.subtitle}` : ""}`}
-        className="transition duration-200 hover:-translate-y-1 hover:scale-105"
+        aria-label={
+          item.locked
+            ? t("celeyou.unhide_aria", { title: item.title })
+            : `${item.title}${item.subtitle ? ` ${localizeReachHint(t, item, item.subtitle)}` : ""}`
+        }
+        className="celecard-dock-tap transition duration-200 hover:-translate-y-1 hover:scale-105"
       >
         {mark}
+        <span className="celecard-dock-caption">{copy.title}</span>
       </ReachTarget>
     );
   }
 
-  const copy = reachGroupCopy(group);
   return (
     <button
       type="button"
       aria-expanded={open}
       aria-haspopup="menu"
       aria-controls={menuId}
-      aria-label={`${copy.title}. ${copy.subtitle ?? "Choose a profile"}`}
+      aria-label={`${copy.title}. ${copy.subtitle ?? t("celeyou.choose_profile")}`}
       onClick={onToggle}
       className={cn(
-        "transition duration-200 hover:-translate-y-1 hover:scale-105",
+        "celecard-dock-tap transition duration-200 hover:-translate-y-1 hover:scale-105",
         open ? "scale-105" : ""
       )}
     >
       {mark}
+      <span className="celecard-dock-caption">{copy.title}</span>
     </button>
   );
 }
@@ -478,59 +602,94 @@ function StackTap({
   ownerName?: string;
   trackSlug?: string;
 }) {
+  const { t } = useLocale();
   const menuId = useId();
-  const copy = reachGroupCopy(group);
+  const copy = localizeGroupCopy(t, group);
   const placeLocked = isLocationGroup(group) && group.items.every((item) => item.locked);
+  if (isMeetingGroup(group)) {
+    return (
+      <div className="grid gap-1.5">
+        <div
+          className={cn(
+            "celecard-reach-row group relative overflow-hidden border backdrop-blur",
+            compact ? "is-compact" : "is-live"
+          )}
+          style={plate}
+        >
+          <span className="celecard-reach-accent" style={{ background: theme.accent }} aria-hidden />
+          <DigitalCardBrandMark id={group.brand} className="celecard-reach-mark" />
+          <span className="celecard-reach-copy">
+            <span className="celecard-reach-title">
+              <ReachTitleText text={copy.title} />
+            </span>
+            {copy.subtitle ? (
+              <span className="celecard-reach-hint" style={{ color: CELECARD_REACH_MUTED }}>
+                {copy.subtitle}
+              </span>
+            ) : null}
+          </span>
+        </div>
+        <div
+          className="overflow-hidden rounded-[1.35rem] border shadow-[0_12px_28px_rgba(0,0,0,0.12)]"
+          style={plate}
+        >
+          <DigitalCardMeetingDrop
+            items={group.items}
+            theme={theme}
+            compact={compact}
+            preview={compact}
+            slug={slug}
+            ownerName={ownerName}
+          />
+        </div>
+      </div>
+    );
+  }
   const single =
     group.items.length === 1 &&
     (!isLocationGroup(group) || placeLocked) &&
     !isMeetingGroup(group);
   const rowClass = cn(
-    "celecard-reach-row group relative flex items-center overflow-hidden border shadow-[0_16px_36px_rgba(0,0,0,0.16)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.22)]",
-    compact ? "min-h-12 gap-2.5 rounded-2xl px-2.5 py-2" : "min-h-[4.35rem] gap-3.5 rounded-[1.7rem] px-3.5 py-3"
+    "celecard-reach-row group relative overflow-hidden border backdrop-blur",
+    compact ? "is-compact" : "is-live",
+    single ? "is-go" : null,
+    single && group.items[0]?.locked ? "is-locked" : null
   );
 
   const inner = (
     <>
-      <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: theme.accent }} aria-hidden />
+      <span className="celecard-reach-accent" style={{ background: theme.accent }} aria-hidden />
       <DigitalCardBrandMark
         id={group.brand === "phone" ? phoneGroupBrandMarkId(group.items) : group.brand}
-        className={compact ? "ml-1 h-9 w-9 rounded-[10px]" : "ml-1.5 h-11 w-11 rounded-[13px]"}
+        className="celecard-reach-mark"
       />
-      <span className="min-w-0 flex-1 text-left">
-        <span className={cn("block truncate font-semibold tracking-tight", compact ? "text-[12px]" : "text-[15px]")}>
-          {copy.title}
+      <span className="celecard-reach-copy">
+        <span className="celecard-reach-title">
+          <ReachTitleText text={copy.title} />
         </span>
         {copy.subtitle ? (
-          <span
-            className={cn("mt-0.5 block truncate font-medium", compact ? "text-[10px]" : "text-[12px]")}
-            style={{ color: CELECARD_REACH_MUTED }}
-          >
+          <span className="celecard-reach-hint" style={{ color: CELECARD_REACH_MUTED }}>
             {copy.subtitle}
           </span>
         ) : null}
       </span>
       <span
-        className={cn(
-          "grid shrink-0 place-items-center rounded-full transition",
-          compact ? "h-8 w-8" : "h-9 w-9",
-          single ? "group-hover:translate-x-0.5" : open ? "rotate-180" : ""
-        )}
-        style={{ background: theme.accentSoft, color: theme.accent }}
+        className={cn("celecard-reach-go", open && !single ? "is-open" : null)}
+        style={{ background: "#fffef8", color: CELECARD_REACH_INK }}
         aria-hidden
       >
         {single ? (
           group.items[0]?.locked ? (
-            <HiddenReachGlyph item={group.items[0]} className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+            <HiddenReachGlyph item={group.items[0]} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           ) : group.items[0]?.qrUrl ? (
-            <QrCode className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+            <QrCode className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           ) : group.items[0]?.brand === "bank" ? (
-            <Copy className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+            <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           ) : (
-            <ArrowUpRight className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+            <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           )
         ) : (
-          <ChevronDown className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         )}
       </span>
     </>
@@ -575,10 +734,10 @@ function StackTap({
                 <>
                   <div className="px-3.5 pt-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: CELECARD_REACH_MUTED }}>
-                      Location
+                      {t("celeyou.reach_location")}
                     </p>
                     <p className={cn("mt-0.5 font-medium", compact ? "text-[11px]" : "text-[12px]")} style={{ color: CELECARD_REACH_MUTED }}>
-                      See the place, then open it in maps
+                      {t("celeyou.see_place")}
                     </p>
                   </div>
                   <DigitalCardLocationDrop
@@ -635,17 +794,22 @@ function ReachTarget({
   trackSlug?: string;
   "aria-label"?: string;
 }) {
+  const { t } = useLocale();
   if (item.locked && onOpenAccess) {
     return (
-      <button type="button" className={className} style={style} aria-label={ariaLabel} onClick={() => onOpenAccess(item)}>
+      <button
+        type="button"
+        className={className}
+        style={style}
+        aria-label={ariaLabel || t("celeyou.unhide_aria", { title: item.title })}
+        onClick={() => onOpenAccess(item)}
+      >
         {children}
       </button>
     );
   }
   const scanSheet =
-    item.brand === "bank" ||
-    (item.qrUrl && isPayNetwork(item.brand)) ||
-    (item.qrUrl && isQrShareNetwork(item.brand));
+    isPayNetwork(item.brand) || (item.qrUrl && isQrShareNetwork(item.brand));
   if (scanSheet && onOpenQr) {
     return (
       <button
@@ -655,10 +819,19 @@ function ReachTarget({
         aria-label={ariaLabel}
         onClick={() => {
           trackGuestReach(item, trackSlug, preview);
-          openInstalledReachApp(item, preview);
+          if (isVerifiedPayAppHref(item.href)) {
+            openInstalledReachApp(item, preview);
+          }
           onOpenQr(item);
         }}
       >
+        {children}
+      </button>
+    );
+  }
+  if (isPayNetwork(item.brand) && !isVerifiedPayAppHref(item.href)) {
+    return (
+      <button type="button" className={className} style={style} aria-label={ariaLabel}>
         {children}
       </button>
     );
@@ -690,6 +863,7 @@ function PayQrSheet({
   trackSlug?: string;
   onClose: () => void;
 }) {
+  const { t } = useLocale();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const copyTimer = useRef<number | null>(null);
   const bank = item.brand === "bank" ? parseBankAccount(item.copyValue) : null;
@@ -706,6 +880,17 @@ function PayQrSheet({
     []
   );
 
+  useEffect(() => {
+    const html = document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = "hidden";
+    document.body.dataset.celecardSheet = "true";
+    return () => {
+      html.style.overflow = prev;
+      delete document.body.dataset.celecardSheet;
+    };
+  }, []);
+
   async function copyValue(key: string, value: string) {
     if (!value) return;
     const ok = await writeClipboard(value);
@@ -715,9 +900,15 @@ function PayQrSheet({
     copyTimer.current = window.setTimeout(() => setCopiedKey(null), 1600);
   }
 
+  useEffect(() => {
+    if (preview || !trackSlug) return;
+    trackCeleYouGuestEvent(trackSlug, "payment_open", { brand: item.brand, outcome: "attempted" });
+  }, [item.brand, preview, trackSlug]);
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-black/55 p-4" role="dialog" aria-modal>
-      <button type="button" className="absolute inset-0" aria-label="Close" onClick={onClose} />
+    <GuestOverlay>
+    <div className="celecard-guest-overlay fixed inset-0 z-[200] grid place-items-center bg-black/70 p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]" role="dialog" aria-modal aria-labelledby="celecard-pay-title">
+      <button type="button" className="absolute inset-0" aria-label={t("celeyou.close")} onClick={onClose} />
       <div
         className="celecard-sheet relative z-10 w-full max-w-sm max-h-[min(92dvh,40rem)] overflow-y-auto overflow-x-hidden rounded-[1.6rem] border p-4 shadow-2xl"
         style={{ background: "rgba(255,251,245,0.98)", borderColor: theme.border, color: "#1c1917" }}
@@ -726,20 +917,25 @@ function PayQrSheet({
           <div className="flex items-center gap-2.5">
             <DigitalCardBrandMark id={item.brand} className="h-10 w-10 rounded-[12px]" />
             <div>
-              <p className="text-[15px] font-semibold tracking-tight">{item.title}</p>
+              <p id="celecard-pay-title" className="text-[15px] font-semibold tracking-tight">{item.title}</p>
               <p className="text-[12px] opacity-55">
                 {bank
-                  ? item.subtitle || "Bank account"
+                  ? item.subtitle || t("celeyou.bank_account")
                   : qrShare
-                    ? "The app opens if it is on this phone. Otherwise scan the QR."
-                    : item.subtitle || item.copyValue || "Scan to pay"}
+                    ? t("celeyou.qr_app_hint")
+                    : item.subtitle || item.copyValue || t("celeyou.scan_to_pay")}
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full bg-black/5" aria-label="Close">
+          <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full bg-black/5" aria-label={t("celeyou.close")}>
             <X className="h-4 w-4" />
           </button>
         </div>
+        {!bankRows.length && isPayNetwork(item.brand) ? (
+          <p className="mt-3 text-[13px] font-medium leading-relaxed opacity-80">
+            {t("celeyou.momo_howto")}
+          </p>
+        ) : null}
         {bankRows.length ? (
           <dl className="celecard-copy-list mt-4 grid gap-0 rounded-2xl bg-white px-2 py-1.5">
             {bankRows.map((row) => {
@@ -747,14 +943,14 @@ function PayQrSheet({
               return (
                 <div key={row.label} className="celecard-copy-row">
                   <div className="min-w-0 flex-1">
-                    <dt className="celecard-copy-label">{row.label}</dt>
-                    <dd className="celecard-copy-value">{row.value}</dd>
+                    <dt className="celecard-copy-label">{bankFieldKey(row.label) ? t(bankFieldKey(row.label)) : row.label}</dt>
+                    <dd className="celecard-copy-value">{row.label === "Account type" ? bankTypeValue(t, row.value) : row.value}</dd>
                   </div>
                   <button
                     type="button"
                     className="celecard-copy-hit"
                     data-copied={copied ? "true" : "false"}
-                    aria-label={`Copy ${row.label}`}
+                    aria-label={t("celeyou.copy_named", { label: bankFieldKey(row.label) ? t(bankFieldKey(row.label)) : row.label })}
                     onClick={() => void copyValue(row.label, row.value)}
                   >
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -769,16 +965,16 @@ function PayQrSheet({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={item.qrUrl}
-              alt={`${item.title} ${qrShare ? "add QR" : "receive QR"}`}
+              alt={`${item.title} ${qrShare ? t("celeyou.add_qr") : t("celeyou.receive_qr")}`}
               className="mx-auto h-52 w-52 object-contain"
             />
           </div>
         ) : null}
         <p className="sr-only" aria-live="polite">
           {copiedKey === "all"
-            ? "Copied all details"
+            ? t("celeyou.copied_all_live")
             : copiedKey
-              ? `Copied ${copiedKey}`
+              ? t("celeyou.copied_named", { label: copiedKey })
               : ""}
         </p>
         <div className="mt-3 grid gap-2">
@@ -791,23 +987,25 @@ function PayQrSheet({
               style={{ background: CELECARD_REACH_INK, color: "#fffef8" }}
             >
               {copiedKey === "all" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copiedKey === "all" ? "Copied all" : bankRows.length ? "Copy all" : "Copy details"}
+              {copiedKey === "all" ? t("celeyou.copied_all") : bankRows.length ? t("celeyou.copy_all") : t("celeyou.copy_details")}
             </button>
           ) : null}
-          {item.href ? (
+          {item.href && isVerifiedPayAppHref(item.href) ? (
             <DigitalCardSmartLink
               item={item}
               preview={preview}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#0B8A83] text-sm font-semibold text-white"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold"
+              style={celecardCtaOnPaper("#0B8A83", "#fffef8")}
               onActivate={() => trackGuestReach(item, trackSlug, preview)}
             >
-              {qrShare ? `Open ${item.title}` : "Open wallet"}
+              {t("celeyou.open_title", { title: item.title })}
               <ArrowUpRight className="h-4 w-4" />
             </DigitalCardSmartLink>
           ) : null}
         </div>
       </div>
     </div>
+    </GuestOverlay>
   );
 }
 
@@ -824,6 +1022,7 @@ function AccessSheet({
   preview?: boolean;
   onClose: () => void;
 }) {
+  const { t } = useLocale();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -831,25 +1030,37 @@ function AccessSheet({
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const codeRef = useRef<HTMLInputElement>(null);
   const needsCode = item.visibility === "CODE_PROTECTED";
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = "hidden";
+    document.body.dataset.celecardSheet = "true";
+    return () => {
+      html.style.overflow = prev;
+      delete document.body.dataset.celecardSheet;
+    };
+  }, []);
 
   async function unlock() {
     setBusy(true);
     setError(null);
     if (preview || !slug) {
       setBusy(false);
-      setError("Guests enter the code on your live CeleYou. Save a code in Privacy, then they can unveil this.");
+      setError(t("celeyou.ask_cardholder"));
       return;
     }
     const res = await fetch(`/api/digital-business-cards/public/${encodeURIComponent(slug)}/unlock`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, itemKey: item.id }),
     });
     const json = await res.json().catch(() => null);
     setBusy(false);
     if (!res.ok) {
-      setError(json?.error || "That code did not unlock anything");
+      setError(t("celeyou.unlock_failed"));
       return;
     }
     window.location.reload();
@@ -860,7 +1071,7 @@ function AccessSheet({
     setError(null);
     if (preview || !slug) {
       setBusy(false);
-      setError("Guests on your live card send the request here. Save the card first.");
+      setError(t("celeyou.ask_cardholder"));
       return;
     }
     const res = await fetch(`/api/digital-business-cards/public/${encodeURIComponent(slug)}/access-request`, {
@@ -876,15 +1087,16 @@ function AccessSheet({
     const json = await res.json().catch(() => null);
     setBusy(false);
     if (!res.ok) {
-      setError(json?.error || "Could not send the request");
+      setError(t("celeyou.network_error"));
       return;
     }
-    setStatus("Request sent. The cardholder will review it.");
+    setStatus(t("celeyou.request_sent"));
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-black/55 p-4" role="dialog" aria-modal>
-      <button type="button" className="absolute inset-0" aria-label="Close" onClick={onClose} />
+    <GuestOverlay>
+    <div className="celecard-guest-overlay fixed inset-0 z-[200] grid place-items-center bg-black/70 p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]" role="dialog" aria-modal>
+      <button type="button" className="absolute inset-0" aria-label={t("celeyou.close")} onClick={onClose} />
       <div
         className="relative z-10 w-full max-w-sm overflow-hidden rounded-[1.6rem] border p-4 shadow-2xl"
         style={{ background: "rgba(255,251,245,0.98)", borderColor: theme.border, color: "#1c1917" }}
@@ -897,13 +1109,11 @@ function AccessSheet({
             <div>
               <p className="text-[15px] font-semibold tracking-tight">{item.title}</p>
               <p className="text-[12px] opacity-55">
-                {needsCode
-                  ? "This stays private until you enter the code they shared. Public details on this CeleYou stay open."
-                  : "Request access. They decide whether to unveil this. Public details stay open."}
+                {needsCode ? t("celeyou.access_help") : t("celeyou.request_access_help")}
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full bg-black/5" aria-label="Close">
+          <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full bg-black/5" aria-label={t("celeyou.close")}>
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -912,40 +1122,50 @@ function AccessSheet({
             className="mt-4 grid gap-2"
             onSubmit={(event) => {
               event.preventDefault();
+              if (!code.trim()) {
+                setError(t("celeyou.empty_code"));
+                codeRef.current?.focus();
+                return;
+              }
               void unlock();
             }}
           >
             <input
+              ref={codeRef}
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              maxLength={4}
+              onChange={(e) => {
+                setCode(e.target.value.toUpperCase());
+                if (error) setError(null);
+              }}
+              maxLength={8}
               autoFocus
               autoComplete="one-time-code"
-              placeholder="4826 or NOVA"
-              className="h-11 rounded-xl border px-3 tracking-[0.24em]"
+              placeholder={t("celeyou.access_code")}
+              aria-invalid={error ? true : undefined}
+              className="h-11 min-h-11 rounded-xl border px-3 tracking-[0.24em]"
             />
             <button
               type="submit"
               disabled={busy}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl text-sm font-semibold text-white"
-              style={{ background: "#0B8A83" }}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl text-sm font-semibold"
+              style={celecardCtaOnPaper("#0B8A83", "#fffef8")}
             >
-              Unveil
+              {busy ? t("celeyou.unlocking") : t("celeyou.unlock")}
             </button>
           </form>
         ) : (
           <div className="mt-4 grid gap-2">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="h-11 rounded-xl border px-3" />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("celeyou.your_name")} className="h-11 rounded-xl border px-3" />
             <input
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              placeholder="Email or phone"
+              placeholder={t("celeyou.email_or_phone")}
               className="h-11 rounded-xl border px-3"
             />
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Optional message"
+              placeholder={t("celeyou.optional_message")}
               rows={2}
               className="rounded-xl border px-3 py-2"
             />
@@ -953,10 +1173,10 @@ function AccessSheet({
               type="button"
               disabled={busy}
               onClick={() => void requestAccess()}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl text-sm font-semibold text-white"
-              style={{ background: "#0B8A83" }}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl text-sm font-semibold"
+              style={celecardCtaOnPaper("#0B8A83", "#fffef8")}
             >
-              Send request
+              {t("celeyou.send_request")}
             </button>
           </div>
         )}
@@ -964,5 +1184,6 @@ function AccessSheet({
         {error ? <p className="mt-3 text-sm text-amber-800">{error}</p> : null}
       </div>
     </div>
+    </GuestOverlay>
   );
 }

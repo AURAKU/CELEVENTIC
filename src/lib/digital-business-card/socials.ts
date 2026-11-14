@@ -3,6 +3,8 @@ import { compactCeleCardDesign, type CeleCardDesign } from "@/lib/digital-busine
 import { celeCardPlaceHref, parseCeleCardPlace } from "@/lib/digital-business-card/maps";
 import { otherLinkHref, otherLinkHost, parseOtherLink } from "@/lib/digital-business-card/other-links";
 import { compactMeetingDesk, meetingSubtitle, persistMeetingDesk } from "@/lib/digital-business-card/meetings";
+import { persistBusinessProfile } from "@/lib/digital-business-card/business-profile";
+import { callingCodeFromPhones, displayPhone, internationalTelHref } from "@/lib/digital-business-card/phone-format";
 
 export const DIGITAL_CARD_SOCIAL_ICON_IDS = [
   "linkedin",
@@ -674,7 +676,7 @@ export const DIGITAL_CARD_SOCIAL_NETWORKS = [
     icon: "phone",
     placeholder: "MoMo number",
     acceptsQr: true,
-    href: (v) => asUrlOr(v, (clean) => `tel:${digits(clean) || clean}`),
+    href: (v) => asUrlOr(v, () => ""),
   },
   {
     key: "telecelcash",
@@ -683,7 +685,7 @@ export const DIGITAL_CARD_SOCIAL_NETWORKS = [
     icon: "phone",
     placeholder: "wallet number",
     acceptsQr: true,
-    href: (v) => asUrlOr(v, (clean) => `tel:${digits(clean) || clean}`),
+    href: (v) => asUrlOr(v, () => ""),
   },
   {
     key: "airteltigo",
@@ -692,7 +694,7 @@ export const DIGITAL_CARD_SOCIAL_NETWORKS = [
     icon: "phone",
     placeholder: "wallet number",
     acceptsQr: true,
-    href: (v) => asUrlOr(v, (clean) => `tel:${digits(clean) || clean}`),
+    href: (v) => asUrlOr(v, () => ""),
   },
   {
     key: "mpesa",
@@ -701,7 +703,7 @@ export const DIGITAL_CARD_SOCIAL_NETWORKS = [
     icon: "phone",
     placeholder: "M-Pesa number",
     acceptsQr: true,
-    href: (v) => asUrlOr(v, (clean) => `tel:${digits(clean) || clean}`),
+    href: (v) => asUrlOr(v, () => ""),
   },
   {
     key: "paypal",
@@ -810,7 +812,7 @@ export const DIGITAL_CARD_SOCIAL_NETWORKS = [
     icon: "phone",
     placeholder: "GCash number or link",
     acceptsQr: true,
-    href: (v) => asUrlOr(v, (clean) => `tel:${digits(clean) || clean}`),
+    href: (v) => asUrlOr(v, () => ""),
   },
   {
     key: "chipper",
@@ -903,6 +905,8 @@ export type DigitalCardSocials = Partial<Record<DigitalCardSocialKey, DigitalCar
   design?: CeleCardDesign;
   /** Guest book-a-time desk. Missing or disabled stays off the card. */
   meeting?: import("@/lib/digital-business-card/meetings").CeleCardMeetingDesk;
+  /** Optional business extras. Off unless the owner enables them. */
+  business?: import("@/lib/digital-business-card/business-profile").CeleYouBusinessProfile;
 };
 
 export type DigitalCardReachSurface = "stack" | "dock";
@@ -1502,7 +1506,12 @@ export function payWalletHasGuestEntry(
     if (qr) return true;
     if (!value) continue;
     const href = digitalCardSocialHref(key, value);
-    if (isCompleteReachValue(key, value) && isLiveReachHref(href)) return true;
+    if (
+      isCompleteReachValue(key, value) &&
+      (href ? isLiveReachHref(href) : isPayNetwork(key))
+    ) {
+      return true;
+    }
   }
   return false;
 }
@@ -1678,6 +1687,8 @@ export function normalizeSocials(raw: unknown): DigitalCardSocials {
   if (design) out.design = design;
   const meeting = persistMeetingDesk(record.meeting);
   if (meeting) out.meeting = meeting;
+  const business = persistBusinessProfile(record.business);
+  if (business) out.business = business;
   return out;
 }
 
@@ -2251,6 +2262,7 @@ export function isLiveReachItem(
   if (item.locked) return true;
   if (item.brand === "bank") return isCompleteReachValue("bank", item.copyValue || "");
   if (item.brand === "meeting") return true;
+  if (isPayNetwork(item.brand) && item.copyValue?.trim()) return true;
   return Boolean(item.qrUrl?.trim()) || isLiveReachHref(item.href);
 }
 
@@ -2422,7 +2434,9 @@ function uniqueReachChoices(items: DigitalCardReachItem[]): DigitalCardReachItem
   const seen = new Set<string>();
   const out: DigitalCardReachItem[] = [];
   for (const item of items) {
-    const key = `${item.brand}:${(item.href || item.qrUrl || item.copyValue || item.id).toLowerCase()}`;
+    const key = item.locked
+      ? `${item.brand}:locked:${item.id}`
+      : `${item.brand}:${(item.href || item.qrUrl || item.copyValue || item.id).toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(item);
@@ -2494,6 +2508,7 @@ export function listDigitalCardReachItems(card: {
   const items: DigitalCardReachItem[] = [];
   const emails = collectTaggedEmails(card);
   const phones = collectTaggedPhones(card);
+  const callingCode = callingCodeFromPhones(phones.map((entry) => entry.value));
   emails.forEach((entry, index) => {
     if (!isCompleteReachValue("email", entry.value)) return;
     items.push({
@@ -2511,9 +2526,9 @@ export function listDigitalCardReachItems(card: {
     items.push({
       id: `phone-${index}`,
       brand: "phone",
-      title: entry.value,
+      title: displayPhone(entry.value) || entry.value,
       subtitle: contactKindLabel(entry.tag) ?? "Call",
-      href: `tel:${entry.value.replace(/[^\d+]/g, "")}`,
+      href: internationalTelHref(entry.value, callingCode),
       kindTag: entry.tag,
       surface: "stack",
     });
@@ -2541,6 +2556,18 @@ export function listDigitalCardReachItems(card: {
       surface: "stack",
     });
   }
+  const business = persistBusinessProfile(card.socials.business);
+  if (business?.enabled && (business.hours || business.services.length)) {
+    items.push({
+      id: "business-0",
+      brand: "other",
+      title: business.services[0] || "Business hours",
+      subtitle: business.hours || business.services.slice(1).join(" · ") || "Services",
+      href: "",
+      copyValue: [business.hours, ...business.services].filter(Boolean).join(" · "),
+      surface: "stack",
+    });
+  }
   for (const network of DIGITAL_CARD_SOCIAL_NETWORKS) {
     if (network.key === "website") continue;
     const pay = isPayNetwork(network.key);
@@ -2557,7 +2584,9 @@ export function listDigitalCardReachItems(card: {
       const bank = network.key === "bank" ? parseBankAccount(value) : null;
       const complete = network.key === "bank"
         ? Boolean(bank && isBankAccountComplete(bank))
-        : Boolean(value) && isCompleteReachValue(network.key, value) && isLiveReachHref(href);
+        : Boolean(value) &&
+          isCompleteReachValue(network.key, value) &&
+          (href ? isLiveReachHref(href) : isPayNetwork(network.key));
       if (!complete && !qrUrl) continue;
       const place = network.key === "location" ? parseCeleCardPlace(value) : null;
       const other = network.key === "other" ? parseOtherLink(value) : null;
@@ -2687,6 +2716,13 @@ export const digitalCardSocialsSchema = z
         horizonDays: z.number().int().optional(),
         place: z.string().max(40).optional(),
         note: z.string().max(160).optional(),
+      })
+      .optional(),
+    business: z
+      .object({
+        enabled: z.boolean().optional(),
+        hours: z.string().max(80).optional(),
+        services: z.array(z.string().max(40)).max(6).optional(),
       })
       .optional(),
     design: z

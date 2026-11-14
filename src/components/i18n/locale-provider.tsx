@@ -10,10 +10,13 @@ import {
   useRef,
 } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   DEFAULT_LOCALE,
   LOCALE_STORAGE_KEY,
   LOCALE_LABELS,
+  SUPPORTED_LOCALES,
+  htmlLang,
   type AppLocale,
   isAppLocale,
 } from "@/lib/i18n/constants";
@@ -48,6 +51,7 @@ export function LocaleProvider({
   initialMessages,
 }: LocaleProviderProps) {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [locale, setLocaleState] = useState<AppLocale>(initialLocale);
   const [messages, setMessages] = useState<LocaleMessages>(
     initialMessages ?? STATIC_MESSAGE_DICTIONARIES
@@ -70,7 +74,7 @@ export function LocaleProvider({
     if (hydrated.current) return;
     hydrated.current = true;
     storageSet(LOCALE_STORAGE_KEY, locale);
-    document.documentElement.lang = locale;
+    document.documentElement.lang = htmlLang(locale);
   }, [locale]);
 
   // Background merge of DB/admin translations (never blocks first paint).
@@ -108,12 +112,12 @@ export function LocaleProvider({
         return r.json();
       })
       .then((d) => {
-        if (d?.success && isAppLocale(d.data.languageCode)) {
+        if (d?.success && isAppLocale(d.data?.languageCode)) {
           setLocaleState((current) => {
             if (current === d.data.languageCode) return current;
             storageSet(LOCALE_STORAGE_KEY, d.data.languageCode);
             document.cookie = localeCookieHeader(d.data.languageCode);
-            document.documentElement.lang = d.data.languageCode;
+            document.documentElement.lang = htmlLang(d.data.languageCode);
             return d.data.languageCode;
           });
         }
@@ -128,7 +132,7 @@ export function LocaleProvider({
       setLocaleState(next);
       storageSet(LOCALE_STORAGE_KEY, next);
       document.cookie = localeCookieHeader(next);
-      document.documentElement.lang = next;
+      document.documentElement.lang = htmlLang(next);
       if (session?.user?.id) {
         fetch("/api/i18n/preferences", {
           method: "PUT",
@@ -136,8 +140,9 @@ export function LocaleProvider({
           body: JSON.stringify({ languageCode: next }),
         });
       }
+      router.refresh();
     },
-    [session?.user?.id]
+    [session?.user?.id, router]
   );
 
   const dict = useMemo(
@@ -159,7 +164,7 @@ export function LocaleProvider({
       labels: LOCALE_LABELS,
       ready,
       loading,
-      availableLocales: ["en", "fr"] as AppLocale[],
+      availableLocales: SUPPORTED_LOCALES,
     }),
     [locale, setLocale, t, ready, loading]
   );

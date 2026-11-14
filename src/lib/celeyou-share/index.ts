@@ -6,10 +6,12 @@ export {
   SHARE_CONTACT_FILE_CTA,
   SHARE_DESK_ACTIONS,
   SHARE_MY_CARD_CTA,
+  SHARE_CARD_CTA,
   SHARE_MY_CELEYOU,
   SHARE_VIA_APPS_CTA,
   SHOW_QR_CTA,
   SMART_SHARE_METHODS,
+  copyCeleYouProfile,
   detectSmartShareCapability,
   shareCeleYouProfile,
   shareDeskActionOrder,
@@ -44,6 +46,7 @@ export {
   type GuestPrimaryActionId,
 } from "@/lib/celeyou-share/guest-actions";
 export {
+  formatGuestAbout,
   guestIdentitySections,
   GUEST_IDENTITY_SECTION_ORDER,
   type GuestIdentitySection,

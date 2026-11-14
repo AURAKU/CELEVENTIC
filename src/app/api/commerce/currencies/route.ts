@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { currencyService } from "@/services/commerce/currency.service";
-import { BASE_CURRENCY, DEFAULT_EXCHANGE_RATES } from "@/lib/commerce/constants";
+import { BASE_CURRENCY, CURRENCY_SYMBOLS, DEFAULT_EXCHANGE_RATES } from "@/lib/commerce/constants";
 
 /**
  * Every page in the app polls this route. A database hiccup here must not put
@@ -9,7 +9,7 @@ import { BASE_CURRENCY, DEFAULT_EXCHANGE_RATES } from "@/lib/commerce/constants"
  * "Unexpected end of JSON input" far away from the actual cause. The seeded
  * defaults are the honest answer while the database is unreachable.
  */
-const FALLBACK_SYMBOLS: Record<string, string> = { GHS: "₵", USD: "$", GBP: "£" };
+const FALLBACK_SYMBOLS: Record<string, string> = { ...CURRENCY_SYMBOLS };
 
 function fallbackPayload() {
   const rates: Record<string, number> = { [BASE_CURRENCY]: 1, ...DEFAULT_EXCHANGE_RATES };

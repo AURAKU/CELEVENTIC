@@ -4,11 +4,14 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   DIGITAL_CARD_THEME_FILTERS,
-  DIGITAL_CARD_THEMES,
   type DigitalCardTheme,
-  type DigitalCardThemeCategory,
   type DigitalCardThemeId,
 } from "@/lib/digital-business-card/themes";
+import {
+  CELEYOU_TEMPLATE_COLLECTIONS,
+  CELEYOU_TEMPLATE_PAGE_SIZE,
+  themesForCollection,
+} from "@/lib/digital-business-card/template-collections";
 import { DigitalCardAtmosphere } from "@/components/digital-business-card/digital-card-atmosphere";
 import { celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 
@@ -37,6 +40,7 @@ function ThemeArtTile({
       type="button"
       onClick={() => onSelect(theme.id)}
       aria-pressed={selected}
+      aria-label={`${theme.name}. Optional look. Does not change your name, photo, or CeleYou logo.`}
       className={cn(
         "group overflow-hidden rounded-2xl border text-left transition",
         selected
@@ -97,23 +101,46 @@ export function DigitalCardThemePicker({
   value: DigitalCardThemeId;
   onChange: (id: DigitalCardThemeId) => void;
 }) {
-  const [filter, setFilter] = useState<"all" | DigitalCardThemeCategory>("all");
-  const themes = useMemo(
-    () =>
-      filter === "all"
-        ? DIGITAL_CARD_THEMES
-        : DIGITAL_CARD_THEMES.filter((t) => t.category === filter),
-    [filter]
-  );
+  const [filter, setFilter] = useState("all");
+  const [visible, setVisible] = useState(CELEYOU_TEMPLATE_PAGE_SIZE);
+  const themes = useMemo(() => themesForCollection(filter), [filter]);
+  const page = themes.slice(0, visible);
 
   return (
     <div>
+      <p className="mb-2 text-[11px] leading-relaxed text-slate-500">
+        Looks are optional. They do not replace the CeleYou logo, and your live card stays until you save.
+      </p>
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {CELEYOU_TEMPLATE_COLLECTIONS.map((chip) => (
+          <button
+            key={chip.id}
+            type="button"
+            title={chip.hint}
+            onClick={() => {
+              setFilter(chip.id);
+              setVisible(CELEYOU_TEMPLATE_PAGE_SIZE);
+            }}
+            className={cn(
+              "rounded-full px-2.5 py-1 text-[11px] font-medium",
+              filter === chip.id
+                ? "bg-[#0B8A83] text-white"
+                : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+            )}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
       <div className="mb-3 flex flex-wrap gap-1.5">
         {DIGITAL_CARD_THEME_FILTERS.map((chip) => (
           <button
             key={chip.id}
             type="button"
-            onClick={() => setFilter(chip.id)}
+            onClick={() => {
+              setFilter(chip.id);
+              setVisible(CELEYOU_TEMPLATE_PAGE_SIZE);
+            }}
             className={cn(
               "rounded-full px-2.5 py-1 text-[11px] font-medium",
               filter === chip.id
@@ -126,7 +153,7 @@ export function DigitalCardThemePicker({
         ))}
       </div>
       <div className="grid max-h-[36rem] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
-        {themes.map((theme) => (
+        {page.map((theme) => (
           <ThemeArtTile
             key={theme.id}
             theme={theme}
@@ -135,6 +162,15 @@ export function DigitalCardThemePicker({
           />
         ))}
       </div>
+      {visible < themes.length ? (
+        <button
+          type="button"
+          className="mt-3 text-xs font-semibold text-[#0B8A83]"
+          onClick={() => setVisible((count) => count + CELEYOU_TEMPLATE_PAGE_SIZE)}
+        >
+          Load more looks
+        </button>
+      ) : null}
     </div>
   );
 }

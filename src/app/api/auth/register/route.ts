@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hashPassword } from "@/lib/auth/password";
 import { z } from "zod";
 import { onboardingService } from "@/services/workspace/onboarding.service";
+import { isReservedCeleYouUsername, parseCeleYouUsername } from "@/lib/digital-business-card/username";
 
 function emptyToUndefined(v: unknown): unknown {
   if (v == null) return undefined;
@@ -56,26 +57,18 @@ const registerSchema = z
       });
     }
 
-    const wantsPublicUsername =
-      data.accountType === "ORGANIZER" || data.accountType === "ORGANIZATION";
-
-    if (wantsPublicUsername && data.username) {
-      if (data.username.length < 3) {
+    if (data.username) {
+      const parsed = parseCeleYouUsername(data.username);
+      if (!parsed.ok) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Public username must be at least 3 characters (or leave blank)",
+          message: parsed.message,
           path: ["username"],
         });
-      } else if (data.username.length > 30) {
+      } else if (isReservedCeleYouUsername(parsed.username)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Public username must be 30 characters or fewer",
-          path: ["username"],
-        });
-      } else if (!/^[a-z0-9_]+$/.test(data.username)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Public username can only use lowercase letters, numbers, and underscores",
+          message: "That username is reserved.",
           path: ["username"],
         });
       }
@@ -88,12 +81,8 @@ export async function POST(req: Request) {
     const data = registerSchema.parse(body);
     const passwordHash = await hashPassword(data.password);
 
-    const wantsPublicUsername =
-      data.accountType === "ORGANIZER" || data.accountType === "ORGANIZATION";
-    const username =
-      wantsPublicUsername && data.username && data.username.length >= 3
-        ? data.username.toLowerCase()
-        : undefined;
+    const parsedUsername = data.username ? parseCeleYouUsername(data.username) : null;
+    const username = parsedUsername?.ok ? parsedUsername.username : undefined;
 
     const result = await onboardingService.register({
       accountType: data.accountType,

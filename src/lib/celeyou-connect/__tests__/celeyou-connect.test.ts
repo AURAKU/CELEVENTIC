@@ -147,6 +147,7 @@ describe("CeleYou Connect wiring", () => {
     assert.match(route, /consent !== true/);
     assert.match(route, /website: z\.string\(\)\.max\(200\)/);
     assert.match(route, /if \(parsed\.data\.website\)/);
+    assert.match(route, /Email or phone is required/);
     assert.match(route, /finalizeGuestConnectBack/);
     assert.match(route, /tapJoinCode/);
     assert.match(route, /tap_mode_qr/);
@@ -170,7 +171,7 @@ describe("CeleYou Connect wiring", () => {
   it("shows Exchange Cards and guest consent on the public card", () => {
     const view = source("src/components/digital-business-card/digital-card-public-view.tsx");
     assert.match(view, /DigitalCardConnectExchange/);
-    assert.match(view, /I agree to share these details/);
+    assert.match(view, /celeyou\.consent/);
     assert.doesNotMatch(view, /Send me a short thank you/);
     assert.match(view, /followupConsent: true/);
     assert.match(view, /visitorCompany/);
@@ -179,10 +180,18 @@ describe("CeleYou Connect wiring", () => {
 
   it("keeps Connect studio search, notes, and follow-up automations", () => {
     const inbox = source("src/components/digital-business-card/digital-card-connection-inbox.tsx");
+    const leads = source("src/lib/digital-business-card/leads.ts");
     const studio = source("src/components/digital-business-card/digital-card-studio-client.tsx");
     const automations = source("src/components/digital-business-card/digital-card-connect-automations.tsx");
     assert.match(inbox, /studio-inbox-search/);
-    assert.match(inbox, /Share your CeleYou card to start building your network/);
+    assert.match(inbox, /emptyLeadFilterCopy/);
+    assert.match(leads, /No open connections\. Share your CeleYou to start this list/);
+    assert.match(inbox, /reminderPreset/);
+    assert.match(inbox, /Tomorrow/);
+    assert.match(inbox, /In 3 days/);
+    assert.match(inbox, /In 7 days/);
+    assert.match(inbox, /datetime-local/);
+    assert.match(inbox, /Cancel reminder/);
     assert.match(inbox, /celeYouConnectionSourceLabel/);
     assert.match(studio, /#studio-connect/);
     assert.match(studio, /DigitalCardConnectAutomations/);

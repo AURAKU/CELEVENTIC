@@ -240,7 +240,46 @@ function thanksgivingDateLine(
 }
 
 function programmeDetailLine(date: string, place: string, time?: string): string {
-  return time ? `${date} at ${place} from ${time}` : `${date} at ${place}`;
+  if (time && place) return `${date} at ${place} from ${time}`;
+  if (time) return `${date} from ${time}`;
+  if (place) return `${date} at ${place}`;
+  return date;
+}
+
+export type FuneralScheduleSource = {
+  id?: string;
+  time?: string;
+  title: string;
+  description?: string;
+  location?: string;
+};
+
+/**
+ * Host-authored funeral programme. Used when the invitation stores exact
+ * arrangement times instead of the generic Ghanaian fallback.
+ */
+export function funeralProgrammeFromSchedule(
+  items: FuneralScheduleSource[]
+): FuneralProgrammeStep[] {
+  const steps: FuneralProgrammeStep[] = [];
+  items.forEach((item, index) => {
+    const title = item.title.trim();
+    if (!title) return;
+    const date = item.description?.trim() || "";
+    const place = item.location?.trim() || "";
+    const time = item.time?.trim() || undefined;
+    const id = item.id?.trim() || `step-${index + 1}`;
+    steps.push({
+      id,
+      step: String(index + 1).padStart(2, "0"),
+      title,
+      date,
+      place,
+      time,
+      detail: programmeDetailLine(date || "Date as announced", place || "Venue as announced", time),
+    });
+  });
+  return steps;
 }
 
 /**

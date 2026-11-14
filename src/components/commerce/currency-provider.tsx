@@ -1,8 +1,13 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import type { DisplayCurrency } from "@/lib/commerce/constants";
+import {
+  CURRENCY_SYMBOLS,
+  isDisplayCurrency,
+  type DisplayCurrency,
+} from "@/lib/commerce/constants";
 import { storageGet, storageSet } from "@/lib/browser/safe-storage";
+import { isPublicCeleYouSurfacePath } from "@/lib/digital-business-card/wallet-quality";
 
 interface CurrencyContextValue {
   currency: DisplayCurrency;
@@ -23,7 +28,7 @@ const RATE_POLL_MS = 45_000;
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [currency, setCurrencyState] = useState<DisplayCurrency>("GHS");
   const [rates, setRates] = useState<Record<string, number>>({ GHS: 1 });
-  const [symbols, setSymbols] = useState<Record<string, string>>({ GHS: "₵", USD: "$", GBP: "£" });
+  const [symbols, setSymbols] = useState<Record<string, string>>({ ...CURRENCY_SYMBOLS });
   const [loading, setLoading] = useState(true);
 
   /**
@@ -54,7 +59,12 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = storageGet(STORAGE_KEY) as DisplayCurrency | null;
-    if (stored && ["GHS", "USD", "GBP"].includes(stored)) setCurrencyState(stored);
+    if (stored && isDisplayCurrency(stored)) setCurrencyState(stored);
+
+    if (isPublicCeleYouSurfacePath(window.location.pathname)) {
+      setLoading(false);
+      return;
+    }
 
     refreshRates();
     const interval = setInterval(refreshRates, RATE_POLL_MS);
@@ -86,6 +96,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
       const converted = convert(amountGhs);
       const sym = symbols[currency] ?? currency;
       if (currency === "GHS") return `${sym}${converted.toLocaleString("en-GH")}`;
+      if (currency === "CNY") return `${sym}${converted.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       return `${sym}${converted.toFixed(2)}`;
     },
     [convert, currency, symbols]
