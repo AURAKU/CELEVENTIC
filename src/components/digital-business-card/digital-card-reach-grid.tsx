@@ -510,9 +510,6 @@ function DockTap({
         className={compact ? "h-10 w-10 rounded-[12px]" : "h-11 w-11 rounded-[13px] sm:h-12 sm:w-12 sm:rounded-[14px]"}
       />
       {allLocked ? (
-        <span className="pointer-events-none absolute inset-0 rounded-[inherit] bg-white/50" aria-hidden />
-      ) : null}
-      {allLocked ? (
         <span
           className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-white text-stone-700 shadow ring-1 ring-black/10"
           aria-hidden

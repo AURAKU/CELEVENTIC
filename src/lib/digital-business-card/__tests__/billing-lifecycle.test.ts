@@ -220,10 +220,10 @@ describe("CeleYou subscription lifecycle", () => {
     assert.match(publicView, /presentationMode === "courtesy"/);
   });
 
-  it("enforces published Pro entitlements and does not invent Business or Teams checkout", () => {
+  it("enforces published Free + Pro entitlements and does not invent Business or Teams checkout", () => {
     assert.deepEqual(
       publishedCeleYouTiers().map((tier) => tier.id),
-      ["pro"]
+      ["free", "pro"]
     );
     const entitlements = source("src/lib/digital-business-card/entitlements.ts");
     assert.match(entitlements, /proposedMonthlyGhs: 99/);

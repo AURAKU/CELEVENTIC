@@ -18,6 +18,14 @@ import {
   type CeleYouTrialSnapshot,
   type CeleYouTrialStatus,
 } from "@/lib/digital-business-card/freemium";
+import {
+  CELEYOU_FREEMIUM_SHIP_AT,
+  accountHasLegacyPaidSignal,
+  assertCeleYouSubscriberMutationSafe,
+  celeYouTrialExpiryMayTouchCard,
+  classifyCeleYouAccount,
+  resolveCeleYouSubscriptionFeatureFlags,
+} from "@/lib/digital-business-card/subscriber-protection";
 
 const REMINDER_FIELD: Record<CeleYouTrialReminderSlot, keyof TrialRow> = {
   day1: "reminderDay1At",
@@ -74,7 +82,8 @@ async function writeTrialEvent(input: {
 }
 
 export async function getCeleYouTrialForUser(userId: string, now = new Date()) {
-  const [row, cards] = await Promise.all([
+  const flags = resolveCeleYouSubscriptionFeatureFlags();
+  const [row, cards, paidPayment] = await Promise.all([
     prisma.celeYouTrialRecord.findUnique({ where: { userId } }),
     prisma.digitalBusinessCard.findMany({
       where: { userId, deletedAt: null },
@@ -84,8 +93,15 @@ export async function getCeleYouTrialForUser(userId: string, now = new Date()) {
         subscriptionStatus: true,
         subscriptionExpiresAt: true,
         lastActivatedAt: true,
+        lastActivationPaymentId: true,
+        entitlementKind: true,
+        createdAt: true,
       },
       orderBy: { createdAt: "asc" },
+    }),
+    prisma.payment.findFirst({
+      where: { userId, purpose: "ADVERTISING", status: "SUCCESSFUL" },
+      select: { id: true },
     }),
   ]);
   const snapshot = row
@@ -93,9 +109,20 @@ export async function getCeleYouTrialForUser(userId: string, now = new Date()) {
     : inferLegacyCeleYouTrial(userId, cards, now);
   const published = cards.find((card) => card.isPublished) ?? cards[0] ?? null;
   const paidNow = cards.some((card) => isWithinPaidWindow(card, now));
+  const hasPaidHistory = accountHasLegacyPaidSignal(cards, now) || Boolean(paidPayment);
+  const protection = classifyCeleYouAccount({
+    cards,
+    trialStatus: snapshot.status === "ELIGIBLE" && !row ? null : snapshot.status,
+    hasAdvertisingPayment: Boolean(paidPayment),
+    freemiumShipAt: CELEYOU_FREEMIUM_SHIP_AT,
+    now,
+  });
   const eligibility = celeYouTrialEligibility({
     published: Boolean(published?.isPublished),
     paidNow,
+    hasPaidHistory,
+    proTrialEnabled: flags.proTrialEnabled,
+    mayStartProTrial: protection.mayStartProTrial,
     trial: snapshot,
     now,
   });
@@ -105,6 +132,8 @@ export async function getCeleYouTrialForUser(userId: string, now = new Date()) {
     record: row,
     card: published,
     paidNow,
+    hasPaidHistory,
+    protection,
     eligibility,
     remainingMs,
     clock: formatCeleYouTrialClock(remainingMs),
@@ -120,6 +149,7 @@ export async function activateCeleYouProTrial(input: {
   now?: Date;
 }) {
   const now = input.now ?? new Date();
+  const flags = resolveCeleYouSubscriptionFeatureFlags();
   try {
   return await prisma.$transaction(async (tx) => {
     const cards = await tx.digitalBusinessCard.findMany({
@@ -131,6 +161,12 @@ export async function activateCeleYouProTrial(input: {
         subscriptionStatus: true,
         subscriptionExpiresAt: true,
         lastActivatedAt: true,
+        lastActivationPaymentId: true,
+        entitlementKind: true,
+        publicToken: true,
+        slug: true,
+        themeId: true,
+        createdAt: true,
       },
     });
     const published =
@@ -142,9 +178,24 @@ export async function activateCeleYouProTrial(input: {
       ? asSnapshot(existing, input.userId)
       : inferLegacyCeleYouTrial(input.userId, cards, now);
     const paidNow = cards.some((card) => isWithinPaidWindow(card, now));
+    const paidPayment = await tx.payment.findFirst({
+      where: { userId: input.userId, purpose: "ADVERTISING", status: "SUCCESSFUL" },
+      select: { id: true },
+    });
+    const hasPaidHistory = accountHasLegacyPaidSignal(cards, now) || Boolean(paidPayment);
+    const protection = classifyCeleYouAccount({
+      cards,
+      trialStatus: snapshot.status === "ELIGIBLE" && !existing ? null : snapshot.status,
+      hasAdvertisingPayment: Boolean(paidPayment),
+      freemiumShipAt: CELEYOU_FREEMIUM_SHIP_AT,
+      now,
+    });
     const eligibility = celeYouTrialEligibility({
       published: Boolean(published?.isPublished),
       paidNow,
+      hasPaidHistory,
+      proTrialEnabled: flags.proTrialEnabled,
+      mayStartProTrial: protection.mayStartProTrial,
       trial: snapshot,
       now,
     });
@@ -163,8 +214,32 @@ export async function activateCeleYouProTrial(input: {
       return { ok: false as const, error: eligibility.message, reason: eligibility.reason };
     }
 
+    if (!celeYouTrialExpiryMayTouchCard(published) && published.subscriptionStatus !== "FREE") {
+      return {
+        ok: false as const,
+        error: "Existing paid CeleYou accounts keep their original terms.",
+        reason: "paid_history" as const,
+      };
+    }
+    const proposed = {
+      subscriptionStatus: "TRIAL",
+      subscriptionExpiresAt: celeYouProTrialExpiry(now, CELEYOU_PRO_TRIAL_DAYS),
+    };
+    const safe = assertCeleYouSubscriberMutationSafe({
+      before: published,
+      after: proposed,
+      now,
+    });
+    if (!safe.ok) {
+      return {
+        ok: false as const,
+        error: "Existing paid CeleYou accounts keep their original terms.",
+        reason: "paid_history" as const,
+      };
+    }
+
     const durationDays = CELEYOU_PRO_TRIAL_DAYS;
-    const expiresAt = celeYouProTrialExpiry(now, durationDays);
+    const expiresAt = proposed.subscriptionExpiresAt;
 
     const record = existing
       ? await tx.celeYouTrialRecord.update({
@@ -247,17 +322,31 @@ export async function expireCeleYouProTrials(now = new Date()) {
         where: { id: row.id },
         data: { status: "EXPIRED" },
       });
-      await tx.digitalBusinessCard.updateMany({
+      const touchable = await tx.digitalBusinessCard.findMany({
         where: {
           userId: row.userId,
           deletedAt: null,
           subscriptionStatus: "TRIAL",
           lastActivatedAt: null,
+          lastActivationPaymentId: null,
+          OR: [{ entitlementKind: null }, { entitlementKind: { notIn: ["PAID", "COMPLIMENTARY"] } }],
         },
-        data: {
-          subscriptionStatus: "FREE",
+        select: {
+          id: true,
+          subscriptionStatus: true,
+          subscriptionExpiresAt: true,
+          lastActivatedAt: true,
+          lastActivationPaymentId: true,
+          entitlementKind: true,
         },
       });
+      const ids = touchable.filter((card) => celeYouTrialExpiryMayTouchCard(card)).map((card) => card.id);
+      if (ids.length) {
+        await tx.digitalBusinessCard.updateMany({
+          where: { id: { in: ids } },
+          data: { subscriptionStatus: "FREE" },
+        });
+      }
       await tx.celeYouTrialEvent.create({
         data: {
           trialId: row.id,
@@ -275,15 +364,32 @@ export async function expireCeleYouProTrials(now = new Date()) {
     }
     expired += 1;
   }
-  const legacy = await prisma.digitalBusinessCard.updateMany({
+  const legacyCandidates = await prisma.digitalBusinessCard.findMany({
     where: {
       deletedAt: null,
       subscriptionStatus: "TRIAL",
       lastActivatedAt: null,
+      lastActivationPaymentId: null,
       subscriptionExpiresAt: { lte: now },
+      OR: [{ entitlementKind: null }, { entitlementKind: { notIn: ["PAID", "COMPLIMENTARY"] } }],
     },
-    data: { subscriptionStatus: "FREE" },
+    select: {
+      id: true,
+      subscriptionStatus: true,
+      subscriptionExpiresAt: true,
+      lastActivatedAt: true,
+      lastActivationPaymentId: true,
+      entitlementKind: true,
+    },
+    take: 500,
   });
+  const legacyIds = legacyCandidates.filter((card) => celeYouTrialExpiryMayTouchCard(card)).map((card) => card.id);
+  const legacy = legacyIds.length
+    ? await prisma.digitalBusinessCard.updateMany({
+        where: { id: { in: legacyIds } },
+        data: { subscriptionStatus: "FREE" },
+      })
+    : { count: 0 };
   return { scanned: due.length, expired, legacyExpired: legacy.count };
 }
 

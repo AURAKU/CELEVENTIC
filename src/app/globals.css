@@ -4091,7 +4091,8 @@ html:active-view-transition .celecard-plate-motion {
 }
 
 .celecard-dock-item.is-locked {
-  filter: saturate(0.78);
+  filter: none;
+  opacity: 1;
 }
 
 @keyframes celecard-pop {
@@ -4413,7 +4414,8 @@ html:active-view-transition .celecard-plate-motion {
 
 .celecard-reach-row.is-locked .celecard-reach-mark,
 .celecard-reach-choice.is-locked .relative {
-  opacity: 0.78;
+  opacity: 1;
+  filter: none;
 }
 
 .celecard-reach-row.is-locked .celecard-reach-go {

@@ -632,6 +632,11 @@ export async function activateDigitalCardFromPayment(input: {
   const wasLive = isDigitalCardLive(existing, now, policy);
   const base = renewalBaseDate(existing, now, policy);
   const expires = smartCardExpiryFromNow(months, base);
+  const { renewalMustNotShorten } = await import("@/lib/digital-business-card/billing-rules");
+  if (!renewalMustNotShorten(existing.subscriptionExpiresAt, expires, now)) {
+    console.error("[smartcard.activate] refused to shorten paid term", existing.id);
+    return existing;
+  }
   const updated = await prisma.digitalBusinessCard.update({
     where: { id: existing.id },
     data: {

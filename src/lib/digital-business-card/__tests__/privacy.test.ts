@@ -194,11 +194,15 @@ describe("CeleYou reach privacy", () => {
     );
     assert.match(grid, /itemKey: item.id/);
     assert.match(grid, /is-locked/);
+    assert.doesNotMatch(grid, /bg-white\/50/);
     assert.match(grid, /createPortal/);
     assert.match(grid, /z-\[200\]/);
     assert.match(grid, /celeyou\.unhide_aria/);
     assert.match(grid, /group.items.every\(\(item\) => item.locked\)/);
     assert.match(grid, /allLocked/);
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    assert.match(css, /\.celecard-dock-item\.is-locked \{[^}]*opacity:\s*1/);
+    assert.match(css, /\.celecard-reach-row\.is-locked \.celecard-reach-mark,\n\.celecard-reach-choice\.is-locked \.relative \{[^}]*opacity:\s*1/);
     const sections = readFileSync(join(process.cwd(), "src/lib/celeyou-share/profile-sections.ts"), "utf8");
     assert.doesNotMatch(sections, /if \(item\.locked\) continue/);
     const socials = readFileSync(join(process.cwd(), "src/lib/digital-business-card/socials.ts"), "utf8");

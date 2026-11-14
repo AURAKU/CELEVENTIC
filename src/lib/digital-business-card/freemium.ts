@@ -153,6 +153,9 @@ export type CeleYouTrialEligibility = {
     | "converted"
     | "blocked"
     | "paid_term"
+    | "paid_history"
+    | "feature_off"
+    | "legacy_protected"
     | "wrong_family";
   message: string;
 };
@@ -160,11 +163,24 @@ export type CeleYouTrialEligibility = {
 export function celeYouTrialEligibility(input: {
   published: boolean;
   paidNow: boolean;
+  /** Any prior paid activation, complimentary grant, or advertising payment. */
+  hasPaidHistory?: boolean;
+  /** Feature flag gate for the optional Pro trial. */
+  proTrialEnabled?: boolean;
+  /** When false, ambiguous or legacy unpaid accounts stay off automatic trial. */
+  mayStartProTrial?: boolean;
   family?: CeleYouTrialFamily;
   trial?: Pick<CeleYouTrialSnapshot, "status" | "family" | "expiresAt"> | null;
   now?: Date;
 }): CeleYouTrialEligibility {
   const family = input.family ?? "pro";
+  if (input.proTrialEnabled === false) {
+    return {
+      eligible: false,
+      reason: "feature_off",
+      message: "The CeleYou Pro trial is not open on this environment.",
+    };
+  }
   if (family !== "pro") {
     return {
       eligible: false,
@@ -177,6 +193,20 @@ export function celeYouTrialEligibility(input: {
       eligible: false,
       reason: "paid_term",
       message: "This CeleYou already has an active Pro term.",
+    };
+  }
+  if (input.hasPaidHistory) {
+    return {
+      eligible: false,
+      reason: "paid_history",
+      message: "Existing paid CeleYou accounts keep their original terms. A Pro trial is not started for them.",
+    };
+  }
+  if (input.mayStartProTrial === false) {
+    return {
+      eligible: false,
+      reason: "legacy_protected",
+      message: "This account is protected until its subscription history is reviewed.",
     };
   }
   if (!input.published) {
