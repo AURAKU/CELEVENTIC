@@ -141,7 +141,9 @@ export function resolveCeleCardLifecycle(
   if (isWithinGracePeriod(card, now, policy)) {
     return card.isPublished ? "GRACE_PERIOD" : "DRAFT";
   }
-  if (hasPaidEntitlementHistory(card) && card.isPublished && card.lastCourtesyAt) return "COURTESY";
+  // Paid history after grace stays on Continuity courtesy. Never auto-downgrade
+  // existing paid subscribers into Free guest presentation.
+  if (hasPaidEntitlementHistory(card) && card.isPublished) return "COURTESY";
   if (card.isPublished) {
     const trialOpen =
       card.subscriptionStatus === "TRIAL" &&

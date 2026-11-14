@@ -86,6 +86,15 @@ describe("CeleYou username identity runtime", () => {
       company: "Aura Group Innovative",
       isPublished: true,
     });
+    // Multi-card publish is a Pro entitlement. Grant a paid term before the second publish.
+    await prisma.digitalBusinessCard.update({
+      where: { id: personal.id },
+      data: {
+        subscriptionStatus: "ACTIVE",
+        lastActivatedAt: new Date(),
+        subscriptionExpiresAt: new Date(Date.now() + 30 * 86_400_000),
+      },
+    });
     const spark = await createDigitalCard(first.user.id, {
       displayName: "Owuraku Afari",
       company: "Spark Drive Autos",

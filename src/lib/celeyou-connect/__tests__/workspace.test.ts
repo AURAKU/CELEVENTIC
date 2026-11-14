@@ -63,7 +63,7 @@ describe("CeleYou connection workspace", () => {
     assert.doesNotMatch(csv, /email:ama/);
   });
 
-  it("authorizes export, delete, reminders, and pagination on the owner API", () => {
+  it("authorizes export, delete, reminders, and pagination on the owner API", async () => {
     const route = source("src/app/api/digital-business-cards/[id]/connections/route.ts");
     const exportRoute = source("src/app/api/digital-business-cards/[id]/connections/export/route.ts");
     const inbox = source("src/components/digital-business-card/digital-card-connection-inbox.tsx");
@@ -74,9 +74,29 @@ describe("CeleYou connection workspace", () => {
     assert.match(exportRoute, /rateLimit/);
     assert.match(inbox, /Export consented contacts/);
     assert.match(inbox, /Remind in 1 day/);
+    assert.match(inbox, /Tomorrow/);
+    assert.match(inbox, /In 3 days/);
+    assert.match(inbox, /In 7 days/);
+    assert.match(inbox, /datetime-local/);
+    assert.match(inbox, /Cancel reminder/);
     assert.match(inbox, /Moved to|movedLeadStatusCopy/);
     assert.match(route, /syncLeadStatusEffects/);
+    assert.match(route, /cancelOwnerReminder/);
+    assert.match(route, /reminderPreset/);
+    assert.match(route, /reminderDueAt/);
     assert.match(source("src/services/celeyou-connect/workspace.service.ts"), /NOT: \{ status: "ARCHIVED" \}/);
+    assert.match(source("src/services/celeyou-connect/workspace.service.ts"), /cancelOwnerReminder/);
+    const { reminderDueFromPreset, resolveOwnerReminderDueAt, CELEYOU_DEFAULT_REMINDER_HOURS } = await import(
+      "@/lib/celeyou-connect/workspace"
+    );
+    assert.equal(CELEYOU_DEFAULT_REMINDER_HOURS, 24);
+    const now = new Date("2026-11-14T15:00:00.000Z");
+    assert.equal(resolveOwnerReminderDueAt({ reminderHours: 24, now }).toISOString(), new Date(now.getTime() + 24 * 3600_000).toISOString());
+    assert.equal(reminderDueFromPreset("3d", now).toISOString(), new Date(now.getTime() + 72 * 3600_000).toISOString());
+    assert.equal(reminderDueFromPreset("7d", now).toISOString(), new Date(now.getTime() + 168 * 3600_000).toISOString());
+    const tomorrow = reminderDueFromPreset("tomorrow", now);
+    assert.equal(tomorrow.getHours(), 9);
+    assert.ok(tomorrow.getTime() > now.getTime());
   });
 });
 

@@ -23,7 +23,7 @@ export const CELECARD_LEAD_STATUS_PURPOSE: Record<CeleCardLeadStatus, string> = 
   NEW: "Just arrived. You have not written back yet.",
   CONTACTED: "You reached out. Waiting on their reply.",
   QUALIFIED: "Worth a real conversation or meeting.",
-  FOLLOW_UP: "Come back to this person. A 1 day reminder is set.",
+  FOLLOW_UP: "Come back to this person. A 1 day reminder is set by default. You can pick Tomorrow, 3 days, 7 days, or a custom time.",
   WON: "This connection converted, or the meeting is confirmed.",
   ARCHIVED: "Closed. It leaves the open list.",
 };

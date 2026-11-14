@@ -8,7 +8,7 @@ import {
   normalizeConnectionLabel,
   ownerLabelsFromTags,
   parseConnectionSource,
-  reminderHorizonHours,
+  resolveOwnerReminderDueAt,
   type CeleYouConnectionExportRow,
 } from "@/lib/celeyou-connect/workspace";
 import {
@@ -209,13 +209,34 @@ export async function scheduleOwnerReminder(
   userId: string,
   cardId: string,
   connectionId: string,
-  hours: number,
+  hoursOrDue:
+    | number
+    | {
+        hours?: number | null;
+        preset?: string | null;
+        dueAt?: string | Date | null;
+        note?: string | null;
+        /** When false, do not move NEW → FOLLOW_UP. Default true for Follow up defaults. */
+        promoteFollowUp?: boolean;
+      },
   note?: string | null
 ) {
   const card = await ownedCard(userId, cardId);
   if (!card) return null;
   const existing = await prisma.smartCardConnection.findFirst({ where: { id: connectionId, cardId } });
   if (!existing) return { error: "Request not found" as const };
+  const options =
+    typeof hoursOrDue === "number"
+      ? { hours: hoursOrDue, note, promoteFollowUp: true as const }
+      : hoursOrDue;
+  const dueAt =
+    options.dueAt instanceof Date
+      ? options.dueAt
+      : resolveOwnerReminderDueAt({
+          reminderHours: options.hours,
+          reminderPreset: options.preset,
+          reminderDueAt: typeof options.dueAt === "string" ? options.dueAt : null,
+        });
   await prisma.celeYouConnectReminder.updateMany({
     where: { connectionId, cardId, status: { in: ["SCHEDULED", "DUE"] } },
     data: { status: "CANCELLED" },
@@ -224,15 +245,17 @@ export async function scheduleOwnerReminder(
     data: {
       connectionId,
       cardId,
-      dueAt: reminderHorizonHours(hours),
+      dueAt,
       status: "SCHEDULED",
-      note: note?.trim().slice(0, 200) || null,
+      note: (options.note ?? note)?.trim().slice(0, 200) || null,
     },
   });
-  await prisma.smartCardConnection.update({
-    where: { id: connectionId },
-    data: { status: existing.status === "NEW" ? "FOLLOW_UP" : existing.status },
-  });
+  if (options.promoteFollowUp !== false && existing.status === "NEW") {
+    await prisma.smartCardConnection.update({
+      where: { id: connectionId },
+      data: { status: "FOLLOW_UP" },
+    });
+  }
   await prisma.celeYouConnectEvent
     .create({
       data: {
@@ -256,6 +279,33 @@ export async function completeOwnerReminder(userId: string, cardId: string, remi
     where: { id: reminder.id },
     data: { status: "COMPLETED", completedAt: new Date() },
   });
+  return { reminder: updated };
+}
+
+/** Cancel without changing the connection stage. */
+export async function cancelOwnerReminder(userId: string, cardId: string, reminderId: string) {
+  const card = await ownedCard(userId, cardId);
+  if (!card) return null;
+  const reminder = await prisma.celeYouConnectReminder.findFirst({ where: { id: reminderId, cardId } });
+  if (!reminder) return { error: "Reminder not found" as const };
+  if (reminder.status !== "SCHEDULED" && reminder.status !== "DUE") {
+    return { reminder };
+  }
+  const updated = await prisma.celeYouConnectReminder.update({
+    where: { id: reminder.id },
+    data: { status: "CANCELLED" },
+  });
+  await prisma.celeYouConnectEvent
+    .create({
+      data: {
+        connectionId: reminder.connectionId,
+        cardId,
+        kind: "REMINDER_CANCELLED",
+        actorUserId: userId,
+        meta: { reminderId: reminder.id },
+      },
+    })
+    .catch(() => undefined);
   return { reminder: updated };
 }
 

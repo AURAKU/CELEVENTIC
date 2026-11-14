@@ -81,7 +81,7 @@ describe("CeleYou launch catalog", () => {
     assert.equal(business?.proposedMonthlyGhs, 99);
     assert.deepEqual(
       publishedCeleYouTiers().map((tier) => tier.id),
-      ["pro"]
+      ["free", "pro"]
     );
   });
 

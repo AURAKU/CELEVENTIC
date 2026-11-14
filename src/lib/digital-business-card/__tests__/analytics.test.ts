@@ -118,7 +118,7 @@ describe("CeleYou analytics taxonomy", () => {
     assert.equal(canPerformCeleCardAction({ role: "GUEST" }, "extend"), false);
     assert.deepEqual(
       publishedCeleYouTiers().map((tier) => tier.id),
-      ["pro"]
+      ["free", "pro"]
     );
     const route = source("src/app/api/digital-business-cards/[id]/analytics/route.ts");
     assert.match(route, /getServerSession/);

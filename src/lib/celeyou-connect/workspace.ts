@@ -119,9 +119,58 @@ export function connectionsToCsv(rows: CeleYouConnectionExportRow[]): string {
   return [header.join(","), ...lines].join("\n");
 }
 
-export function reminderHorizonHours(hours: number): Date {
-  const safe = [1, 24, 72, 168].includes(hours) ? hours : 24;
-  return new Date(Date.now() + safe * 60 * 60 * 1000);
+/** Default Follow up horizon. Owner can pick Tomorrow, 3 days, 7 days, or a custom time. */
+export const CELEYOU_DEFAULT_REMINDER_HOURS = 24;
+
+export const CELEYOU_REMINDER_PRESETS = ["1d", "tomorrow", "3d", "7d"] as const;
+export type CeleYouReminderPreset = (typeof CELEYOU_REMINDER_PRESETS)[number];
+
+export function isCeleYouReminderPreset(value: unknown): value is CeleYouReminderPreset {
+  return typeof value === "string" && (CELEYOU_REMINDER_PRESETS as readonly string[]).includes(value);
+}
+
+export function reminderHorizonHours(hours: number, now = new Date()): Date {
+  const safe = [1, 24, 72, 168].includes(hours) ? hours : CELEYOU_DEFAULT_REMINDER_HOURS;
+  return new Date(now.getTime() + safe * 60 * 60 * 1000);
+}
+
+/** Tomorrow = next calendar day at 09:00 local. 3d / 7d keep wall-clock offsets. */
+export function reminderDueFromPreset(preset: CeleYouReminderPreset, now = new Date()): Date {
+  if (preset === "1d") return reminderHorizonHours(24, now);
+  if (preset === "3d") return reminderHorizonHours(72, now);
+  if (preset === "7d") return reminderHorizonHours(168, now);
+  const next = new Date(now);
+  next.setDate(next.getDate() + 1);
+  next.setHours(9, 0, 0, 0);
+  if (next.getTime() <= now.getTime()) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next;
+}
+
+/** Custom due times must be in the future and within 90 days. */
+export function parseOwnerReminderDueAt(raw: string | null | undefined, now = new Date()): Date | null {
+  if (!raw?.trim()) return null;
+  const due = new Date(raw);
+  if (!Number.isFinite(due.getTime())) return null;
+  if (due.getTime() <= now.getTime() + 60_000) return null;
+  const max = now.getTime() + 90 * 24 * 60 * 60 * 1000;
+  if (due.getTime() > max) return null;
+  return due;
+}
+
+export function resolveOwnerReminderDueAt(input: {
+  reminderHours?: number | null;
+  reminderPreset?: string | null;
+  reminderDueAt?: string | null;
+  now?: Date;
+}): Date {
+  const now = input.now ?? new Date();
+  const custom = parseOwnerReminderDueAt(input.reminderDueAt, now);
+  if (custom) return custom;
+  if (isCeleYouReminderPreset(input.reminderPreset)) return reminderDueFromPreset(input.reminderPreset, now);
+  if (typeof input.reminderHours === "number") return reminderHorizonHours(input.reminderHours, now);
+  return reminderHorizonHours(CELEYOU_DEFAULT_REMINDER_HOURS, now);
 }
 
 export function parseConnectionSource(raw: string | null | undefined): string | null {

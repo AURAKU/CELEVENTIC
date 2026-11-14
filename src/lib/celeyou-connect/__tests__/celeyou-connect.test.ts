@@ -180,10 +180,18 @@ describe("CeleYou Connect wiring", () => {
 
   it("keeps Connect studio search, notes, and follow-up automations", () => {
     const inbox = source("src/components/digital-business-card/digital-card-connection-inbox.tsx");
+    const leads = source("src/lib/digital-business-card/leads.ts");
     const studio = source("src/components/digital-business-card/digital-card-studio-client.tsx");
     const automations = source("src/components/digital-business-card/digital-card-connect-automations.tsx");
     assert.match(inbox, /studio-inbox-search/);
-    assert.match(inbox, /Share your CeleYou card to start building your network/);
+    assert.match(inbox, /emptyLeadFilterCopy/);
+    assert.match(leads, /No open connections\. Share your CeleYou to start this list/);
+    assert.match(inbox, /reminderPreset/);
+    assert.match(inbox, /Tomorrow/);
+    assert.match(inbox, /In 3 days/);
+    assert.match(inbox, /In 7 days/);
+    assert.match(inbox, /datetime-local/);
+    assert.match(inbox, /Cancel reminder/);
     assert.match(inbox, /celeYouConnectionSourceLabel/);
     assert.match(studio, /#studio-connect/);
     assert.match(studio, /DigitalCardConnectAutomations/);

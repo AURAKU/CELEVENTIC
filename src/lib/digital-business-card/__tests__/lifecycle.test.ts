@@ -152,7 +152,18 @@ describe("CeleYou lifecycle", () => {
         }),
         now
       ),
-      false
+      true
+    );
+    assert.equal(
+      resolveCeleCardLifecycle(
+        card({
+          subscriptionStatus: "TRIAL",
+          lastActivatedAt: null,
+          subscriptionExpiresAt: new Date(now.getTime() - 86_400_000),
+        }),
+        now
+      ),
+      "FREE"
     );
   });
 

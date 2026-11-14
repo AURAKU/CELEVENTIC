@@ -59,6 +59,7 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
   const [search, setSearch] = useState("");
   const [source, setSource] = useState("all");
   const [labelDraft, setLabelDraft] = useState<Record<string, string>>({});
+  const [customReminder, setCustomReminder] = useState<Record<string, string>>({});
   const [counts, setCounts] = useState(emptyLeadStatusCounts());
 
   const load = useCallback(
@@ -388,20 +389,73 @@ export function DigitalCardConnectionInbox({ cardId }: { cardId: string | null }
                 <button
                   type="button"
                   disabled={busyId === item.id}
-                  onClick={() => void patchConnection(item.id, { reminderHours: 24, status: "FOLLOW_UP" })}
+                  onClick={() => void patchConnection(item.id, { reminderPreset: "1d", status: "FOLLOW_UP" })}
                   className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
                 >
                   Remind in 1 day
                 </button>
-                {item.reminder ? (
-                  <button
-                    type="button"
+                <button
+                  type="button"
+                  disabled={busyId === item.id}
+                  onClick={() => void patchConnection(item.id, { reminderPreset: "tomorrow" })}
+                  className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                >
+                  Tomorrow
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === item.id}
+                  onClick={() => void patchConnection(item.id, { reminderPreset: "3d" })}
+                  className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                >
+                  In 3 days
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === item.id}
+                  onClick={() => void patchConnection(item.id, { reminderPreset: "7d" })}
+                  className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                >
+                  In 7 days
+                </button>
+                <label className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800">
+                  <span className="sr-only">Custom reminder date and time</span>
+                  <input
+                    type="datetime-local"
+                    value={customReminder[item.id] ?? ""}
                     disabled={busyId === item.id}
-                    onClick={() => void patchConnection(item.id, { completeReminderId: item.reminder?.id })}
-                    className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
-                  >
-                    Done {new Date(item.reminder.dueAt).toLocaleDateString()}
-                  </button>
+                    onChange={(event) =>
+                      setCustomReminder((current) => ({ ...current, [item.id]: event.target.value }))
+                    }
+                    onBlur={() => {
+                      const raw = customReminder[item.id];
+                      if (!raw) return;
+                      const due = new Date(raw);
+                      if (!Number.isFinite(due.getTime())) return;
+                      void patchConnection(item.id, { reminderDueAt: due.toISOString() });
+                    }}
+                    className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-slate-700"
+                  />
+                </label>
+                {item.reminder ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={busyId === item.id}
+                      onClick={() => void patchConnection(item.id, { completeReminderId: item.reminder?.id })}
+                      className="text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-800"
+                    >
+                      Done {new Date(item.reminder.dueAt).toLocaleString()}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busyId === item.id}
+                      onClick={() => void patchConnection(item.id, { cancelReminderId: item.reminder?.id })}
+                      className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600"
+                    >
+                      Cancel reminder
+                    </button>
+                  </>
                 ) : null}
                 <button
                   type="button"

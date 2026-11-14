@@ -12,6 +12,7 @@ import {
   updateCardConnectionStatus,
 } from "@/services/digital-business-card/courtesy-reconnect.service";
 import {
+  cancelOwnerReminder,
   completeOwnerReminder,
   deleteOwnerConnection,
   listOwnerConnections,
@@ -31,8 +32,11 @@ const patchSchema = z.object({
   labels: z.array(z.string().max(24)).max(8).optional(),
   delete: z.boolean().optional(),
   reminderHours: z.union([z.literal(1), z.literal(24), z.literal(72), z.literal(168)]).optional(),
+  reminderPreset: z.enum(["1d", "tomorrow", "3d", "7d"]).optional(),
+  reminderDueAt: z.string().datetime().optional(),
   reminderNote: z.string().max(200).nullable().optional(),
   completeReminderId: z.string().min(8).max(80).optional(),
+  cancelReminderId: z.string().min(8).max(80).optional(),
 });
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -85,14 +89,20 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if ("error" in done) return NextResponse.json({ error: done.error }, { status: 400 });
     return NextResponse.json({ success: true, data: { reminder: done.reminder } });
   }
-  if (parsed.data.reminderHours) {
-    const reminder = await scheduleOwnerReminder(
-      session.user.id,
-      id,
-      parsed.data.connectionId,
-      parsed.data.reminderHours,
-      parsed.data.reminderNote
-    );
+  if (parsed.data.cancelReminderId) {
+    const cancelled = await cancelOwnerReminder(session.user.id, id, parsed.data.cancelReminderId);
+    if (!cancelled) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if ("error" in cancelled) return NextResponse.json({ error: cancelled.error }, { status: 400 });
+    return NextResponse.json({ success: true, data: { reminder: cancelled.reminder } });
+  }
+  if (parsed.data.reminderHours || parsed.data.reminderPreset || parsed.data.reminderDueAt) {
+    const reminder = await scheduleOwnerReminder(session.user.id, id, parsed.data.connectionId, {
+      hours: parsed.data.reminderHours,
+      preset: parsed.data.reminderPreset,
+      dueAt: parsed.data.reminderDueAt,
+      note: parsed.data.reminderNote,
+      promoteFollowUp: true,
+    });
     if (!reminder) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if ("error" in reminder) return NextResponse.json({ error: reminder.error }, { status: 400 });
   }
