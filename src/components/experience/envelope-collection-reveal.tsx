@@ -56,6 +56,8 @@ interface EnvelopeCollectionRevealProps {
    * slower theatrical open into the invitation.
    */
   ceremonialDoves?: boolean;
+  /** Live honouree portrait for memorial envelopes (replaces catalogue stock face). */
+  portraitSrc?: string | null;
 }
 
 /**
@@ -129,6 +131,7 @@ export function EnvelopeCollectionReveal({
   embedded = false,
   autoOpen = false,
   ceremonialDoves = false,
+  portraitSrc = null,
 }: EnvelopeCollectionRevealProps) {
   const reduceMotion = useReducedMotion();
   /**
@@ -461,6 +464,7 @@ export function EnvelopeCollectionReveal({
         <MemorialEnvelopeFace
           eventTitle={eventTitle}
           sealLabel={sealLabel}
+          portraitSrc={portraitSrc}
           isUnsealing={isUnsealing}
           isOpening={isEnvelopeOpening}
           reduceMotion={Boolean(reduceMotion)}

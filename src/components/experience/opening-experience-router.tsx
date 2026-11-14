@@ -78,6 +78,8 @@ interface OpeningExperienceRouterProps {
   allowSkip?: boolean;
   /** Funeral / memorial dove unseal ceremony. */
   ceremonialDoves?: boolean;
+  /** Live honouree portrait for memorial envelopes. */
+  portraitSrc?: string | null;
   children?: React.ReactNode;
 }
 
@@ -108,6 +110,7 @@ export function OpeningExperienceRouter({
   autoOpen = false,
   allowSkip = false,
   ceremonialDoves = false,
+  portraitSrc = null,
   children,
 }: OpeningExperienceRouterProps) {
   const [revealed, setRevealed] = useState(false);
@@ -168,6 +171,7 @@ export function OpeningExperienceRouter({
           embedded={embedded}
           autoOpen={autoOpen}
           ceremonialDoves={ceremonialDoves}
+          portraitSrc={portraitSrc}
         >
           {children}
         </EnvelopeCollectionReveal>
@@ -189,6 +193,7 @@ export function OpeningExperienceRouter({
         embedded={embedded}
         autoOpen={autoOpen}
         ceremonialDoves={ceremonialDoves}
+        portraitSrc={portraitSrc}
       >
         {children}
       </EnvelopeCollectionReveal>
@@ -451,6 +456,7 @@ export function OpeningExperienceRouter({
           embedded={embedded}
           autoOpen={autoOpen}
           ceremonialDoves={ceremonialDoves}
+          portraitSrc={portraitSrc}
         >
           {children}
         </EnvelopeCollectionReveal>

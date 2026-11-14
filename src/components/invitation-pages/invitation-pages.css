@@ -2048,6 +2048,12 @@
   -webkit-user-drag: none;
 }
 
+/* Live honouree photos fill the oval frame orderly (catalogue plate stays contain). */
+.inv-memorial-cover-portrait--live img {
+  object-fit: cover;
+  object-position: center 18%;
+}
+
 /**
  * Circular “Aged N” medallion — lower-right of the oval frame, clear of the
  * 1953–2026 plaque at bottom-center.

@@ -41,6 +41,8 @@ interface InteractiveRevealProps {
   allowSkip?: boolean;
   /** Funeral / memorial: white doves unseal the wax, gold CTA, slower open. */
   ceremonialDoves?: boolean;
+  /** Live honouree portrait for memorial envelopes. */
+  portraitSrc?: string | null;
   children?: ReactNode;
 }
 
@@ -68,6 +70,7 @@ export function InteractiveReveal({
   autoOpen = false,
   allowSkip = false,
   ceremonialDoves = false,
+  portraitSrc = null,
   children = null,
 }: InteractiveRevealProps) {
   const contract = getRevealContractForOpening(openingExperience);
@@ -120,6 +123,7 @@ export function InteractiveReveal({
         autoOpen={autoOpen}
         allowSkip={allowSkip}
         ceremonialDoves={ceremonialDoves}
+        portraitSrc={portraitSrc}
       >
         {children}
       </OpeningExperienceRouter>

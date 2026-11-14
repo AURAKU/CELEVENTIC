@@ -50,6 +50,7 @@ import {
 } from "@/lib/invitation/vision-board";
 import { resolveSealStyle } from "@/lib/invitation/seal-design";
 import { resolveFuneralEnvelopeSeal } from "@/lib/invitation/funeral-envelope-seal";
+import { resolveMemorialHonoureePortraitUrl } from "@/lib/experience/memorial-portrait";
 import {
   mergeWeddingBoard,
   resolveAfarisCoupleNames,
@@ -293,6 +294,12 @@ export function PremiumInviteWrapper({
       : (layoutMedia?.background ?? layoutMedia?.hero ?? null);
   const mediaHero =
     enrichedDesign.media?.find((m) => m.role === "hero" || m.role === "background")?.url ?? null;
+  const memorialPortraitSrc = isFuneralCollection
+    ? resolveMemorialHonoureePortraitUrl({
+        coverImageUrl: props.event.coverImageUrl,
+        media: enrichedDesign.media,
+      })
+    : null;
   // Studio's dedicated "pre-invite welcome photo" upload, soft-intro / BEGIN gate only,
   // never the hero, gallery, or page background behind the rest of the invite.
   const introImageUrl = introAtmosphereUrlFromDesign(enrichedDesign);
@@ -1041,6 +1048,7 @@ export function PremiumInviteWrapper({
                   isAureliaFamilyOpening(openingExperience))
               }
               ceremonialDoves={isFuneralExperience}
+              portraitSrc={memorialPortraitSrc}
               onBegin={() => {
                 void startAudio();
               }}

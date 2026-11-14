@@ -26,6 +26,7 @@ const EASE_SEAL_SOAR = [0.22, 0.7, 0.2, 1] as const;
 export function MemorialEnvelopeFace({
   eventTitle,
   sealLabel,
+  portraitSrc = null,
   isUnsealing = false,
   isOpening,
   reduceMotion,
@@ -35,6 +36,8 @@ export function MemorialEnvelopeFace({
 }: {
   eventTitle: string;
   sealLabel: string;
+  /** Live honouree portrait. Replaces the catalogue stock face on seal + plate. */
+  portraitSrc?: string | null;
   isUnsealing?: boolean;
   isOpening: boolean;
   reduceMotion: boolean;
@@ -43,6 +46,9 @@ export function MemorialEnvelopeFace({
   fitContainer?: boolean;
 }) {
   const lifting = isUnsealing || isOpening;
+  const livePortrait = portraitSrc?.trim() || null;
+  const sealPortraitSrc = livePortrait || MEMORIAL_PORTRAIT_WAX_SEAL_SRC;
+  const livePortraitSeal = Boolean(livePortrait);
   const sealLiftSec = Math.max(0.45, sealDurationMs / 1000);
   const flapOpenSec = reduceMotion
     ? 0.35
@@ -129,7 +135,7 @@ export function MemorialEnvelopeFace({
           ease: EASE_SILK,
         }}
       >
-        {/* Full photoreal envelope plate */}
+        {/* Full photoreal envelope plate (catalogue template structure). */}
         <div className="absolute inset-0 overflow-hidden rounded-[0.2rem]">
           <Image
             src={artSrc}
@@ -141,6 +147,30 @@ export function MemorialEnvelopeFace({
             draggable={false}
           />
         </div>
+
+        {/* Live honouree face covers the baked catalogue portrait under the seal. */}
+        {livePortrait ? (
+          <div
+            className="absolute z-20 overflow-hidden rounded-full pointer-events-none"
+            style={{
+              left: `${MEMORIAL_SEAL_CX_PCT}%`,
+              top: `${MEMORIAL_SEAL_CY_PCT}%`,
+              width: `${MEMORIAL_SEAL_WIDTH_FRAC * 118}%`,
+              aspectRatio: "1",
+              transform: "translate(-50%, -50%)",
+              boxShadow: "0 0 0 2px rgba(224,184,74,0.35), 0 18px 36px rgba(0,0,0,0.55)",
+            }}
+            aria-hidden
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={livePortrait}
+              alt=""
+              className="h-full w-full object-cover object-center select-none"
+              draggable={false}
+            />
+          </div>
+        ) : null}
 
         {/* Soft glow behind the seal. Invites the tap */}
         <AnimatePresence>
@@ -233,7 +263,9 @@ export function MemorialEnvelopeFace({
               isUnsealing={isUnsealing && !isOpening}
               reduceMotion={reduceMotion}
               compact={fitContainer}
-              photorealSrc={MEMORIAL_PORTRAIT_WAX_SEAL_SRC}
+              photorealSrc={sealPortraitSrc}
+              photorealObjectFit={livePortraitSeal ? "cover" : "contain"}
+              photorealRound={livePortraitSeal}
               pulseClass="inv-seal-glow"
             />
           </motion.div>

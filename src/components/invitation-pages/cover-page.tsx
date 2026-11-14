@@ -44,12 +44,23 @@ function CoverParallaxMedia({ url }: { url: string }) {
 }
 
 /** Ornate oval framed memorial portrait. Cover hero (not the envelope wax seal). */
-function MemorialCoverPortrait({ alt }: { alt: string }) {
+function MemorialCoverPortrait({
+  alt,
+  src,
+  livePortrait = false,
+}: {
+  alt: string;
+  src?: string | null;
+  livePortrait?: boolean;
+}) {
+  const portraitSrc = src?.trim() || MEMORIAL_COVER_PORTRAIT_SRC;
   return (
-    <figure className="inv-memorial-cover-portrait">
+    <figure
+      className={`inv-memorial-cover-portrait${livePortrait ? " inv-memorial-cover-portrait--live" : ""}`}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={MEMORIAL_COVER_PORTRAIT_SRC}
+        src={portraitSrc}
         alt={alt}
         loading="eager"
         fetchPriority="high"
@@ -86,8 +97,9 @@ export function CoverPage({ context, page }: InvitePageProps) {
       const age = resolveMemorialAgeYears(parseMemorialNameCard(candidate ?? "").years);
       if (age != null) return age;
     }
-    // Match the lifespan embossed on the memorial portrait wax-seal art.
-    return resolveMemorialAgeYears(MEMORIAL_SEAL_LIFESPAN);
+    // Catalogue template fallback only when this invite has no lifespan in copy.
+    if (!heroUrl) return resolveMemorialAgeYears(MEMORIAL_SEAL_LIFESPAN);
+    return null;
   })();
 
   const names = isFuneral
@@ -214,6 +226,8 @@ export function CoverPage({ context, page }: InvitePageProps) {
               <span className="inv-funeral-cover-portrait-glow" aria-hidden />
               <MemorialCoverPortrait
                 alt={`Memorial portrait of ${typeof names === "string" ? names : "the deceased"}`}
+                src={heroUrl}
+                livePortrait={Boolean(heroUrl)}
               />
               {memorialAgeYears != null ? (
                 <div
