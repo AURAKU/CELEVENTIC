@@ -124,6 +124,14 @@ import { DigitalCardConnectAutomations } from "@/components/digital-business-car
 import { DigitalCardShareDesk } from "@/components/digital-business-card/digital-card-share-desk";
 import { DigitalCardStudioPreview } from "@/components/digital-business-card/digital-card-studio-preview";
 import { DigitalCardStudioNotice } from "@/components/digital-business-card/digital-card-studio-notice";
+import { DigitalCardStudioDeskNav } from "@/components/digital-business-card/digital-card-studio-desk-nav";
+import {
+  DEFAULT_STUDIO_DESK,
+  readStudioDeskFromLocation,
+  studioDeskFromHash,
+  writeStudioDeskToUrl,
+  type StudioDeskId,
+} from "@/lib/digital-business-card/studio-desk";
 import { celeCardCheckoutUi } from "@/lib/digital-business-card/checkout-outcome";
 import { applyReachVisibilityPreview, type ReachVisibility } from "@/lib/digital-business-card/privacy-preview";
 import {
@@ -236,6 +244,7 @@ function StudioPanel({
   );
 }
 
+/** Legacy jump chips — only when `?studio=classic`. Studio 2.0 uses desk destinations. */
 const STUDIO_JUMP = [
   { href: "#studio-activity", label: "Activity" },
   { href: "#studio-activation", label: "Activation" },
@@ -417,10 +426,28 @@ export function DigitalCardStudioClient() {
   const [primaryCardId, setPrimaryCardId] = useState<string | null>(null);
   const [usernameConfirming, setUsernameConfirming] = useState(false);
   const [baseline, setBaseline] = useState("");
+  const [classicStudio, setClassicStudio] = useState(false);
+  const [desk, setDesk] = useState<StudioDeskId>(DEFAULT_STUDIO_DESK);
   const themeFromQuery = useRef<DigitalCardThemeId | null>(null);
   const activeIdRef = useRef<string | null>(null);
   const noticeTimer = useRef<number>(0);
   activeIdRef.current = activeId;
+
+  const showDesk = useCallback(
+    (target: StudioDeskId) => classicStudio || desk === target,
+    [classicStudio, desk]
+  );
+  /** Share + live plate stay available on every desk so publishing never depends on scrolling a long page. */
+  const showPreviewChrome = true;
+
+  const goDesk = useCallback((next: StudioDeskId) => {
+    setClassicStudio(false);
+    setDesk(next);
+    writeStudioDeskToUrl(next, false);
+    window.requestAnimationFrame(() => {
+      document.getElementById("celecard-studio-workspace")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }, []);
 
   const note = useCallback((text: string) => {
     setError(null);
@@ -515,6 +542,30 @@ export function DigitalCardStudioClient() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const initial = readStudioDeskFromLocation(window.location.search, window.location.hash);
+    setClassicStudio(initial.classic);
+    setDesk(initial.desk);
+    const onHash = () => {
+      const mapped = studioDeskFromHash(window.location.hash);
+      if (!mapped) return;
+      setClassicStudio(false);
+      setDesk(mapped);
+      writeStudioDeskToUrl(mapped, false);
+    };
+    const onPop = () => {
+      const next = readStudioDeskFromLocation(window.location.search, window.location.hash);
+      setClassicStudio(next.classic);
+      setDesk(next.desk);
+    };
+    window.addEventListener("hashchange", onHash);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("popstate", onPop);
+    };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -680,14 +731,16 @@ export function DigitalCardStudioClient() {
     autosave.status === "saving"
       ? "Saving draft…"
       : autosave.status === "error"
-        ? "Draft save failed"
+        ? "Save failed — tap Save to retry"
         : unsaved
           ? publishedOnServer
-            ? "Unsaved. Save to publish."
+            ? "Unsaved changes"
             : "Unsaved draft"
-          : autosave.status === "saved" && !publishedOnServer
-            ? "Draft saved"
-            : null;
+          : publishedOnServer
+            ? "Published"
+            : autosave.status === "saved"
+              ? "Draft saved"
+              : "No changes yet";
 
   async function save() {
     if (form.displayName.trim().length < 2) {
@@ -846,9 +899,23 @@ export function DigitalCardStudioClient() {
           </p>
         </div>
         <div className="celecard-studio-toolbar">
-          {saveStatus ? (
-            <p className="celecard-studio-save-status text-[11px] font-medium text-[#0B8A83]">{saveStatus}</p>
-          ) : null}
+          <p
+            className="celecard-studio-save-status text-[11px] font-medium text-[#0B8A83]"
+            aria-live="polite"
+            data-unsaved={unsaved ? "1" : "0"}
+          >
+            {saveStatus}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="celecard-studio-preview-jump"
+            onClick={() =>
+              document.getElementById("studio-preview")?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+          >
+            Preview
+          </Button>
           <Button type="button" variant="outline" className="celecard-studio-new" onClick={startNew}>
             <Plus className="mr-2 h-4 w-4" />
             New card
@@ -865,7 +932,27 @@ export function DigitalCardStudioClient() {
         </div>
       </div>
 
-      {active?.subscriptionExpiresAt ? (
+      {!classicStudio && desk !== "settings" && active?.subscriptionExpiresAt ? (
+        <div className="celecard-studio-term-chip rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+          <span className="font-semibold text-slate-900">
+            {(active.subscriptionStatus || "").toUpperCase() === "TRIAL" ? "Trial" : "Paid"} · {previewTheme.name}
+          </span>
+          <span className="mx-2 text-slate-300" aria-hidden>
+            ·
+          </span>
+          <button type="button" className="font-semibold text-[#0B8A83]" onClick={() => goDesk("settings")}>
+            Manage in Settings
+          </button>
+          <span className="mx-2 text-slate-300" aria-hidden>
+            ·
+          </span>
+          <Link href="/dashboard/business-card/billing" className="font-semibold text-[#0B8A83]">
+            Billing
+          </Link>
+        </div>
+      ) : null}
+
+      {(classicStudio || showDesk("settings")) && active?.subscriptionExpiresAt ? (
         <DigitalCardLiveTermRibbon
           cardId={active.id}
           themeName={previewTheme.name}
@@ -894,8 +981,17 @@ export function DigitalCardStudioClient() {
             <Button asChild>
               <Link href="/dashboard/business-card/billing">Reactivate CeleYou</Link>
             </Button>
-            <Button type="button" variant="outline" asChild>
-              <a href="#celecard-design-vault">View Saved Designs</a>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                goDesk("design");
+                window.requestAnimationFrame(() => {
+                  document.getElementById("celecard-design-vault")?.scrollIntoView({ behavior: "smooth" });
+                });
+              }}
+            >
+              View Saved Designs
             </Button>
           </div>
         </div>
@@ -909,16 +1005,23 @@ export function DigitalCardStudioClient() {
         </div>
       ) : (
         <>
-        <nav className="celecard-studio-jump" aria-label="Studio sections">
-          {STUDIO_JUMP.map((item) => (
-            <a key={item.href} href={item.href}>
-              {item.label}
-            </a>
-          ))}
-        </nav>
+        <div id="celecard-studio-workspace" className="scroll-mt-16 space-y-3">
+        {classicStudio ? (
+          <nav className="celecard-studio-jump" aria-label="Studio sections">
+            {STUDIO_JUMP.map((item) => (
+              <a key={item.href} href={item.href}>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        ) : (
+          <DigitalCardStudioDeskNav desk={desk} onChange={goDesk} />
+        )}
+        </div>
 
-        <DigitalCardAnalyticsPanel cardId={activeId} />
+        {showDesk("insights") ? <DigitalCardAnalyticsPanel cardId={activeId} /> : null}
 
+        {showDesk("settings") ? (
         <div
           id="studio-activation"
           className="scroll-mt-16 rounded-2xl border border-slate-200 bg-white p-4 space-y-3"
@@ -964,9 +1067,45 @@ export function DigitalCardStudioClient() {
             <Link href="/dashboard/business-card/billing">Manage billing</Link>
           </Button>
         </div>
+        ) : null}
 
-        <div className="celecard-studio-desk">
+        <div className="celecard-studio-desk" data-desk={classicStudio ? "classic" : desk}>
+          {showDesk("card") ? (
           <div className="celecard-studio-identity-col space-y-4">
+            {!classicStudio ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-slate-900">{form.displayName.trim() || "Your CeleYou"}</p>
+                  <Badge variant="secondary">
+                    {active?.isLive ? "Live" : form.isPublished ? "Draft published off" : "Draft"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Edit identity below, then open Design or Links. Preview and Share stay on the right (or under Preview).
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => goDesk("design")}>
+                    Design
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => goDesk("links")}>
+                    Links & Actions
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => goDesk("insights")}>
+                    Insights
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-[#0B8A83] hover:bg-[#097a74]"
+                    onClick={() =>
+                      document.getElementById("studio-preview")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }
+                  >
+                    Preview & Share
+                  </Button>
+                </div>
+              </div>
+            ) : null}
             {cards.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {cards.map((c) => (
@@ -1132,8 +1271,11 @@ export function DigitalCardStudioClient() {
             </div>
             </StudioPanel>
           </div>
+          ) : null}
 
           <div className="celecard-studio-work">
+              {showDesk("design") ? (
+              <>
               <div id="studio-look" className="scroll-mt-16">
               <DigitalCardDesignDesk
                   themeId={form.themeId}
@@ -1158,6 +1300,10 @@ export function DigitalCardStudioClient() {
                 />
               </div>
               <DigitalCardDesignVault cardId={activeId} />
+              </>
+              ) : null}
+            {showDesk("links") ? (
+            <>
             <StudioPanel
               id="studio-contact"
               title="Contact"
@@ -1518,13 +1664,6 @@ export function DigitalCardStudioClient() {
             </div>
             </StudioPanel>
 
-            <DigitalCardPrivacyDesk
-              items={reachPreview}
-              visibility={form.reachVisibility}
-              onVisibilityChange={(reachVisibility) => setForm((f) => ({ ...f, reachVisibility }))}
-              cardId={activeId}
-            />
-
             <StudioPanel
               id="studio-arrange"
               title="Guest page arrangement"
@@ -1535,12 +1674,41 @@ export function DigitalCardStudioClient() {
                 onChange={({ stackOrder, dockOrder }) => setForm((f) => ({ ...f, stackOrder, dockOrder }))}
               />
             </StudioPanel>
+            {!classicStudio ? (
+              <p className="text-xs text-slate-500">
+                Link privacy (Public, Code, Ask) lives in{" "}
+                <button type="button" className="font-semibold text-[#0B8A83]" onClick={() => goDesk("settings")}>
+                  Settings
+                </button>
+                .
+              </p>
+            ) : null}
+            </>
+            ) : null}
 
+            {showDesk("settings") ? (
+            <DigitalCardPrivacyDesk
+              items={reachPreview}
+              visibility={form.reachVisibility}
+              onVisibilityChange={(reachVisibility) => setForm((f) => ({ ...f, reachVisibility }))}
+              cardId={activeId}
+            />
+            ) : null}
+
+            {showDesk("audience") ? (
+            <>
             <DigitalCardConnectionInbox cardId={activeId} />
             <DigitalCardConnectAutomations cardId={activeId} />
+            </>
+            ) : null}
           </div>
 
-          <aside id="studio-preview" className="celecard-studio-preview space-y-4">
+          <aside
+            id="studio-preview"
+            className="celecard-studio-preview space-y-4"
+            hidden={!showPreviewChrome ? true : undefined}
+            data-studio-preview={showPreviewChrome ? "open" : "deferred"}
+          >
             <section id="studio-live" className="celecard-studio-live scroll-mt-16" aria-label="Live sharing">
               <div className="celecard-studio-live-row">
                 <label htmlFor="studio-live-published" className="min-w-0 flex-1 cursor-pointer">

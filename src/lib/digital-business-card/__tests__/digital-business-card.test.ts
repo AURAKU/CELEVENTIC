@@ -1719,10 +1719,14 @@ describe("CeleYou device frame", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
     assert.match(studio, /celecard-studio-desk/);
     assert.match(studio, /celecard-studio-jump/);
+    assert.match(studio, /DigitalCardStudioDeskNav/);
+    assert.match(studio, /writeStudioDeskToUrl/);
+    assert.match(studio, /classicStudio/);
     assert.match(studio, /celecard-studio-toolbar/);
     assert.match(studio, /celecard-studio-live/);
     assert.match(studio, /#studio-inbox/);
     assert.match(studio, /href: "#studio-activity"/);
+    assert.match(studio, /aria-live="polite"/);
     assert.doesNotMatch(studio, /action-row/);
     const jumpAt = studio.indexOf("const STUDIO_JUMP");
     const activityJumpAt = studio.indexOf('href: "#studio-activity"');
