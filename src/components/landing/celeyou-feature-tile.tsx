@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { CELEYOU_LOCKUP_SRC } from "@/components/digital-business-card/celeyou-brand-mark";
+import { smartCardSignupPath, smartCardStudioPath } from "@/lib/auth/safe-next-path";
 import styles from "./celeyou-feature-tile.module.css";
 
 const EXPLORE_HREF = "/digital-cards";
-const START_HREF = "/auth/register?intent=smartcard&next=/dashboard/business-card";
 
 const CHIPS = [
   "landing.celeyou_chip_qr",
@@ -18,9 +19,19 @@ const CHIPS = [
 
 export function CeleYouFeatureTile() {
   const { t } = useLocale();
+  const { data: session, status } = useSession();
+  const signedIn = status === "authenticated" && Boolean(session?.user);
+  // Guests create an account first; signed-in users go straight to CeleYou studio.
+  const designHref = signedIn ? smartCardStudioPath() : smartCardSignupPath();
 
   return (
     <article className={styles.root} aria-labelledby="celeyou-landing-hook">
+      {/* Full-tile hit target → Explore. Primary CTA sits above this link. */}
+      <Link
+        href={EXPLORE_HREF}
+        className={styles.stretch}
+        aria-label={`${t("landing.svc_explore")} CeleYou`}
+      />
       <span className={styles.glow} aria-hidden />
       <div className={styles.copy}>
         <p className={styles.kicker}>{t("landing.celeyou_kicker")}</p>
@@ -36,7 +47,7 @@ export function CeleYouFeatureTile() {
           ))}
         </ul>
         <div className={styles.actions}>
-          <Link href={START_HREF} className={`${styles.primary} inline-flex`}>
+          <Link href={designHref} className={`${styles.primary} inline-flex`}>
             {t("landing.svc_start_card")}
             <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
           </Link>

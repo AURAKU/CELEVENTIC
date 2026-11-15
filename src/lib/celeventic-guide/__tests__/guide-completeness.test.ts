@@ -168,7 +168,10 @@ describe("contextual help expansion §58/§62", () => {
     for (const title of [
       "Activity",
       "Activation",
+      "Username",
       "Access codes",
+      "Share My Card",
+      "Copy Profile Link",
       "Wallet card",
       "Hold up this card",
       "NFC",
@@ -180,13 +183,20 @@ describe("contextual help expansion §58/§62", () => {
     assert.match(blob, /calendar/);
     assert.match(blob, /payment channels/);
     assert.match(blob, /physical card/);
+    assert.match(blob, /CeleYou Free/);
+    assert.match(blob, /live activated|published plate|\/u\//i);
     assert.doesNotMatch(blob, /phone to phone NFC|phone-to-phone NFC|Apple Wallet pass/i);
+    assert.doesNotMatch(blob, /Choose a plan so the public page stays live/);
     const tour = MINI_TOURS.find((item) => item.id === "celeyou-studio");
     assert.ok(tour);
-    assert.match(tour?.steps.map((step) => step.body).join(" ") ?? "", /Wallet card/);
+    const tourBlob = tour?.steps.map((step) => step.body).join(" ") ?? "";
+    assert.match(tourBlob, /Wallet card/);
+    assert.match(tourBlob, /Free|\/u\//);
     const celeyou = CELEVENTIC_GUIDE_CATALOG.find((g) => g.slug === "celeyou");
     assert.ok(celeyou?.steps.some((step) => step.title === "Share in person"));
+    assert.ok(celeyou?.steps.some((step) => step.title === "Publish on Free"));
     assert.match(celeyou?.body ?? "", /cardholder/);
+    assert.match(celeyou?.body ?? "", /Free/);
   });
 });
 

@@ -278,11 +278,16 @@ describe("CeleYou studio share controls", () => {
     assert.doesNotMatch(desk, /SHOW_QR_CTA/);
     assert.match(desk, /CeleYouSmartShareEngine/);
     assert.match(desk, /WALLET_PASS_CTA/);
-    assert.match(desk, /celeCardShareImageUrls/);
+    assert.match(desk, /celeYouLivePlateShareUrls/);
     assert.match(desk, /imageUrl/);
     assert.match(desk, /persistPlateCardId/);
     assert.match(desk, /usePersistLivePlateSnapshot/);
     assert.match(desk, /identityShare/);
+    assert.match(desk, /usePublishedPlate/);
+    assert.match(desk, /capturePlate: usePublishedPlate \? false : true/);
+    assert.match(ownerStudio, /celeYouLiveProfileUrl/);
+    assert.match(ownerStudio, /const canonical = publicUrl/);
+    assert.doesNotMatch(ownerStudio, /const canonical = shareUrl \|\| publicUrl/);
     assert.doesNotMatch(desk, /same public profile/);
     assert.doesNotMatch(desk, /start AirDrop by NFC|automatic phone to phone NFC/i);
     assert.doesNotMatch(desk, /Phone to phone NFC is not used/);

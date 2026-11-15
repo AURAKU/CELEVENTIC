@@ -26,7 +26,10 @@ import {
 } from "@/services/digital-business-card/digital-business-card.service";
 import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
 import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
-import { resolveCeleYouPublicHandle } from "@/services/digital-business-card/username.service";
+import {
+  celeYouGuestShareUsername,
+  resolveCeleYouPublicHandle,
+} from "@/services/digital-business-card/username.service";
 
 export const dynamic = "force-dynamic";
 
@@ -61,10 +64,13 @@ export async function generateMetadata({
   const policy = await getCeleCardLifecyclePolicy();
   const presentation = resolveCeleYouPublicShare({ card, channel: "profile", policy }).presentation;
   if (presentation === "live" || presentation === "courtesy") {
+    const shareUsername =
+      "username" in resolved && resolved.username ? resolved.username : username;
     return buildCeleCardShareMetadata({
       card,
       origin,
       imagePath: celeCardPageOgPath(card.slug, card.updatedAt),
+      profilePath: `/u/${encodeURIComponent(shareUsername)}`,
     });
   }
   return withheldCeleCardMetadata();
@@ -113,10 +119,16 @@ export default async function CeleYouUsernamePage({
 
   const jar = await cookies();
   const grant = await resolveCeleCardGrant(card.id, jar.get(celeCardGrantCookieName(card.id))?.value);
+  const shareUsername =
+    (resolved.kind === "card" && resolved.username) ||
+    (await celeYouGuestShareUsername(card));
 
   return (
     <DigitalCardPublicView
-      card={toGuestPublicPayload(card, grant?.itemKeys ?? [], policy)}
+      card={{
+        ...toGuestPublicPayload(card, grant?.itemKeys ?? [], policy),
+        username: shareUsername,
+      }}
       origin={celeYouGuestOrigin(await getServerAppUrl())}
     />
   );

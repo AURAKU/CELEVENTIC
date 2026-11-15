@@ -53,27 +53,34 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid trial request." }, { status: 400 });
   }
-  const result = await activateCeleYouProTrial({
-    userId: session.user.id,
-    cardId: parsed.data.cardId,
-    actorId: session.user.id,
-  });
-  if (!result.ok) {
-    const status = result.reason === "unpublished" ? 409 : 409;
-    return NextResponse.json({ error: result.error, reason: result.reason }, { status });
-  }
-  return NextResponse.json({
-    success: true,
-    data: {
-      trial: {
-        ...result.trial,
-        startedAt: result.trial.startedAt?.toISOString() ?? null,
-        expiresAt: result.trial.expiresAt?.toISOString() ?? null,
-        convertedAt: result.trial.convertedAt?.toISOString() ?? null,
+  try {
+    const result = await activateCeleYouProTrial({
+      userId: session.user.id,
+      cardId: parsed.data.cardId,
+      actorId: session.user.id,
+    });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error, reason: result.reason }, { status: 409 });
+    }
+    return NextResponse.json({
+      success: true,
+      data: {
+        trial: {
+          ...result.trial,
+          startedAt: result.trial.startedAt?.toISOString() ?? null,
+          expiresAt: result.trial.expiresAt?.toISOString() ?? null,
+          convertedAt: result.trial.convertedAt?.toISOString() ?? null,
+        },
+        cardId: result.cardId,
+        expiresAt: result.expiresAt.toISOString(),
+        noCardCopy: CELEYOU_TRIAL_NO_CARD_COPY,
       },
-      cardId: result.cardId,
-      expiresAt: result.expiresAt.toISOString(),
-      noCardCopy: CELEYOU_TRIAL_NO_CARD_COPY,
-    },
-  });
+    });
+  } catch (error) {
+    console.error("[celeyou.trial.activate]", error);
+    return NextResponse.json(
+      { error: "Could not start the trial. Please try again." },
+      { status: 500 }
+    );
+  }
 }

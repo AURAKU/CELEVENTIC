@@ -15,6 +15,29 @@
   box-shadow:
     0 28px 54px rgba(4, 26, 34, 0.3),
     inset 0 1px 0 rgba(255, 255, 249, 0.14);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.root:has(.stretch:hover),
+.root:has(.stretch:focus-visible) {
+  border-color: rgba(127, 240, 228, 0.55);
+  box-shadow:
+    0 32px 58px rgba(4, 26, 34, 0.36),
+    inset 0 1px 0 rgba(255, 255, 249, 0.16);
+}
+
+/* Invisible full-tile Explore hit target. CTAs stack above. */
+.stretch {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  cursor: pointer;
+}
+
+.stretch:focus-visible {
+  outline: 2px solid #7ff0e4;
+  outline-offset: -4px;
 }
 
 .glow {
@@ -36,6 +59,8 @@
   min-width: 0;
   flex-direction: column;
   justify-content: center;
+  /* Let the full-tile Explore link receive clicks; CTAs re-enable pointer events. */
+  pointer-events: none;
 }
 
 .kicker {
@@ -90,14 +115,19 @@
 }
 
 .actions {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 1.25rem;
+  pointer-events: auto;
 }
 
 .primary,
 .secondary {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -143,6 +173,7 @@
   display: grid;
   place-items: center;
   min-height: 16rem;
+  pointer-events: none;
 }
 
 .plate {

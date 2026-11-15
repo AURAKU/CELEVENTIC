@@ -106,7 +106,7 @@ export function AuthLayout({
       </div>
 
       <div className="flex-1 flex items-start lg:items-center justify-center bg-mesh p-4 sm:p-6 lg:p-8 min-h-0 overflow-y-auto">
-        <div className={cn("w-full py-6 sm:py-8", wide ? "max-w-2xl" : "max-w-md")}>
+        <div className={cn("w-full min-w-0 py-6 sm:py-8", wide ? "max-w-3xl" : "max-w-md")}>
           <div className="lg:hidden flex justify-center mb-6 sm:mb-8">
             <Logo size="lg" />
           </div>

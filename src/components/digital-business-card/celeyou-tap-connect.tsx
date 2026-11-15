@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Copy, Link2, Nfc, QrCode, ScanLine, Share2, X } from "lucide-react";
-import { getClientAppUrl } from "@/lib/app-url";
-import { digitalCardIdentityUrl, digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
+import { getCeleYouShareOrigin } from "@/lib/app-url";
+import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
+import { celeYouLiveProfileUrl } from "@/lib/digital-business-card/share-identity";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
-import { celeCardShareImageUrls, celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
+import { celeCardShareMessage, celeCardShareTitle, celeYouLivePlateShareUrls } from "@/lib/digital-business-card/share";
 import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
 import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { detectTapCapability, detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
@@ -99,6 +100,8 @@ export function CeleYouTapConnect({
   const capability = useMemo(() => detectTapCapability(), []);
   const [cards, setCards] = useState<CardOption[]>([]);
   const [cardId, setCardId] = useState(initialCardId || "");
+  const [accountUsername, setAccountUsername] = useState<string | null>(null);
+  const [primaryCardId, setPrimaryCardId] = useState<string | null>(null);
   const [session, setSession] = useState<SessionView | null>(null);
   const [codeInput, setCodeInput] = useState(initialCode?.toUpperCase() || "");
   const [scanning, setScanning] = useState(false);
@@ -131,6 +134,11 @@ export function CeleYouTapConnect({
         return;
       }
       const list = (json.data || []) as CardOption[];
+      const identity = (
+        json as { identity?: { username?: string | null; primaryCardId?: string | null } }
+      ).identity;
+      setAccountUsername(identity?.username ?? null);
+      setPrimaryCardId(identity?.primaryCardId ?? list[0]?.id ?? null);
       setCards(list);
       setCardId((current) => current || initialCardId || list[0]?.id || "");
     } catch {
@@ -334,8 +342,16 @@ export function CeleYouTapConnect({
     }
   }
 
-  const origin = getClientAppUrl();
-  const profileUrl = card?.slug ? digitalCardIdentityUrl(card.slug, origin) : "";
+  const origin = getCeleYouShareOrigin();
+  const profileUrl = card?.slug
+    ? celeYouLiveProfileUrl({
+        slug: card.slug,
+        username: accountUsername,
+        cardId: card.id,
+        primaryCardId,
+        origin,
+      })
+    : "";
   const profileQrSrc = profileUrl ? digitalCardQrImageSrc(profileUrl, { size: 720, format: "png" }) : "";
 
   async function copyProfileLink() {
@@ -354,8 +370,9 @@ export function CeleYouTapConnect({
         profileUrl
       ),
       url: profileUrl,
-      imageUrl: card.slug ? celeCardShareImageUrls(card.slug, card.id) : null,
-      persistPlateCardId: card.id || null,
+      imageUrl: card.slug ? celeYouLivePlateShareUrls(card.slug, "live") : null,
+      capturePlate: false,
+      persistPlateCardId: null,
     });
   }
 

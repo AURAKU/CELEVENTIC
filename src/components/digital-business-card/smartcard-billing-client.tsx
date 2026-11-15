@@ -307,7 +307,7 @@ export function SmartCardBillingClient() {
             Design the identity first. Billing and Paystack checkout unlock after the card is saved.
           </p>
           <Button asChild className="mt-5 bg-[#0B8A83] hover:bg-[#097a74]">
-            <Link href="/dashboard/business-card">Design my CeleYou</Link>
+            <Link href="/dashboard/business-card">My CeleYou Card</Link>
           </Button>
         </div>
       ) : (

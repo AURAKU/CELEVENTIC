@@ -9,13 +9,11 @@ import {
   useCeleYouExchangeAvailable,
 } from "@/components/digital-business-card/digital-card-connect-exchange";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
-import {
-  digitalCardIdentityUrl,
-  type DigitalCardPublicPayload,
-} from "@/lib/digital-business-card/types";
+import { type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
+import { celeYouLiveProfileUrl } from "@/lib/digital-business-card/share-identity";
 import {
   celeCardShareCommentary,
-  celeCardShareImageUrls,
+  celeYouLivePlateShareUrls,
   celeCardShareTitle,
 } from "@/lib/digital-business-card/share";
 import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
@@ -45,7 +43,9 @@ export function CeleYouTapGuestView({
 }) {
   const { t } = useLocale();
   const host = landing?.host ?? null;
-  const profileUrl = host ? digitalCardIdentityUrl(host.slug, origin) : "";
+  const profileUrl = host
+    ? celeYouLiveProfileUrl({ slug: host.slug, username: host.username, origin })
+    : "";
   const exchangeAvailable = useCeleYouExchangeAvailable(host?.slug || "", host?.isDemo);
   const [formOpen, setFormOpen] = useState(false);
   const [done, setDone] = useState(false);
@@ -77,7 +77,7 @@ export function CeleYouTapGuestView({
     return () => window.clearInterval(timer);
   }, [landing?.expiresAt]);
   const plateShareUrls = useMemo(
-    () => (host ? celeCardShareImageUrls(host.slug, host.id) : []),
+    () => (host ? celeYouLivePlateShareUrls(host.slug, host.updatedAt || host.id) : []),
     [host]
   );
 

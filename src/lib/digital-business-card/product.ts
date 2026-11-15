@@ -50,7 +50,7 @@ export const SMARTCARD_HERO_LINE = "Your phone. Your identity. Every connection.
 export const SMARTCARD_HERO_SUPPORT =
   "QR, NFC card, Nearby Share, or a link. One page for your socials, number, WhatsApp, and website. Update once. Every share stays current. Recipients open it with no app and no account.";
 
-export const SMARTCARD_CTA_PRIMARY = "Design my CeleYou";
+export const SMARTCARD_CTA_PRIMARY = "My CeleYou Card";
 export const SMARTCARD_CTA_SECONDARY = "View templates";
 
 /** Public CeleYou landing. Guests create an account and browse templates. No login to look. */

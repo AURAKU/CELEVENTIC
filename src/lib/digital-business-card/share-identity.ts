@@ -27,8 +27,44 @@ export type CeleYouShareIdentityInput = {
   publicToken: string;
   nfcToken: string;
   username?: string | null;
+  /** Active studio / share target. Username applies only while this is the primary CeleYou. */
+  cardId?: string | null;
+  primaryCardId?: string | null;
   origin?: string;
 };
+
+/**
+ * Public handle encoded into Share My Card and Copy Profile Link.
+ * Primary CeleYou → @username when claimed, otherwise the card slug.
+ * Secondary cards keep their own slug so guests open that plate, not the primary.
+ */
+export function celeYouLiveProfileHandle(input: {
+  slug: string;
+  username?: string | null;
+  cardId?: string | null;
+  primaryCardId?: string | null;
+}): string {
+  const slug = input.slug.trim();
+  const username = (input.username || "").trim();
+  if (!slug && !username) return "";
+  const isPrimary =
+    !input.cardId || !input.primaryCardId || input.cardId === input.primaryCardId;
+  if (username && isPrimary) return username;
+  return slug || username;
+}
+
+/** Absolute live profile URL on the approved CeleYou share origin. Never localhost. */
+export function celeYouLiveProfileUrl(input: {
+  slug: string;
+  username?: string | null;
+  cardId?: string | null;
+  primaryCardId?: string | null;
+  origin?: string;
+}): string {
+  const handle = celeYouLiveProfileHandle(input);
+  if (!handle) return "";
+  return digitalCardIdentityUrl(handle, celeYouGuestOrigin(input.origin));
+}
 
 export type CeleYouShareIdentity = {
   slug: string;
@@ -174,7 +210,13 @@ export function celeYouShareIdentity(input: CeleYouShareIdentityInput): CeleYouS
     slug: input.slug,
     publicToken: input.publicToken,
     nfcToken: input.nfcToken,
-    profileUrl: digitalCardIdentityUrl((input.username || "").trim() || input.slug, origin),
+    profileUrl: celeYouLiveProfileUrl({
+      slug: input.slug,
+      username: input.username,
+      cardId: input.cardId,
+      primaryCardId: input.primaryCardId,
+      origin,
+    }),
     qrUrl: celeYouCameraScanUrl(input.publicToken, origin),
     nfcUrl: celeYouNfcScanUrl(input.nfcToken, origin),
   };

@@ -379,6 +379,17 @@ export async function bridgeCardSlug(card: { id: string; userId: string; slug: s
   }).catch(() => undefined);
 }
 
+/** Username to encode into guest Share / Copy Link for this plate. Null for secondary cards. */
+export async function celeYouGuestShareUsername(card: {
+  id: string;
+  userId: string;
+}): Promise<string | null> {
+  const identity = await getCeleYouAccountIdentity(card.userId);
+  if (!identity?.username) return null;
+  if (identity.primaryCardId && identity.primaryCardId !== card.id) return null;
+  return identity.username;
+}
+
 export async function getCeleYouAccountIdentity(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },

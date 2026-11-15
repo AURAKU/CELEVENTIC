@@ -27,10 +27,46 @@ const HERO_SERVICES: Array<{
   icon: ComponentType<{ className?: string }>;
 }> = [
   { href: "/invitations/catalogue", labelKey: "landing.pill_invitations", icon: Mail },
-  { href: "/discover", labelKey: "landing.pill_tickets", icon: Ticket },
+  { href: "/dashboard/tickets", labelKey: "landing.pill_tickets", icon: Ticket },
   { href: "/marketplace", labelKey: "landing.pill_marketplace", icon: Store },
   { href: "/digital-cards", labelKey: "landing.pill_cards", icon: CeleYouMarkIcon },
 ];
+
+function HeroServicePanel({
+  t,
+}: {
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="relative">
+      <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-brand-500/20 to-accent-500/20 blur-2xl" />
+      <div className="relative rounded-2xl border border-white/15 bg-white/5 p-4 shadow-2xl backdrop-blur-md sm:p-6">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gold-300">
+          {t("landing.hero_os_kicker")}
+        </p>
+        <p className="mt-2 text-lg font-semibold text-white">{t("landing.hero_os_title")}</p>
+        <p className="mt-1 text-base leading-relaxed text-white/75">{t("landing.hero_os_support")}</p>
+        <div className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-5 sm:gap-3">
+          {HERO_SERVICES.map((item) => (
+            <Link
+              key={`panel-${item.labelKey}`}
+              href={item.href}
+              className="flex min-h-11 items-center gap-2.5 rounded-xl border border-white/10 bg-white/8 p-3 transition hover:border-brand-300/40 hover:bg-white/12 sm:gap-3 sm:p-4"
+            >
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500/20 text-gold-300 sm:h-10 sm:w-10">
+                <item.icon
+                  className={item.labelKey === "landing.pill_cards" ? "h-7 w-7 sm:h-8 sm:w-8" : "h-4 w-4 sm:h-5 sm:w-5"}
+                  aria-hidden
+                />
+              </span>
+              <span className="text-sm font-semibold text-white sm:text-base">{t(item.labelKey)}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function Hero() {
   const { t } = useLocale();
@@ -44,7 +80,7 @@ export function Hero() {
     : { initial: { opacity: 1, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.55, delay: 0.12 } };
 
   return (
-    <section className="relative min-h-app-viewport overflow-hidden bg-gradient-hero text-white">
+    <section className="relative overflow-hidden bg-gradient-hero text-white lg:min-h-app-viewport">
       <ClientErrorBoundary>
         <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
           <HeroScene />
@@ -56,10 +92,10 @@ export function Hero() {
         <div className="absolute bottom-10 right-10 h-[500px] w-[500px] rounded-full bg-accent-500/20 blur-3xl" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-[clamp(2.25rem,5.5vh,7rem)] sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 sm:pb-12 sm:pt-10 lg:px-8 lg:py-[clamp(2.25rem,5.5vh,7rem)]">
         <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-16">
           <motion.div className="min-w-0" {...copyMotion}>
-            <BrandMotto size="xl" variant="hero" className="mb-4 sm:mb-6" />
+            <BrandMotto size="xl" variant="hero" linked className="mb-4 sm:mb-6" />
             <h1 className="font-display max-w-full text-[clamp(1.85rem,5.4vw+0.55rem,4.15rem)] font-bold leading-[1.12] tracking-tight text-white text-balance">
               {t("landing.hero_title_1")}{" "}
               <span className="text-gradient-gold">{t("landing.hero_title_event")}</span>{" "}
@@ -101,51 +137,10 @@ export function Hero() {
                 {t("landing.hero_vendor_cta")}
               </Link>
             </div>
-            <div className="mt-8 flex flex-wrap gap-2 lg:hidden">
-              {HERO_SERVICES.map((item) => (
-                <Link
-                  key={item.labelKey}
-                  href={item.href}
-                  className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/20 bg-white/10 px-4 py-2 text-base font-semibold text-white backdrop-blur-sm transition hover:border-gold-400/50 hover:bg-white/15"
-                >
-                  <item.icon
-                    className={item.labelKey === "landing.pill_cards" ? "h-5 w-5" : "h-4 w-4 text-gold-300"}
-                    aria-hidden
-                  />
-                  {t(item.labelKey)}
-                </Link>
-              ))}
-            </div>
           </motion.div>
 
-          <motion.div className="hidden lg:block" {...panelMotion}>
-            <div className="relative">
-              <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-brand-500/20 to-accent-500/20 blur-2xl" />
-              <div className="relative rounded-2xl border border-white/15 bg-white/5 p-5 shadow-2xl backdrop-blur-md sm:p-6">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gold-300">
-                  {t("landing.hero_os_kicker")}
-                </p>
-                <p className="mt-2 text-lg font-semibold text-white">{t("landing.hero_os_title")}</p>
-                <p className="mt-1 text-base leading-relaxed text-white/75">{t("landing.hero_os_support")}</p>
-                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {HERO_SERVICES.map((item) => (
-                    <Link
-                      key={`panel-${item.labelKey}`}
-                      href={item.href}
-                      className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/8 p-4 transition hover:border-brand-300/40 hover:bg-white/12"
-                    >
-                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/20 text-gold-300">
-                        <item.icon
-                          className={item.labelKey === "landing.pill_cards" ? "h-8 w-8" : "h-5 w-5"}
-                          aria-hidden
-                        />
-                      </span>
-                      <span className="text-base font-semibold text-white">{t(item.labelKey)}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <motion.div {...panelMotion}>
+            <HeroServicePanel t={t} />
           </motion.div>
         </div>
       </div>

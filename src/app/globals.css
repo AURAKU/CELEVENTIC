@@ -1134,6 +1134,18 @@ button p.whitespace-normal {
   word-break: normal;
 }
 
+/* Onboarding intent tiles: multi-line blurbs must wrap inside each card. */
+button.onboarding-intent-tile,
+button.onboarding-intent-tile h3,
+button.onboarding-intent-tile p,
+button.onboarding-intent-tile .onboarding-intent-tile__title,
+button.onboarding-intent-tile .onboarding-intent-tile__body {
+  white-space: normal !important;
+  text-wrap: pretty !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+}
+
 /* CTA clusters: wrap the controls, never the phrase. */
 .cta-phrase-grid,
 #share .grid {

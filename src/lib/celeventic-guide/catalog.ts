@@ -19,7 +19,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     slug: "how-celeventic-works",
     title: "How Celeventic Works",
     summary: "Invite → RSVP → Admit → Guide → Celebrate → Remember. The full guest journey in one cinematic walkthrough, plus CeleYou identity.",
-    body: "Celeventic is the operating system for celebrations: hosts design invitations and run the floor; guests RSVP and enter with QR; scanners admit online or offline; Event Guide keeps programme, seating, and menu close; CeleYou is the living identity card you share with QR, NFC, or a link; gifts and Memory Vault complete the day.",
+    body: "Celeventic is the operating system for celebrations: hosts design invitations and run the floor; guests RSVP and enter with QR; scanners admit online or offline; Event Guide keeps programme, seating, and menu close; CeleYou is the living identity card you publish on Free and share with a live /u/ link, Smart QR, or NFC; gifts and Memory Vault complete the day.",
     role: "GUEST",
     category: "PLATFORM",
     status: "PUBLISHED",
@@ -32,7 +32,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     captionsEnUrl: "/guides/captions/how-celeventic-works.en.vtt",
     isNew: true,
     transcript:
-      "Welcome to Celeventic. Guests open a cinematic invitation, RSVP, and receive a personal QR pass. On event day scanners admit guests, groups, and vendors. Event Guide shows programme, seating, and menu. Guests can send gifts and upload memories. CeleYou is the living identity you share with QR, NFC, Wallet, or a link. Hosts run invitations, guests, seating, admission, gifts, tickets, marketplace, CeleYou, and Memory Vault from one dashboard.",
+      "Welcome to Celeventic. Guests open a cinematic invitation, RSVP, and receive a personal QR pass. On event day scanners admit guests, groups, and vendors. Event Guide shows programme, seating, and menu. Guests can send gifts and upload memories. CeleYou is the living identity you publish on Free and share with a live /u/ link, Smart QR, NFC, or Wallet. Hosts run invitations, guests, seating, admission, gifts, tickets, marketplace, CeleYou, and Memory Vault from one dashboard.",
     steps: steps(
       ["Invite", "Open a branded digital invitation. Envelope, seal, and media, from a link. No app required."],
       ["RSVP", "Confirm attendance for yourself and plus guests; hosts see live counts."],

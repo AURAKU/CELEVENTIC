@@ -125,13 +125,13 @@ export const MINI_TOURS: MiniTour[] = [
       {
         id: "activation",
         title: "Activation",
-        body: "A paid plan keeps the public page live. You cannot renew or upgrade until the current term ends.",
+        body: "Publish on CeleYou Free and your identity stays reachable. Optional Pro trial is 7 days with no charge when it ends. A paid Pro term adds premium tools. You cannot renew while a paid term is running.",
         targetSelector: "#studio-activation",
       },
       {
         id: "identity",
         title: "Identity",
-        body: "Name, portrait, and company. Save to publish. Guests see the saved plate.",
+        body: "Claim a unique username for /u/your-name. Add name, portrait, and company. Save to publish. Guests see the saved live plate.",
         targetSelector: "#studio-identity",
       },
       {
@@ -155,13 +155,13 @@ export const MINI_TOURS: MiniTour[] = [
       {
         id: "share",
         title: "Share",
-        body: "Share My Card sends the live public link with the plate. Copy Profile Link copies that URL. Wallet card opens the payment channels you uploaded. Hold up this card fills the screen with only the plate.",
+        body: "Share My Card sends your live activated /u/ link with the published plate. Copy Profile Link copies that URL. Wallet card opens payment channels you uploaded. Hold up this card fills the screen with only the plate.",
         targetSelector: "#share",
       },
       {
         id: "nfc",
         title: "NFC",
-        body: "A programmed NFC card opens this CeleYou. Copy the NFC link to program a card, or share the QR.",
+        body: "A programmed NFC card opens this live CeleYou. Copy the NFC link to program a card, or share the Smart QR.",
         targetSelector: "#studio-live",
       },
     ],

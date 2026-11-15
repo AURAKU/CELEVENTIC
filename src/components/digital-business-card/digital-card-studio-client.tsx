@@ -56,7 +56,11 @@ import {
   CELEYOU_TERM_LOCKED_HINT,
   CELEYOU_TERM_OPEN_HINT,
 } from "@/lib/digital-business-card/billing-rules";
-import { celeYouCameraScanUrl, celeYouNfcScanUrl } from "@/lib/digital-business-card/share-identity";
+import {
+  celeYouCameraScanUrl,
+  celeYouLiveProfileUrl,
+  celeYouNfcScanUrl,
+} from "@/lib/digital-business-card/share-identity";
 import {
   CELECARD_BIO_MAX_CHARS,
   clipCeleCardBio,
@@ -166,6 +170,7 @@ type CardRow = {
   publicToken?: string;
   nfcPublicToken?: string | null;
   lifecycleState?: string;
+  updatedAt?: string | null;
   canRenew?: boolean;
 };
 
@@ -403,6 +408,7 @@ export function DigitalCardStudioClient() {
   const [slugCustomized, setSlugCustomized] = useState(false);
   const [accountUsername, setAccountUsername] = useState("");
   const [savedUsername, setSavedUsername] = useState<string | null>(null);
+  const [primaryCardId, setPrimaryCardId] = useState<string | null>(null);
   const [usernameConfirming, setUsernameConfirming] = useState(false);
   const [baseline, setBaseline] = useState("");
   const themeFromQuery = useRef<DigitalCardThemeId | null>(null);
@@ -446,7 +452,14 @@ export function DigitalCardStudioClient() {
         }
       }
       const list = (json.data ?? []) as CardRow[];
-      const identity = (json as { identity?: { username?: string | null } }).identity;
+      const identity = (
+        json as {
+          identity?: {
+            username?: string | null;
+            primaryCardId?: string | null;
+          };
+        }
+      ).identity;
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         if (
@@ -462,6 +475,7 @@ export function DigitalCardStudioClient() {
       }
       setSavedUsername(identity?.username ?? null);
       setAccountUsername(identity?.username ?? "");
+      setPrimaryCardId(identity?.primaryCardId ?? list[0]?.id ?? null);
       setCards(list);
       const wanted =
         typeof window !== "undefined"
@@ -566,9 +580,18 @@ export function DigitalCardStudioClient() {
   }
 
   const active = useMemo(() => cards.find((c) => c.id === activeId) ?? null, [cards, activeId]);
-  const publicUrl = (accountUsername || form.slug) ? digitalCardIdentityUrl(accountUsername || form.slug, origin) : "";
-  const shareUrl = active?.publicToken ? celeYouCameraScanUrl(active.publicToken, origin) : publicUrl.startsWith("http") ? publicUrl : "";
-  const nfcShareUrl = active?.nfcPublicToken ? celeYouNfcScanUrl(active.nfcPublicToken, origin) : shareUrl;
+  const liveSlug = (active?.slug || form.slug || "").trim();
+  const publicUrl = liveSlug
+    ? celeYouLiveProfileUrl({
+        slug: liveSlug,
+        username: savedUsername || accountUsername,
+        cardId: activeId,
+        primaryCardId,
+        origin,
+      })
+    : "";
+  const shareUrl = active?.publicToken ? celeYouCameraScanUrl(active.publicToken, origin) : "";
+  const nfcShareUrl = active?.nfcPublicToken ? celeYouNfcScanUrl(active.nfcPublicToken, origin) : "";
   const qrSrc = shareUrl.startsWith("http") ? digitalCardQrImageSrc(shareUrl) : null;
   const previewTheme = applyCeleCardDesign(resolveDigitalCardTheme(form.themeId), form.design);
   const reachPreview = useMemo(
@@ -746,7 +769,7 @@ export function DigitalCardStudioClient() {
   }
 
   async function copyLink() {
-    const canonical = shareUrl || publicUrl;
+    const canonical = publicUrl;
     if (!canonical) return;
     await navigator.clipboard.writeText(canonical);
     setCopied(true);
@@ -1540,7 +1563,7 @@ export function DigitalCardStudioClient() {
                   company={form.company || "Company"}
                   avatarUrl={form.avatarUrl}
                   qrSrc={qrSrc}
-                  qrHref={form.slug ? digitalCardIdentityUrl(form.slug) : null}
+                  qrHref={publicUrl || (form.slug ? digitalCardIdentityUrl(form.slug, origin) : null)}
                   compact
                   portraitFrame={form.portraitFrame}
                   companyLogo
@@ -1566,18 +1589,24 @@ export function DigitalCardStudioClient() {
             <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
               {form.slug ? (
                 <DigitalCardShareDesk
-                  profileUrl={publicUrl || digitalCardIdentityUrl(form.slug)}
+                  profileUrl={publicUrl || digitalCardIdentityUrl(form.slug, origin)}
                   presentUrl={digitalCardPresentPath(form.slug, { immersive: true })}
                   shareUrl={shareUrl || publicUrl}
                   nfcUrl={nfcShareUrl || publicUrl}
                   cardId={activeId || undefined}
                   proximityDiscoverable={form.proximityDiscoverable}
                   onProximityChange={(value) => setForm((f) => ({ ...f, proximityDiscoverable: value }))}
+                  usePublishedPlate
+                  persistLivePlate={Boolean(publishedOnServer && !unsaved)}
                   displayName={form.displayName || "CeleYou"}
                   vcard={
                     {
                       id: activeId || "",
                       slug: form.slug,
+                      username:
+                        activeId && primaryCardId && activeId === primaryCardId
+                          ? savedUsername || accountUsername || null
+                          : null,
                       publicToken: active?.publicToken || "",
                       displayName: form.displayName || "CeleYou",
                       title: form.title || null,
@@ -1594,6 +1623,7 @@ export function DigitalCardStudioClient() {
                       connectBackEnabled: true,
                       defaultMode: "professional",
                       isLive: Boolean(active?.isLive),
+                      updatedAt: active?.updatedAt ?? null,
                     } satisfies DigitalCardPublicPayload
                   }
                 />

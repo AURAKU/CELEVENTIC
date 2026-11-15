@@ -17,7 +17,8 @@ import { CeleCardStageField, DigitalCardAtmosphere } from "@/components/digital-
 import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { applyCeleCardDesign } from "@/lib/digital-business-card/design";
 import { CELECARD_REACH_INK, celecardAccentOnStage, celecardDockFinish, celecardKickerInk, celecardReachPlate, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
-import { digitalCardIdentityUrl, digitalCardQrImageSrc, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
+import { digitalCardQrImageSrc, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
+import { celeYouLiveProfileUrl } from "@/lib/digital-business-card/share-identity";
 import { listDigitalCardReachItems } from "@/lib/digital-business-card/socials";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
 import {
@@ -30,9 +31,9 @@ import { COMPANY_NAME } from "@/lib/constants";
 import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
 import {
   celeCardShareCommentary,
-  celeCardShareImageUrls,
   celeCardShareMessage,
   celeCardShareTitle,
+  celeYouLivePlateShareUrls,
 } from "@/lib/digital-business-card/share";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -77,7 +78,11 @@ export function DigitalCardPublicView({
   const headingInk = celecardAccentOnStage(theme.accent, darkStage);
   const kickerInk = celecardKickerInk(theme.accent, darkStage);
   const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
-  const profileUrl = digitalCardIdentityUrl(card.slug, origin);
+  const profileUrl = celeYouLiveProfileUrl({
+    slug: card.slug,
+    username: card.username,
+    origin,
+  });
   const qrSrc = scanUrl ? digitalCardQrImageSrc(scanUrl) : "";
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -132,7 +137,10 @@ export function DigitalCardPublicView({
     }
   }, [card, origin, saveState, t]);
 
-  const plateShareUrls = useMemo(() => celeCardShareImageUrls(card.slug, card.id), [card.slug, card.id]);
+  const plateShareUrls = useMemo(
+    () => celeYouLivePlateShareUrls(card.slug, card.updatedAt || card.id),
+    [card.slug, card.updatedAt, card.id]
+  );
   const shareCommentary = celeCardShareCommentary(card);
 
   const shareCard = useCallback(async () => {
@@ -144,6 +152,7 @@ export function DigitalCardPublicView({
       url: shareUrl,
       imageUrl: plateShareUrls,
       persistPlateCardId: card.id || null,
+      // Prefer the on-screen live plate; fall back to published PNG/OG of this card.
       capturePlate: true,
     });
     setSharing(false);
@@ -160,21 +169,31 @@ export function DigitalCardPublicView({
 
   const copyCard = useCallback(async () => {
     const shareUrl = profileUrl || scanUrl;
+    if (!shareUrl) return;
     setCopying(true);
-    const result = await copyCeleYouProfile({
-      title: celeCardShareTitle(card),
-      text: celeCardShareMessage(card, shareUrl),
-      url: shareUrl,
-      imageUrl: plateShareUrls,
-      persistPlateCardId: card.id || null,
-      capturePlate: true,
-    });
-    setCopying(false);
-    if (result === "copied") {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
       trackCeleYouGuestEvent(card.slug, "share_tap");
       setShareOpen(false);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const result = await copyCeleYouProfile({
+        title: celeCardShareTitle(card),
+        text: celeCardShareMessage(card, shareUrl),
+        url: shareUrl,
+        imageUrl: plateShareUrls,
+        persistPlateCardId: null,
+        capturePlate: false,
+      });
+      if (result === "copied") {
+        trackCeleYouGuestEvent(card.slug, "share_tap");
+        setShareOpen(false);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } finally {
+      setCopying(false);
     }
   }, [card, plateShareUrls, profileUrl, scanUrl]);
 

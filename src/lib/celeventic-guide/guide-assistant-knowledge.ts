@@ -64,7 +64,7 @@ Key URLs:
 
   return `
 PRODUCT
-Celeventic is the Intelligent Event Operating System for celebrations (weddings, funerals, birthdays, corporate, church, private). Guests never need an app. Everything runs from secure web links. Hosts run invitations, guests, seating, QR admission, Event Guide, CeleYou, gifts, tickets, marketplace vendors, communications, and Memory Vault from one dashboard. CeleYou is the living identity card: design it, pay a plan, share with QR, NFC, Wallet, or a link. Guests open it without an account.
+Celeventic is the Intelligent Event Operating System for celebrations (weddings, funerals, birthdays, corporate, church, private). Guests never need an app. Everything runs from secure web links. Hosts run invitations, guests, seating, QR admission, Event Guide, CeleYou, gifts, tickets, marketplace vendors, communications, and Memory Vault from one dashboard. CeleYou is the living identity card: claim a username, design My CeleYou Card, publish on Free, optionally try Pro for 7 days, and share the live /u/ link, Smart QR, NFC, or Wallet. Guests open it without an account.
 
 GUEST JOURNEY (Invite → Remember)
 ${journey}

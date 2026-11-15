@@ -21,6 +21,8 @@ export type DigitalCardPresentationMode = "live" | "courtesy" | "suspended" | "u
 export type DigitalCardPublicPayload = {
   id: string;
   slug: string;
+  /** Claimed CeleYou username when this plate is the account primary. Share/copy prefer this handle. */
+  username?: string | null;
   publicToken: string;
   displayName: string;
   title: string | null;
@@ -38,6 +40,8 @@ export type DigitalCardPublicPayload = {
   connectBackEnabled: boolean;
   defaultMode: string;
   isLive: boolean;
+  /** Used to cache-bust Share My Card plate fetches after publish. */
+  updatedAt?: string | Date | null;
   /** live = full public card. courtesy = sanitized Continuity Experience. */
   presentationMode?: DigitalCardPresentationMode;
   /** Public finishing dummy. Never write Connect Back or view counts. */

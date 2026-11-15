@@ -15,7 +15,7 @@ import {
   digitalCardQrImageSrc,
   type DigitalCardPublicPayload,
 } from "@/lib/digital-business-card/types";
-import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
+import { celeYouCameraScanUrl, celeYouLiveProfileUrl } from "@/lib/digital-business-card/share-identity";
 import { sanitizePublicUrl } from "@/lib/app-url";
 import {
   DigitalCardContinuityView,
@@ -84,7 +84,11 @@ export function DigitalCardPresentView({
   const rootRef = useRef<HTMLElement>(null);
   const scanUrl = celeYouCameraScanUrl(card.publicToken, origin);
   const profileUrl = digitalCardPublicUrl(card.slug);
-  const shareUrl = sanitizePublicUrl(digitalCardIdentityUrl(card.slug, origin), origin);
+  const shareUrl = sanitizePublicUrl(
+    celeYouLiveProfileUrl({ slug: card.slug, username: card.username, origin }) ||
+      digitalCardIdentityUrl(card.slug, origin),
+    origin
+  );
   const qrSrc = scanUrl ? digitalCardQrImageSrc(scanUrl, 1024) : "";
   const { sharingLive, sent, sendFromCard } = useEmbeddedCardShare({
     card,

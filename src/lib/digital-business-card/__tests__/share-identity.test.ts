@@ -6,6 +6,8 @@ import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
 import {
   celeYouAbsoluteGuestPayload,
   celeYouCameraScanUrl,
+  celeYouLiveProfileHandle,
+  celeYouLiveProfileUrl,
   celeYouNfcScanUrl,
   celeYouScanLandingUrl,
   celeYouShareIdentity,
@@ -31,6 +33,46 @@ describe("CeleYou unique share identity", () => {
     assert.equal(identity.nfcUrl, "https://www.celeventic.com/n/cmnfc_kojo");
     assert.equal(shareIdentityArtifactsAreUnique(identity), true);
     assert.equal(shareArtifactsLandOnSameProfile(identity), true);
+  });
+
+  it("uses the claimed username for the primary CeleYou and the slug for secondary plates", () => {
+    assert.equal(
+      celeYouLiveProfileHandle({
+        slug: "kojo-work",
+        username: "kojo",
+        cardId: "primary",
+        primaryCardId: "primary",
+      }),
+      "kojo"
+    );
+    assert.equal(
+      celeYouLiveProfileHandle({
+        slug: "kojo-work",
+        username: "kojo",
+        cardId: "secondary",
+        primaryCardId: "primary",
+      }),
+      "kojo-work"
+    );
+    assert.equal(
+      celeYouLiveProfileUrl({
+        slug: "kojo-work",
+        username: "kojo",
+        cardId: "primary",
+        primaryCardId: "primary",
+        origin: "http://localhost:3001",
+      }),
+      `${DEFAULT_PRODUCTION_URL}/u/kojo`
+    );
+    const named = celeYouShareIdentity({
+      slug: "kojo-work",
+      username: "kojo",
+      publicToken: "cmqr_kojo",
+      nfcToken: "cmnfc_kojo",
+      cardId: "primary",
+      primaryCardId: "primary",
+    });
+    assert.equal(named.profileUrl, `${DEFAULT_PRODUCTION_URL}/u/kojo`);
   });
 
   it("rejects shared or reserved dummy tokens for real cardholders", () => {

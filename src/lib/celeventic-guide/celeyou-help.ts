@@ -5,7 +5,7 @@ export type ContextHelpTopic = {
 
 /** Cardholder Studio Help. Explains the desk the owner uses, not the guest page. */
 export const CELEYOU_STUDIO_HELP_INTRO =
-  "This Studio is for you, the cardholder. Guests never see it. They open your public CeleYou from a link, QR, or a programmed NFC card. No app and no account.";
+  "This Studio is for you, the cardholder. Guests never see it. They open your live public CeleYou from a link, QR, or a programmed NFC card. No app and no account.";
 
 export const CELEYOU_STUDIO_HELP_TOPICS: ContextHelpTopic[] = [
   {
@@ -14,11 +14,15 @@ export const CELEYOU_STUDIO_HELP_TOPICS: ContextHelpTopic[] = [
   },
   {
     title: "Activation",
-    body: "Choose a plan so the public page stays live. While a paid term is running you cannot renew or upgrade until that term ends.",
+    body: "Publish on CeleYou Free and your public identity stays reachable. Try CeleYou Pro free for 7 days for premium studio tools, extra published cards, and advanced analytics. No payment is required to start the trial, and nothing is charged when it ends. A paid Pro term unlocks the same premium tools for longer. You cannot renew or upgrade while a paid term is still running.",
+  },
+  {
+    title: "Username",
+    body: "Your unique public address is celeventic.com/u/your-username. Display name can match other people. Username cannot. Share My Card and Copy Profile Link use this live address for your primary CeleYou.",
   },
   {
     title: "Identity and Design",
-    body: "Name, portrait, company, and look live here. Save to publish changes. Guests see the saved plate, not the draft.",
+    body: "Name, portrait, company, and look live here. Save to publish changes. Guests see the saved live plate, not an unsaved draft.",
   },
   {
     title: "Contact and Reach",
@@ -34,11 +38,11 @@ export const CELEYOU_STUDIO_HELP_TOPICS: ContextHelpTopic[] = [
   },
   {
     title: "Share My Card",
-    body: "Opens the share sheet with your live public link and the current plate, so WhatsApp and other apps show the card.",
+    body: "Opens the share sheet with your live activated public link (your /u/ username when claimed) and the published plate. WhatsApp and similar apps show that live card, not a studio draft.",
   },
   {
     title: "Copy Profile Link",
-    body: "Copies the public URL of your live CeleYou. Paste it in a message and the live plate appears as the preview.",
+    body: "Copies the live public URL of this activated CeleYou. Paste it anywhere. Recipients open the same plate guests see from QR or NFC.",
   },
   {
     title: "Save Contact",
@@ -54,7 +58,7 @@ export const CELEYOU_STUDIO_HELP_TOPICS: ContextHelpTopic[] = [
   },
   {
     title: "NFC",
-    body: "A programmed NFC card opens this CeleYou. Copy the NFC link to program a card, or share the QR.",
+    body: "A programmed NFC card opens this live CeleYou. Copy the NFC link to program a card, or share the Smart QR. Tap-to-Connect is optional nearby join for phones that support it.",
   },
 ];
 
@@ -64,7 +68,7 @@ export const CELEYOU_GUEST_HELP_INTRO =
 export const CELEYOU_GUEST_HELP_TOPICS: ContextHelpTopic[] = [
   {
     title: "Open the card",
-    body: "Scan the QR with your camera, tap a programmed NFC card, or open the share link.",
+    body: "Scan the Smart QR with your camera, tap a programmed NFC card, or open the share link to their live /u/ profile.",
   },
   {
     title: "Hold the plate",
@@ -72,7 +76,11 @@ export const CELEYOU_GUEST_HELP_TOPICS: ContextHelpTopic[] = [
   },
   {
     title: "Share",
-    body: "Sends this CeleYou’s public link. WhatsApp and similar apps show the live plate with the link.",
+    body: "Sends this CeleYou’s live public link. WhatsApp and similar apps show the live plate with the link.",
+  },
+  {
+    title: "Copy link",
+    body: "Copies the live public URL so you can paste it in a message. It opens the same activated card.",
   },
   {
     title: "Save this contact",
