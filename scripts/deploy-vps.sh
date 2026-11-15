@@ -26,6 +26,7 @@ BACKUP_DIR="${BACKUP_ROOT}/${TIMESTAMP}"
 PREV_COMMIT=""
 NEW_COMMIT=""
 SKIP_INSTALL=0
+SWAP_DONE=0
 
 for arg in "$@"; do
   case "$arg" in
@@ -38,16 +39,30 @@ die() { printf '[deploy-vps] ERROR: %s\n' "$*" >&2; exit 1; }
 
 restore_on_failure() {
   local code=$?
-  log "Failure detected (exit ${code}). Rolling back DB/.next and restarting ${APP_NAME}..."
+  log "Failure detected (exit ${code})."
   rm -rf "${APP_DIR}/.next-new" 2>/dev/null || true
-  if [[ -f "${BACKUP_DIR}/production.db" ]]; then
-    cp -a "${BACKUP_DIR}/production.db" "${APP_DIR}/${DB_PATH}"
-    log "Restored SQLite from ${BACKUP_DIR}/production.db"
+
+  # If we already swapped in a build whose meta matches NEW_COMMIT, keep it.
+  # Slow cold-start must not throw away a successful compile.
+  local keep_new=0
+  if [[ "${SWAP_DONE}" -eq 1 && -n "${NEW_COMMIT}" && -f "${APP_DIR}/.next/celeventic-build-meta.json" ]]; then
+    if grep -q "${NEW_COMMIT:0:12}" "${APP_DIR}/.next/celeventic-build-meta.json" 2>/dev/null; then
+      keep_new=1
+      log "Keeping swapped .next (build meta matches ${NEW_COMMIT:0:12}). Not rolling back a good build."
+    fi
   fi
-  if [[ -d "${BACKUP_DIR}/next-build" ]]; then
-    rm -rf "${APP_DIR}/.next"
-    cp -a "${BACKUP_DIR}/next-build" "${APP_DIR}/.next"
-    log "Restored .next from ${BACKUP_DIR}/next-build"
+
+  if [[ "$keep_new" -eq 0 ]]; then
+    log "Rolling back DB/.next and restarting ${APP_NAME}..."
+    if [[ -f "${BACKUP_DIR}/production.db" ]]; then
+      cp -a "${BACKUP_DIR}/production.db" "${APP_DIR}/${DB_PATH}"
+      log "Restored SQLite from ${BACKUP_DIR}/production.db"
+    fi
+    if [[ -d "${BACKUP_DIR}/next-build" ]]; then
+      rm -rf "${APP_DIR}/.next"
+      cp -a "${BACKUP_DIR}/next-build" "${APP_DIR}/.next"
+      log "Restored .next from ${BACKUP_DIR}/next-build"
+    fi
   fi
   (
     cd "${APP_DIR}"
@@ -167,22 +182,31 @@ log "Edwin design step finished (missing original invite is a skip, not a rollba
 log "Atomic .next swap"
 rm -rf .next
 mv .next-new .next
+SWAP_DONE=1
 
 log "Restarting only ${APP_NAME}"
 pm2 restart "$APP_NAME" --update-env
 pm2 restart celeventic-video-worker --update-env 2>/dev/null || true
 pm2 save
 
-# Next cold-start can take ~15–40s after a large build; wait before failing.
-ok=0
-for i in $(seq 1 30); do
-  if curl -fsS "$HEALTH_LOCAL" >/dev/null 2>&1; then
-    ok=1
-    break
-  fi
-  sleep 2
-done
-[[ "$ok" -eq 1 ]] || die "Local health failed after restart: ${HEALTH_LOCAL}"
+# Large Next apps can take 1–3 minutes to accept traffic after swap.
+wait_for_health() {
+  local tries="${1:-90}"
+  local i
+  for i in $(seq 1 "$tries"); do
+    if curl -fsS "$HEALTH_LOCAL" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
+if ! wait_for_health 90; then
+  log "Health still down after 180s — one more restart, then wait again"
+  pm2 restart "$APP_NAME" --update-env || true
+  wait_for_health 60 || die "Local health failed after restart: ${HEALTH_LOCAL}"
+fi
 bash scripts/verify-build-commit.sh "$NEW_COMMIT" "$HEALTH_LOCAL" || die "Local build integrity check failed"
 curl -fsS "$HEALTH_PUBLIC" >/dev/null || log "Public health check failed (DNS/firewall?) — local passed"
 if curl -fsS "$HEALTH_PUBLIC" >/dev/null 2>&1; then
