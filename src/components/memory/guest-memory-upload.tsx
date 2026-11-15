@@ -53,6 +53,7 @@ interface GuestMemoryUploadProps {
   windowOpen: boolean;
   memoriesUrl?: string;
   invitationUrl?: string;
+  thankYouUrl?: string;
   themeVars?: MemoryThemeVars;
   initialHasConsent?: boolean;
   approvalRequired?: boolean;
@@ -183,6 +184,7 @@ export function GuestMemoryUpload({
   windowOpen,
   memoriesUrl,
   invitationUrl,
+  thankYouUrl,
   themeVars,
   initialHasConsent = false,
   approvalRequired = true,
@@ -786,7 +788,7 @@ export function GuestMemoryUpload({
         ) : null}
       </div>
 
-      {memoriesUrl || invitationUrl ? (
+      {memoriesUrl || thankYouUrl || invitationUrl ? (
         <nav
           aria-label="Memory upload navigation"
           className="mx-auto mt-6 flex max-w-xl flex-col gap-3 pb-2"
@@ -801,14 +803,14 @@ export function GuestMemoryUpload({
               View the album
             </a>
           ) : null}
-          {invitationUrl ? (
+          {thankYouUrl || invitationUrl ? (
             <a
-              href={invitationUrl}
+              href={thankYouUrl || invitationUrl}
               className="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2.5 rounded-full px-5 font-[family-name:var(--font-cinzel)] text-[clamp(0.72rem,1.5vw,0.84rem)] font-medium uppercase tracking-[0.16em] transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               style={{ ...outlineButton, outlineColor: ACCENT }}
             >
               <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
-              Back to invitation
+              {thankYouUrl ? "Back to thank you" : "Back to invitation"}
             </a>
           ) : null}
         </nav>

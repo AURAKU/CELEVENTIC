@@ -14,6 +14,7 @@ export default function MemoryUploadPage() {
   const [data, setData] = useState<{
     event: { title: string; hostName: string; slug: string; subtitle?: string | null };
     invitationLink: string | null;
+    thankYouHref?: string | null;
     viewToken?: string;
     hasConsent?: boolean;
     theme?: { cssVars?: CSSProperties };
@@ -49,6 +50,11 @@ export default function MemoryUploadPage() {
   const invitationUrl = data.invitationLink
     ? `${baseUrl}/invite/${data.invitationLink}`
     : `${baseUrl}/events/${data.event.slug}`;
+  const thankYouUrl = data.thankYouHref
+    ? data.thankYouHref.startsWith("http")
+      ? data.thankYouHref
+      : `${baseUrl}${data.thankYouHref}`
+    : null;
 
   return (
     <div
@@ -74,6 +80,7 @@ export default function MemoryUploadPage() {
         windowOpen={data.settings.windowOpen && data.settings.isEnabled}
         memoriesUrl={memoriesUrl}
         invitationUrl={invitationUrl}
+        thankYouUrl={thankYouUrl ?? undefined}
         themeVars={data.theme?.cssVars as MemoryThemeCssVars | undefined}
         initialHasConsent={Boolean(data.hasConsent)}
         approvalRequired={Boolean(data.settings.approvalRequired)}
