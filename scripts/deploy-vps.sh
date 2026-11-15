@@ -39,6 +39,7 @@ die() { printf '[deploy-vps] ERROR: %s\n' "$*" >&2; exit 1; }
 restore_on_failure() {
   local code=$?
   log "Failure detected (exit ${code}). Rolling back DB/.next and restarting ${APP_NAME}..."
+  rm -rf "${APP_DIR}/.next-new" 2>/dev/null || true
   if [[ -f "${BACKUP_DIR}/production.db" ]]; then
     cp -a "${BACKUP_DIR}/production.db" "${APP_DIR}/${DB_PATH}"
     log "Restored SQLite from ${BACKUP_DIR}/production.db"
@@ -121,7 +122,24 @@ fi
 log "Prisma generate"
 npx prisma generate
 
-log "Stopping only ${APP_NAME} before migrate (Spark & Drive untouched)"
+# Build while the old process still serves traffic so visitors do not sit on
+# nginx 502 for the full Next compile window.
+log "Building Next.js into .next-new (live app stays online)"
+rm -rf .next-new
+export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
+export CELEVENTIC_BUILD_COMMIT="$NEW_COMMIT"
+export CELEVENTIC_BUILD_BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+export NEXT_DIST_DIR=.next-new
+node scripts/write-build-meta.mjs
+npm run build
+NEXT_DIST_DIR=.next-new node scripts/write-build-meta.mjs --emit-next
+[[ -f .next-new/BUILD_ID ]] || die ".next-new/BUILD_ID missing after build"
+[[ -f .next-new/celeventic-build-meta.json ]] || die ".next-new/celeventic-build-meta.json missing after build"
+unset NEXT_DIST_DIR
+log "BUILD_ID=$(cat .next-new/BUILD_ID)"
+log "BUILD_META=$(tr -d '\n' < .next-new/celeventic-build-meta.json)"
+
+log "Stopping only ${APP_NAME} for migrate + atomic .next swap (Spark & Drive untouched)"
 pm2 stop "$APP_NAME"
 
 log "Additive CeleYou SQLite columns (duplicate-safe, no overwrite)"
@@ -146,26 +164,25 @@ log "Applying the published Edwin & Lordina design if that invitation exists"
 npx tsx scripts/apply-edwin-live-design.ts
 log "Edwin design step finished (missing original invite is a skip, not a rollback)"
 
-log "Building Next.js (previous .next already backed up)"
+log "Atomic .next swap"
 rm -rf .next
-export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
-export CELEVENTIC_BUILD_COMMIT="$NEW_COMMIT"
-export CELEVENTIC_BUILD_BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-# Bake commit into the server bundle so a stale PM2/.env SHA cannot win.
-node scripts/write-build-meta.mjs
-npm run build
-[[ -f .next/BUILD_ID ]] || die ".next/BUILD_ID missing after build"
-[[ -f .next/celeventic-build-meta.json ]] || die ".next/celeventic-build-meta.json missing after build"
-log "BUILD_ID=$(cat .next/BUILD_ID)"
-log "BUILD_META=$(tr -d '\n' < .next/celeventic-build-meta.json)"
+mv .next-new .next
 
 log "Restarting only ${APP_NAME}"
 pm2 restart "$APP_NAME" --update-env
 pm2 restart celeventic-video-worker --update-env 2>/dev/null || true
 pm2 save
 
-sleep 3
-curl -fsS "$HEALTH_LOCAL" >/dev/null || die "Local health failed: ${HEALTH_LOCAL}"
+# Next cold-start can take ~15–40s after a large build; wait before failing.
+ok=0
+for i in $(seq 1 30); do
+  if curl -fsS "$HEALTH_LOCAL" >/dev/null 2>&1; then
+    ok=1
+    break
+  fi
+  sleep 2
+done
+[[ "$ok" -eq 1 ]] || die "Local health failed after restart: ${HEALTH_LOCAL}"
 bash scripts/verify-build-commit.sh "$NEW_COMMIT" "$HEALTH_LOCAL" || die "Local build integrity check failed"
 curl -fsS "$HEALTH_PUBLIC" >/dev/null || log "Public health check failed (DNS/firewall?) — local passed"
 if curl -fsS "$HEALTH_PUBLIC" >/dev/null 2>&1; then
@@ -173,9 +190,15 @@ if curl -fsS "$HEALTH_PUBLIC" >/dev/null 2>&1; then
     || die "Public health commit mismatch — deployed process is stale or wrong host"
 fi
 
-log "Smoke: health + home"
-curl -fsS -o /dev/null -w "live home %{http_code}\n" https://www.celeventic.com/ || true
-curl -fsS -o /dev/null -w "live health %{http_code}\n" https://www.celeventic.com/api/health || true
+log "Smoke: health + home + key routes (no 502)"
+for path in / /api/health /discover /invite/madam-gladys-ama-dzikpo /auth/login; do
+  code="$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 "https://www.celeventic.com${path}" || echo 000)"
+  log "smoke ${path} -> ${code}"
+  case "$code" in
+    200|301|302|303|307|308) ;;
+    *) log "WARNING: unexpected status ${code} for ${path}" ;;
+  esac
+done
 
 # Event Guide surfaces must remain reachable after metadata-only deploys.
 curl -fsS -o /dev/null -w "event-guide public shell %{http_code}\n" \
