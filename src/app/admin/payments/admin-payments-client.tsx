@@ -22,6 +22,11 @@ interface PaymentRow {
   status: string;
   createdAt: string;
   user: { name: string; email: string | null } | null;
+  eventId?: string | null;
+  eventSlug?: string | null;
+  contributor?: string | null;
+  payerEmail?: string | null;
+  displayPayer?: string | null;
 }
 
 interface PaymentLogRow {
@@ -175,7 +180,8 @@ export function AdminPaymentsClient({ initial, initialTotal }: { initial: Paymen
                 <thead>
                   <tr className="border-b bg-slate-50 text-left text-slate-500">
                     <th className="p-3">Reference</th>
-                    <th className="p-3">User</th>
+                    <th className="p-3">Payer</th>
+                    <th className="p-3">Event</th>
                     <th className="p-3">Amount</th>
                     <th className="p-3">Provider</th>
                     <th className="p-3">Purpose</th>
@@ -187,7 +193,15 @@ export function AdminPaymentsClient({ initial, initialTotal }: { initial: Paymen
                   {payments.map((p) => (
                     <tr key={p.id} className="border-b last:border-0">
                       <td className="p-3 font-mono text-xs">{p.reference}</td>
-                      <td className="p-3">{p.user?.name ?? ", "}</td>
+                      <td className="p-3">
+                        <div>{p.displayPayer ?? p.user?.name ?? "Guest"}</div>
+                        {(p.payerEmail || p.user?.email) && (
+                          <div className="text-xs text-slate-500">{p.payerEmail ?? p.user?.email}</div>
+                        )}
+                      </td>
+                      <td className="p-3 text-xs text-slate-600">
+                        {p.eventSlug ?? p.eventId ?? "—"}
+                      </td>
                       <td className="p-3 font-medium">{formatCurrency(p.amount)}</td>
                       <td className="p-3">{p.provider}</td>
                       <td className="p-3">{p.purpose.replace(/_/g, " ")}</td>
