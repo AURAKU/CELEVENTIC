@@ -30,6 +30,7 @@ export default function MemoryTokenGalleryPage() {
       subtitle?: string | null;
       lede?: string | null;
       invitationHref?: string | null;
+      thankYouHref?: string | null;
     };
     allowDownloads: boolean;
     upload?: AlbumUploadConfig | null;
@@ -95,6 +96,7 @@ export default function MemoryTokenGalleryPage() {
       upload={data.upload}
       onRefresh={() => void loadGallery()}
       invitationHref={data.event.invitationHref}
+      thankYouHref={data.event.thankYouHref}
     />
   );
 }

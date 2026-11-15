@@ -53,7 +53,7 @@ export async function GET(
     canModerate,
     canRemoveMedia,
   });
-  const [{ publicTheme, identity }, uploadToken, invitations] = await Promise.all([
+  const [{ publicTheme, identity }, uploadToken, invitations, thankYouPage] = await Promise.all([
     eventMemoryThemeService.resolveForEvent(record.eventId, {
       title: record.event.title,
       hostName: record.event.hostName,
@@ -63,6 +63,10 @@ export async function GET(
       where: { eventId: record.eventId, status: "ACTIVE", archivedAt: null },
       select: { uniqueLink: true, slug: true, isGeneralPass: true, templateId: true },
       orderBy: { createdAt: "asc" },
+    }),
+    prisma.thankYouPage.findUnique({
+      where: { eventId: record.eventId },
+      select: { status: true },
     }),
   ]);
 
@@ -79,6 +83,10 @@ export async function GET(
         subtitle: identity.subtitle,
         lede: identity.lede,
         invitationHref: canonicalGuestInviteHref(record.event.slug, invitations),
+        thankYouHref:
+          thankYouPage?.status === "PUBLISHED" && record.event.slug
+            ? `/events/${record.event.slug}/thank-you`
+            : null,
       },
       allowDownloads: settings.allowDownloads,
       upload: {

@@ -23,6 +23,7 @@ export default function EventMemoriesBySlugPage() {
       subtitle?: string | null;
       lede?: string | null;
       invitationHref?: string | null;
+      thankYouHref?: string | null;
     };
     allowDownloads: boolean;
     upload?: AlbumUploadConfig | null;
@@ -80,6 +81,7 @@ export default function EventMemoriesBySlugPage() {
       upload={data.upload}
       onRefresh={loadGallery}
       invitationHref={data.event.invitationHref}
+      thankYouHref={data.event.thankYouHref}
     />
   );
 }
