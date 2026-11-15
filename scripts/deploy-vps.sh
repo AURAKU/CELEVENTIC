@@ -184,8 +184,14 @@ rm -rf .next
 mv .next-new .next
 SWAP_DONE=1
 
-log "Restarting only ${APP_NAME}"
-pm2 restart "$APP_NAME" --update-env
+log "Restarting only ${APP_NAME} from ecosystem (PORT=3001 locked)"
+# Prefer delete+start from ecosystem so PORT/HOSTNAME cannot drift after --update-env.
+if [[ -f "${APP_DIR}/ecosystem.config.js" ]]; then
+  pm2 delete "$APP_NAME" 2>/dev/null || true
+  pm2 start "${APP_DIR}/ecosystem.config.js" --only "$APP_NAME"
+else
+  pm2 restart "$APP_NAME" --update-env
+fi
 pm2 restart celeventic-video-worker --update-env 2>/dev/null || true
 pm2 save
 
@@ -202,10 +208,27 @@ wait_for_health() {
   return 1
 }
 
+dump_listen_debug() {
+  log "Debug: ports + last logs (PORT mismatch is a common 502 cause)"
+  (ss -lntp 2>/dev/null || netstat -lntp 2>/dev/null || true) | grep -E ':(3000|3001)\b' || log "No listener on 3000/3001"
+  pm2 describe "$APP_NAME" 2>/dev/null | egrep 'status|restarts|script|exec cwd|PORT|node' || true
+  pm2 logs "$APP_NAME" --lines 40 --nostream 2>/dev/null || true
+}
+
 if ! wait_for_health 90; then
-  log "Health still down after 180s — one more restart, then wait again"
-  pm2 restart "$APP_NAME" --update-env || true
-  wait_for_health 60 || die "Local health failed after restart: ${HEALTH_LOCAL}"
+  log "Health still down after 180s — reloading from ecosystem, then wait again"
+  dump_listen_debug
+  if [[ -f "${APP_DIR}/ecosystem.config.js" ]]; then
+    pm2 delete "$APP_NAME" 2>/dev/null || true
+    pm2 start "${APP_DIR}/ecosystem.config.js" --only "$APP_NAME" || true
+    pm2 save || true
+  else
+    pm2 restart "$APP_NAME" --update-env || true
+  fi
+  wait_for_health 60 || {
+    dump_listen_debug
+    die "Local health failed after restart: ${HEALTH_LOCAL}"
+  }
 fi
 bash scripts/verify-build-commit.sh "$NEW_COMMIT" "$HEALTH_LOCAL" || die "Local build integrity check failed"
 curl -fsS "$HEALTH_PUBLIC" >/dev/null || log "Public health check failed (DNS/firewall?) — local passed"

@@ -39,6 +39,10 @@ module.exports = {
       exec_mode: "fork",
       env: {
         NODE_ENV: "production",
+        // nginx + deploy health probe expect 3001. Without this, `pm2 restart --update-env`
+        // can drop a previously injected PORT and Next falls back to 3000 → live 502s.
+        PORT: "3001",
+        HOSTNAME: "127.0.0.1",
         CELEVENTIC_WEB_INSTANCES: "1",
       },
       autorestart: true,
