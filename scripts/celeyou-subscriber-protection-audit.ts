@@ -14,12 +14,32 @@ import {
   summarizeCeleYouSubscriptionAudit,
 } from "../src/lib/digital-business-card/subscriber-protection";
 
+type TrialAuditRow = {
+  userId: string;
+  status: string;
+  startedAt: Date | null;
+  expiresAt: Date | null;
+};
+
 async function main() {
   const prisma = new PrismaClient();
   const now = new Date();
   const flags = resolveCeleYouSubscriptionFeatureFlags();
   try {
-    const trialDelegate = (prisma as { celeYouTrialRecord?: { findMany: Function } }).celeYouTrialRecord;
+    const trialDelegate = (
+      prisma as {
+        celeYouTrialRecord?: {
+          findMany: (args: {
+            select: {
+              userId: true;
+              status: true;
+              startedAt: true;
+              expiresAt: true;
+            };
+          }) => Promise<TrialAuditRow[]>;
+        };
+      }
+    ).celeYouTrialRecord;
     const [cards, trials, pendingPayments, successPayments, grants, nfc] = await Promise.all([
       prisma.digitalBusinessCard.findMany({
         where: { deletedAt: null },
@@ -43,7 +63,7 @@ async function main() {
         ? trialDelegate.findMany({
             select: { userId: true, status: true, startedAt: true, expiresAt: true },
           })
-        : Promise.resolve([] as Array<{ userId: string; status: string; startedAt: Date | null; expiresAt: Date | null }>),
+        : Promise.resolve([] as TrialAuditRow[]),
       prisma.payment.count({
         where: { purpose: "ADVERTISING", status: "PENDING" },
       }),
@@ -55,8 +75,12 @@ async function main() {
       prisma.smartCardNfcDevice.count({ where: { status: { not: "REVOKED" } } }),
     ]);
 
-    const paidUsers = new Set(successPayments.map((row) => row.userId));
-    const trialByUser = new Map(trials.map((row) => [row.userId, row]));
+    const paidUsers = new Set(
+      successPayments.map((row: { userId: string | null }) => row.userId).filter(Boolean) as string[]
+    );
+    const trialByUser = new Map(
+      (trials as TrialAuditRow[]).map((row) => [row.userId, row] as const)
+    );
     const byUser = new Map<string, typeof cards>();
     for (const card of cards) {
       const list = byUser.get(card.userId) ?? [];
