@@ -43,6 +43,7 @@ export interface ThankYouMemoryItem {
   caption?: string | null;
   uploaderName?: string | null;
   thumbnailUrl?: string | null;
+  createdAt?: string | Date | null;
 }
 
 export interface ThankYouKeepsakeExperienceProps {
@@ -775,6 +776,52 @@ export function ThankYouKeepsakeExperience(props: ThankYouKeepsakeExperienceProp
 
 const HIGHLIGHTS_SLIDE_MS = 4200;
 
+function highlightFrameStyle(accentColor: string, backgroundColor: string) {
+  return {
+    border: `1.5px solid ${accentColor}66`,
+    boxShadow: [
+      `0 0 0 6px ${backgroundColor}`,
+      `0 0 0 7px ${accentColor}40`,
+      "0 28px 60px rgba(0,0,0,0.35)",
+    ].join(", "),
+  } as const;
+}
+
+function ThankYouHighlightMedia({
+  memory,
+  priority,
+  kenBurns,
+}: {
+  memory: ThankYouMemoryItem;
+  priority?: boolean;
+  kenBurns?: boolean;
+}) {
+  if (memory.mediaType === "video") {
+    return (
+      <CeleventicVideo
+        src={memory.mediaUrl}
+        poster={memory.thumbnailUrl ?? undefined}
+        className="h-full w-full object-cover"
+        pauseOffscreen
+        preload={priority ? "metadata" : "none"}
+      />
+    );
+  }
+  return (
+    <CeleventicImage
+      src={memory.thumbnailUrl || memory.mediaUrl}
+      alt={memory.caption || "Event memory"}
+      fill
+      className={cn(
+        "object-cover transition-transform duration-[4200ms] ease-out",
+        kenBurns ? "scale-105" : "scale-100"
+      )}
+      sizes="(max-width: 768px) 100vw, 768px"
+      priority={priority}
+    />
+  );
+}
+
 function ThankYouHighlightsReel({
   memories,
   accentColor,
@@ -788,7 +835,14 @@ function ThankYouHighlightsReel({
   radiusClass: string;
   reduceMotion: boolean;
 }) {
-  const slides = memories.slice(0, 24);
+  // Chronological so restored/older memories are not buried behind the newest upload.
+  const slides = [...memories]
+    .sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return aTime - bTime;
+    })
+    .slice(0, 24);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const active = slides[index] ?? slides[0];
@@ -803,18 +857,65 @@ function ThankYouHighlightsReel({
 
   if (!active) return null;
 
+  const frame = highlightFrameStyle(accentColor, backgroundColor);
+
+  // Few photos: show them all at once so nothing feels "missing".
+  if (slides.length >= 2 && slides.length <= 6) {
+    return (
+      <div className="mx-auto w-full max-w-3xl">
+        <div
+          className={cn(
+            "grid gap-3",
+            slides.length === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 sm:grid-cols-3"
+          )}
+        >
+          {slides.map((memory, slideIndex) => (
+            <div
+              key={memory.id}
+              className={cn("relative aspect-[4/5] overflow-hidden sm:aspect-[3/4]", radiusClass)}
+              style={frame}
+            >
+              <ThankYouHighlightMedia
+                memory={memory}
+                priority={slideIndex < 2}
+                kenBurns={!reduceMotion && slideIndex === 0}
+              />
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.4) 100%)",
+                }}
+              />
+              {memory.caption?.trim() ? (
+                <p
+                  className="absolute bottom-3 left-3 right-3 text-center text-xs text-white/95 sm:text-sm"
+                  style={{
+                    fontFamily: "var(--ty-display)",
+                    textShadow: "0 2px 12px rgba(0,0,0,0.55)",
+                  }}
+                >
+                  {memory.caption.trim()}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+        <p
+          className="mt-3 text-center text-xs tracking-[0.18em] uppercase"
+          style={{ color: accentColor, opacity: 0.85 }}
+        >
+          {slides.length} highlights
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-3xl">
       <div
         className={cn("relative aspect-[16/10] overflow-hidden sm:aspect-[16/9]", radiusClass)}
-        style={{
-          border: `1.5px solid ${accentColor}66`,
-          boxShadow: [
-            `0 0 0 6px ${backgroundColor}`,
-            `0 0 0 7px ${accentColor}40`,
-            "0 28px 60px rgba(0,0,0,0.35)",
-          ].join(", "),
-        }}
+        style={frame}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
@@ -831,27 +932,11 @@ function ThankYouHighlightsReel({
               )}
               aria-hidden={!isActive}
             >
-              {memory.mediaType === "video" ? (
-                <CeleventicVideo
-                  src={memory.mediaUrl}
-                  poster={memory.thumbnailUrl ?? undefined}
-                  className="h-full w-full object-cover"
-                  pauseOffscreen
-                  preload={isActive ? "metadata" : "none"}
-                />
-              ) : (
-                <CeleventicImage
-                  src={memory.thumbnailUrl || memory.mediaUrl}
-                  alt={memory.caption || "Event memory"}
-                  fill
-                  className={cn(
-                    "object-cover transition-transform duration-[4200ms] ease-out",
-                    isActive && !reduceMotion ? "scale-105" : "scale-100"
-                  )}
-                  sizes="(max-width: 768px) 100vw, 768px"
-                  priority={slideIndex === 0}
-                />
-              )}
+              <ThankYouHighlightMedia
+                memory={memory}
+                priority={slideIndex === 0}
+                kenBurns={isActive && !reduceMotion}
+              />
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
@@ -869,6 +954,15 @@ function ThankYouHighlightsReel({
             style={{ fontFamily: "var(--ty-display)", textShadow: "0 2px 12px rgba(0,0,0,0.55)" }}
           >
             {active.caption.trim()}
+          </p>
+        ) : null}
+
+        {slides.length > 1 ? (
+          <p
+            className="absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide text-white"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+          >
+            {index + 1} / {slides.length}
           </p>
         ) : null}
       </div>
