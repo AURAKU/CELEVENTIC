@@ -8,14 +8,16 @@ import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { TermsAcceptanceGate } from "@/components/legal/terms-acceptance-gate";
 import { ContextualHelpTrigger } from "@/components/celeventic-guide/contextual-help";
 import { FirstRunTourHost } from "@/components/celeventic-guide/first-run-tour-host";
+import { cn } from "@/lib/utils";
 
 interface DashboardShellProps {
   children: React.ReactNode;
   adminBanner?: React.ReactNode;
 }
 
-/** Sticky in-flow sidebar from this width up; overlay drawer below. */
+/** Matches Tailwind `lg` and the sidebar drawer width. */
 const DESKTOP_NAV_QUERY = "(min-width: 1024px)";
+const SIDEBAR_WIDTH_CLASS = "lg:pl-[17.5rem]";
 
 export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
   const [navOpen, setNavOpen] = useState(false);
@@ -84,7 +86,7 @@ export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
   }
 
   return (
-    <div className="flex min-h-app-viewport bg-mesh overflow-x-hidden">
+    <div className="relative flex min-h-app-viewport bg-mesh overflow-x-hidden">
       <TermsAcceptanceGate />
       {navOpen ? (
         <div
@@ -98,7 +100,16 @@ export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
         <DashboardSidebar open={navOpen} onClose={closeNav} />
       </Suspense>
 
-      <div className="flex min-h-app-viewport min-w-0 flex-1 flex-col">
+      {/*
+        Sidebar is position:fixed (out of flow). Pad the main column only while
+        open on desktop so closing the menu reclaims the full left edge.
+      */}
+      <div
+        className={cn(
+          "flex min-h-app-viewport min-w-0 flex-1 flex-col transition-[padding] duration-300 ease-out",
+          navOpen && SIDEBAR_WIDTH_CLASS
+        )}
+      >
         {adminBanner}
         <DashboardTopbar menuOpen={navOpen} onMenuClick={toggleNav} />
         <main className="page-scaffold-host min-w-0 flex-1 overflow-x-hidden bg-dashboard grid-pattern p-3 pb-[max(4.5rem,calc(env(safe-area-inset-bottom)+3.5rem))] sm:p-5 lg:p-6 lg:pb-8 xl:p-8">
