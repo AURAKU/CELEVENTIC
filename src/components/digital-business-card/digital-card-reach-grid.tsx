@@ -30,7 +30,13 @@ import {
   type DigitalCardReachItem,
 } from "@/lib/digital-business-card/socials";
 import type { DigitalCardTheme } from "@/lib/digital-business-card/themes";
-import { CELECARD_REACH_INK, CELECARD_REACH_MUTED, celecardCtaOnPaper, celecardReachPlate } from "@/lib/digital-business-card/type-voice";
+import {
+  CELECARD_REACH_INK,
+  CELECARD_REACH_MUTED,
+  celecardCtaOnPaper,
+  celecardReachPlate,
+  celecardStageCaptionInk,
+} from "@/lib/digital-business-card/type-voice";
 import { guestReachEventKind } from "@/lib/celeyou-share/guest-actions";
 import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
 import { copyText } from "@/lib/clipboard";
@@ -228,6 +234,7 @@ export function DigitalCardReachGrid({
   const rootRef = useRef<HTMLDivElement>(null);
   const darkStage = stageIsDark(theme.stageBackground);
   const plate = plateStyle(theme, darkStage);
+  const captionInk = celecardStageCaptionInk(darkStage);
   const openDock = dock.find((group) => group.id === openId);
 
   useEffect(() => {
@@ -287,6 +294,7 @@ export function DigitalCardReachGrid({
                   onOpenQr={setQrItem}
                   onOpenAccess={setAccessItem}
                   trackSlug={trackSlug}
+                  captionInk={captionInk}
                 />
               </span>
             ))}
@@ -486,6 +494,7 @@ function DockTap({
   onOpenQr,
   onOpenAccess,
   trackSlug,
+  captionInk,
 }: {
   group: DigitalCardReachGroup;
   theme: DigitalCardTheme;
@@ -496,6 +505,7 @@ function DockTap({
   onOpenQr?: (item: DigitalCardReachItem) => void;
   onOpenAccess?: (item: DigitalCardReachItem) => void;
   trackSlug?: string;
+  captionInk: string;
 }) {
   const { t } = useLocale();
   const copy = localizeGroupCopy(t, group);
@@ -553,7 +563,9 @@ function DockTap({
         className="celecard-dock-tap transition duration-200 hover:-translate-y-1 hover:scale-105"
       >
         {mark}
-        <span className="celecard-dock-caption">{copy.title}</span>
+        <span className="celecard-dock-caption" style={{ color: captionInk }}>
+          {copy.title}
+        </span>
       </ReachTarget>
     );
   }
@@ -572,7 +584,9 @@ function DockTap({
       )}
     >
       {mark}
-      <span className="celecard-dock-caption">{copy.title}</span>
+      <span className="celecard-dock-caption" style={{ color: captionInk }}>
+        {copy.title}
+      </span>
     </button>
   );
 }

@@ -5114,12 +5114,33 @@ body[data-celecard-sheet="true"] .celecard-dock-bar,
   max-width: 4.75rem;
   margin-top: 0.28rem;
   overflow: hidden;
+  color: #292524;
   font-size: 0.62rem;
   font-weight: 650;
   line-height: 1.2;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Dark stages: captions and section titles must stay bright — never stone ink on navy. */
+.celecard-stage[data-celecard-stage="dark"] .celecard-dock-caption {
+  color: #f8f4ea;
+  text-shadow: 0 1px 2px rgba(2, 8, 23, 0.55);
+}
+
+.celecard-stage[data-celecard-stage="dark"] .celecard-guest-kicker {
+  text-shadow: 0 1px 2px rgba(2, 8, 23, 0.45);
+}
+
+.celecard-stage[data-celecard-stage="dark"] .celecard-guest-kicker-label {
+  color: inherit;
+  font-weight: 700;
+}
+
+.celecard-stage[data-celecard-stage="light"] .celecard-dock-caption {
+  color: #292524;
+  text-shadow: none;
 }
 
 .celecard-guest-overlay {
@@ -5197,52 +5218,4 @@ body[data-celecard-sheet="true"] .celecard-dock-bar,
   border-radius: 999px;
   background: transparent;
   color: inherit;
-}
-
-body[data-celecard-sheet="true"] .celecard-dock-bar,
-.celecard-stage[data-celecard-sheet="true"] .celecard-dock-bar {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.celecard-dock-tap {
-  display: inline-flex;
-  min-width: 48px;
-  min-height: 48px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.celecard-dock-caption {
-  display: block;
-  max-width: 4.75rem;
-  margin-top: 0.28rem;
-  overflow: hidden;
-  font-size: 0.62rem;
-  font-weight: 650;
-  line-height: 1.2;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.celecard-guest-overlay {
-  isolation: isolate;
-}
-
-@media (min-width: 1024px) {
-  .celecard-stage[data-celecard-hold="false"] .celecard-guest-column {
-    display: grid;
-    width: min(100%, 72rem);
-    grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
-    align-items: start;
-    gap: 2rem 2.6rem;
-  }
-
-  .celecard-stage[data-celecard-hold="false"] .celecard-hold-frame {
-    position: sticky;
-    top: max(1.15rem, env(safe-area-inset-top, 0px));
-    margin-inline: 0;
-  }
 }

@@ -630,24 +630,63 @@ export function celecardReachPlate(_theme: DigitalCardTheme, darkStage: boolean)
   };
 }
 
+const DARK_STAGE_PROBE = "#0f172a";
+const DARK_STAGE_IVORY = "#f4e6c8";
+const DARK_STAGE_CAPTION = "#f8f4ea";
+
+/** Lift a house hue toward ivory until it reads on navy stages. */
+function liftTowardIvory(hex: string, minLum: number) {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return DARK_STAGE_IVORY;
+  const ivory = parseHexRgb(DARK_STAGE_IVORY)!;
+  let [r, g, b] = rgb;
+  let lum = hexLum(toHexRgb(r, g, b));
+  let t = 0;
+  while (lum < minLum && t < 0.88) {
+    t += 0.08;
+    r = Math.round(rgb[0] * (1 - t) + ivory[0] * t);
+    g = Math.round(rgb[1] * (1 - t) + ivory[1] * t);
+    b = Math.round(rgb[2] * (1 - t) + ivory[2] * t);
+    lum = hexLum(toHexRgb(r, g, b));
+  }
+  return toHexRgb(r, g, b);
+}
+
 /** Section labels stay on-accent unless the accent would vanish on the stage. */
 export function celecardAccentOnStage(accent: string, darkStage: boolean) {
-  const lum = hexLum(accent.startsWith("#") ? accent.slice(0, 7) : accent);
-  if (darkStage && lum < 88) return "#f4e6c8";
-  if (!darkStage && lum > PAPER_ACCENT_LUM_MAX) return celecardPaperAccent(accent);
+  const hex = accent.startsWith("#") ? accent.slice(0, 7) : accent;
+  const lum = hexLum(hex);
+  if (darkStage) {
+    // Near-black house inks jump to ivory. Mid teals lift until they clear navy stages.
+    if (lum < 88) return DARK_STAGE_IVORY;
+    if (lum < 140 || celecardContrastRatio(hex, DARK_STAGE_PROBE) < 4.5) {
+      return liftTowardIvory(hex, 168);
+    }
+    return hex;
+  }
+  if (lum > PAPER_ACCENT_LUM_MAX) return celecardPaperAccent(accent);
   return accent;
 }
 
-/** Guest section lockups. House hue, never a washed gray. */
+/** Guest section lockups. House hue, never a washed gray or faint teal. */
 export function celecardKickerInk(accent: string, darkStage: boolean) {
   const ink = celecardAccentOnStage(accent, darkStage);
+  if (darkStage) {
+    if (celecardContrastRatio(ink, DARK_STAGE_PROBE) >= 4.5) return ink;
+    return liftTowardIvory(ink, 175);
+  }
   const rgb = parseHexRgb(ink);
   if (!rgb) return ink;
   const [r, g, b] = rgb;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   if (max - min >= 18) return ink;
-  return darkStage ? "#f4e6c8" : CELECARD_PAPER_LABEL;
+  return CELECARD_PAPER_LABEL;
+}
+
+/** Dock and stage captions. Never dark stone ink on a dark stage. */
+export function celecardStageCaptionInk(darkStage: boolean) {
+  return darkStage ? DARK_STAGE_CAPTION : "#292524";
 }
 
 export type CeleCardDockFinish = {

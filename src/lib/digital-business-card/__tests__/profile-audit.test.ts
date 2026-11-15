@@ -76,7 +76,10 @@ describe("CeleYou profile audit remediation", () => {
     const grid = source("src/components/digital-business-card/digital-card-reach-grid.tsx");
     const css = source("src/app/globals.css");
     assert.match(grid, /celecard-dock-caption/);
+    assert.match(grid, /celecardStageCaptionInk/);
     assert.match(css, /min-width: 48px/);
+    assert.match(css, /data-celecard-stage="dark"\] \.celecard-dock-caption/);
+    assert.match(css, /#f8f4ea/);
     assert.match(css, /celecard-dock-caption/);
   });
 

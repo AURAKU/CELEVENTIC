@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { resolveDigitalCardTheme, DIGITAL_CARD_THEMES, celecardMotionMood } from "@/lib/digital-business-card/themes";
-import { CELECARD_PAPER_INK, CELECARD_PAPER_MUTED, CELECARD_REACH_INK, celecardAccentOnStage, celecardCompanyDisplayLines, celecardCompanyFitCqw, celecardCtaOnPaper, celecardDisplayNameLines, celecardDockFinish, celecardInkLuminance, celecardKickerInk, celecardNameFitCqw, celecardNameShouldStack, celecardPaperAccent, celecardPaperTone, celecardPlateDisplayName, celecardReachPlate, celecardTitleDisplayLines, celecardTitleFitCqw, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
+import { CELECARD_PAPER_INK, CELECARD_PAPER_MUTED, CELECARD_REACH_INK, celecardAccentOnStage, celecardCompanyDisplayLines, celecardCompanyFitCqw, celecardContrastRatio, celecardCtaOnPaper, celecardDisplayNameLines, celecardDockFinish, celecardInkLuminance, celecardKickerInk, celecardNameFitCqw, celecardNameShouldStack, celecardPaperAccent, celecardPaperTone, celecardPlateDisplayName, celecardReachPlate, celecardStageCaptionInk, celecardTitleDisplayLines, celecardTitleFitCqw, celecardTypeVoice } from "@/lib/digital-business-card/type-voice";
 import {
   CELECARD_HOUSE_AVATAR_IDS,
   CELECARD_PORTRAIT_MAX_EDGE,
@@ -444,6 +444,11 @@ describe("digital business card themes", () => {
     assert.equal(tealOnTeal.background, "#fffef8");
     assert.equal(tealOnTeal.color, "#16120e");
     assert.equal(celecardAccentOnStage("#0a3d3a", true), "#f4e6c8");
+    // Mid teal must lift on navy so BUSINESS / SOCIAL titles are not washed out.
+    assert.notEqual(celecardAccentOnStage("#0B8A83", true).toLowerCase(), "#0b8a83");
+    assert.ok(celecardContrastRatio(celecardKickerInk("#0B8A83", true), "#0f172a") >= 4.5);
+    assert.ok(celecardContrastRatio(celecardStageCaptionInk(true), "#0f172a") >= 4.5);
+    assert.equal(celecardStageCaptionInk(false), "#292524");
     const desk = celecardPaperTone(pulse);
     assert.equal(desk.text, CELECARD_PAPER_INK);
     assert.equal(desk.muted, CELECARD_PAPER_MUTED);
