@@ -958,18 +958,23 @@ export function DigitalCardStudioClient() {
     >
       <div className="celecard-studio-masthead">
         <div className="celecard-studio-masthead-copy">
-          <CeleYouBrandMark variant="chip" tone="light" className="mb-3" markClassName="h-8 w-8" />
+          <CeleYouBrandMark
+            variant="chip"
+            tone="light"
+            className="celecard-studio-masthead-brand mb-3"
+            markClassName="h-8 w-8"
+          />
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="font-display text-balance text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
               One link for every contact
             </h1>
             {active ? (
-              <Badge variant="secondary">
+              <Badge variant="secondary" className="shrink-0 whitespace-nowrap">
                 {active.isLive ? "Live" : active.guestShareable ? "Shareable" : "Offline"}
               </Badge>
             ) : null}
           </div>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
+          <p className="mt-2 max-w-xl text-pretty text-sm leading-relaxed text-slate-600">
             Design the plate, fill Reach, then share. Guests open it in any browser. No app, no account.
           </p>
         </div>

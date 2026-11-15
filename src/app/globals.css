@@ -973,11 +973,11 @@
   }
 
   .page-scaffold-host {
-    @apply flex flex-col min-h-0;
+    @apply flex flex-col min-h-0 w-full min-w-0;
   }
 
   .page-scaffold-host > * {
-    @apply min-w-0 max-w-full;
+    @apply min-w-0 w-full max-w-full;
   }
 
   .fit-scroller {
@@ -2904,26 +2904,69 @@ html:active-view-transition .celecard-plate-motion {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .celecard-studio-masthead-copy {
+  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
+}
+
+.celecard-studio-masthead-copy h1,
+.celecard-studio-masthead-copy p {
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: manual;
+  white-space: normal;
+}
+
+.celecard-studio-masthead-copy .badge,
+.celecard-studio-masthead-copy [class*="Badge"],
+.celecard-studio-masthead-copy [data-slot="badge"] {
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: auto;
+  max-width: 100%;
+}
+
+.celecard-studio-masthead-brand {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .celecard-studio-toolbar {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
   width: 100%;
+  min-width: 0;
 }
 
 .celecard-studio-toolbar > * {
-  width: 100%;
+  width: auto;
+  flex: 1 1 auto;
+  min-width: min(100%, 8.5rem);
   justify-content: center;
 }
 
+.celecard-studio-toolbar .celecard-studio-save-status {
+  flex: 1 0 100%;
+  min-width: 0;
+  text-align: left;
+}
+
 .celecard-studio-save {
-  order: -1;
+  order: 0;
+  flex: 1 1 9rem;
 }
 
 .celecard-studio-live {
@@ -3134,26 +3177,46 @@ html:active-view-transition .celecard-plate-motion {
 }
 
 @media (min-width: 640px) {
+  .celecard-studio-toolbar > * {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .celecard-studio-toolbar .celecard-studio-save-status {
+    flex: 1 1 auto;
+    min-width: 8rem;
+  }
+}
+
+/* Side-by-side masthead only when both copy + actions fit without crushing text. */
+@media (min-width: 1024px) {
   .celecard-studio-masthead {
     flex-direction: row;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1.5rem;
   }
 
-  .celecard-studio-toolbar {
-    flex-direction: row;
+  .celecard-studio-masthead-copy {
+    flex: 1 1 18rem;
     width: auto;
-    flex-shrink: 0;
+    min-width: min(100%, 16rem);
+  }
+
+  .celecard-studio-toolbar {
+    width: auto;
+    max-width: min(100%, 34rem);
+    flex: 1 1 18rem;
     justify-content: flex-end;
   }
 
   .celecard-studio-toolbar > * {
-    width: auto;
+    flex: 0 1 auto;
   }
 
-  .celecard-studio-save {
-    order: 0;
+  .celecard-studio-toolbar .celecard-studio-save-status {
+    flex: 1 1 100%;
+    text-align: right;
   }
 }
 
@@ -3412,48 +3475,22 @@ html:active-view-transition .celecard-plate-motion {
   .celecard-studio-desks-track {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
-
-  .celecard-studio-desk {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(16.5rem, 20rem);
-    grid-template-rows: auto 1fr;
-    align-items: start;
-    gap: 1.25rem;
-  }
-
-  .celecard-studio-identity-col {
-    order: 0;
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .celecard-studio-work {
-    order: 0;
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .celecard-studio-preview {
-    order: 0;
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    position: sticky;
-    top: 5rem;
-    z-index: auto;
-    max-height: calc(100dvh - 6.5rem);
-    overflow: auto;
-    background: transparent;
-    border-bottom: 0;
-    padding: 0;
-  }
 }
 
-@media (min-width: 1024px) {
+/* Sidebar workspace nav only on true desktop — not cramped laptop/tablet widths. */
+@media (min-width: 1280px) {
   .celecard-studio-shell {
     display: grid;
-    grid-template-columns: minmax(10.5rem, 12.5rem) minmax(0, 1fr);
+    grid-template-columns: 13rem minmax(0, 1fr);
     align-items: start;
-    gap: 1.25rem;
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  .celecard-studio-nav-slot,
+  .celecard-studio-main {
+    min-width: 0;
+    width: 100%;
   }
 
   .celecard-studio-desks {
@@ -3644,24 +3681,35 @@ html:active-view-transition .celecard-plate-motion {
   background: #fffef8;
 }
 
-@media (min-width: 1180px) {
+/*
+ * Desk split rules MUST follow the mobile flex base above so they win in the cascade.
+ * (An earlier min-width query placed before the base was getting overridden.)
+ */
+@media (min-width: 900px) {
   .celecard-studio-desk {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(19rem, 22.5rem);
-    grid-template-rows: auto 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+    grid-template-rows: auto auto;
     align-items: start;
-    gap: 1.75rem;
+    gap: 1.35rem;
+    width: 100%;
   }
 
   .celecard-studio-identity-col {
     order: 0;
     grid-column: 1;
     grid-row: 1;
+    min-width: 0;
   }
 
   .celecard-studio-work {
     order: 0;
     grid-column: 1;
+    grid-row: 1 / span 2;
+    min-width: 0;
+  }
+
+  .celecard-studio-identity-col ~ .celecard-studio-work {
     grid-row: 2;
   }
 
@@ -3670,14 +3718,28 @@ html:active-view-transition .celecard-plate-motion {
     grid-column: 2;
     grid-row: 1 / span 2;
     position: sticky;
-    top: 5.25rem;
+    top: 5rem;
     z-index: auto;
-    max-height: calc(100dvh - 6rem);
+    max-height: calc(100dvh - 6.5rem);
     overflow: auto;
     background: transparent;
     border-bottom: 0;
     padding: 0;
-    overscroll-behavior: contain;
+    min-width: 0;
+  }
+}
+
+@media (min-width: 1180px) {
+  .celecard-studio-desk {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 22.5rem);
+    gap: 1.75rem;
+  }
+
+  .celecard-studio-preview {
+    display: block;
+    top: 5.25rem;
+    max-height: calc(100dvh - 6rem);
   }
 }
 

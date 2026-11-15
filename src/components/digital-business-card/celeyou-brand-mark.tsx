@@ -144,7 +144,7 @@ export function CeleYouBrandMark({
       >
         {mark}
       </span>
-      <span className="inline-flex items-start font-display text-[13px] font-bold tracking-[-0.035em] sm:text-[15px]">
+      <span className="inline-flex shrink-0 items-start whitespace-nowrap font-display text-[13px] font-bold tracking-[-0.035em] sm:text-[15px]">
         <span className={cele}>Cele</span>
         <span className={you}>You</span>
         <sup className={cn("ml-[0.12em] mt-[0.18em] text-[8px] font-semibold leading-none", registered)}>®</sup>

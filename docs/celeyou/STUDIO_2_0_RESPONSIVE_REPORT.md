@@ -11,9 +11,11 @@
 | Area | Implementation |
 |---|---|
 | Mobile | Compact 3×2 desk grid with icons; Preview opens full-screen sheet; sticky Save/Preview/Share dock above dashboard nav; safe-area padding; body scroll lock while sheet open; Escape closes sheet |
-| Tablet (≥768) | Two-column editor + live preview; desk switcher remains reachable; preview no longer mid-page sticky trap |
-| Desktop (≥1024) | Sidebar workspace nav + main editor; preview rail persists beside editing |
-| Large desktop (≥1180) | Existing wider preview column retained |
+| Tablet (≥768) | Single-column editor until 900px; desk switcher remains reachable; preview sheet disabled |
+| Laptop (≥900) | Two-column editor + sticky preview rail (CSS after mobile flex base so cascade wins) |
+| Desktop masthead (≥1024) | Copy + toolbar share a row without `flex-shrink: 0` crush; brand/badge stay nowrap |
+| Desktop shell (≥1280) | Sidebar workspace nav + main editor |
+| Large desktop (≥1180) | Wider preview column |
 | Data safety | Same `StudioForm` / Save / autosave; desk switches do not remount form; rotation closes sheet only, does not reset edits |
 | Rollback | `?studio=classic` skips adaptive dock/sheet classes |
 
@@ -21,9 +23,15 @@
 
 - &lt;480px: 3-column desk chips  
 - 480–767px: 6-column compact chips + sheet preview + dock  
-- 768–1023px: split editor/preview  
-- ≥1024px: sidebar nav  
-- ≥1180px: existing wide desk grid  
+- 768–899px: single-column desk, no mobile sheet/dock  
+- ≥900px: split editor/preview (rules placed after `.celecard-studio-desk` base)  
+- ≥1024px: masthead row (toolbar may shrink/wrap; never letter-stacks copy)  
+- ≥1180px: wider preview column  
+- ≥1280px: sidebar workspace nav  
+
+### Desktop crush fix (2026-11-15)
+
+Masthead previously went `flex-direction: row` at 640px with a non-shrinking toolbar, squeezing the title/badge into a ~2ch column (`overflow-wrap: anywhere` → vertical letter stacks). Desk split media queries also preceded the mobile flex base and were overridden until 1180px. Fixed in `globals.css` + brand chip nowrap.
 
 ### Files touched
 
