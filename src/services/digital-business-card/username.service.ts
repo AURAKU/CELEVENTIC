@@ -117,7 +117,8 @@ export async function checkCeleYouUsernameAvailability(input: {
   const record = await findUsernameRecord(parsed.username);
   const own =
     Boolean(input.actorUserId) &&
-    record?.userId === input.actorUserId &&
+    record != null &&
+    record.userId === input.actorUserId &&
     (record.kind === "ACTIVE" || record.kind === "SLUG");
   if (own) {
     return {
