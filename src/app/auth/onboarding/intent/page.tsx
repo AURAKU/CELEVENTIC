@@ -32,6 +32,8 @@ export default function OnboardingIntentPage() {
   const [error, setError] = useState("");
   const [booting, setBooting] = useState(true);
   const appliedStored = useRef(false);
+  /** Prevents session refresh from yanking CeleYou users to /dashboard after a successful save. */
+  const leavingRef = useRef(false);
 
   async function saveIntent(option: OnboardingIntentOption, extras?: { organizationName?: string; vendorCategory?: string }) {
     if (option.id === "ORGANIZATION" && !(extras?.organizationName ?? organizationName).trim()) {
@@ -70,17 +72,24 @@ export default function OnboardingIntentPage() {
         return;
       }
       clearSignupIntent();
-      router.push(data.redirect ?? "/dashboard/getting-started");
-      router.refresh();
+      const dest =
+        data.redirect ||
+        option.primaryHref ||
+        (option.queryKey === "smartcard" ? "/dashboard/business-card/start" : "/dashboard/getting-started");
+      leavingRef.current = true;
+      // Hard navigation so a session refresh cannot overwrite the CeleYou start redirect.
+      window.location.assign(dest);
     } catch {
       setError(t("auth.something_wrong"));
       setBooting(false);
+      leavingRef.current = false;
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
+    if (leavingRef.current) return;
     if (status === "loading") return;
     if (status === "unauthenticated") {
       router.replace("/auth/onboarding");

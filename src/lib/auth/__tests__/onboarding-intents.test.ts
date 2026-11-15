@@ -1,5 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   findOnboardingIntent,
   intentFromQuery,
@@ -29,6 +31,13 @@ describe("signup intents", () => {
     assert.equal(intentFromQuery("celecard")?.queryKey, "smartcard");
     assert.equal(intentFromQuery("celecard")?.primaryHref, "/dashboard/business-card/start");
     assert.equal(intentFromQuery("card")?.primaryHref, "/dashboard/business-card/start");
+    const intentPage = readFileSync(
+      join(process.cwd(), "src/app/auth/onboarding/intent/page.tsx"),
+      "utf8"
+    );
+    assert.match(intentPage, /leavingRef/);
+    assert.match(intentPage, /window\.location\.assign\(dest\)/);
+    assert.match(intentPage, /business-card\/start/);
     assert.equal(intentFromQuery("unknown"), undefined);
   });
 
