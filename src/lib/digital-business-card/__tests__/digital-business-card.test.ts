@@ -1777,10 +1777,20 @@ describe("CeleYou activity flow", () => {
     assert.match(source, /label: "Pass on"/);
     assert.match(source, /Recent activity/);
     assert.match(source, /Load more/);
+    assert.match(source, /Opens and actions by day in this window/);
     assert.match(source, /visibilityState === "hidden"/);
     assert.match(source, /useReducedMotion/);
     assert.match(css, /@keyframes flow-ring/);
     assert.match(css, /prefers-reduced-motion: reduce/);
+    const chart = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-analytics-chart.tsx"),
+      "utf8"
+    );
+    assert.match(chart, /Profile opens/);
+    assert.match(chart, /Published actions/);
+    assert.match(chart, /Busiest day/);
+    assert.match(chart, /niceMax/);
+    assert.doesNotMatch(chart, /Teal is profile opens/);
   });
 
   it("filters Activity by calendar range and keeps All time as the default", async () => {

@@ -318,8 +318,11 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
           </motion.div>
 
           {data.trend?.length ? (
-            <div className="rounded-2xl border border-slate-100 bg-white px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Engagement trend</p>
+            <div className="rounded-2xl border border-slate-100 bg-white px-3 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Engagement trend
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500">Opens and actions by day in this window.</p>
               <DigitalCardAnalyticsChart points={data.trend} />
             </div>
           ) : null}
