@@ -286,11 +286,17 @@ export function celeYouTrialMutationTouchesPaidCard(
   return false;
 }
 
+/** Fields actually inspected by trial-expiry demotion (no publish-state required). */
+export type CeleYouTrialTouchCard = Pick<
+  CeleYouProtectedCardSnapshot,
+  "subscriptionStatus" | "lastActivatedAt" | "lastActivationPaymentId" | "entitlementKind"
+>;
+
 /**
  * Trial expiry may only demote unpaid optional-trial rows to Free.
  * Never rewrite ACTIVE, EXPIRED, complimentary, or payment-linked cards.
  */
-export function celeYouTrialExpiryMayTouchCard(card: CeleYouProtectedCardSnapshot): boolean {
+export function celeYouTrialExpiryMayTouchCard(card: CeleYouTrialTouchCard): boolean {
   if (card.lastActivatedAt) return false;
   if (card.lastActivationPaymentId) return false;
   if (card.entitlementKind === "PAID" || card.entitlementKind === "COMPLIMENTARY") return false;
