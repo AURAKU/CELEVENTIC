@@ -40,7 +40,7 @@ export function digitalCardPresentUrl(slug: string, origin?: string): string {
   return `${origin.replace(/\/$/, "")}${path}`;
 }
 
-export const CELECARD_PLATE_SHARE_GEN = "p4";
+export const CELECARD_PLATE_SHARE_GEN = "p5";
 
 export function digitalCardOgImagePath(slug: string, version?: string | number | null): string {
   const base = `/card/${encodeURIComponent(slug)}/og`;

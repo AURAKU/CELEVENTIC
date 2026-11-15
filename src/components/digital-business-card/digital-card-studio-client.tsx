@@ -131,7 +131,13 @@ import {
   resolveCeleCardPortraitFrame,
   type CeleCardPortraitFrame,
 } from "@/lib/digital-business-card/portrait-frame";
-import { digitalCardPresentPath } from "@/lib/digital-business-card/share";
+import {
+  celeCardShareMessage,
+  celeCardShareTitle,
+  celeYouLivePlateShareUrls,
+  digitalCardPresentPath,
+} from "@/lib/digital-business-card/share";
+import { copyCeleYouProfile } from "@/lib/celeyou-share/engine";
 import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { getCeleYouShareOrigin } from "@/lib/app-url";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
@@ -771,7 +777,26 @@ export function DigitalCardStudioClient() {
   async function copyLink() {
     const canonical = publicUrl;
     if (!canonical) return;
-    await navigator.clipboard.writeText(canonical);
+    const result = await copyCeleYouProfile({
+      title: celeCardShareTitle({ displayName: form.displayName, title: form.title }),
+      text: celeCardShareMessage(
+        { displayName: form.displayName, title: form.title, company: form.company },
+        canonical
+      ),
+      url: canonical,
+      imageUrl: form.slug
+        ? celeYouLivePlateShareUrls(form.slug, active?.updatedAt || activeId || "live")
+        : null,
+      // Match Share desk: capture only when the on-screen plate is the live published card.
+      capturePlate: Boolean(publishedOnServer && !unsaved),
+      persistPlateCardId: publishedOnServer && !unsaved ? activeId || null : null,
+    });
+    if (result === "copied") {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+      return;
+    }
+    await navigator.clipboard.writeText(canonical).catch(() => undefined);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   }

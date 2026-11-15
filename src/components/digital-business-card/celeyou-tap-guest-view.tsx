@@ -106,6 +106,8 @@ export function CeleYouTapGuestView({
       text: celeCardShareCommentary(host),
       url: profileUrl,
       imageUrl: plateShareUrls,
+      capturePlate: true,
+      persistPlateCardId: host.id || null,
     });
     trackCeleYouGuestEvent(host.slug, "share_tap");
   }

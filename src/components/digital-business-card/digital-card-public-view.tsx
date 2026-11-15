@@ -172,19 +172,14 @@ export function DigitalCardPublicView({
     if (!shareUrl) return;
     setCopying(true);
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      trackCeleYouGuestEvent(card.slug, "share_tap");
-      setShareOpen(false);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
       const result = await copyCeleYouProfile({
         title: celeCardShareTitle(card),
         text: celeCardShareMessage(card, shareUrl),
         url: shareUrl,
         imageUrl: plateShareUrls,
-        persistPlateCardId: null,
-        capturePlate: false,
+        persistPlateCardId: card.id || null,
+        // Always capture the on-screen live cardholder plate for social paste/unfurl.
+        capturePlate: true,
       });
       if (result === "copied") {
         trackCeleYouGuestEvent(card.slug, "share_tap");

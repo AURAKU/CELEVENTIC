@@ -9,7 +9,7 @@ import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
 import { celeYouLiveProfileUrl } from "@/lib/digital-business-card/share-identity";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
 import { celeCardShareMessage, celeCardShareTitle, celeYouLivePlateShareUrls } from "@/lib/digital-business-card/share";
-import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
+import { copyCeleYouProfile, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
 import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { detectTapCapability, detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
 import { parseTapJoinScan } from "@/lib/celeyou-proximity/join-code";
@@ -355,8 +355,24 @@ export function CeleYouTapConnect({
   const profileQrSrc = profileUrl ? digitalCardQrImageSrc(profileUrl, { size: 720, format: "png" }) : "";
 
   async function copyProfileLink() {
-    if (!profileUrl) return;
-    await navigator.clipboard.writeText(profileUrl);
+    if (!profileUrl || !card) return;
+    const result = await copyCeleYouProfile({
+      title: celeCardShareTitle({ displayName: card.displayName, title: card.title }),
+      text: celeCardShareMessage(
+        { displayName: card.displayName, title: card.title, company: card.company },
+        profileUrl
+      ),
+      url: profileUrl,
+      imageUrl: card.slug ? celeYouLivePlateShareUrls(card.slug, "live") : null,
+      capturePlate: true,
+      persistPlateCardId: card.id || null,
+    });
+    if (result === "copied") {
+      setCopied("profile");
+      window.setTimeout(() => setCopied(false), 1800);
+      return;
+    }
+    await navigator.clipboard.writeText(profileUrl).catch(() => undefined);
     setCopied("profile");
     window.setTimeout(() => setCopied(false), 1800);
   }
@@ -371,8 +387,8 @@ export function CeleYouTapConnect({
       ),
       url: profileUrl,
       imageUrl: card.slug ? celeYouLivePlateShareUrls(card.slug, "live") : null,
-      capturePlate: false,
-      persistPlateCardId: null,
+      capturePlate: true,
+      persistPlateCardId: card.id || null,
     });
   }
 

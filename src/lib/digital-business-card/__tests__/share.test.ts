@@ -284,7 +284,11 @@ describe("CeleYou studio share controls", () => {
     assert.match(desk, /usePersistLivePlateSnapshot/);
     assert.match(desk, /identityShare/);
     assert.match(desk, /usePublishedPlate/);
-    assert.match(desk, /capturePlate: usePublishedPlate \? false : true/);
+    assert.match(desk, /const captureLiveFace = usePublishedPlate \? persistLivePlate : true/);
+    assert.match(desk, /capturePlate: captureLiveFace/);
+    assert.match(desk, /copyCeleYouProfile/);
+    assert.match(desk, /copyProfileLink/);
+    assert.match(desk, /shareWhatsApp/);
     assert.match(ownerStudio, /celeYouLiveProfileUrl/);
     assert.match(ownerStudio, /const canonical = publicUrl/);
     assert.doesNotMatch(ownerStudio, /const canonical = shareUrl \|\| publicUrl/);

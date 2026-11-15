@@ -18,7 +18,13 @@ import { Button } from "@/components/ui/button";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
 import { CeleYouTrialCta } from "@/components/digital-business-card/celeyou-trial-cta";
 import { SMARTCARD_BRAND_TAGLINE } from "@/lib/digital-business-card/product";
+import {
+  celeCardShareMessage,
+  celeCardShareTitle,
+  celeYouLivePlateShareUrls,
+} from "@/lib/digital-business-card/share";
 import { celeYouEmailShareHref, celeYouPrintQrPngSrc, celeYouWhatsAppShareHref } from "@/lib/digital-business-card/share-channels";
+import { copyCeleYouProfile, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
 import type { CeleYouWelcomeAction } from "@/lib/digital-business-card/activation";
 
 const ICONS: Record<string, typeof Share2> = {
@@ -33,18 +39,26 @@ const ICONS: Record<string, typeof Share2> = {
 
 export function CeleYouWelcomeDesk({
   displayName,
+  title,
+  company,
   profileUrl,
   qrUrl,
   contactHref,
   actions,
+  slug,
+  cardId,
   onShare,
   onFirstShare,
 }: {
   displayName: string;
+  title?: string | null;
+  company?: string | null;
   profileUrl: string;
   qrUrl: string;
   contactHref?: string | null;
   actions: CeleYouWelcomeAction[];
+  slug?: string | null;
+  cardId?: string | null;
   onShare?: () => Promise<void> | void;
   onFirstShare?: () => void;
 }) {
@@ -52,10 +66,21 @@ export function CeleYouWelcomeDesk({
   const [shared, setShared] = useState(false);
   const qrDownload = qrUrl ? celeYouPrintQrPngSrc(qrUrl) : "";
   const caption = `${displayName} · CeleYou`;
+  const plateUrls = slug ? celeYouLivePlateShareUrls(slug, cardId || "live") : null;
 
   async function copyLink() {
     if (!profileUrl) return;
-    await navigator.clipboard.writeText(profileUrl).catch(() => undefined);
+    const result = await copyCeleYouProfile({
+      title: celeCardShareTitle({ displayName, title }),
+      text: celeCardShareMessage({ displayName, title, company }, profileUrl),
+      url: profileUrl,
+      imageUrl: plateUrls,
+      capturePlate: true,
+      persistPlateCardId: cardId || null,
+    });
+    if (result !== "copied") {
+      await navigator.clipboard.writeText(profileUrl).catch(() => undefined);
+    }
     setCopied(true);
     onFirstShare?.();
     window.setTimeout(() => setCopied(false), 1800);
@@ -68,17 +93,40 @@ export function CeleYouWelcomeDesk({
       onFirstShare?.();
       return;
     }
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title: caption, text: caption, url: profileUrl });
-        setShared(true);
-        onFirstShare?.();
-        return;
-      } catch (error) {
-        if ((error as { name?: string })?.name === "AbortError") return;
+    if (!profileUrl) return;
+    const result = await shareCeleYouProfile({
+      title: celeCardShareTitle({ displayName, title }),
+      text: celeCardShareMessage({ displayName, title, company }, profileUrl),
+      url: profileUrl,
+      imageUrl: plateUrls,
+      capturePlate: true,
+      persistPlateCardId: cardId || null,
+    });
+    if (result === "cancelled") return;
+    if (result === "shared" || result === "copied") {
+      setShared(true);
+      onFirstShare?.();
+      if (result === "copied") {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1800);
       }
+      return;
     }
     await copyLink();
+  }
+
+  async function shareWhatsApp() {
+    if (!profileUrl) return;
+    const result = await shareCeleYouProfile({
+      title: celeCardShareTitle({ displayName, title }),
+      text: celeCardShareMessage({ displayName, title, company }, profileUrl),
+      url: profileUrl,
+      imageUrl: plateUrls,
+      capturePlate: true,
+      persistPlateCardId: cardId || null,
+    });
+    if (result === "shared" || result === "cancelled") return;
+    window.open(celeYouWhatsAppShareHref(caption, profileUrl), "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -146,10 +194,8 @@ export function CeleYouWelcomeDesk({
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             {copied ? "Link copied" : "Copy link"}
           </Button>
-          <Button type="button" variant="ghost" size="sm" asChild>
-            <a href={celeYouWhatsAppShareHref(caption, profileUrl)} target="_blank" rel="noreferrer">
-              WhatsApp
-            </a>
+          <Button type="button" variant="ghost" size="sm" onClick={() => void shareWhatsApp()}>
+            WhatsApp
           </Button>
           <Button type="button" variant="ghost" size="sm" asChild>
             <a href={celeYouEmailShareHref(caption, caption, profileUrl)}>Email</a>

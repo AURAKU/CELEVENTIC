@@ -302,10 +302,14 @@ export function CeleYouFirstCardOnboarding() {
       <div className="mx-auto w-full max-w-2xl space-y-6 py-4 sm:py-8">
         <CeleYouWelcomeDesk
           displayName={card?.displayName || draft.displayName}
+          title={card?.title || draft.title}
+          company={card?.company || draft.company}
           profileUrl={profileUrl}
           qrUrl={qrUrl}
           contactHref={card ? digitalCardVcardPath(card.slug) : null}
           actions={state.welcomeActions}
+          slug={card?.slug || null}
+          cardId={card?.id || null}
           onFirstShare={() => recordEvent("FirstShare")}
         />
       </div>

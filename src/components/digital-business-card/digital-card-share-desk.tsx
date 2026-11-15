@@ -20,9 +20,11 @@ import { TAP_STUDIO_PATH } from "@/lib/celeyou-proximity/product";
 import {
   CeleYouSmartShareEngine,
   COPY_PROFILE_LINK_CTA,
+  copyCeleYouProfile,
   SAVE_CONTACT_CTA,
   SHARE_MY_CARD_CTA,
   SHARE_MY_CELEYOU,
+  type ShareProfileInput,
 } from "@/lib/celeyou-share/engine";
 import { contactSaveHint } from "@/lib/celeyou-share/namedrop";
 import { WALLET_PASS_CTA } from "@/lib/celeyou-share/wallet-pass";
@@ -98,6 +100,27 @@ export function DigitalCardShareDesk({
     setTimeout(() => setCopied(null), 1800);
   }
 
+  /** Always attach the exact live cardholder plate (capture → published PNG/OG fallback). */
+  function livePlateShareInput(): ShareProfileInput | null {
+    if (!identityShare) return null;
+    // Studio with unsaved draft: never rasterize the draft preview — use published plate URLs only.
+    // When the on-screen plate matches the live activated card, capture it so socials get this exact face.
+    const captureLiveFace = usePublishedPlate ? persistLivePlate : true;
+    return {
+      title: celeCardShareTitle({ displayName: vcard.displayName, title: vcard.title }),
+      text: celeCardShareMessage(
+        { displayName: vcard.displayName, title: vcard.title, company: vcard.company },
+        identityShare
+      ),
+      url: identityShare,
+      imageUrl: vcard.slug
+        ? celeYouLivePlateShareUrls(vcard.slug, vcard.updatedAt || vcard.id || "live")
+        : null,
+      capturePlate: captureLiveFace,
+      persistPlateCardId: persistLivePlate ? cardId || vcard.id || null : null,
+    };
+  }
+
   function saveContact() {
     void saveDigitalCardContact(vcard, { origin, source: "owner" }).then((result) => {
       if (result === "opened" || result === "downloaded" || result === "shared") {
@@ -116,27 +139,15 @@ export function DigitalCardShareDesk({
   }
 
   async function shareProfile() {
-    if (!identityShare) {
+    const input = livePlateShareInput();
+    if (!input) {
       setShareNote("Publish your CeleYou before sharing.");
       window.setTimeout(() => setShareNote(null), 6000);
       return;
     }
-    const result = await engine.share({
-      title: celeCardShareTitle({ displayName: vcard.displayName, title: vcard.title }),
-      text: celeCardShareMessage(
-        { displayName: vcard.displayName, title: vcard.title, company: vcard.company },
-        identityShare
-      ),
-      url: identityShare,
-      imageUrl: vcard.slug
-        ? celeYouLivePlateShareUrls(vcard.slug, vcard.updatedAt || vcard.id || "live")
-        : null,
-      // Studio: published live plate only. Guest surfaces may capture the on-screen live face.
-      capturePlate: usePublishedPlate ? false : true,
-      persistPlateCardId: usePublishedPlate || !persistLivePlate ? null : cardId || vcard.id || null,
-    });
+    const result = await engine.share(input);
     if (result === "copied") {
-      setShareNote("Link copied.");
+      setShareNote("Live card and link copied.");
     } else if (result === "unavailable") {
       await copy("link", identityShare);
       setShareNote("Link copied.");
@@ -146,6 +157,44 @@ export function DigitalCardShareDesk({
       setShareNote(null);
     }
     window.setTimeout(() => setShareNote(null), 6000);
+  }
+
+  async function copyProfileLink() {
+    const input = livePlateShareInput();
+    if (!input) {
+      setShareNote("Publish your CeleYou before sharing.");
+      window.setTimeout(() => setShareNote(null), 6000);
+      return;
+    }
+    const result = await copyCeleYouProfile(input);
+    if (result === "copied") {
+      setCopied("link");
+      setShareNote("Live card and profile link copied.");
+      window.setTimeout(() => setCopied(null), 1800);
+    } else {
+      await copy("link", identityShare);
+      setShareNote("Live profile link copied.");
+    }
+    window.setTimeout(() => setShareNote(null), 4000);
+  }
+
+  async function shareWhatsApp() {
+    const input = livePlateShareInput();
+    if (!input) return;
+    // Prefer the OS share sheet with the live plate attached (WhatsApp picks it up on phones).
+    const result = await engine.share(input);
+    if (result === "shared" || result === "cancelled") return;
+    window.open(
+      celeYouWhatsAppShareHref(
+        celeCardShareMessage(
+          { displayName: vcard.displayName, title: vcard.title, company: vcard.company },
+          identityShare
+        ),
+        identityShare
+      ),
+      "_blank",
+      "noopener,noreferrer"
+    );
   }
 
   const ready = Boolean(identityShare || publicShare);
@@ -198,27 +247,20 @@ export function DigitalCardShareDesk({
           variant="outline"
           size="sm"
           disabled={!ready || !identityShare}
-          onClick={() => {
-            void copy("link", identityShare).then(() => {
-              if (identityShare) setShareNote("Live profile link copied.");
-              window.setTimeout(() => setShareNote(null), 4000);
-            });
-          }}
+          onClick={() => void copyProfileLink()}
         >
           <Copy className="mr-2 h-4 w-4" />
           {copied === "link" ? "Copied" : COPY_PROFILE_LINK_CTA}
         </Button>
-        {ready ? (
-          <Button asChild variant="outline" size="sm">
-            <a href={celeYouWhatsAppShareHref(celeCardShareMessage({ displayName: vcard.displayName, title: vcard.title, company: vcard.company }, identityShare), identityShare)}>
-              WhatsApp
-            </a>
-          </Button>
-        ) : (
-          <Button type="button" variant="outline" size="sm" disabled>
-            WhatsApp
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!ready || !identityShare}
+          onClick={() => void shareWhatsApp()}
+        >
+          WhatsApp
+        </Button>
         {ready ? (
           <Button asChild variant="outline" size="sm">
             <a href={celeYouEmailShareHref(celeCardShareTitle({ displayName: vcard.displayName, title: vcard.title }), celeCardShareMessage({ displayName: vcard.displayName, title: vcard.title, company: vcard.company }, identityShare), identityShare)}>
