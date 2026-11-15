@@ -127,7 +127,9 @@ export function compactMeetingDesk(raw: unknown): CeleCardMeetingDesk | undefine
   const durationMin = (MEETING_DURATIONS as readonly number[]).includes(durationRaw)
     ? (durationRaw as CeleCardMeetingDesk["durationMin"])
     : 30;
-  const timezone = resolveMeetingTimezone(record.timezone);
+  const timezone = resolveMeetingTimezone(
+    typeof record.timezone === "string" ? record.timezone : null
+  );
   const weekdays = Array.isArray(record.weekdays)
     ? [...new Set(record.weekdays.map((day) => Number(day)).filter((day) => day >= 0 && day <= 6))]
         .sort((a, b) => a - b)
