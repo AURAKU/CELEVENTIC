@@ -360,8 +360,9 @@ describe("digital business card themes", () => {
     assert.equal(celecardNameFitCqw("Alexandria Boateng Mensah", false) < celecardNameFitCqw("Ama Serwaa", false), true);
     assert.equal(celecardNameFitCqw("Jeffery Owuraku Afari", false) > celecardNameFitCqw("Alexandrina Worthington-Mensah", false), true);
     assert.deepEqual(celecardCompanyDisplayLines("Aura Group"), ["Aura Group"]);
-    assert.deepEqual(celecardCompanyDisplayLines("Spark & Drive"), ["Spark &", "Drive"]);
-    assert.deepEqual(celecardCompanyDisplayLines("Spark & Drive", { uppercase: true }), ["Spark &", "Drive"]);
+    assert.deepEqual(celecardCompanyDisplayLines("Spark & Drive"), ["Spark & Drive"]);
+    assert.deepEqual(celecardCompanyDisplayLines("Spark & Drive", { uppercase: true }), ["Spark & Drive"]);
+    assert.deepEqual(celecardCompanyDisplayLines("SPARK & DRIVE", { uppercase: true }), ["SPARK & DRIVE"]);
     assert.deepEqual(celecardCompanyDisplayLines("Aura Group Innovative Holdings Limited"), [
       "Aura Group Innovative",
       "Holdings Limited",

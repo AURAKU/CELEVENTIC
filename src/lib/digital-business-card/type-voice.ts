@@ -413,8 +413,8 @@ function celecardPhraseDisplayLines(
 
 /**
  * Plate presentation only. The saved company field stays in full.
- * The house mark now sits on the portrait, so three-word names use the freed
- * column: line one next to the photo, line two beneath.
+ * Short house names (Spark & Drive) stay on one line when they fit.
+ * Longer three-to-five word names still stack beside the portrait mark.
  */
 export function celecardCompanyDisplayLines(
   name: string,
@@ -423,7 +423,12 @@ export function celecardCompanyDisplayLines(
   const trimmed = name.replace(/\s+/g, " ").trim();
   if (!trimmed) return [];
   const uppercase = Boolean(options?.uppercase);
+  const compact = Boolean(options?.compact);
   const words = trimmed.split(" ");
+  const limit = celecardPhraseLimit("company", uppercase, compact);
+  if (celecardPhraseVisualLen(trimmed, uppercase) <= limit) {
+    return [trimmed];
+  }
   if (words.length >= 3 && words.length < 6) {
     const first = celecardBestPhraseBreak(words, uppercase);
     return [words.slice(0, first).join(" "), words.slice(first).join(" ")].filter(Boolean);
