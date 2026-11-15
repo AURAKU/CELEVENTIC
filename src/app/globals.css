@@ -3262,6 +3262,7 @@ html:active-view-transition .celecard-plate-motion {
 
 @media (max-width: 767px) {
   .celecard-studio-adaptive .celecard-studio-toolbar .celecard-studio-preview-jump,
+  .celecard-studio-adaptive .celecard-studio-toolbar .celecard-studio-share-jump,
   .celecard-studio-adaptive .celecard-studio-toolbar .celecard-studio-save {
     /* Persistent actions live in the mobile dock above the dashboard nav. */
     display: none;

@@ -1726,6 +1726,8 @@ describe("CeleYou device frame", () => {
     assert.match(studio, /celecard-studio-shell/);
     assert.match(studio, /celecard-studio-mobile-dock/);
     assert.match(studio, /openStudioPreview/);
+    assert.match(studio, /openStudioShare/);
+    assert.match(studio, /Quick Edit/);
     assert.match(studio, /data-preview-sheet/);
     assert.match(studio, /celecard-studio-toolbar/);
     assert.match(studio, /celecard-studio-live/);

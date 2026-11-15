@@ -465,6 +465,15 @@ export function DigitalCardStudioClient() {
     document.getElementById("studio-preview")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [classicStudio]);
 
+  const openStudioShare = useCallback(() => {
+    openStudioPreview();
+    window.requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        document.getElementById("studio-share-anchor")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 40);
+    });
+  }, [openStudioPreview]);
+
   const closeStudioPreviewSheet = useCallback(() => {
     setPreviewSheetOpen(false);
   }, []);
@@ -610,6 +619,23 @@ export function DigitalCardStudioClient() {
       window.removeEventListener("popstate", onPop);
     };
   }, []);
+
+  useEffect(() => {
+    if (classicStudio) return;
+    const raw = typeof window !== "undefined" ? window.location.hash : "";
+    const id = raw.replace(/^#/, "").split("?")[0]?.trim();
+    if (!id) return;
+    const mapped = studioDeskFromHash(raw);
+    if (!mapped || mapped !== desk) return;
+    const timer = window.setTimeout(() => {
+      if (id === "studio-preview" || id === "studio-live") {
+        openStudioPreview();
+        return;
+      }
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [classicStudio, desk, openStudioPreview]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -964,6 +990,16 @@ export function DigitalCardStudioClient() {
             <Eye className="mr-2 h-4 w-4" aria-hidden />
             Preview
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="celecard-studio-share-jump"
+            onClick={openStudioShare}
+            disabled={!form.slug}
+          >
+            <Share2 className="mr-2 h-4 w-4" aria-hidden />
+            Share
+          </Button>
           <Button type="button" variant="outline" className="celecard-studio-new" onClick={startNew}>
             <Plus className="mr-2 h-4 w-4" />
             New card
@@ -1127,29 +1163,59 @@ export function DigitalCardStudioClient() {
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold text-slate-900">{form.displayName.trim() || "Your CeleYou"}</p>
                   <Badge variant="secondary">
-                    {active?.isLive ? "Live" : form.isPublished ? "Draft published off" : "Draft"}
+                    {active?.isLive ? "Live" : form.isPublished ? (unsaved ? "Unsaved" : "Published off") : "Draft"}
                   </Badge>
+                  {unsaved ? (
+                    <Badge variant="outline" className="border-amber-300 text-amber-800">
+                      Unsaved changes
+                    </Badge>
+                  ) : null}
                 </div>
-                <p className="text-xs text-slate-500">
-                  Edit identity below, then open Design or Links. Preview and Share stay on the right (or under Preview).
-                </p>
+                <ul className="space-y-1 text-xs text-slate-600">
+                  <li>
+                    <span className="font-medium text-slate-800">QR</span>
+                    {" — "}
+                    {form.slug || active?.publicToken ? "Ready to share" : "Save once to mint the public link"}
+                  </li>
+                  <li>
+                    <span className="font-medium text-slate-800">NFC</span>
+                    {" — "}
+                    {!activeId
+                      ? "Save first, then program a card"
+                      : form.nfcEnabled
+                        ? "Ready"
+                        : "Off — enable in Preview"}
+                  </li>
+                  <li>
+                    <span className="font-medium text-slate-800">Plan</span>
+                    {" — "}
+                    {active?.subscriptionExpiresAt
+                      ? `${(active.subscriptionStatus || "").toUpperCase() === "TRIAL" ? "Trial" : "Paid"} · manage in Settings`
+                      : "Free · activate anytime in Settings"}
+                  </li>
+                </ul>
                 <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-[#0B8A83] hover:bg-[#097a74]"
+                    onClick={() =>
+                      document.getElementById("studio-identity")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }
+                  >
+                    Quick Edit
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={openStudioPreview}>
+                    Preview
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={openStudioShare} disabled={!form.slug}>
+                    Share
+                  </Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => goDesk("design")}>
                     Design
                   </Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => goDesk("links")}>
                     Links & Actions
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" onClick={() => goDesk("insights")}>
-                    Insights
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="bg-[#0B8A83] hover:bg-[#097a74]"
-                    onClick={openStudioPreview}
-                  >
-                    Preview & Share
                   </Button>
                 </div>
               </div>
@@ -1918,12 +1984,7 @@ export function DigitalCardStudioClient() {
                   type="button"
                   variant="outline"
                   className="celecard-studio-dock-btn"
-                  onClick={() => {
-                    openStudioPreview();
-                    window.requestAnimationFrame(() => {
-                      document.getElementById("studio-share-anchor")?.scrollIntoView({ block: "nearest" });
-                    });
-                  }}
+                  onClick={openStudioShare}
                   disabled={!form.slug}
                 >
                   <Share2 className="h-4 w-4" aria-hidden />
