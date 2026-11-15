@@ -181,6 +181,7 @@ export function CeleCardPlateBitmap({
                 position: "relative",
                 flexShrink: 0,
                 display: "flex",
+                zIndex: 2,
               }}
             >
               <div
@@ -212,6 +213,25 @@ export function CeleCardPlateBitmap({
                   <div style={{ fontSize: Math.round(52 * s), fontWeight: 700, color: theme.accent }}>{initials}</div>
                 )}
               </div>
+              {isEmbeddedImage(companyLogoSrc) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={companyLogoSrc}
+                  alt=""
+                  width={Math.round(44 * s)}
+                  height={Math.round(44 * s)}
+                  style={{
+                    position: "absolute",
+                    right: Math.round(-18 * s),
+                    bottom: Math.round(2 * s),
+                    objectFit: "contain",
+                    borderRadius: 999,
+                    background: "#ffffff",
+                    border: `${Math.max(2, Math.round(2 * s))}px solid ${theme.accent}`,
+                    zIndex: 3,
+                  }}
+                />
+              ) : null}
             </div>
             <div
               style={{
@@ -220,6 +240,7 @@ export function CeleCardPlateBitmap({
                 justifyContent: "center",
                 marginLeft: Math.round(26 * s),
                 marginRight: Math.round(20 * s),
+                paddingLeft: isEmbeddedImage(companyLogoSrc) ? Math.round(22 * s) : 0,
                 minWidth: 0,
                 flex: 1,
               }}
@@ -238,7 +259,7 @@ export function CeleCardPlateBitmap({
                 <div
                   style={{
                     marginTop: Math.round(10 * s),
-                    marginLeft: Math.round(-8 * s),
+                    marginLeft: isEmbeddedImage(companyLogoSrc) ? 0 : Math.round(-8 * s),
                     fontSize: Math.round(22 * s),
                     fontStyle: "italic",
                     color: theme.muted,
@@ -254,7 +275,7 @@ export function CeleCardPlateBitmap({
                     marginTop: Math.round(8 * s),
                     display: "flex",
                     flexDirection: "column",
-                    marginLeft: Math.round(-8 * s),
+                    marginLeft: isEmbeddedImage(companyLogoSrc) ? 0 : Math.round(-8 * s),
                   }}
                 >
                   {houseLines.map((line) => (
@@ -272,23 +293,6 @@ export function CeleCardPlateBitmap({
                       {line}
                     </div>
                   ))}
-                  {isEmbeddedImage(companyLogoSrc) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={companyLogoSrc}
-                      alt=""
-                      width={Math.round(44 * s)}
-                      height={Math.round(44 * s)}
-                      style={{
-                        marginTop: Math.round(7 * s),
-                        marginLeft: Math.round(-26 * s),
-                        objectFit: "contain",
-                        borderRadius: 999,
-                        background: "#ffffff",
-                        border: `${Math.max(2, Math.round(2 * s))}px solid ${theme.accent}`,
-                      }}
-                    />
-                  ) : null}
                 </div>
               ) : null}
             </div>

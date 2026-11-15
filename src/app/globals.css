@@ -3674,18 +3674,41 @@ html:active-view-transition .celecard-plate-motion {
   filter: none;
 }
 
+.celecard-face-meta {
+  position: relative;
+  min-width: 0;
+}
+
+/* Keep CEO / company copy clear of the house badge that docks on the portrait. */
+.celecard-face-meta.has-company-mark {
+  padding-left: 7.2cqw;
+  min-height: 12.4cqw;
+}
+
+.celecard-face-meta.has-company-mark .celecard-face-title,
+.celecard-face-meta.has-company-mark .celecard-face-company {
+  margin-left: 0;
+}
+
+.celecard-face-row.is-portrait .celecard-face-meta.has-company-mark {
+  padding-left: 7.6cqw;
+}
+
 .celecard-company-mark-by-portrait {
   display: grid;
   place-items: center;
   width: 10.2cqw;
   height: 10.2cqw;
-  margin-top: 0.85cqw;
-  margin-left: -5.9cqw;
-  position: relative;
+  margin-top: 0;
+  margin-left: 0;
+  position: absolute;
+  left: 0;
+  bottom: 0;
   z-index: 6;
   overflow: hidden;
   border-radius: 50%;
   background: #fff;
+  transform: translateX(-58%);
   box-shadow:
     0 0 0 0.4cqw #ffffff,
     0 0 0 0.78cqw color-mix(in srgb, var(--celecard-accent) 78%, #d4a63a),
@@ -3693,7 +3716,7 @@ html:active-view-transition .celecard-plate-motion {
 }
 
 .celecard-face-row.is-portrait .celecard-company-mark-by-portrait {
-  margin-left: -4.6cqw;
+  transform: translateX(-46%);
 }
 
 .celecard-face[data-composition="grid"] .celecard-company-mark-by-portrait {
@@ -3748,10 +3771,15 @@ html:active-view-transition .celecard-plate-motion {
   height: 10.2cqw;
 }
 
+.celecard-face[data-compact="true"] .celecard-face-meta.has-company-mark {
+  padding-left: 6.2cqw;
+  min-height: 10.6cqw;
+}
+
 .celecard-face[data-compact="true"] .celecard-company-mark.celecard-company-mark-by-portrait {
   width: 8.6cqw;
   height: 8.6cqw;
-  margin-left: -5.15cqw;
+  transform: translateX(-56%);
 }
 
 .celecard-face[data-composition="iconic"] .celecard-company-mark.celecard-company-mark-by-portrait,
@@ -3863,18 +3891,19 @@ html:active-view-transition .celecard-plate-motion {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding: 1.2cqw 5cqw 3.4cqw;
+  padding: 1.2cqw 5cqw 4.2cqw;
   gap: 0.7cqw;
   background: transparent;
   border-radius: 0;
   box-shadow: none;
   filter: none;
   isolation: auto;
-  mix-blend-mode: multiply;
+  /* Keep CeleYou lockup sharp — blend modes washed the slogan on dark plates. */
+  mix-blend-mode: normal;
 }
 
 .celecard-wordmark[data-paper="dark"] {
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
 }
 
 .celecard-wordmark-name {
@@ -3902,13 +3931,14 @@ html:active-view-transition .celecard-plate-motion {
   align-items: center;
   justify-content: center;
   gap: 1.35cqw;
-  max-width: 88cqw;
-  font-size: 2.15cqw;
+  max-width: 84cqw;
+  font-size: 2.05cqw;
   font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.055em;
+  line-height: 1.15;
+  letter-spacing: 0.04em;
   text-align: center;
-  white-space: nowrap;
+  white-space: normal;
+  text-wrap: balance;
   opacity: 1;
   background: transparent;
   box-shadow: none;

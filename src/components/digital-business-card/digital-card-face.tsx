@@ -768,39 +768,48 @@ function FaceIdentity({
       ) : voice.rule === "bar" ? (
         <span className={cn("mt-[2.2cqw] block h-[0.55cqw]", compact ? "w-[10cqw]" : "w-[9cqw]")} style={{ background: theme.accent }} aria-hidden />
       ) : null}
-      {title ? (
-        <FaceFitTitle
-          title={title}
-          compact={compact}
-          uppercase={titleUppercase}
-          italic={voice.titleItalic}
-          style={{
-            color: theme.text,
-            opacity: 0.88,
-            fontFamily: voice.title,
-            fontWeight: 500,
-            letterSpacing: titleLines.length > 1 ? "0.02em" : voice.titleTracking,
-            fontSize: `${celecardTitleFitCqw(title, { uppercase: titleUppercase, compact })}cqw`,
-          }}
-        />
-      ) : null}
-      {company ? (
-        <>
-          <FaceFitCompany
-            company={company}
-            compact={compact}
-            showMark={false}
-            mark={null}
-            uppercase={companyUppercase}
-            style={{
-              color: theme.accent,
-              fontFamily: voice.origin,
-              letterSpacing: companyLines.length > 1 ? "0.06em" : voice.companyTracking,
-              fontSize: `${celecardCompanyFitCqw(company, { uppercase: companyUppercase, compact })}cqw`,
-            }}
-          />
-          <FaceCompanyBadge company={company} companyLogoUrl={companyLogoUrl} theme={theme} />
-        </>
+      {title || company ? (
+        <div
+          className={cn(
+            "celecard-face-meta",
+            company && celeCardShowsCompanyMark(company) ? "has-company-mark" : null
+          )}
+        >
+          {title ? (
+            <FaceFitTitle
+              title={title}
+              compact={compact}
+              uppercase={titleUppercase}
+              italic={voice.titleItalic}
+              style={{
+                color: theme.text,
+                opacity: 0.88,
+                fontFamily: voice.title,
+                fontWeight: 500,
+                letterSpacing: titleLines.length > 1 ? "0.02em" : voice.titleTracking,
+                fontSize: `${celecardTitleFitCqw(title, { uppercase: titleUppercase, compact })}cqw`,
+              }}
+            />
+          ) : null}
+          {company ? (
+            <>
+              <FaceFitCompany
+                company={company}
+                compact={compact}
+                showMark={false}
+                mark={null}
+                uppercase={companyUppercase}
+                style={{
+                  color: theme.accent,
+                  fontFamily: voice.origin,
+                  letterSpacing: companyLines.length > 1 ? "0.06em" : voice.companyTracking,
+                  fontSize: `${celecardCompanyFitCqw(company, { uppercase: companyUppercase, compact })}cqw`,
+                }}
+              />
+              <FaceCompanyBadge company={company} companyLogoUrl={companyLogoUrl} theme={theme} />
+            </>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
