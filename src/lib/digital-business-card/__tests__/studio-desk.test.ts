@@ -11,11 +11,19 @@ import {
 } from "@/lib/digital-business-card/studio-desk";
 
 describe("CeleYou Studio desk routing", () => {
-  it("defaults to My Card and accepts only known desks", () => {
+  it("defaults to Card and keeps even one-word desk phrases", () => {
     assert.equal(parseStudioDesk(null), DEFAULT_STUDIO_DESK);
     assert.equal(parseStudioDesk("insights"), "insights");
     assert.equal(parseStudioDesk("nope"), "card");
     assert.equal(STUDIO_DESKS.length, 6);
+    assert.deepEqual(
+      STUDIO_DESKS.map((desk) => desk.label),
+      ["Card", "Design", "Links", "Audience", "Insights", "Settings"]
+    );
+    for (const desk of STUDIO_DESKS) {
+      assert.equal(desk.label.includes("&"), false);
+      assert.equal(desk.label.split(/\s+/).length, 1);
+    }
   });
 
   it("maps legacy hash anchors without treating studio=1 as classic", () => {

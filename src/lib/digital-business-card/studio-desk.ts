@@ -18,10 +18,11 @@ export type StudioDeskDefinition = {
   hint: string;
 };
 
+/** Even one-word desk phrases — keeps the tab bar balanced on every width. */
 export const STUDIO_DESKS: StudioDeskDefinition[] = [
   {
     id: "card",
-    label: "My Card",
+    label: "Card",
     shortLabel: "Card",
     hint: "Portrait, name, and identity",
   },
@@ -33,9 +34,9 @@ export const STUDIO_DESKS: StudioDeskDefinition[] = [
   },
   {
     id: "links",
-    label: "Links & Actions",
+    label: "Links",
     shortLabel: "Links",
-    hint: "Contact, social, pay, booking",
+    hint: "Contact, social, pay, and booking actions",
   },
   {
     id: "audience",
@@ -53,7 +54,7 @@ export const STUDIO_DESKS: StudioDeskDefinition[] = [
     id: "settings",
     label: "Settings",
     shortLabel: "Settings",
-    hint: "Privacy, activation, billing",
+    hint: "Privacy, activation, and billing",
   },
 ];
 

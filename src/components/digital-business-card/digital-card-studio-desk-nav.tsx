@@ -40,15 +40,13 @@ export function DigitalCardStudioDeskNav({
               type="button"
               role="tab"
               aria-selected={active}
+              aria-label={item.label}
               title={item.hint}
               className={cn("celecard-studio-desk-tab", active && "is-active")}
               onClick={() => onChange(item.id)}
             >
               <Icon className="celecard-studio-desk-tab-icon" aria-hidden />
-              <span className="celecard-studio-desk-tab-copy">
-                <span className="celecard-studio-desk-tab-full">{item.label}</span>
-                <span className="celecard-studio-desk-tab-short">{item.shortLabel}</span>
-              </span>
+              <span className="celecard-studio-desk-tab-label">{item.label}</span>
             </button>
           );
         })}

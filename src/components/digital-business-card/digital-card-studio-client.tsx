@@ -1220,7 +1220,7 @@ export function DigitalCardStudioClient() {
                     Design
                   </Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => goDesk("links")}>
-                    Links & Actions
+                    Links
                   </Button>
                 </div>
               </div>
