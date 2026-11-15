@@ -31,7 +31,7 @@ import { ExternalLink, Send, Eye, QrCode, Download, ArrowUp, ArrowDown } from "l
 import { PageLoader } from "@/components/ui/page-loader";
 import { PaginationBar } from "@/components/ui/pagination";
 import { FEED_LIMIT } from "@/lib/pagination";
-import { ThankYouPublicView } from "@/components/thank-you/thank-you-public-view";
+import { ThankYouKeepsakeExperience } from "@/components/thank-you/thank-you-public-view";
 import { FormDraftStatusBar } from "@/components/forms/form-draft-status-bar";
 import { isBlankFormDraft, readFormDraft, useFormDraft } from "@/hooks/use-form-draft";
 
@@ -735,7 +735,7 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
             </Button>
           </div>
           <div className={`mx-auto overflow-hidden rounded-2xl border ${previewDevice === "mobile" ? "max-w-md" : "max-w-3xl"}`}>
-            <ThankYouPublicView
+            <ThankYouKeepsakeExperience
               title={form.title}
               message={form.message}
               eyebrow={form.eyebrow}

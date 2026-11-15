@@ -85,6 +85,7 @@ export async function GET(
       },
       theme: publicTheme,
       canModerate,
+      canRemoveMedia,
       viewToken: viewToken.token,
       memories: { ...memories, items: enriched },
     },

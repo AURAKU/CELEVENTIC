@@ -176,8 +176,31 @@ export class EventMemoryUploadService {
     return prisma.eventMemoryUpload.update({ where: { id }, data: { isFeatured } });
   }
 
+  /**
+   * Soft-remove from the public gallery. Keeps the row + files so an admin
+   * can restore via approve() instead of requiring a re-upload.
+   */
   async delete(id: string) {
-    return prisma.eventMemoryUpload.delete({ where: { id } });
+    return prisma.eventMemoryUpload.update({
+      where: { id },
+      data: {
+        status: "REJECTED",
+        rejectionReason: "Removed by organizer",
+        approvedAt: new Date(),
+      },
+    });
+  }
+
+  async restore(id: string, approvedById?: string) {
+    return prisma.eventMemoryUpload.update({
+      where: { id },
+      data: {
+        status: "APPROVED",
+        rejectionReason: null,
+        approvedAt: new Date(),
+        ...(approvedById ? { approvedById } : {}),
+      },
+    });
   }
 
   async getAnalytics(eventId: string) {

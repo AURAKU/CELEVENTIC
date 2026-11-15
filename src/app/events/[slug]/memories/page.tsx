@@ -27,6 +27,7 @@ export default function EventMemoriesBySlugPage() {
     allowDownloads: boolean;
     upload?: AlbumUploadConfig | null;
     canModerate?: boolean;
+    canRemoveMedia?: boolean;
     viewToken?: string;
     theme?: { cssVars?: CSSProperties };
     memories: { items: MemoryGalleryItem[]; page: number; pages: number; total: number };
@@ -75,6 +76,7 @@ export default function EventMemoriesBySlugPage() {
       themeVars={data.theme?.cssVars as MemoryThemeVars | undefined}
       viewToken={data.viewToken}
       canModerate={Boolean(data.canModerate)}
+      canRemoveMedia={Boolean(data.canRemoveMedia)}
       upload={data.upload}
       onRefresh={loadGallery}
       invitationHref={data.event.invitationHref}

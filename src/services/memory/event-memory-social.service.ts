@@ -12,6 +12,7 @@ import {
   viewerCanDeleteMemoryComment,
   viewerCanDeleteMemoryMedia,
 } from "@/lib/memory/memory-social-permissions";
+import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
 
 export async function isMemoryEventModerator(
   eventId: string,
@@ -247,16 +248,17 @@ export class EventMemorySocialService {
     guestKeyHash?: string | null;
   }) {
     const memory = await prisma.eventMemoryUpload.findFirst({
-      where: { id: input.memoryId, eventId: input.eventId },
+      where: { id: input.memoryId, eventId: input.eventId, status: "APPROVED" },
       select: { id: true },
     });
     if (!memory) throw new Error("Memory not found");
 
+    // Guests never qualify — even with a matching uploaderGuestKey / guestKeyHash.
     if (!viewerCanDeleteMemoryMedia({ canModerate: input.isModerator })) {
       throw new Error("Only an admin or the organizer can remove photos and videos");
     }
 
-    await prisma.eventMemoryUpload.delete({ where: { id: memory.id } });
+    await eventMemoryUploadService.delete(memory.id);
     return { id: memory.id };
   }
 
