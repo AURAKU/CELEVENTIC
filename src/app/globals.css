@@ -2946,15 +2946,15 @@ html:active-view-transition .celecard-plate-motion {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   width: 100%;
   min-width: 0;
 }
 
 .celecard-studio-toolbar > * {
   width: auto;
-  flex: 1 1 auto;
-  min-width: min(100%, 8.5rem);
+  flex: 0 0 auto;
+  min-width: 0;
   justify-content: center;
 }
 
@@ -2966,7 +2966,7 @@ html:active-view-transition .celecard-plate-motion {
 
 .celecard-studio-save {
   order: 0;
-  flex: 1 1 9rem;
+  flex: 0 0 auto;
 }
 
 .celecard-studio-live {
@@ -3176,42 +3176,42 @@ html:active-view-transition .celecard-plate-motion {
   color: #1c1917;
 }
 
+/* Compact action row once there is a little horizontal room. */
 @media (min-width: 640px) {
-  .celecard-studio-toolbar > * {
-    flex: 0 1 auto;
-    min-width: 0;
+  .celecard-studio-toolbar {
+    gap: 0.5rem;
   }
 
   .celecard-studio-toolbar .celecard-studio-save-status {
     flex: 1 1 auto;
-    min-width: 8rem;
+    min-width: 7rem;
+    text-align: left;
   }
 }
 
-/* Side-by-side masthead only when both copy + actions fit without crushing text. */
-@media (min-width: 1024px) {
+/*
+ * Side-by-side masthead only on wide desktop content — not cramped laptops
+ * where the dashboard sidebar already consumes ~17.5rem.
+ */
+@media (min-width: 1280px) {
   .celecard-studio-masthead {
     flex-direction: row;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
 
   .celecard-studio-masthead-copy {
-    flex: 1 1 18rem;
+    flex: 1 1 20rem;
     width: auto;
-    min-width: min(100%, 16rem);
+    min-width: min(100%, 18rem);
   }
 
   .celecard-studio-toolbar {
     width: auto;
-    max-width: min(100%, 34rem);
-    flex: 1 1 18rem;
+    max-width: min(100%, 28rem);
+    flex: 0 1 28rem;
     justify-content: flex-end;
-  }
-
-  .celecard-studio-toolbar > * {
-    flex: 0 1 auto;
   }
 
   .celecard-studio-toolbar .celecard-studio-save-status {
@@ -3269,6 +3269,7 @@ html:active-view-transition .celecard-plate-motion {
   align-items: center;
   justify-content: center;
   gap: 0.2rem;
+  min-width: 0;
   min-height: 2.75rem;
   border-radius: 0.85rem;
   border: 0;
@@ -3281,6 +3282,7 @@ html:active-view-transition .celecard-plate-motion {
   line-height: 1.1;
   cursor: pointer;
   touch-action: manipulation;
+  overflow: hidden;
 }
 
 .celecard-studio-desk-tab-icon {
@@ -3291,7 +3293,11 @@ html:active-view-transition .celecard-plate-motion {
 
 .celecard-studio-desk-tab-copy {
   min-width: 0;
+  max-width: 100%;
   text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .celecard-studio-desk-tab.is-active {
@@ -3444,18 +3450,48 @@ html:active-view-transition .celecard-plate-motion {
   }
 }
 
+/* Phones with a bit of width: six short chips in one row. */
 @media (min-width: 480px) and (max-width: 767px) {
   .celecard-studio-desks-track {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
+  .celecard-studio-adaptive {
+    padding-bottom: 0;
+  }
+}
+
+/*
+ * Tablet + laptop: scrollable pill tabs — never crush six long labels into
+ * equal grid columns (that caused "Links & Actions" / "Audience" overlap).
+ */
+@media (min-width: 640px) and (max-width: 1279px) {
+  .celecard-studio-desks-track {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.35rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .celecard-studio-desk-tab {
+    flex: 0 0 auto;
     flex-direction: row;
     gap: 0.4rem;
     min-height: 2.5rem;
-    padding: 0.45rem 0.55rem;
+    padding: 0.45rem 0.8rem;
+    overflow: visible;
+  }
+
+  .celecard-studio-desk-tab-copy {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
   }
 
   .celecard-studio-desk-tab-full {
@@ -3467,23 +3503,13 @@ html:active-view-transition .celecard-plate-motion {
   }
 }
 
-@media (min-width: 768px) {
-  .celecard-studio-adaptive {
-    padding-bottom: 0;
-  }
-
-  .celecard-studio-desks-track {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-}
-
-/* Sidebar workspace nav only on true desktop — not cramped laptop/tablet widths. */
+/* True desktop: workspace nav as a left rail beside the editor. */
 @media (min-width: 1280px) {
   .celecard-studio-shell {
     display: grid;
-    grid-template-columns: 13rem minmax(0, 1fr);
+    grid-template-columns: 12.5rem minmax(0, 1fr);
     align-items: start;
-    gap: 1.5rem;
+    gap: 1.35rem;
     width: 100%;
   }
 
@@ -3507,20 +3533,32 @@ html:active-view-transition .celecard-plate-motion {
   }
 
   .celecard-studio-desks-track {
+    display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 0.25rem;
     padding: 0.35rem;
+    overflow: visible;
   }
 
   .celecard-studio-desk-tab {
+    flex-direction: row;
     justify-content: flex-start;
     width: 100%;
     min-height: 2.65rem;
     padding: 0.55rem 0.65rem;
+    overflow: hidden;
   }
 
   .celecard-studio-desk-tab-copy {
     text-align: left;
+  }
+
+  .celecard-studio-desk-tab-full {
+    display: inline;
+  }
+
+  .celecard-studio-desk-tab-short {
+    display: none;
   }
 }
 
@@ -3683,15 +3721,16 @@ html:active-view-transition .celecard-plate-motion {
 
 /*
  * Desk split rules MUST follow the mobile flex base above so they win in the cascade.
- * (An earlier min-width query placed before the base was getting overridden.)
+ * Wait until the content column is truly wide (laptop with dashboard nav closed,
+ * or desktop) so the editor is not crushed beside a skinny preview rail.
  */
-@media (min-width: 900px) {
+@media (min-width: 1100px) {
   .celecard-studio-desk {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+    grid-template-columns: minmax(0, 1fr) minmax(16.5rem, 20rem);
     grid-template-rows: auto auto;
     align-items: start;
-    gap: 1.35rem;
+    gap: 1.25rem;
     width: 100%;
   }
 
@@ -3729,7 +3768,7 @@ html:active-view-transition .celecard-plate-motion {
   }
 }
 
-@media (min-width: 1180px) {
+@media (min-width: 1400px) {
   .celecard-studio-desk {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(19rem, 22.5rem);

@@ -21,17 +21,21 @@
 
 ### Breakpoints used (content-driven CSS)
 
-- &lt;480px: 3-column desk chips  
-- 480–767px: 6-column compact chips + sheet preview + dock  
-- 768–899px: single-column desk, no mobile sheet/dock  
-- ≥900px: split editor/preview (rules placed after `.celecard-studio-desk` base)  
-- ≥1024px: masthead row (toolbar may shrink/wrap; never letter-stacks copy)  
-- ≥1180px: wider preview column  
-- ≥1280px: sidebar workspace nav  
+- &lt;480px: 3-column desk chips + sheet preview + dock  
+- 480–767px: 6 short chips + sheet preview + dock  
+- 640–1279px: scrollable pill desk tabs (full labels, no overlap)  
+- 768–1099px: single-column editor (preview below / sheet on phone)  
+- ≥1024px: dashboard nav sticky in-flow (toggle collapses width; no overlay)  
+- ≥1100px: editor + sticky preview rail  
+- ≥1280px: Studio workspace rail + side-by-side masthead  
+- ≥1400px: wider preview column  
 
-### Desktop crush fix (2026-11-15)
+### Desktop / laptop cleanup (2026-11-15)
 
-Masthead previously went `flex-direction: row` at 640px with a non-shrinking toolbar, squeezing the title/badge into a ~2ch column (`overflow-wrap: anywhere` → vertical letter stacks). Desk split media queries also preceded the mobile flex base and were overridden until 1180px. Fixed in `globals.css` + brand chip nowrap.
+- Masthead no longer rows at laptop widths; toolbar buttons stay compact (`flex: 0 0 auto`).  
+- Desk tabs use a horizontal scroller instead of a 6-column grid that overlapped labels.  
+- Dashboard sidebar is sticky in-flow on `lg+` (not a fixed overlay), so it cannot cover Studio.  
+- Preview split waits until 1100px so ~1032px laptops with nav open stay a clean single column.
 
 ### Files touched
 

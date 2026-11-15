@@ -113,12 +113,16 @@ export function DashboardSidebar({ mobileOpen, open, onClose }: DashboardSidebar
     <aside
       id="dashboard-sidebar"
       className={cn(
-        "fixed top-0 left-0 z-[60] flex w-[min(18rem,88vw)] flex-col sidebar-gradient text-slate-200 border-r border-white/10",
+        "z-[60] flex flex-col sidebar-gradient text-slate-200 border-r border-white/10",
         "h-[100dvh] max-h-[100dvh] pb-[env(safe-area-inset-bottom)]",
-        "transition-transform duration-300 ease-out will-change-transform",
+        "transition-[transform,width,min-width] duration-300 ease-out will-change-transform",
+        // Phone / tablet: fixed overlay drawer
+        "fixed top-0 left-0 w-[min(17.5rem,88vw)]",
+        // Laptop / desktop: sticky in-flow column (never overlays main)
+        "lg:sticky lg:top-0 lg:z-50 lg:self-start",
         navOpen
-          ? "translate-x-0 pointer-events-auto visible"
-          : "-translate-x-full pointer-events-none invisible"
+          ? "translate-x-0 pointer-events-auto visible lg:w-[17.5rem] lg:min-w-[17.5rem]"
+          : "-translate-x-full pointer-events-none invisible lg:translate-x-0 lg:w-0 lg:min-w-0 lg:overflow-hidden lg:border-transparent"
       )}
       aria-hidden={!navOpen}
       data-tour="nav-browse-desktop"

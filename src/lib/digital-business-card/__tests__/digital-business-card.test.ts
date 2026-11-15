@@ -1710,7 +1710,7 @@ describe("CeleYou device frame", () => {
     assert.match(catalog, /celecard-reach-open/);
     assert.match(catalog, /celecard-reach-card/);
     assert.doesNotMatch(catalog, /sm:grid-cols-2/);
-    assert.match(shell, /p-3 sm:p-6 lg:p-8/);
+    assert.match(shell, /p-3 .*sm:p-5 .*lg:p-6 .*xl:p-8/);
     assert.doesNotMatch(studioPage, /px-4 py-8/);
     const studio = readFileSync(
       join(process.cwd(), "src/components/digital-business-card/digital-card-studio-client.tsx"),
@@ -1764,7 +1764,8 @@ describe("CeleYou device frame", () => {
       true
     );
     assert.doesNotMatch(studio, /lg:grid-cols-\[1fr_360px\]/);
-    assert.match(css, /@media \(min-width: 1180px\)/);
+    assert.match(css, /@media \(min-width: 1100px\)/);
+    assert.match(css, /@media \(min-width: 1400px\)/);
     assert.match(css, /\.celecard-studio-toolbar/);
     assert.match(css, /\.celecard-studio-live/);
     assert.match(css, /\.celecard-reach-open/);
