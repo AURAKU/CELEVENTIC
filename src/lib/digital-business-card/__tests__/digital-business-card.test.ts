@@ -1777,6 +1777,10 @@ describe("CeleYou activity flow", () => {
     assert.match(source, /label: "Pass on"/);
     assert.match(source, /Recent activity/);
     assert.match(source, /Load more/);
+    assert.match(source, /studio-recent-activity-preview/);
+    assert.match(source, /aria-expanded=\{recentOpen\}/);
+    assert.match(source, /Hide/);
+    assert.match(source, /Show/);
     assert.match(source, /Opens and actions by day in this window/);
     assert.match(source, /visibilityState === "hidden"/);
     assert.match(source, /useReducedMotion/);

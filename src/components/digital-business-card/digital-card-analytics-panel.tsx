@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   CalendarClock,
+  ChevronDown,
+  ChevronUp,
   Contact,
   CreditCard,
   Globe,
@@ -133,15 +135,48 @@ function MetricTile({
   );
 }
 
+const RECENT_ACTIVITY_OPEN_KEY = "celeyou-studio-recent-activity-open";
+
+function readRecentActivityOpen(cardId: string | null): boolean {
+  if (!cardId || typeof window === "undefined") return true;
+  try {
+    const raw = window.localStorage.getItem(`${RECENT_ACTIVITY_OPEN_KEY}:${cardId}`);
+    if (raw === "0") return false;
+    if (raw === "1") return true;
+  } catch {
+    /* private mode */
+  }
+  return true;
+}
+
 export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null }) {
   const [data, setData] = useState<Analytics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<ActivityDateRange>(defaultActivityRange);
   const [switching, setSwitching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(true);
   const reduceMotion = useReducedMotion();
   const views = useCountUp(data?.viewCount ?? 0, Boolean(data) && !switching);
   const rangeQuery = activityRangeQuery(range);
+
+  useEffect(() => {
+    setRecentOpen(readRecentActivityOpen(cardId));
+  }, [cardId]);
+
+  function toggleRecentActivity() {
+    setRecentOpen((open) => {
+      const next = !open;
+      if (cardId) {
+        try {
+          window.localStorage.setItem(`${RECENT_ACTIVITY_OPEN_KEY}:${cardId}`, next ? "1" : "0");
+        } catch {
+          /* private mode */
+        }
+      }
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!cardId) {
@@ -390,35 +425,68 @@ export function DigitalCardAnalyticsPanel({ cardId }: { cardId: string | null })
             </p>
           ) : null}
 
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Recent activity</p>
-            <ul className="mt-1.5 space-y-1">
-              {(data.activity ?? []).map((row) => (
-                <li key={row.id} className="flex items-center justify-between text-xs text-slate-600">
-                  <span>{celeYouActivityLabel(row.kind)}</span>
-                  <time className="tabular-nums text-slate-400">
-                    {new Date(row.createdAt).toLocaleString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </time>
-                </li>
-              ))}
-              {!(data.activity ?? []).length ? (
-                <li className="text-xs text-slate-500">No published actions in this window.</li>
-              ) : null}
-            </ul>
-            {data.nextCursor ? (
+          <div className="rounded-2xl border border-slate-100 bg-white px-3 py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Recent activity
+                </p>
+                {!recentOpen ? (
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    {(data.activity ?? []).length
+                      ? `${(data.activity ?? []).length}${data.nextCursor ? "+" : ""} event${
+                          (data.activity ?? []).length === 1 ? "" : "s"
+                        } hidden`
+                      : "Preview hidden"}
+                  </p>
+                ) : null}
+              </div>
               <button
                 type="button"
-                className="mt-2 text-xs font-semibold text-[#0B8A83]"
-                onClick={() => void loadMore()}
-                disabled={loadingMore}
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-[#0B8A83] transition hover:border-[#0B8A83]/35 hover:bg-[#0B8A83]/5"
+                aria-expanded={recentOpen}
+                aria-controls="studio-recent-activity-preview"
+                onClick={toggleRecentActivity}
               >
-                {loadingMore ? "Loading…" : "Load more"}
+                {recentOpen ? "Hide" : "Show"}
+                {recentOpen ? (
+                  <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                )}
               </button>
+            </div>
+            {recentOpen ? (
+              <div id="studio-recent-activity-preview" className="mt-1.5">
+                <ul className="space-y-1">
+                  {(data.activity ?? []).map((row) => (
+                    <li key={row.id} className="flex items-center justify-between text-xs text-slate-600">
+                      <span>{celeYouActivityLabel(row.kind)}</span>
+                      <time className="tabular-nums text-slate-400">
+                        {new Date(row.createdAt).toLocaleString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </time>
+                    </li>
+                  ))}
+                  {!(data.activity ?? []).length ? (
+                    <li className="text-xs text-slate-500">No published actions in this window.</li>
+                  ) : null}
+                </ul>
+                {data.nextCursor ? (
+                  <button
+                    type="button"
+                    className="mt-2 text-xs font-semibold text-[#0B8A83]"
+                    onClick={() => void loadMore()}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? "Loading…" : "Load more"}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>
