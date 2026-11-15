@@ -20,18 +20,6 @@ import { ThankYouGuestMessages } from "@/components/thank-you/thank-you-guest-me
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
 
-function formatEventDate(value?: string | Date | null): string | null {
-  if (!value) return null;
-  const date = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString(undefined, {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
 function normalizeIdentity(value?: string | null): string {
   return (value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 }
@@ -92,7 +80,6 @@ export function ThankYouKeepsakeExperience(props: ThankYouKeepsakeExperienceProp
     footerText,
     hostName,
     eventTitle,
-    startDate,
     logoUrl,
     flyerUrl,
     hostPhotoUrl,
@@ -164,7 +151,6 @@ export function ThankYouKeepsakeExperience(props: ThankYouKeepsakeExperienceProp
 
   const displayTitle = title?.trim() || "Thank You for Celebrating With Us";
   const displayHosts = (hostNames?.trim() || hostName || "").trim();
-  const dateLabel = formatEventDate(startDate);
   const subtitleText = subtitle?.trim() || "";
   const hostsKey = normalizeIdentity(displayHosts);
   const showSubtitle =
@@ -393,14 +379,6 @@ export function ThankYouKeepsakeExperience(props: ThankYouKeepsakeExperienceProp
                       }}
                     >
                       {displayHosts}
-                    </p>
-                  )}
-                  {dateLabel && (
-                    <p
-                      className="text-sm tracking-[0.08em] sm:text-[15px]"
-                      style={{ color: resolved.mutedTextColor, fontFamily: "var(--ty-eyebrow)" }}
-                    >
-                      {dateLabel}
                     </p>
                   )}
                   {audioUrl && (
