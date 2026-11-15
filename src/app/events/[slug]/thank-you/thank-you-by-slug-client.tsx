@@ -44,6 +44,7 @@ type PublicThankYouPayload = {
       caption?: string | null;
       uploaderName?: string | null;
       thumbnailUrl?: string | null;
+      createdAt?: string | Date | null;
     }>;
   };
   event: {
