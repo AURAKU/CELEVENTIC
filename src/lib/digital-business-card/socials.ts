@@ -2490,9 +2490,15 @@ export function arrangeReachItems(
 
   const stack = take(stackOrder, "stack");
   const dock = take(dockOrder, "dock");
+  // Meetings always stay in the Business stack so Book a meeting is visible on the guest card.
+  for (let index = dock.length - 1; index >= 0; index -= 1) {
+    if (dock[index]?.brand !== "meeting") continue;
+    stack.push({ ...dock[index]!, surface: "stack" });
+    dock.splice(index, 1);
+  }
   for (const item of live) {
     if (placed.has(item.id)) continue;
-    const surface = item.surface || defaultReachSurface(item.brand);
+    const surface = item.brand === "meeting" ? "stack" : item.surface || defaultReachSurface(item.brand);
     if (surface === "stack") stack.push({ ...item, surface: "stack" });
     else dock.push({ ...item, surface: "dock" });
   }

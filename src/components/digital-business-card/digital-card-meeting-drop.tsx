@@ -13,6 +13,7 @@ import {
   listOpenMeetingSlots,
   meetingIcs,
   meetingSubtitle,
+  resolveMeetingTimezone,
   type CeleCardMeetingDesk,
   type CeleCardMeetingSlot,
 } from "@/lib/digital-business-card/meetings";
@@ -25,7 +26,10 @@ import { trackCeleYouGuestEvent } from "@/lib/celeyou-share/events";
 
 function deskFromItem(item: DigitalCardReachItem): CeleCardMeetingDesk {
   try {
-    return compactMeetingDesk(JSON.parse(item.copyValue || "{}")) ?? defaultMeetingDesk({ enabled: true, title: item.title });
+    const desk =
+      compactMeetingDesk(JSON.parse(item.copyValue || "{}")) ??
+      defaultMeetingDesk({ enabled: true, title: item.title });
+    return { ...desk, timezone: resolveMeetingTimezone(desk.timezone) };
   } catch {
     return defaultMeetingDesk({ enabled: true, title: item.title });
   }
@@ -94,7 +98,17 @@ function MeetingBooker({
   const { t, locale } = useLocale();
   const lang = htmlLang(locale);
   const guestZone = guessMeetingTimezone();
-  const localSlots = useMemo(() => listOpenMeetingSlots(desk, [], new Date(), lang), [desk, lang]);
+  const safeDesk = useMemo(
+    () => ({ ...desk, timezone: resolveMeetingTimezone(desk.timezone) }),
+    [desk]
+  );
+  const localSlots = useMemo(() => {
+    try {
+      return listOpenMeetingSlots(safeDesk, [], new Date(), lang);
+    } catch {
+      return [];
+    }
+  }, [safeDesk, lang]);
   const [slots, setSlots] = useState(localSlots);
   const [dayKey, setDayKey] = useState(localSlots[0]?.dayKey ?? "");
   const [picked, setPicked] = useState<CeleCardMeetingSlot | null>(null);
@@ -209,8 +223,8 @@ function MeetingBooker({
           {t("celeyou.meet_request_sent")}
         </p>
         <p className="text-sm font-medium leading-relaxed" style={{ color: CELECARD_REACH_INK }}>
-          {formatMeetingWhen(done.start, desk.timezone, lang)}
-          {guestZone !== desk.timezone ? ` · ${t("celeyou.meet_your_when", { when: formatMeetingWhen(done.start, guestZone, lang) })}` : ""}.{" "}
+          {formatMeetingWhen(done.start, safeDesk.timezone, lang)}
+          {guestZone !== safeDesk.timezone ? ` · ${t("celeyou.meet_your_when", { when: formatMeetingWhen(done.start, guestZone, lang) })}` : ""}.{" "}
           {ownerName
             ? t("celeyou.meet_confirm_named", { name: ownerName.split(" ")[0] || ownerName })
             : t("celeyou.meet_confirm")}
@@ -224,10 +238,10 @@ function MeetingBooker({
                 {
                   start: done.start,
                   end: done.end,
-                  timezone: desk.timezone,
-                  title: desk.title,
-                  place: desk.place,
-                  note: desk.note,
+                  timezone: safeDesk.timezone,
+                  title: safeDesk.title,
+                  place: safeDesk.place,
+                  note: safeDesk.note,
                 },
                 ownerName || "CeleYou",
                 name.trim() || "Guest"
@@ -251,21 +265,21 @@ function MeetingBooker({
       </div>
       <div>
         <p className="text-[15px] font-semibold" style={{ color: CELECARD_REACH_INK }}>
-          {desk.title}
+          {safeDesk.title}
         </p>
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-medium" style={{ color: CELECARD_REACH_INK }}>
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" style={{ color: fill }} />
-            {desk.durationMin === 60 ? t("celeyou.meet_hour") : t("celeyou.meet_minutes", { count: desk.durationMin })}
+            {safeDesk.durationMin === 60 ? t("celeyou.meet_hour") : t("celeyou.meet_minutes", { count: safeDesk.durationMin })}
           </span>
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-3.5 w-3.5" style={{ color: fill }} />
-            {desk.place}
+            {safeDesk.place}
           </span>
         </p>
-        {desk.note ? (
+        {safeDesk.note ? (
           <p className="mt-1 text-[13px] font-medium leading-relaxed" style={{ color: CELECARD_REACH_INK }}>
-            {desk.note}
+            {safeDesk.note}
           </p>
         ) : null}
       </div>
@@ -327,7 +341,7 @@ function MeetingBooker({
           </div>
         ) : (
           <p className="text-sm font-medium" style={{ color: CELECARD_REACH_INK }}>
-            {t("celeyou.meet_no_times", { days: desk.horizonDays })}
+            {t("celeyou.meet_no_times", { days: safeDesk.horizonDays })}
           </p>
         )
       ) : null}
@@ -371,9 +385,9 @@ function MeetingBooker({
             {t("celeyou.meet_you_picked")}
           </p>
           <p className="mt-0.5 text-sm font-semibold" style={{ color: CELECARD_REACH_INK }}>
-            {formatMeetingWhen(picked.start, desk.timezone, lang)}
+            {formatMeetingWhen(picked.start, safeDesk.timezone, lang)}
           </p>
-          {guestZone !== desk.timezone ? (
+          {guestZone !== safeDesk.timezone ? (
             <p className="text-[13px] font-medium" style={{ color: CELECARD_REACH_INK }}>
               {t("celeyou.meet_your_time", { when: formatMeetingClockSafe(picked.start, guestZone, lang) })}
             </p>

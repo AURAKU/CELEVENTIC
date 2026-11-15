@@ -85,14 +85,29 @@ export function defaultMeetingDesk(partial?: Partial<CeleCardMeetingDesk>): Cele
   })!;
 }
 
+const FALLBACK_MEETING_TZ = "Africa/Accra";
+
+/** Accept only IANA zones Intl can format. Bad values blanked the guest Business section. */
+export function resolveMeetingTimezone(raw?: string | null): string {
+  const zone = String(raw ?? "")
+    .trim()
+    .slice(0, TZ_MAX);
+  if (!zone || /^local$/i.test(zone)) return FALLBACK_MEETING_TZ;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: zone }).format(new Date());
+    return zone;
+  } catch {
+    return FALLBACK_MEETING_TZ;
+  }
+}
+
 export function guessMeetingTimezone(): string {
   try {
     const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (zone && zone.length <= TZ_MAX) return zone;
+    return resolveMeetingTimezone(zone);
   } catch {
-    /* keep Accra */
+    return FALLBACK_MEETING_TZ;
   }
-  return "Africa/Accra";
 }
 
 function clampHour(value: unknown, fallback: number): number {
@@ -112,9 +127,7 @@ export function compactMeetingDesk(raw: unknown): CeleCardMeetingDesk | undefine
   const durationMin = (MEETING_DURATIONS as readonly number[]).includes(durationRaw)
     ? (durationRaw as CeleCardMeetingDesk["durationMin"])
     : 30;
-  const timezone = String(record.timezone ?? "")
-    .trim()
-    .slice(0, TZ_MAX) || "Africa/Accra";
+  const timezone = resolveMeetingTimezone(record.timezone);
   const weekdays = Array.isArray(record.weekdays)
     ? [...new Set(record.weekdays.map((day) => Number(day)).filter((day) => day >= 0 && day <= 6))]
         .sort((a, b) => a - b)
@@ -153,9 +166,10 @@ export function persistMeetingDesk(raw: unknown): CeleCardMeetingDesk | undefine
 }
 
 function tzOffsetMs(date: Date, timeZone: string): number {
+  const safeZone = resolveMeetingTimezone(timeZone);
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-US", {
-      timeZone,
+      timeZone: safeZone,
       hour12: false,
       year: "numeric",
       month: "2-digit",
@@ -179,15 +193,17 @@ function tzOffsetMs(date: Date, timeZone: string): number {
 }
 
 export function zonedWallTime(timeZone: string, year: number, month: number, day: number, hour: number, minute: number): Date {
+  const safeZone = resolveMeetingTimezone(timeZone);
   const utc = Date.UTC(year, month - 1, day, hour, minute, 0);
-  const first = new Date(utc - tzOffsetMs(new Date(utc), timeZone));
-  return new Date(utc - tzOffsetMs(first, timeZone));
+  const first = new Date(utc - tzOffsetMs(new Date(utc), safeZone));
+  return new Date(utc - tzOffsetMs(first, safeZone));
 }
 
 function zonedParts(date: Date, timeZone: string) {
+  const safeZone = resolveMeetingTimezone(timeZone);
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-GB", {
-      timeZone,
+      timeZone: safeZone,
       weekday: "short",
       year: "numeric",
       month: "2-digit",
@@ -215,7 +231,7 @@ export function formatMeetingWhen(iso: string, timeZone: string, locale = "en-GB
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat(locale, {
-    timeZone,
+    timeZone: resolveMeetingTimezone(timeZone),
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -229,7 +245,7 @@ export function formatMeetingClock(iso: string, timeZone: string, locale = "en-G
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat(locale, {
-    timeZone,
+    timeZone: resolveMeetingTimezone(timeZone),
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
@@ -237,9 +253,10 @@ export function formatMeetingClock(iso: string, timeZone: string, locale = "en-G
 }
 
 export function formatMeetingDay(iso: string, timeZone: string, locale = "en-GB"): { key: string; weekday: string; label: string } {
-  const parts = zonedParts(new Date(iso), timeZone);
-  const month = new Intl.DateTimeFormat(locale, { timeZone, month: "short" }).format(new Date(iso));
-  const weekday = new Intl.DateTimeFormat(locale, { timeZone, weekday: "short" }).format(new Date(iso));
+  const safeZone = resolveMeetingTimezone(timeZone);
+  const parts = zonedParts(new Date(iso), safeZone);
+  const month = new Intl.DateTimeFormat(locale, { timeZone: safeZone, month: "short" }).format(new Date(iso));
+  const weekday = new Intl.DateTimeFormat(locale, { timeZone: safeZone, weekday: "short" }).format(new Date(iso));
   return {
     key: `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`,
     weekday,
@@ -267,42 +284,44 @@ export function listOpenMeetingSlots(
   locale = "en-GB"
 ): CeleCardMeetingSlot[] {
   if (!desk.enabled || !desk.weekdays.length) return [];
-  const taken = new Set(takenStarts.map((value) => new Date(value).getTime()).filter((value) => Number.isFinite(value)));
-  const lengthMs = desk.durationMin * 60_000;
-  const earliest = new Date(now.getTime() + desk.noticeHours * 3_600_000);
-  const slots: CeleCardMeetingSlot[] = [];
-  const startParts = zonedParts(now, desk.timezone);
+  const timezone = resolveMeetingTimezone(desk.timezone);
+  try {
+    const taken = new Set(takenStarts.map((value) => new Date(value).getTime()).filter((value) => Number.isFinite(value)));
+    const lengthMs = desk.durationMin * 60_000;
+    const earliest = new Date(now.getTime() + desk.noticeHours * 3_600_000);
+    const slots: CeleCardMeetingSlot[] = [];
+    const startParts = zonedParts(now, timezone);
 
-  for (let offset = 0; offset <= desk.horizonDays; offset += 1) {
-    const probe = zonedWallTime(
-      desk.timezone,
-      startParts.year,
-      startParts.month,
-      startParts.day + offset,
-      12,
-      0
-    );
-    const day = zonedParts(probe, desk.timezone);
-    if (!desk.weekdays.includes(day.weekday)) continue;
-    for (let minute = desk.startHour * 60; minute + desk.durationMin <= desk.endHour * 60; minute += desk.durationMin + desk.bufferMin) {
-      const hour = Math.floor(minute / 60);
-      const min = minute % 60;
-      const start = zonedWallTime(desk.timezone, day.year, day.month, day.day, hour, min);
-      if (start.getTime() < earliest.getTime()) continue;
-      if (taken.has(start.getTime())) continue;
-      const end = new Date(start.getTime() + lengthMs);
-      const dayMeta = formatMeetingDay(start.toISOString(), desk.timezone, locale);
-      slots.push({
-        start: start.toISOString(),
-        end: end.toISOString(),
-        dayKey: dayMeta.key,
-        weekday: dayMeta.weekday,
-        dayLabel: dayMeta.label,
-        timeLabel: formatMeetingClock(start.toISOString(), desk.timezone, locale),
-      });
+    for (let offset = 0; offset <= desk.horizonDays; offset += 1) {
+      const probe = zonedWallTime(timezone, startParts.year, startParts.month, startParts.day + offset, 12, 0);
+      const day = zonedParts(probe, timezone);
+      if (!desk.weekdays.includes(day.weekday)) continue;
+      for (
+        let minute = desk.startHour * 60;
+        minute + desk.durationMin <= desk.endHour * 60;
+        minute += desk.durationMin + desk.bufferMin
+      ) {
+        const hour = Math.floor(minute / 60);
+        const min = minute % 60;
+        const start = zonedWallTime(timezone, day.year, day.month, day.day, hour, min);
+        if (start.getTime() < earliest.getTime()) continue;
+        if (taken.has(start.getTime())) continue;
+        const end = new Date(start.getTime() + lengthMs);
+        const dayMeta = formatMeetingDay(start.toISOString(), timezone, locale);
+        slots.push({
+          start: start.toISOString(),
+          end: end.toISOString(),
+          dayKey: dayMeta.key,
+          weekday: dayMeta.weekday,
+          dayLabel: dayMeta.label,
+          timeLabel: formatMeetingClock(start.toISOString(), timezone, locale),
+        });
+      }
     }
+    return slots;
+  } catch {
+    return [];
   }
-  return slots;
 }
 
 export function serializeMeetingBooking(booking: CeleCardMeetingBooking): string {

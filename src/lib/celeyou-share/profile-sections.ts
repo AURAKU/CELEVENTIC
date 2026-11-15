@@ -78,9 +78,12 @@ export function guestIdentitySections(
 ): GuestIdentitySection[] {
   const buckets = new Map<GuestIdentitySectionId, DigitalCardReachItem[]>();
   for (const item of reach) {
-    const id = sectionForBrand(item.brand);
+    // Keep Book a meeting in the Business stack, never the social dock.
+    const normalized =
+      item.brand === "meeting" && item.surface !== "stack" ? { ...item, surface: "stack" as const } : item;
+    const id = sectionForBrand(normalized.brand);
     const list = buckets.get(id) ?? [];
-    list.push(item);
+    list.push(normalized);
     buckets.set(id, list);
   }
 

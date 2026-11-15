@@ -607,12 +607,14 @@ function StackTap({
   const copy = localizeGroupCopy(t, group);
   const placeLocked = isLocationGroup(group) && group.items.every((item) => item.locked);
   if (isMeetingGroup(group)) {
+    const locked = group.items.every((item) => item.locked);
     return (
       <div className="grid gap-1.5">
         <div
           className={cn(
             "celecard-reach-row group relative overflow-hidden border backdrop-blur",
-            compact ? "is-compact" : "is-live"
+            compact ? "is-compact" : "is-live",
+            locked ? "is-locked" : null
           )}
           style={plate}
         >
@@ -628,20 +630,31 @@ function StackTap({
               </span>
             ) : null}
           </span>
+          {locked && group.items[0] ? (
+            <span
+              className="celecard-reach-go"
+              style={{ background: "#fffef8", color: CELECARD_REACH_INK }}
+              aria-hidden
+            >
+              <HiddenReachGlyph item={group.items[0]} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </span>
+          ) : null}
         </div>
-        <div
-          className="overflow-hidden rounded-[1.35rem] border shadow-[0_12px_28px_rgba(0,0,0,0.12)]"
-          style={plate}
-        >
-          <DigitalCardMeetingDrop
-            items={group.items}
-            theme={theme}
-            compact={compact}
-            preview={compact}
-            slug={slug}
-            ownerName={ownerName}
-          />
-        </div>
+        {locked ? null : (
+          <div
+            className="overflow-hidden rounded-[1.35rem] border shadow-[0_12px_28px_rgba(0,0,0,0.12)]"
+            style={plate}
+          >
+            <DigitalCardMeetingDrop
+              items={group.items}
+              theme={theme}
+              compact={compact}
+              preview={compact}
+              slug={slug}
+              ownerName={ownerName}
+            />
+          </div>
+        )}
       </div>
     );
   }

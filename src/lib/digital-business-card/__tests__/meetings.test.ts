@@ -9,6 +9,7 @@ import {
   listOpenMeetingSlots,
   meetingReplyCopy,
   persistMeetingDesk,
+  resolveMeetingTimezone,
   serializeMeetingBooking,
   parseMeetingBooking,
   whatsappComposeHref,
@@ -44,6 +45,26 @@ describe("CeleYou meeting desk", () => {
     const days = groupMeetingDays(slots);
     assert.ok(days.length >= 1);
     assert.equal(days[0]?.slots[0]?.timeLabel, "09:00");
+  });
+
+  it("falls back from invalid timezones so Book a meeting still renders", () => {
+    assert.equal(resolveMeetingTimezone("local"), "Africa/Accra");
+    assert.equal(resolveMeetingTimezone("Not/AZone"), "Africa/Accra");
+    const desk = compactMeetingDesk({
+      enabled: true,
+      title: "Book the Meeting",
+      durationMin: 30,
+      timezone: "local",
+      weekdays: [1, 2, 3, 4, 5],
+      startHour: 9,
+      endHour: 17,
+      bufferMin: 15,
+      noticeHours: 2,
+      horizonDays: 14,
+      place: "Video",
+    })!;
+    assert.equal(desk.timezone, "Africa/Accra");
+    assert.ok(listOpenMeetingSlots(desk).length > 0);
   });
 
   it("stays off the guest card until enabled", () => {
