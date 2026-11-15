@@ -170,8 +170,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     result = { connection: fallback };
   }
 
+  const connection = result.connection;
+
   if (parsed.data.meetingReply) {
-    const connection = result.connection;
     const booking = connection.source === "meeting" ? parseMeetingBooking(connection.note) : null;
     if (booking && connection.visitorEmail) {
       const card = await prisma.digitalBusinessCard.findFirst({
@@ -203,10 +204,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       },
     },
   });
-  const view = fresh
-    ? toOwnerConnectionView(fresh)
-    : result.connection
-      ? toOwnerConnectionView({ ...result.connection, reminders: [] })
-      : result.connection;
+  const view = toOwnerConnectionView(
+    fresh ?? { ...connection, reminders: [] }
+  );
   return NextResponse.json({ success: true, data: view });
 }
