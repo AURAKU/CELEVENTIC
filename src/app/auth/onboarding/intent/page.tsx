@@ -130,8 +130,8 @@ export default function OnboardingIntentPage() {
   function handleSelect(option: OnboardingIntentOption) {
     setSelected(option);
     setError("");
-    if (option.requiresConfirmFields) return;
-    void saveIntent(option);
+    // Always pause on selection so the user sees what happens next + Continue.
+    // Auto-submit hid feedback below the fold on mobile and felt stuck.
   }
 
   if (booting) {
@@ -167,50 +167,70 @@ export default function OnboardingIntentPage() {
           onSelect={handleSelect}
         />
 
-        {selected?.id === "ORGANIZATION" && (
-          <div className="space-y-2">
-            <Label htmlFor="organizationName">Organisation name</Label>
-            <Input
-              id="organizationName"
-              value={organizationName}
-              onChange={(e) => setOrganizationName(e.target.value)}
-              placeholder="e.g. Grace Community Church"
-              required
-            />
-          </div>
-        )}
-
-        {selected?.id === "VENDOR" && (
-          <div className="space-y-2">
-            <Label htmlFor="vendorCategory">What do you offer?</Label>
-            <select
-              id="vendorCategory"
-              className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-              value={vendorCategory}
-              onChange={(e) => setVendorCategory(e.target.value)}
-            >
-              {VENDOR_SERVICE_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {selected?.requiresConfirmFields && (
-          <Button
-            className="w-full"
-            size="lg"
-            disabled={loading}
-            onClick={() => selected && void saveIntent(selected)}
+        {selected ? (
+          <div
+            className="sticky bottom-0 z-10 -mx-1 space-y-4 rounded-2xl border border-brand-200 bg-brand-50/95 p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:static sm:mx-0 sm:shadow-none"
+            role="status"
+            aria-live="polite"
           >
-            {loading ? "Saving…" : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        )}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
+                Next
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">{selected.title}</p>
+              <p className="mt-1 text-sm leading-relaxed text-pretty text-slate-600">
+                {selected.confirmHint}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-pretty text-slate-500">
+                {selected.next}
+              </p>
+            </div>
 
-        {loading && !selected?.requiresConfirmFields && (
-          <p className="text-center text-sm text-slate-500">Setting up your workspace…</p>
+            {selected.id === "ORGANIZATION" && (
+              <div className="space-y-2">
+                <Label htmlFor="organizationName">Organisation name</Label>
+                <Input
+                  id="organizationName"
+                  value={organizationName}
+                  onChange={(e) => setOrganizationName(e.target.value)}
+                  placeholder="e.g. Grace Community Church"
+                  required
+                />
+              </div>
+            )}
+
+            {selected.id === "VENDOR" && (
+              <div className="space-y-2">
+                <Label htmlFor="vendorCategory">What do you offer?</Label>
+                <select
+                  id="vendorCategory"
+                  className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                  value={vendorCategory}
+                  onChange={(e) => setVendorCategory(e.target.value)}
+                >
+                  {VENDOR_SERVICE_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <Button
+              className="w-full"
+              size="lg"
+              disabled={loading}
+              onClick={() => void saveIntent(selected)}
+            >
+              {loading ? "Opening your home screen…" : selected.primaryCta}{" "}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <p className="text-center text-sm text-slate-500">
+            Tap one option above to see what happens next.
+          </p>
         )}
       </div>
     </AuthLayout>

@@ -38,7 +38,7 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "landing", key: "svc_start_vendor", enValue: "List my business", frValue: "Publier mon activité" },
   { namespace: "landing", key: "svc_cards_title", enValue: "CeleYou", frValue: "CeleYou" },
   { namespace: "landing", key: "svc_cards_desc", enValue: "Your living identity. Share with Smart QR, an NFC card, or a link. Guests open it with nothing to install.", frValue: "Votre identité vivante. Partagez par Smart QR, carte NFC ou lien. Ils l'ouvrent sans rien installer." },
-  { namespace: "landing", key: "svc_start_card", enValue: "Design my CeleYou", frValue: "Créer ma CeleYou" },
+  { namespace: "landing", key: "svc_start_card", enValue: "My CeleYou Card", frValue: "Ma carte CeleYou" },
   { namespace: "landing", key: "celeyou_kicker", enValue: "CeleYou", frValue: "CeleYou" },
   { namespace: "landing", key: "celeyou_hook", enValue: "One tap. They have you.", frValue: "Un geste. Ils vous ont." },
   { namespace: "landing", key: "celeyou_body", enValue: "A living page for your name, photo, WhatsApp, and links. Share with Smart QR, an NFC card, Nearby Share, or a link. They open it with nothing to install.", frValue: "Une page vivante pour votre nom, photo, WhatsApp et liens. Partagez par Smart QR, carte NFC, Nearby Share ou lien. Ils l'ouvrent sans rien installer." },
@@ -582,7 +582,7 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   // ── CeleYou public chrome ──
   { namespace: "celeyou", key: "hero_line", enValue: "Your phone. Your identity. Every connection.", frValue: "Votre téléphone. Votre identité. Chaque connexion." },
   { namespace: "celeyou", key: "hero_support", enValue: "QR, NFC card, Nearby Share, or a link. One page for your socials, number, WhatsApp, and website. Update once. Every share stays current. Recipients open it with no app and no account.", frValue: "QR, carte NFC, Nearby Share ou un lien. Une page pour vos réseaux, numéro, WhatsApp et site. Mettez à jour une fois. Chaque partage reste actuel. Ils l'ouvrent sans appli ni compte." },
-  { namespace: "celeyou", key: "cta_primary", enValue: "Design my CeleYou", frValue: "Créer ma CeleYou" },
+  { namespace: "celeyou", key: "cta_primary", enValue: "My CeleYou Card", frValue: "Ma carte CeleYou" },
   { namespace: "celeyou", key: "cta_secondary", enValue: "View templates", frValue: "Voir les modèles" },
   { namespace: "celeyou", key: "sign_in_account", enValue: "Sign in with your Celeventic account", frValue: "Se connecter avec votre compte Celeventic" },
   { namespace: "celeyou", key: "create_yours", enValue: "Create your CeleYou", frValue: "Créer votre CeleYou" },

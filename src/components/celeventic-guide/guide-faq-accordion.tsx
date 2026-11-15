@@ -44,8 +44,9 @@ const FAQ = [
     q: "What is CeleYou?",
     a: (
       <>
-        CeleYou is your living identity card. Design it in Studio, pay a plan so the public page
-        stays live, and share a link, a QR, a Wallet card, Hold up this card, or a programmed NFC card. Start with{" "}
+        CeleYou is your living identity card. Design My CeleYou Card in Studio, publish on Free,
+        share your live /u/ link, Smart QR, Wallet card, Hold up this card, or a programmed NFC card.
+        Optional Pro trial is 7 days with no charge when it ends. Start with{" "}
         <Link href="/guide/celeyou" className="text-brand-700 hover:underline">
           CeleYou
         </Link>

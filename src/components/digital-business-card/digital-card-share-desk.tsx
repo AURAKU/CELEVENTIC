@@ -10,9 +10,9 @@ import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact
 import { CeleYouNameDropSetup } from "@/components/digital-business-card/celeyou-namedrop-setup";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import {
-  celeCardShareImageUrls,
   celeCardShareMessage,
   celeCardShareTitle,
+  celeYouLivePlateShareUrls,
   digitalCardWalletPath,
 } from "@/lib/digital-business-card/share";
 import { getCeleYouShareOrigin, sanitizePublicUrl } from "@/lib/app-url";
@@ -46,6 +46,10 @@ export function DigitalCardShareDesk({
   cardId,
   proximityDiscoverable = true,
   onProximityChange,
+  /** Owner studio: share the published live plate, not an unsaved draft preview. */
+  usePublishedPlate = false,
+  /** Only persist captures when the on-screen plate matches the live activated card. */
+  persistLivePlate = true,
 }: {
   profileUrl: string;
   presentUrl: string;
@@ -56,6 +60,8 @@ export function DigitalCardShareDesk({
   cardId?: string;
   proximityDiscoverable?: boolean;
   onProximityChange?: (value: boolean) => void;
+  usePublishedPlate?: boolean;
+  persistLivePlate?: boolean;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [nfcMessage, setNfcMessage] = useState<string | null>(null);
@@ -68,7 +74,7 @@ export function DigitalCardShareDesk({
     setDiscoverable(proximityDiscoverable);
   }, [proximityDiscoverable]);
   usePersistLivePlateSnapshot(
-    cardId || vcard.id,
+    persistLivePlate ? cardId || vcard.id : null,
     [vcard.themeId, vcard.avatarUrl, vcard.displayName, vcard.title, vcard.company].join("|")
   );
   const nfc = useMemo(() => detectNfcWriteSupport(), []);
@@ -110,6 +116,11 @@ export function DigitalCardShareDesk({
   }
 
   async function shareProfile() {
+    if (!identityShare) {
+      setShareNote("Publish your CeleYou before sharing.");
+      window.setTimeout(() => setShareNote(null), 6000);
+      return;
+    }
     const result = await engine.share({
       title: celeCardShareTitle({ displayName: vcard.displayName, title: vcard.title }),
       text: celeCardShareMessage(
@@ -117,14 +128,20 @@ export function DigitalCardShareDesk({
         identityShare
       ),
       url: identityShare,
-      imageUrl: vcard.slug ? celeCardShareImageUrls(vcard.slug, vcard.id || undefined) : null,
-      persistPlateCardId: cardId || vcard.id || null,
+      imageUrl: vcard.slug
+        ? celeYouLivePlateShareUrls(vcard.slug, vcard.updatedAt || vcard.id || "live")
+        : null,
+      // Studio: published live plate only. Guest surfaces may capture the on-screen live face.
+      capturePlate: usePublishedPlate ? false : true,
+      persistPlateCardId: usePublishedPlate || !persistLivePlate ? null : cardId || vcard.id || null,
     });
     if (result === "copied") {
       setShareNote("Link copied.");
     } else if (result === "unavailable") {
       await copy("link", identityShare);
       setShareNote("Link copied.");
+    } else if (result === "shared") {
+      setShareNote(null);
     } else {
       setShareNote(null);
     }
@@ -176,7 +193,18 @@ export function DigitalCardShareDesk({
       </Button>
 
       <div className="cta-phrase-grid gap-2">
-        <Button type="button" variant="outline" size="sm" disabled={!ready} onClick={() => void copy("link", identityShare)}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!ready || !identityShare}
+          onClick={() => {
+            void copy("link", identityShare).then(() => {
+              if (identityShare) setShareNote("Live profile link copied.");
+              window.setTimeout(() => setShareNote(null), 4000);
+            });
+          }}
+        >
           <Copy className="mr-2 h-4 w-4" />
           {copied === "link" ? "Copied" : COPY_PROFILE_LINK_CTA}
         </Button>

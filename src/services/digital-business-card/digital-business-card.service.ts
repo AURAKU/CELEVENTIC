@@ -142,6 +142,7 @@ export function toPublicPayload(card: {
   deletedAt?: Date | null;
   lastActivatedAt?: Date | null;
   lastCourtesyAt?: Date | null;
+  updatedAt?: Date | string | null;
 }, policy: CeleCardLifecyclePolicy = DEFAULT_CELECARD_LIFECYCLE_POLICY): DigitalCardPublicPayload {
   const theme = resolveDigitalCardTheme(card.themeId);
   return {
@@ -163,6 +164,7 @@ export function toPublicPayload(card: {
     connectBackEnabled: card.connectBackEnabled !== false,
     defaultMode: card.defaultMode || "professional",
     isLive: isDigitalCardLive(card, new Date(), policy),
+    updatedAt: card.updatedAt ?? null,
     presentationMode: celeCardPublicPresentation(card, new Date(), policy),
   };
 }

@@ -13,6 +13,9 @@ import {
 } from "@/lib/invitation-mvp/packages";
 import { GUIDE_SUPPORT_CONTACT, guideSupportWhatsAppUrl } from "@/lib/celeventic-guide/support-contact";
 
+/** Catalogue is the create funnel when no template/package was chosen yet. */
+const CATALOGUE_HREF = "/invitations/catalogue";
+
 export default function CreateStartPage() {
   return (
     <Suspense fallback={<PageLoader label="Setting up your invitation..." className="min-h-screen" />}>
@@ -32,22 +35,35 @@ function CreateStartPageInner() {
   // Server createDraft resolves the real type from catalogue category; keep query if present.
   const eventType = searchParams.get("eventType") ?? "";
   const themeId = searchParams.get("theme");
+  const hasDraftParams = Boolean(template && packageSlug);
 
   useEffect(() => {
     if (status === "loading") return;
-    if (!session) {
-      const themePart = themeId ? `&theme=${themeId}` : "";
-      const callback = `/invitations/create/start?template=${template}&package=${packageSlug}&eventType=${eventType}${themePart}`;
-      router.replace(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
-      return;
-    }
-    if (!template || !packageSlug) {
-      setError("Missing template or package");
+
+    // Landing / sitemap / Explore CTAs often hit this route with no template.
+    // Send people into the catalogue so Create invitation always works.
+    if (!hasDraftParams) {
+      if (!session) {
+        const callback = CATALOGUE_HREF;
+        router.replace(
+          `/auth/register?intent=host&callbackUrl=${encodeURIComponent(callback)}&next=${encodeURIComponent(callback)}`
+        );
+        return;
+      }
+      router.replace(CATALOGUE_HREF);
       return;
     }
 
-    if (isQuoteOnlyInvitationPackage(packageSlug)) {
-      const pkg = getInvitationPackage(packageSlug);
+    if (!session) {
+      const themePart = themeId ? `&theme=${encodeURIComponent(themeId)}` : "";
+      const eventPart = eventType ? `&eventType=${encodeURIComponent(eventType)}` : "";
+      const callback = `/invitations/create/start?template=${encodeURIComponent(template!)}&package=${encodeURIComponent(packageSlug!)}${eventPart}${themePart}`;
+      router.replace(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
+      return;
+    }
+
+    if (isQuoteOnlyInvitationPackage(packageSlug!)) {
+      const pkg = getInvitationPackage(packageSlug!);
       if (pkg) {
         window.location.assign(guideSupportWhatsAppUrl(invitationPackageContactMessage(pkg)));
       } else {
@@ -64,6 +80,7 @@ function CreateStartPageInner() {
       attributionRef = undefined;
     }
 
+    let cancelled = false;
     fetch("/api/invitation-orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -77,23 +94,37 @@ function CreateStartPageInner() {
     })
       .then((r) => r.json())
       .then((d) => {
+        if (cancelled) return;
         if (d.success) {
           router.replace(`/invitations/create/${d.data.id}/details`);
         } else {
           setError(d.error || "Failed to start");
         }
       })
-      .catch(() => setError("Network error"));
-  }, [session, status, template, packageSlug, eventType, themeId, router]);
+      .catch(() => {
+        if (!cancelled) setError("Network error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session, status, template, packageSlug, eventType, themeId, router, hasDraftParams]);
 
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-4">
         <p className="text-red-600">{error}</p>
-        <Button asChild><Link href="/invitations/catalogue">Back to Catalogue</Link></Button>
+        <Button asChild>
+          <Link href={CATALOGUE_HREF}>Choose a template</Link>
+        </Button>
       </div>
     );
   }
 
-  return <PageLoader label="Setting up your invitation..." className="min-h-screen" />;
+  return (
+    <PageLoader
+      label={hasDraftParams ? "Setting up your invitation..." : "Opening invitation catalogue..."}
+      className="min-h-screen"
+    />
+  );
 }

@@ -156,7 +156,7 @@ export const PLATFORM_LANES: PlatformLane[] = [
       },
       {
         title: "CeleYou identity",
-        body: "Design a living card with photo, socials, and WhatsApp. Pay a plan so QR, NFC, and the public page stay live.",
+        body: "Design My CeleYou Card with photo, socials, and WhatsApp. Publish on Free so the live /u/ link, Smart QR, and NFC stay reachable. Optional Pro trial adds premium tools for 7 days.",
       },
       {
         title: "Guests & invites",

@@ -150,143 +150,161 @@ export async function activateCeleYouProTrial(input: {
 }) {
   const now = input.now ?? new Date();
   const flags = resolveCeleYouSubscriptionFeatureFlags();
+
+  const cards = await prisma.digitalBusinessCard.findMany({
+    where: { userId: input.userId, deletedAt: null },
+    select: {
+      id: true,
+      isPublished: true,
+      displayName: true,
+      subscriptionStatus: true,
+      subscriptionExpiresAt: true,
+      lastActivatedAt: true,
+      lastActivationPaymentId: true,
+      entitlementKind: true,
+      publicToken: true,
+      slug: true,
+      themeId: true,
+      createdAt: true,
+    },
+  });
+  const published =
+    cards.find((card) => card.id === input.cardId && card.isPublished) ??
+    cards.find((card) => card.isPublished) ??
+    null;
+  const existing = await prisma.celeYouTrialRecord.findUnique({ where: { userId: input.userId } });
+  const snapshot = existing
+    ? asSnapshot(existing, input.userId)
+    : inferLegacyCeleYouTrial(input.userId, cards, now);
+  const paidNow = cards.some((card) => isWithinPaidWindow(card, now));
+  const paidPayment = await prisma.payment.findFirst({
+    where: { userId: input.userId, purpose: "ADVERTISING", status: "SUCCESSFUL" },
+    select: { id: true },
+  });
+  const hasPaidHistory = accountHasLegacyPaidSignal(cards, now) || Boolean(paidPayment);
+  const protection = classifyCeleYouAccount({
+    cards,
+    trialStatus: snapshot.status === "ELIGIBLE" && !existing ? null : snapshot.status,
+    hasAdvertisingPayment: Boolean(paidPayment),
+    freemiumShipAt: CELEYOU_FREEMIUM_SHIP_AT,
+    now,
+  });
+  const eligibility = celeYouTrialEligibility({
+    published: Boolean(published?.isPublished),
+    paidNow,
+    hasPaidHistory,
+    proTrialEnabled: flags.proTrialEnabled,
+    mayStartProTrial: protection.mayStartProTrial,
+    trial: snapshot,
+    now,
+  });
+  if (!eligibility.eligible || !published) {
+    if (existing) {
+      await writeTrialEvent({
+        trialId: existing.id,
+        userId: input.userId,
+        actorId: input.actorId,
+        action: "duplicate_blocked",
+        reason: eligibility.reason,
+      }).catch(() => undefined);
+    }
+    return { ok: false as const, error: eligibility.message, reason: eligibility.reason };
+  }
+
+  if (!celeYouTrialExpiryMayTouchCard(published) && published.subscriptionStatus !== "FREE") {
+    return {
+      ok: false as const,
+      error: "Existing paid CeleYou accounts keep their original terms.",
+      reason: "paid_history" as const,
+    };
+  }
+  const proposed = {
+    subscriptionStatus: "TRIAL",
+    subscriptionExpiresAt: celeYouProTrialExpiry(now, CELEYOU_PRO_TRIAL_DAYS),
+  };
+  const safe = assertCeleYouSubscriberMutationSafe({
+    before: published,
+    after: proposed,
+    now,
+  });
+  if (!safe.ok) {
+    return {
+      ok: false as const,
+      error: "Existing paid CeleYou accounts keep their original terms.",
+      reason: "paid_history" as const,
+    };
+  }
+
+  const durationDays = CELEYOU_PRO_TRIAL_DAYS;
+  const expiresAt = proposed.subscriptionExpiresAt;
+
   try {
-  return await prisma.$transaction(async (tx) => {
-    const cards = await tx.digitalBusinessCard.findMany({
-      where: { userId: input.userId, deletedAt: null },
-      select: {
-        id: true,
-        isPublished: true,
-        displayName: true,
-        subscriptionStatus: true,
-        subscriptionExpiresAt: true,
-        lastActivatedAt: true,
-        lastActivationPaymentId: true,
-        entitlementKind: true,
-        publicToken: true,
-        slug: true,
-        themeId: true,
-        createdAt: true,
-      },
-    });
-    const published =
-      cards.find((card) => card.id === input.cardId && card.isPublished) ??
-      cards.find((card) => card.isPublished) ??
-      null;
-    const existing = await tx.celeYouTrialRecord.findUnique({ where: { userId: input.userId } });
-    const snapshot = existing
-      ? asSnapshot(existing, input.userId)
-      : inferLegacyCeleYouTrial(input.userId, cards, now);
-    const paidNow = cards.some((card) => isWithinPaidWindow(card, now));
-    const paidPayment = await tx.payment.findFirst({
-      where: { userId: input.userId, purpose: "ADVERTISING", status: "SUCCESSFUL" },
-      select: { id: true },
-    });
-    const hasPaidHistory = accountHasLegacyPaidSignal(cards, now) || Boolean(paidPayment);
-    const protection = classifyCeleYouAccount({
-      cards,
-      trialStatus: snapshot.status === "ELIGIBLE" && !existing ? null : snapshot.status,
-      hasAdvertisingPayment: Boolean(paidPayment),
-      freemiumShipAt: CELEYOU_FREEMIUM_SHIP_AT,
-      now,
-    });
-    const eligibility = celeYouTrialEligibility({
-      published: Boolean(published?.isPublished),
-      paidNow,
-      hasPaidHistory,
-      proTrialEnabled: flags.proTrialEnabled,
-      mayStartProTrial: protection.mayStartProTrial,
-      trial: snapshot,
-      now,
-    });
-    if (!eligibility.eligible || !published) {
-      if (existing) {
+    // Keep the SQLite write lock short. Never call the global prisma client from inside
+    // this interactive transaction (lifecycle analytics deadlocks / P2028 timeouts).
+    const record = await prisma.$transaction(
+      async (tx) => {
+        const current = await tx.celeYouTrialRecord.findUnique({ where: { userId: input.userId } });
+        if (current) {
+          const live = asSnapshot(current, input.userId);
+          if (isCeleYouProTrialActive(live, now) || current.status === "ACTIVE") {
+            throw Object.assign(new Error("already_active"), { code: "already_active" });
+          }
+          if (current.status !== "ELIGIBLE") {
+            throw Object.assign(new Error(String(current.status)), { code: "not_eligible" });
+          }
+        }
+        const next = current
+          ? await tx.celeYouTrialRecord.update({
+              where: { id: current.id },
+              data: {
+                cardId: published.id,
+                family: "pro",
+                status: "ACTIVE",
+                startedAt: now,
+                expiresAt,
+                durationDays,
+                convertedAt: null,
+                convertedPlanId: null,
+              },
+            })
+          : await tx.celeYouTrialRecord.create({
+              data: {
+                userId: input.userId,
+                cardId: published.id,
+                family: "pro",
+                status: "ACTIVE",
+                startedAt: now,
+                expiresAt,
+                durationDays,
+              },
+            });
+
+        await tx.digitalBusinessCard.update({
+          where: { id: published.id },
+          data: {
+            subscriptionStatus: "TRIAL",
+            subscriptionExpiresAt: expiresAt,
+          },
+        });
         await tx.celeYouTrialEvent.create({
           data: {
-            trialId: existing.id,
+            trialId: next.id,
             userId: input.userId,
             actorId: input.actorId || undefined,
-            action: "duplicate_blocked",
-            reason: eligibility.reason,
+            action: "activated",
           },
         });
-      }
-      return { ok: false as const, error: eligibility.message, reason: eligibility.reason };
-    }
-
-    if (!celeYouTrialExpiryMayTouchCard(published) && published.subscriptionStatus !== "FREE") {
-      return {
-        ok: false as const,
-        error: "Existing paid CeleYou accounts keep their original terms.",
-        reason: "paid_history" as const,
-      };
-    }
-    const proposed = {
-      subscriptionStatus: "TRIAL",
-      subscriptionExpiresAt: celeYouProTrialExpiry(now, CELEYOU_PRO_TRIAL_DAYS),
-    };
-    const safe = assertCeleYouSubscriberMutationSafe({
-      before: published,
-      after: proposed,
-      now,
-    });
-    if (!safe.ok) {
-      return {
-        ok: false as const,
-        error: "Existing paid CeleYou accounts keep their original terms.",
-        reason: "paid_history" as const,
-      };
-    }
-
-    const durationDays = CELEYOU_PRO_TRIAL_DAYS;
-    const expiresAt = proposed.subscriptionExpiresAt;
-
-    const record = existing
-      ? await tx.celeYouTrialRecord.update({
-          where: { id: existing.id },
-          data: {
-            cardId: published.id,
-            family: "pro",
-            status: "ACTIVE",
-            startedAt: now,
-            expiresAt,
-            durationDays,
-            convertedAt: null,
-            convertedPlanId: null,
-          },
-        })
-      : await tx.celeYouTrialRecord.create({
-          data: {
-            userId: input.userId,
-            cardId: published.id,
-            family: "pro",
-            status: "ACTIVE",
-            startedAt: now,
-            expiresAt,
-            durationDays,
-          },
-        });
-
-    await tx.digitalBusinessCard.update({
-      where: { id: published.id },
-      data: {
-        subscriptionStatus: "TRIAL",
-        subscriptionExpiresAt: expiresAt,
+        return next;
       },
-    });
-    await tx.celeYouTrialEvent.create({
-      data: {
-        trialId: record.id,
-        userId: input.userId,
-        actorId: input.actorId || undefined,
-        action: "activated",
-      },
-    });
+      { timeout: 15000, maxWait: 10000 }
+    );
+
     await recordCeleCardLifecycleEvent({
       cardId: published.id,
       kind: "TrialActivated",
       meta: { durationDays, expiresAt: expiresAt.toISOString() },
     });
+
     return {
       ok: true as const,
       trial: asSnapshot(record, input.userId),
@@ -294,13 +312,33 @@ export async function activateCeleYouProTrial(input: {
       displayName: published.displayName,
       expiresAt,
     };
-  });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {
         ok: false as const,
         error: "Your CeleYou Pro trial is already running.",
         reason: "already_active" as const,
+      };
+    }
+    if ((error as { code?: string })?.code === "already_active") {
+      return {
+        ok: false as const,
+        error: "Your CeleYou Pro trial is already running.",
+        reason: "already_active" as const,
+      };
+    }
+    if ((error as { code?: string })?.code === "not_eligible") {
+      return {
+        ok: false as const,
+        error: "A CeleYou Pro trial is no longer available for this account.",
+        reason: "legacy_protected" as const,
+      };
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2028") {
+      return {
+        ok: false as const,
+        error: "Could not start the trial. Please try again.",
+        reason: "timeout" as const,
       };
     }
     throw error;

@@ -27,6 +27,7 @@ import {
 } from "@/services/digital-business-card/digital-business-card.service";
 import { resolveCeleCardGrant } from "@/services/digital-business-card/celecard-access.service";
 import { CELECARD_DUMMY_LIVE_FALLBACK, viewerMayOpenDummyLive } from "@/lib/digital-business-card/demo-live-access";
+import { celeYouGuestShareUsername } from "@/services/digital-business-card/username.service";
 
 export const dynamic = "force-dynamic";
 
@@ -99,10 +100,14 @@ export default async function DigitalBusinessCardPage({
 
   const jar = await cookies();
   const grant = await resolveCeleCardGrant(card.id, jar.get(celeCardGrantCookieName(card.id))?.value);
+  const shareUsername = await celeYouGuestShareUsername(card);
 
   return (
     <DigitalCardPublicView
-      card={toGuestPublicPayload(card, grant?.itemKeys ?? [], policy)}
+      card={{
+        ...toGuestPublicPayload(card, grant?.itemKeys ?? [], policy),
+        username: shareUsername,
+      }}
       origin={celeYouGuestOrigin(await getServerAppUrl())}
     />
   );

@@ -50,15 +50,27 @@ export function CeleYouTrialCta({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cardId: cardId || undefined }),
       });
-      const json = await res.json().catch(() => ({}));
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        data?: TrialPayload & { expiresAt?: string };
+      };
       if (!res.ok) {
-        setError((json as { error?: string }).error || "Could not start the trial.");
+        setError(json.error || "Could not start the trial. Please try again.");
         await load();
         return;
       }
+      if (json.data?.trial) {
+        setData((current) => ({
+          ...(current || {}),
+          ...json.data,
+          active: true,
+          eligibility: { eligible: false, reason: "already_active" },
+          trial: json.data?.trial,
+        }));
+      }
       await load();
     } catch {
-      setError("Could not start the trial.");
+      setError("Could not start the trial. Please try again.");
     } finally {
       setBusy(false);
     }

@@ -36,7 +36,7 @@ const SERVICES: Array<{
     popular: true,
   },
   {
-    href: "/discover",
+    href: "/dashboard/tickets",
     startHref: "/auth/register?intent=host",
     startKey: "landing.svc_start_sell",
     icon: Ticket,

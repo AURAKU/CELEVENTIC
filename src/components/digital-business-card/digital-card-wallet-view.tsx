@@ -12,7 +12,8 @@ import { DigitalCardSmartLink } from "@/components/digital-business-card/digital
 import { CeleCardStageField } from "@/components/digital-business-card/digital-card-atmosphere";
 import { celecardMotionMood, resolveDigitalCardTheme } from "@/lib/digital-business-card/themes";
 import { applyCeleCardDesign } from "@/lib/digital-business-card/design";
-import { digitalCardIdentityUrl, type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
+import { type DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
+import { celeYouLiveProfileUrl } from "@/lib/digital-business-card/share-identity";
 import {
   CELECARD_REACH_INK,
   celecardActionOnWell,
@@ -503,7 +504,11 @@ export function DigitalCardWalletView({
   const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), card.socials.design);
   const motionMood = celecardMotionMood(theme, card.socials.design?.motion);
   const typeVoice = celecardTypeVoice(theme, card.socials.design?.lettering);
-  const profileUrl = digitalCardIdentityUrl(card.slug, origin);
+  const profileUrl = celeYouLiveProfileUrl({
+    slug: card.slug,
+    username: card.username,
+    origin,
+  });
   const walletUrl = `${origin.replace(/\/$/, "")}${digitalCardWalletPath(card.slug)}`;
   const families = useMemo(
     () => sortPayFamilies(groupDigitalCardPayItems(listDigitalCardPayItems(card))),

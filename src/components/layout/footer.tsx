@@ -32,7 +32,7 @@ export function Footer() {
   const product: FooterLink[] = [
     { label: t("header.services"), href: "/#services" },
     { label: t("header.invitations"), href: "/invitations/catalogue" },
-    { label: t("landing.pill_tickets"), href: "/discover" },
+    { label: t("landing.pill_tickets"), href: "/dashboard/tickets" },
     { label: t("header.marketplace"), href: "/marketplace" },
     { label: t("landing.pill_cards"), href: "/digital-cards" },
     { label: t("header.pricing"), href: "/#pricing" },

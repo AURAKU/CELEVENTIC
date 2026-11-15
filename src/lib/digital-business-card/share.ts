@@ -68,6 +68,24 @@ export function celeCardShareImageUrls(slug: string, version?: string | number |
   return [digitalCardExportImagePath(slug, token), digitalCardOgImagePath(slug, token)];
 }
 
+/**
+ * Share-sheet plate URLs for the cardholder's live activated plate.
+ * Prefer updatedAt so each publish busts cached PNG/OG tiles.
+ */
+export function celeYouLivePlateShareUrls(
+  slug: string,
+  version?: string | number | Date | null
+): string[] {
+  if (version instanceof Date) {
+    return celeCardShareImageUrls(slug, celeCardShareCacheVersion(version));
+  }
+  if (typeof version === "string" && version.trim() && Number.isNaN(Number(version))) {
+    const parsed = Date.parse(version);
+    if (Number.isFinite(parsed)) return celeCardShareImageUrls(slug, String(parsed));
+  }
+  return celeCardShareImageUrls(slug, version ?? "live");
+}
+
 /** Encoded into the QR bitmap. Survives slug edits. Always a camera-safe guest URL. */
 export function celeCardStableQrUrl(publicToken: string, origin?: string): string {
   return celeYouCameraScanUrl(publicToken, origin);
@@ -186,10 +204,15 @@ export function buildCeleCardShareMetadata(input: {
   card: CeleCardShareFields;
   origin: string;
   imagePath: string;
+  /** Prefer `/u/{username}` when the shared link is the live identity handle. */
+  profilePath?: string | null;
 }): Metadata {
   const title = celeCardShareTitle(input.card);
   const description = celeCardShareDescription(input.card);
-  const canonical = `${input.origin.replace(/\/$/, "")}${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(input.card.slug)}`;
+  const path =
+    input.profilePath?.trim() ||
+    `${DIGITAL_CARD_PUBLIC_PATH}/${encodeURIComponent(input.card.slug)}`;
+  const canonical = `${input.origin.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
   const image = input.imagePath.startsWith("http")
     ? input.imagePath
     : `${input.origin.replace(/\/$/, "")}${input.imagePath}`;
