@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Download, Music2, Pause, Share2 } from "lucide-react";
+import { Download, Expand, Music2, Pause, Share2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CeleventicImage, CeleventicVideo } from "@/components/media/celeventic-media";
 import { cn } from "@/lib/utils";
@@ -774,7 +774,7 @@ export function ThankYouKeepsakeExperience(props: ThankYouKeepsakeExperienceProp
   );
 }
 
-const HIGHLIGHTS_SLIDE_MS = 4200;
+const HIGHLIGHTS_SLIDE_MS = 5200;
 
 function highlightFrameStyle(accentColor: string, backgroundColor: string) {
   return {
@@ -784,24 +784,31 @@ function highlightFrameStyle(accentColor: string, backgroundColor: string) {
       `0 0 0 7px ${accentColor}40`,
       "0 28px 60px rgba(0,0,0,0.35)",
     ].join(", "),
+    backgroundColor: "rgba(0,0,0,0.28)",
   } as const;
+}
+
+/** Full-resolution when possible — thumbs look soft once scaled into a wide frame. */
+function highlightDisplaySrc(memory: ThankYouMemoryItem): string {
+  return memory.mediaUrl || memory.thumbnailUrl || "";
 }
 
 function ThankYouHighlightMedia({
   memory,
   priority,
-  kenBurns,
+  fit = "contain",
 }: {
   memory: ThankYouMemoryItem;
   priority?: boolean;
-  kenBurns?: boolean;
+  fit?: "contain" | "cover";
 }) {
+  const src = highlightDisplaySrc(memory);
   if (memory.mediaType === "video") {
     return (
       <CeleventicVideo
         src={memory.mediaUrl}
         poster={memory.thumbnailUrl ?? undefined}
-        className="h-full w-full object-cover"
+        className={cn("h-full w-full", fit === "contain" ? "object-contain" : "object-cover")}
         pauseOffscreen
         preload={priority ? "metadata" : "none"}
       />
@@ -809,16 +816,107 @@ function ThankYouHighlightMedia({
   }
   return (
     <CeleventicImage
-      src={memory.thumbnailUrl || memory.mediaUrl}
+      src={src}
       alt={memory.caption || "Event memory"}
       fill
-      className={cn(
-        "object-cover transition-transform duration-[4200ms] ease-out",
-        kenBurns ? "scale-105" : "scale-100"
-      )}
-      sizes="(max-width: 768px) 100vw, 768px"
+      objectFit={fit}
+      className={fit === "contain" ? "object-contain" : "object-cover"}
+      sizes="(max-width: 768px) 100vw, 900px"
       priority={priority}
+      fallbackSrc={memory.thumbnailUrl}
     />
+  );
+}
+
+function ThankYouHighlightsLightbox({
+  memories,
+  index,
+  onClose,
+  onChangeIndex,
+}: {
+  memories: ThankYouMemoryItem[];
+  index: number;
+  onClose: () => void;
+  onChangeIndex: (next: number) => void;
+}) {
+  const memory = memories[index];
+
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+      if (event.key === "ArrowRight" && memories.length > 1) {
+        onChangeIndex((index + 1) % memories.length);
+      }
+      if (event.key === "ArrowLeft" && memories.length > 1) {
+        onChangeIndex((index - 1 + memories.length) % memories.length);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [index, memories.length, onChangeIndex, onClose]);
+
+  if (!memory) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex flex-col bg-black/95 touch-manipulation"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Full size highlight"
+      onClick={onClose}
+    >
+      <div className="flex items-center justify-between gap-3 px-4 py-3 text-white">
+        <p className="text-sm opacity-80">
+          {index + 1} / {memories.length}
+        </p>
+        <button
+          type="button"
+          className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
+          aria-label="Close"
+          onClick={(event) => {
+            event.stopPropagation();
+            onClose();
+          }}
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <div
+        className="relative mx-auto flex min-h-0 w-full max-w-5xl flex-1 items-center justify-center px-3 pb-8"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {memory.mediaType === "video" ? (
+          <CeleventicVideo
+            src={memory.mediaUrl}
+            poster={memory.thumbnailUrl ?? undefined}
+            className="max-h-[min(82vh,900px)] w-full object-contain"
+            controls
+            preload="metadata"
+          />
+        ) : (
+          <div className="relative h-[min(82vh,900px)] w-full">
+            <CeleventicImage
+              src={highlightDisplaySrc(memory)}
+              alt={memory.caption || "Event memory"}
+              fill
+              objectFit="contain"
+              className="object-contain"
+              sizes="100vw"
+              priority
+              fallbackSrc={memory.thumbnailUrl}
+            />
+          </div>
+        )}
+      </div>
+      {memory.caption?.trim() ? (
+        <p className="px-4 pb-6 text-center text-sm text-white/90">{memory.caption.trim()}</p>
+      ) : null}
+    </div>
   );
 }
 
@@ -845,19 +943,34 @@ function ThankYouHighlightsReel({
     .slice(0, 24);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const active = slides[index] ?? slides[0];
 
   useEffect(() => {
-    if (reduceMotion || paused || slides.length < 2) return;
+    if (reduceMotion || paused || slides.length < 2 || lightboxIndex !== null) return;
     const timer = window.setInterval(() => {
       setIndex((current) => (current + 1) % slides.length);
     }, HIGHLIGHTS_SLIDE_MS);
     return () => window.clearInterval(timer);
-  }, [paused, reduceMotion, slides.length]);
+  }, [paused, reduceMotion, slides.length, lightboxIndex]);
 
   if (!active) return null;
 
   const frame = highlightFrameStyle(accentColor, backgroundColor);
+  const openLightbox = (slideIndex: number) => {
+    setPaused(true);
+    setLightboxIndex(slideIndex);
+  };
+
+  const lightbox =
+    lightboxIndex === null ? null : (
+      <ThankYouHighlightsLightbox
+        memories={slides}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onChangeIndex={setLightboxIndex}
+      />
+    );
 
   // Few photos: show them all at once so nothing feels "missing".
   if (slides.length >= 2 && slides.length <= 6) {
@@ -870,26 +983,25 @@ function ThankYouHighlightsReel({
           )}
         >
           {slides.map((memory, slideIndex) => (
-            <div
+            <button
               key={memory.id}
-              className={cn("relative aspect-[4/5] overflow-hidden sm:aspect-[3/4]", radiusClass)}
+              type="button"
+              className={cn(
+                "group relative aspect-[4/5] overflow-hidden text-left sm:aspect-[3/4]",
+                radiusClass
+              )}
               style={frame}
+              aria-label={`Open highlight ${slideIndex + 1} full size`}
+              onClick={() => openLightbox(slideIndex)}
             >
-              <ThankYouHighlightMedia
-                memory={memory}
-                priority={slideIndex < 2}
-                kenBurns={!reduceMotion && slideIndex === 0}
-              />
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.4) 100%)",
-                }}
-              />
+              <ThankYouHighlightMedia memory={memory} priority={slideIndex < 2} fit="contain" />
+              <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[11px] text-white opacity-90 transition group-hover:bg-black/70">
+                <Expand className="h-3.5 w-3.5" />
+                Tap to open
+              </span>
               {memory.caption?.trim() ? (
                 <p
-                  className="absolute bottom-3 left-3 right-3 text-center text-xs text-white/95 sm:text-sm"
+                  className="absolute bottom-3 left-3 right-24 text-left text-xs text-white/95 sm:text-sm"
                   style={{
                     fontFamily: "var(--ty-display)",
                     textShadow: "0 2px 12px rgba(0,0,0,0.55)",
@@ -898,28 +1010,35 @@ function ThankYouHighlightsReel({
                   {memory.caption.trim()}
                 </p>
               ) : null}
-            </div>
+            </button>
           ))}
         </div>
         <p
           className="mt-3 text-center text-xs tracking-[0.18em] uppercase"
           style={{ color: accentColor, opacity: 0.85 }}
         >
-          {slides.length} highlights
+          {slides.length} highlights · tap any photo to open
         </p>
+        {lightbox}
       </div>
     );
   }
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <div
-        className={cn("relative aspect-[16/10] overflow-hidden sm:aspect-[16/9]", radiusClass)}
+      <button
+        type="button"
+        className={cn(
+          "group relative block w-full aspect-[16/10] overflow-hidden text-left sm:aspect-[16/9]",
+          radiusClass
+        )}
         style={frame}
+        aria-label="Open highlight full size"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
         onBlurCapture={() => setPaused(false)}
+        onClick={() => openLightbox(index)}
       >
         {slides.map((memory, slideIndex) => {
           const isActive = slideIndex === index;
@@ -932,40 +1051,34 @@ function ThankYouHighlightsReel({
               )}
               aria-hidden={!isActive}
             >
-              <ThankYouHighlightMedia
-                memory={memory}
-                priority={slideIndex === 0}
-                kenBurns={isActive && !reduceMotion}
-              />
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.45) 100%)",
-                }}
-              />
+              <ThankYouHighlightMedia memory={memory} priority={slideIndex === 0} fit="contain" />
             </div>
           );
         })}
 
         {active.caption?.trim() ? (
           <p
-            className="absolute bottom-4 left-4 right-4 text-center text-sm text-white/95 sm:text-base"
+            className="pointer-events-none absolute bottom-4 left-4 right-24 text-sm text-white/95 sm:text-base"
             style={{ fontFamily: "var(--ty-display)", textShadow: "0 2px 12px rgba(0,0,0,0.55)" }}
           >
             {active.caption.trim()}
           </p>
         ) : null}
 
+        <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[11px] text-white opacity-90 transition group-hover:bg-black/70">
+          <Expand className="h-3.5 w-3.5" />
+          Tap to open
+        </span>
+
         {slides.length > 1 ? (
           <p
-            className="absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide text-white"
+            className="pointer-events-none absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide text-white"
             style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
           >
             {index + 1} / {slides.length}
           </p>
         ) : null}
-      </div>
+      </button>
 
       {slides.length > 1 ? (
         <div className="mt-4 flex items-center justify-center gap-2">
@@ -985,6 +1098,7 @@ function ThankYouHighlightsReel({
           ))}
         </div>
       ) : null}
+      {lightbox}
     </div>
   );
 }
