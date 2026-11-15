@@ -31,13 +31,17 @@ export async function GET(
     ? await eventMemorySocialService.hasConsent(record.eventId, guestKeyHash)
     : false;
 
-  const [viewToken, analytics, invitations] = await Promise.all([
+  const [viewToken, analytics, invitations, thankYouPage] = await Promise.all([
     eventMemoryTokenService.getOrCreateViewToken(record.eventId),
     eventMemoryUploadService.getAnalytics(record.eventId),
     prisma.invitation.findMany({
       where: { eventId: record.eventId, status: "ACTIVE", archivedAt: null },
       select: { uniqueLink: true, slug: true, isGeneralPass: true, templateId: true },
       orderBy: { createdAt: "asc" },
+    }),
+    prisma.thankYouPage.findUnique({
+      where: { eventId: record.eventId },
+      select: { status: true },
     }),
   ]);
   const invitationHref = canonicalGuestInviteHref(record.event.slug, invitations);
@@ -52,6 +56,10 @@ export async function GET(
         subtitle: identity.subtitle,
       },
       invitationLink: invitationHref ? invitationHref.replace(/^\/invite\//, "") : null,
+      thankYouHref:
+        thankYouPage?.status === "PUBLISHED" && record.event.slug
+          ? `/events/${record.event.slug}/thank-you`
+          : null,
       viewToken: viewToken.token,
       theme: publicTheme,
       hasConsent,
