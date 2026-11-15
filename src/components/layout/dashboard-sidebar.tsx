@@ -22,11 +22,14 @@ import { getStoredWorkspace } from "@/components/layout/workspace-switcher";
 import type { AccountType, UserRole } from "@prisma/client";
 
 interface DashboardSidebarProps {
+  /** @deprecated Prefer `open` — kept for older call sites. */
   mobileOpen?: boolean;
+  open?: boolean;
   onClose?: () => void;
 }
 
-export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSidebarProps) {
+export function DashboardSidebar({ mobileOpen, open, onClose }: DashboardSidebarProps) {
+  const navOpen = open ?? mobileOpen ?? false;
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -108,12 +111,16 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
 
   return (
     <aside
+      id="dashboard-sidebar"
       className={cn(
-        "fixed lg:sticky top-0 z-[60] flex w-[min(18rem,88vw)] flex-col sidebar-gradient text-slate-200 border-r border-white/10 transition-transform duration-300 lg:translate-x-0 lg:z-50",
+        "fixed top-0 left-0 z-[60] flex w-[min(18rem,88vw)] flex-col sidebar-gradient text-slate-200 border-r border-white/10",
         "h-[100dvh] max-h-[100dvh] pb-[env(safe-area-inset-bottom)]",
-        mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 max-lg:invisible max-lg:pointer-events-none",
-        mobileOpen && "max-lg:visible max-lg:pointer-events-auto"
+        "transition-transform duration-300 ease-out will-change-transform",
+        navOpen
+          ? "translate-x-0 pointer-events-auto visible"
+          : "-translate-x-full pointer-events-none invisible"
       )}
+      aria-hidden={!navOpen}
       data-tour="nav-browse-desktop"
     >
       <div className="shrink-0 p-4 sm:p-5 pt-[max(1rem,env(safe-area-inset-top))] border-b border-white/10 flex items-center justify-between gap-2">
@@ -124,7 +131,7 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
         <button
           type="button"
           onClick={onClose}
-          className="lg:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
           aria-label={t("dashboard.close_menu")}
         >
           <X className="h-5 w-5" />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Plus } from "lucide-react";
+import { Menu, PanelLeftClose, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PreferencesMenu } from "@/components/layout/preferences-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -15,6 +15,7 @@ import { useLocale } from "@/components/i18n/locale-provider";
 
 interface DashboardTopbarProps {
   onMenuClick?: () => void;
+  menuOpen?: boolean;
   className?: string;
 }
 
@@ -22,7 +23,7 @@ interface DashboardTopbarProps {
  * Social-app topbar pattern:
  * [Menu] [Search……………………] · [Create] [Prefs] [Help] [Alerts] [You]
  */
-export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps) {
+export function DashboardTopbar({ onMenuClick, menuOpen = false, className }: DashboardTopbarProps) {
   const { t } = useLocale();
 
   return (
@@ -34,14 +35,16 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
         className
       )}
     >
-      {/* Left: navigate */}
+      {/* Left: slide the workspace nav in/out on every breakpoint */}
       <button
         type="button"
         onClick={onMenuClick}
-        className="lg:hidden inline-flex items-center justify-center h-11 w-11 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors touch-manipulation shrink-0"
-        aria-label={t("dashboard.open_menu")}
+        className="inline-flex items-center justify-center h-11 w-11 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors touch-manipulation shrink-0"
+        aria-label={menuOpen ? t("dashboard.close_menu") : t("dashboard.open_menu")}
+        aria-expanded={menuOpen}
+        aria-controls="dashboard-sidebar"
       >
-        <Menu className="h-5 w-5" />
+        {menuOpen ? <PanelLeftClose className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       {/* Center: search owns the bar */}
