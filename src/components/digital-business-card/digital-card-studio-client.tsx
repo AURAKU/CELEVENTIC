@@ -5,11 +5,15 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   CreditCard,
+  Eye,
   Loader2,
   Nfc,
   Plus,
   Save,
+  Share2,
+  X,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -428,9 +432,11 @@ export function DigitalCardStudioClient() {
   const [baseline, setBaseline] = useState("");
   const [classicStudio, setClassicStudio] = useState(false);
   const [desk, setDesk] = useState<StudioDeskId>(DEFAULT_STUDIO_DESK);
+  const [previewSheetOpen, setPreviewSheetOpen] = useState(false);
   const themeFromQuery = useRef<DigitalCardThemeId | null>(null);
   const activeIdRef = useRef<string | null>(null);
   const noticeTimer = useRef<number>(0);
+  const previewCloseRef = useRef<HTMLButtonElement | null>(null);
   activeIdRef.current = activeId;
 
   const showDesk = useCallback(
@@ -443,10 +449,48 @@ export function DigitalCardStudioClient() {
   const goDesk = useCallback((next: StudioDeskId) => {
     setClassicStudio(false);
     setDesk(next);
+    setPreviewSheetOpen(false);
     writeStudioDeskToUrl(next, false);
     window.requestAnimationFrame(() => {
       document.getElementById("celecard-studio-workspace")?.scrollIntoView({ block: "start", behavior: "smooth" });
     });
+  }, []);
+
+  const openStudioPreview = useCallback(() => {
+    const narrow = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+    if (narrow && !classicStudio) {
+      setPreviewSheetOpen(true);
+      return;
+    }
+    document.getElementById("studio-preview")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [classicStudio]);
+
+  const closeStudioPreviewSheet = useCallback(() => {
+    setPreviewSheetOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!previewSheetOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    previewCloseRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewSheetOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [previewSheetOpen]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const onChange = () => {
+      if (mq.matches) setPreviewSheetOpen(false);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
   const note = useCallback((text: string) => {
@@ -880,7 +924,12 @@ export function DigitalCardStudioClient() {
   }
 
   return (
-    <div className="celecard-studio space-y-6">
+    <div
+      className={cn("celecard-studio space-y-6", !classicStudio && "celecard-studio-adaptive")}
+      data-studio-mode={classicStudio ? "classic" : "desks"}
+      data-preview-sheet={previewSheetOpen ? "open" : "closed"}
+      data-desk={classicStudio ? "classic" : desk}
+    >
       <div className="celecard-studio-masthead">
         <div className="celecard-studio-masthead-copy">
           <CeleYouBrandMark variant="chip" tone="light" className="mb-3" markClassName="h-8 w-8" />
@@ -910,10 +959,9 @@ export function DigitalCardStudioClient() {
             type="button"
             variant="outline"
             className="celecard-studio-preview-jump"
-            onClick={() =>
-              document.getElementById("studio-preview")?.scrollIntoView({ behavior: "smooth", block: "start" })
-            }
+            onClick={openStudioPreview}
           >
+            <Eye className="mr-2 h-4 w-4" aria-hidden />
             Preview
           </Button>
           <Button type="button" variant="outline" className="celecard-studio-new" onClick={startNew}>
@@ -1005,7 +1053,8 @@ export function DigitalCardStudioClient() {
         </div>
       ) : (
         <>
-        <div id="celecard-studio-workspace" className="scroll-mt-16 space-y-3">
+        <div id="celecard-studio-workspace" className="celecard-studio-shell scroll-mt-16">
+        <div className="celecard-studio-nav-slot">
         {classicStudio ? (
           <nav className="celecard-studio-jump" aria-label="Studio sections">
             {STUDIO_JUMP.map((item) => (
@@ -1018,6 +1067,7 @@ export function DigitalCardStudioClient() {
           <DigitalCardStudioDeskNav desk={desk} onChange={goDesk} />
         )}
         </div>
+        <div className="celecard-studio-main space-y-3">
 
         {showDesk("insights") ? <DigitalCardAnalyticsPanel cardId={activeId} /> : null}
 
@@ -1097,9 +1147,7 @@ export function DigitalCardStudioClient() {
                     type="button"
                     size="sm"
                     className="bg-[#0B8A83] hover:bg-[#097a74]"
-                    onClick={() =>
-                      document.getElementById("studio-preview")?.scrollIntoView({ behavior: "smooth", block: "start" })
-                    }
+                    onClick={openStudioPreview}
                   >
                     Preview & Share
                   </Button>
@@ -1708,7 +1756,22 @@ export function DigitalCardStudioClient() {
             className="celecard-studio-preview space-y-4"
             hidden={!showPreviewChrome ? true : undefined}
             data-studio-preview={showPreviewChrome ? "open" : "deferred"}
+            aria-modal={previewSheetOpen ? true : undefined}
+            role={previewSheetOpen ? "dialog" : undefined}
+            aria-label={previewSheetOpen ? "Card preview and sharing" : undefined}
           >
+            <div className="celecard-studio-preview-sheet-bar">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Preview & share</p>
+              <button
+                ref={previewCloseRef}
+                type="button"
+                className="celecard-studio-preview-close"
+                onClick={closeStudioPreviewSheet}
+              >
+                <X className="h-4 w-4" aria-hidden />
+                Close
+              </button>
+            </div>
             <section id="studio-live" className="celecard-studio-live scroll-mt-16" aria-label="Live sharing">
               <div className="celecard-studio-live-row">
                 <label htmlFor="studio-live-published" className="min-w-0 flex-1 cursor-pointer">
@@ -1779,7 +1842,7 @@ export function DigitalCardStudioClient() {
               }
             />
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+            <div id="studio-share-anchor" className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
               {form.slug ? (
                 <DigitalCardShareDesk
                   profileUrl={publicUrl || digitalCardIdentityUrl(form.slug, origin)}
@@ -1826,6 +1889,59 @@ export function DigitalCardStudioClient() {
             </div>
           </aside>
         </div>
+        </div>
+        </div>
+
+        {!classicStudio ? (
+          <>
+            <div
+              className="celecard-studio-preview-backdrop"
+              hidden={!previewSheetOpen}
+              onClick={closeStudioPreviewSheet}
+              aria-hidden
+            />
+            <div className="celecard-studio-mobile-dock" role="region" aria-label="Studio actions">
+              <p className="celecard-studio-mobile-dock-status" aria-live="polite">
+                {saveStatus}
+              </p>
+              <div className="celecard-studio-mobile-dock-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="celecard-studio-dock-btn"
+                  onClick={openStudioPreview}
+                >
+                  <Eye className="h-4 w-4" aria-hidden />
+                  Preview
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="celecard-studio-dock-btn"
+                  onClick={() => {
+                    openStudioPreview();
+                    window.requestAnimationFrame(() => {
+                      document.getElementById("studio-share-anchor")?.scrollIntoView({ block: "nearest" });
+                    });
+                  }}
+                  disabled={!form.slug}
+                >
+                  <Share2 className="h-4 w-4" aria-hidden />
+                  Share
+                </Button>
+                <Button
+                  type="button"
+                  className="celecard-studio-dock-btn celecard-studio-dock-save"
+                  onClick={save}
+                  disabled={saving || form.displayName.trim().length < 2}
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Save className="h-4 w-4" aria-hidden />}
+                  {publishedOnServer && unsaved ? "Publish" : "Save"}
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : null}
         </>
       )}
     </div>
