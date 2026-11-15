@@ -51,13 +51,17 @@ export async function GET(
     title: event.title,
     hostName: event.hostName,
   });
-  const [viewToken, uploadToken, invitations] = await Promise.all([
+  const [viewToken, uploadToken, invitations, thankYouPage] = await Promise.all([
     eventMemoryTokenService.getOrCreateViewToken(event.id),
     eventMemoryTokenService.getOrCreateUploadToken(event.id),
     prisma.invitation.findMany({
       where: { eventId: event.id, status: "ACTIVE", archivedAt: null },
       select: { uniqueLink: true, slug: true, isGeneralPass: true, templateId: true },
       orderBy: { createdAt: "asc" },
+    }),
+    prisma.thankYouPage.findUnique({
+      where: { eventId: event.id },
+      select: { status: true },
     }),
   ]);
 
@@ -74,6 +78,8 @@ export async function GET(
         subtitle: identity.subtitle,
         lede: identity.lede,
         invitationHref: canonicalGuestInviteHref(event.slug, invitations),
+        thankYouHref:
+          thankYouPage?.status === "PUBLISHED" ? `/events/${event.slug}/thank-you` : null,
       },
       allowDownloads: settings.allowDownloads,
       upload: {

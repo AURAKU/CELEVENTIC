@@ -84,6 +84,7 @@ interface PublicMemoriesGalleryProps {
   upload?: AlbumUploadConfig | null;
   onRefresh?: () => void;
   invitationHref?: string | null;
+  thankYouHref?: string | null;
 }
 
 const MUTE_PREF_KEY = "celeventic.memory.videoMuted";
@@ -129,6 +130,7 @@ export function PublicMemoriesGallery({
   upload,
   onRefresh,
   invitationHref,
+  thankYouHref,
 }: PublicMemoriesGalleryProps) {
   const [lightbox, setLightbox] = useState<MemoryGalleryItem | null>(null);
   const [localItems, setLocalItems] = useState(items);
@@ -398,11 +400,13 @@ export function PublicMemoriesGallery({
         }}
       >
         <div className="mx-auto flex max-w-3xl items-start gap-2.5">
-          {invitationHref ? (
+          {thankYouHref || invitationHref ? (
             <a
-              href={invitationHref}
-              onClick={() => markInvitationAudioReturn()}
-              aria-label="Back to invitation"
+              href={thankYouHref || invitationHref || "#"}
+              onClick={() => {
+                if (!thankYouHref) markInvitationAudioReturn();
+              }}
+              aria-label={thankYouHref ? "Back to thank you" : "Back to invitation"}
               className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               style={{
                 color: "var(--memory-color-ink, #1B365D)",
