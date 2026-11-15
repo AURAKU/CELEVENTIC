@@ -87,7 +87,8 @@ export function DigitalCardAnalyticsChart({ points }: { points: Point[] }) {
 
   const totalViews = points.reduce((sum, point) => sum + point.views, 0);
   const totalActions = points.reduce((sum, point) => sum + point.actions, 0);
-  const busiest = points.reduce(
+  type BusyDay = Point & { score: number };
+  const busiest = points.reduce<BusyDay>(
     (best, point) => {
       const score = point.views + point.actions;
       if (score > best.score) return { day: point.day, score, views: point.views, actions: point.actions };
