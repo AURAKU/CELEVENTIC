@@ -39,6 +39,7 @@
     "node_modules",
     "e2e",
     "playwright.config.ts",
-    "celeyou-mobile"
+    "celeyou-mobile",
+    "scripts"
   ]
 }
