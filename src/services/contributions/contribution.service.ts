@@ -12,6 +12,9 @@ export interface CreateContributionInput {
   currency?: string;
   purpose?: import("@prisma/client").ContributionPurpose;
   paymentMethod?: string;
+  paymentId?: string;
+  paymentReference?: string;
+  payerEmail?: string;
 }
 
 export interface ContributionPaymentMetadata {
@@ -21,10 +24,19 @@ export interface ContributionPaymentMetadata {
   isAnonymous?: boolean;
   purpose?: import("@prisma/client").ContributionPurpose;
   paymentMethod?: string;
+  payerEmail?: string;
+  paymentReference?: string;
 }
 
 export class ContributionService {
   async contribute(input: CreateContributionInput, opts?: { paymentId?: string; source?: string }) {
+    const paymentId = opts?.paymentId ?? input.paymentId;
+
+    if (paymentId) {
+      const byPayment = await prisma.contribution.findUnique({ where: { paymentId } });
+      if (byPayment) return byPayment;
+    }
+
     const contribution = await prisma.contribution.create({
       data: {
         eventId: input.eventId,
@@ -36,6 +48,9 @@ export class ContributionService {
         isAnonymous: input.isAnonymous ?? false,
         purpose: input.purpose ?? "FAMILY_SUPPORT",
         paymentMethod: input.paymentMethod ?? "PAYSTACK",
+        paymentId: paymentId ?? undefined,
+        paymentReference: input.paymentReference ?? undefined,
+        payerEmail: input.payerEmail ?? undefined,
       },
     });
 
@@ -46,8 +61,9 @@ export class ContributionService {
       "contribution",
       {
         source: opts?.source ?? "manual",
-        paymentId: opts?.paymentId,
-        isLocked: Boolean(opts?.paymentId),
+        paymentId,
+        reference: input.paymentReference,
+        isLocked: Boolean(paymentId),
       }
     );
 
@@ -60,12 +76,25 @@ export class ContributionService {
     amount: number,
     currency = "GHS"
   ) {
-    const existing = await prisma.walletTransaction.findFirst({
+    const existingByPayment = await prisma.contribution.findUnique({
+      where: { paymentId },
+    });
+    if (existingByPayment) return existingByPayment;
+
+    const existingWallet = await prisma.walletTransaction.findFirst({
       where: { paymentId, type: "contribution" },
     });
-    if (existing) {
+    if (existingWallet) {
       return prisma.contribution.findFirst({
-        where: { eventId: metadata.eventId, contributor: metadata.contributor, amount },
+        where: {
+          eventId: metadata.eventId,
+          OR: [
+            { paymentId },
+            ...(metadata.paymentReference
+              ? [{ paymentReference: metadata.paymentReference }]
+              : []),
+          ],
+        },
         orderBy: { createdAt: "desc" },
       });
     }
@@ -80,6 +109,9 @@ export class ContributionService {
         currency,
         purpose: metadata.purpose ?? "FAMILY_SUPPORT",
         paymentMethod: metadata.paymentMethod ?? "PAYSTACK",
+        paymentId,
+        paymentReference: metadata.paymentReference,
+        payerEmail: metadata.payerEmail,
       },
       { paymentId, source: "payment" }
     );
@@ -120,8 +152,14 @@ export class ContributionService {
           id: true,
           contributor: true,
           amount: true,
+          currency: true,
           message: true,
+          purpose: true,
+          paymentMethod: true,
           isAnonymous: true,
+          paymentId: true,
+          paymentReference: true,
+          payerEmail: true,
           createdAt: true,
         },
       }),
@@ -133,7 +171,15 @@ export class ContributionService {
         id: c.id,
         contributor: c.isAnonymous ? "Anonymous" : c.contributor,
         amount: String(c.amount),
+        currency: c.currency,
         message: c.message,
+        purpose: c.purpose,
+        paymentMethod: c.paymentMethod,
+        isAnonymous: c.isAnonymous,
+        paymentId: c.paymentId,
+        paymentReference: c.paymentReference,
+        payerEmail: c.isAnonymous ? null : c.payerEmail,
+        paidViaProvider: Boolean(c.paymentId),
         createdAt: c.createdAt.toISOString(),
       })),
       total,

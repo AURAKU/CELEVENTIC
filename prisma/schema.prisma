@@ -1959,12 +1959,17 @@ model Contribution {
   purpose       ContributionPurpose @default(FAMILY_SUPPORT)
   paymentMethod String              @default("PAYSTACK")
   isAnonymous   Boolean             @default(false)
+  /// Links a paid contribution to the core Payment row for organiser/admin audit.
+  paymentId        String? @unique
+  paymentReference String?
+  payerEmail       String?
   createdAt     DateTime            @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id])
 
   @@index([eventId])
+  @@index([paymentReference])
   @@map("contributions")
 }
 

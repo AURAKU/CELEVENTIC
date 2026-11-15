@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { getServerAppUrl } from "@/lib/app-url";
 import { paymentService, PaymentProviderError } from "@/services/payments/payment.service";
 import { isPaymentProviderId } from "@/lib/integrations/platform-provider-settings";
 
@@ -48,6 +49,11 @@ export async function POST(req: Request) {
     }
 
     const provider = isPaymentProviderId(data.paymentMethod) ? data.paymentMethod : null;
+    const baseUrl = await getServerAppUrl();
+    // Paystack appends ?reference=… on return. Guest verify records the gift if
+    // the webhook is delayed or missing, so organiser accountability is not
+    // webhook-only.
+    const callbackUrl = `${baseUrl}/memorial/${encodeURIComponent(event.slug)}?tab=contribute&payment=callback`;
 
     const result = await paymentService.initializePayment(
       undefined,
@@ -58,9 +64,13 @@ export async function POST(req: Request) {
         email: data.email,
         purpose: "CONTRIBUTION",
         method: data.method,
+        callbackUrl,
         metadata: {
           eventId: event.id,
+          eventSlug: event.slug,
           contributor: data.contributor,
+          payerEmail: data.email,
+          email: data.email,
           message: data.message,
           isAnonymous: data.isAnonymous ?? false,
           purpose: data.purpose ?? "FAMILY_SUPPORT",

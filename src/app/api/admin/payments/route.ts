@@ -19,6 +19,11 @@ export async function GET(req: Request) {
         ...p,
         amount: p.amount.toString(),
         createdAt: p.createdAt.toISOString(),
+        eventId: p.eventId,
+        eventSlug: p.eventSlug,
+        contributor: p.contributor,
+        payerEmail: p.payerEmail,
+        displayPayer: p.displayPayer,
       })),
     },
   });

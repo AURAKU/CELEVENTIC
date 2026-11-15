@@ -17,6 +17,11 @@ type ContributionRow = {
   contributor: string;
   amount: string;
   message: string | null;
+  purpose?: string;
+  paymentMethod?: string;
+  payerEmail?: string | null;
+  paymentReference?: string | null;
+  paidViaProvider?: boolean;
   createdAt: string;
 };
 
@@ -80,7 +85,13 @@ export default function ContributionsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Contribution Engine</h1>
-        <p className="page-subtitle">Wedding, funeral, church, and fundraiser contribution wallets.</p>
+        <p className="page-subtitle">
+          Funeral and memorial support payments for this event. Invitation cash gifts live under{" "}
+          <a href="/dashboard/gifts" className="text-brand-600 underline-offset-2 hover:underline">
+            Gifts
+          </a>
+          .
+        </p>
       </div>
 
       <Card>
@@ -119,7 +130,19 @@ export default function ContributionsPage() {
                   <div key={c.id} className="flex justify-between gap-3 text-sm py-2 border-b">
                     <div className="min-w-0">
                       <span className="font-medium">{c.contributor}</span>
+                      {c.payerEmail && (
+                        <p className="text-xs text-slate-500 truncate">{c.payerEmail}</p>
+                      )}
                       {c.message && <p className="text-xs text-slate-500 truncate">{c.message}</p>}
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {[c.purpose?.replace(/_/g, " "), c.paymentMethod, c.paidViaProvider ? "Paid online" : "Manual"]
+                          .filter(Boolean)
+                          .join(" · ")}
+                        {c.paymentReference ? ` · ${c.paymentReference}` : ""}
+                        {c.createdAt
+                          ? ` · ${new Date(c.createdAt).toLocaleString()}`
+                          : ""}
+                      </p>
                     </div>
                     <span className="shrink-0 font-medium">{formatCurrency(c.amount)}</span>
                   </div>

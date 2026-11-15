@@ -165,6 +165,58 @@ export function MemorialPageClient() {
     const hash = window.location.hash.replace(/^#/, "").toLowerCase();
     const mapped = HASH_TO_TAB[hash];
     if (mapped) setTab(mapped as Tab);
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam && HASH_TO_TAB[tabParam]) setTab(HASH_TO_TAB[tabParam] as Tab);
+    else if (tabParam === "contribute") setTab("contribute");
+  }, []);
+
+  // After Paystack return: confirm the charge and attach it to this event so
+  // organisers see who paid even when the webhook is slow or missing.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") !== "callback") return;
+    const reference = params.get("reference") || params.get("trxref");
+    if (!reference) return;
+
+    let cancelled = false;
+    (async () => {
+      setTab("contribute");
+      setSubmitMsg("Confirming your contribution…");
+      try {
+        const res = await fetch("/api/public/contribute/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference }),
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && payload.data?.recorded) {
+          setSubmitMsg(
+            `Thank you. Your contribution of GHS ${payload.data.amount} is recorded for the family.`
+          );
+        } else if (res.ok && payload.data?.status === "PENDING") {
+          setSubmitMsg("Payment is still processing. Please wait a moment, then refresh.");
+        } else {
+          setSubmitMsg(payload.error || "We could not confirm this payment yet. Please keep your receipt.");
+        }
+      } catch {
+        if (!cancelled) {
+          setSubmitMsg("We could not confirm this payment yet. Please keep your receipt.");
+        }
+      } finally {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("payment");
+        url.searchParams.delete("reference");
+        url.searchParams.delete("trxref");
+        window.history.replaceState({}, "", url.toString());
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const load = useCallback(async (section = "overview") => {

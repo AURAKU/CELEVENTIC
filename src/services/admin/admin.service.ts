@@ -161,7 +161,35 @@ export class AdminService {
       prisma.payment.count({ where }),
     ]);
 
-    return { payments, total, page, limit };
+    // Surface event + payer identity from metadata so CONTRIBUTION / EVENT_GIFT
+    // rows are accountable even when payment.userId is null (guest checkout).
+    const enriched = payments.map((p) => {
+      const meta = (p.metadata ?? null) as Record<string, unknown> | null;
+      const eventId = typeof meta?.eventId === "string" ? meta.eventId : null;
+      const eventSlug = typeof meta?.eventSlug === "string" ? meta.eventSlug : null;
+      const contributor =
+        typeof meta?.contributor === "string"
+          ? meta.contributor
+          : typeof meta?.guestName === "string"
+            ? meta.guestName
+            : null;
+      const payerEmail =
+        typeof meta?.payerEmail === "string"
+          ? meta.payerEmail
+          : typeof meta?.email === "string"
+            ? meta.email
+            : p.user?.email ?? null;
+      return {
+        ...p,
+        eventId,
+        eventSlug,
+        contributor,
+        payerEmail,
+        displayPayer: contributor || p.user?.name || payerEmail || "Guest",
+      };
+    });
+
+    return { payments: enriched, total, page, limit };
   }
 
   async getAuditLogs(page = 1, limit = 50, action?: string) {

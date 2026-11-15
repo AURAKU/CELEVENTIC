@@ -991,11 +991,33 @@ export class PaymentService {
       // fall through to walletService.settlePayment or the gift would be
       // counted twice.
       const { giftPaymentService } = await import("@/services/gifts/gift-payment.service");
-      const gift = await prisma.eventGiftPayment.findUnique({
-        where: { paymentId: payment.id },
-        select: { reference: true },
-      });
+      const metaGift = payment.metadata as Record<string, unknown> | null;
+      const giftPaymentId =
+        typeof metaGift?.giftPaymentId === "string" ? metaGift.giftPaymentId : null;
+
+      let gift =
+        (await prisma.eventGiftPayment.findUnique({
+          where: { paymentId: payment.id },
+          select: { reference: true },
+        })) ||
+        (await prisma.eventGiftPayment.findUnique({
+          where: { reference: payment.reference },
+          select: { reference: true },
+        }));
+
+      if (!gift && giftPaymentId) {
+        gift = await prisma.eventGiftPayment.findUnique({
+          where: { id: giftPaymentId },
+          select: { reference: true },
+        });
+      }
+
       if (gift) {
+        // Heal the paymentId link when fulfilment was found by reference only.
+        await prisma.eventGiftPayment.updateMany({
+          where: { reference: gift.reference, paymentId: null },
+          data: { paymentId: payment.id },
+        });
         try {
           await giftPaymentService.fulfilFromProvider(gift.reference, "payment_webhook");
         } catch (error) {
@@ -1004,24 +1026,67 @@ export class PaymentService {
           // delivery that will never succeed.
           console.error("[gifts.fulfil]", gift.reference, error);
         }
+      } else {
+        console.error(
+          "[gifts.fulfil] SUCCESSFUL EVENT_GIFT payment has no EventGiftPayment row",
+          payment.id,
+          payment.reference
+        );
       }
       return;
     }
 
     if (payment.purpose === "CONTRIBUTION") {
       const meta = payment.metadata as Record<string, unknown> | null;
-      if (meta?.eventId && meta?.contributor) {
+      const eventId = typeof meta?.eventId === "string" ? meta.eventId : null;
+      const contributor =
+        typeof meta?.contributor === "string" && meta.contributor.trim()
+          ? meta.contributor.trim()
+          : null;
+      if (eventId && contributor) {
         const { contributionService } = await import("@/services/contributions/contribution.service");
+        const purposeRaw = typeof meta?.purpose === "string" ? meta.purpose : undefined;
+        const purpose = [
+          "FAMILY_SUPPORT",
+          "BURIAL_SUPPORT",
+          "MEMORIAL_FUND",
+          "CHARITY_DONATION",
+          "CHURCH_SUPPORT",
+          "GENERAL",
+        ].includes(purposeRaw ?? "")
+          ? (purposeRaw as import("@prisma/client").ContributionPurpose)
+          : "FAMILY_SUPPORT";
         await contributionService.createFromPayment(
           payment.id,
           {
-            eventId: String(meta.eventId),
-            contributor: String(meta.contributor),
-            message: typeof meta.message === "string" ? meta.message : undefined,
-            isAnonymous: Boolean(meta.isAnonymous),
+            eventId,
+            contributor,
+            message: typeof meta?.message === "string" ? meta.message : undefined,
+            isAnonymous: Boolean(meta?.isAnonymous),
+            purpose,
+            paymentMethod:
+              typeof meta?.paymentMethod === "string"
+                ? meta.paymentMethod
+                : typeof meta?.checkoutMethod === "string"
+                  ? meta.checkoutMethod
+                  : undefined,
+            payerEmail:
+              typeof meta?.payerEmail === "string"
+                ? meta.payerEmail
+                : typeof meta?.email === "string"
+                  ? meta.email
+                  : undefined,
+            paymentReference: payment.reference,
           },
           Number(payment.amount),
           payment.currency
+        );
+      } else {
+        console.error(
+          "[contributions.fulfil] SUCCESSFUL CONTRIBUTION missing eventId/contributor metadata",
+          payment.id,
+          payment.reference,
+          meta
         );
       }
     } else if (payment.purpose === "INVITATION_REVISION") {
