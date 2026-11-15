@@ -202,17 +202,17 @@ export function AlbumUploadBar({
         className="sr-only"
         onChange={(event) => void onFiles(event.target.files)}
       />
-      <p
-        className="mx-auto mt-3 max-w-md text-[1.02rem] leading-relaxed"
-        style={{
-          color: "var(--memory-color-ink, #1B365D)",
-          fontFamily: "var(--memory-font-body, var(--font-cormorant), Georgia, serif)",
-        }}
-      >
-        {upload.windowOpen
-          ? `Any photo your phone can take, including JPEG, HEIC, PNG, WebP, GIF, AVIF, and BMP. Up to ${upload.maxImageSizeMb}MB each. Guests can like, comment, and download. Only an admin or the organizer can remove a photo.`
-          : "Photo uploads are closed for this celebration."}
-      </p>
+      {!upload.windowOpen ? (
+        <p
+          className="mx-auto mt-3 max-w-md text-[1.02rem] leading-relaxed"
+          style={{
+            color: "var(--memory-color-ink, #1B365D)",
+            fontFamily: "var(--memory-font-body, var(--font-cormorant), Georgia, serif)",
+          }}
+        >
+          Photo uploads are closed for this celebration.
+        </p>
+      ) : null}
       {status && !busy ? (
         <p className="mt-2 text-sm" style={{ color: "var(--memory-color-ink, #1B365D)" }}>
           {status}

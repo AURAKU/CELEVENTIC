@@ -34,6 +34,7 @@ export default function MemoryTokenGalleryPage() {
     allowDownloads: boolean;
     upload?: AlbumUploadConfig | null;
     canModerate?: boolean;
+    canRemoveMedia?: boolean;
     viewToken?: string;
     theme?: { cssVars?: CSSProperties };
     memories: { items: MemoryGalleryItem[]; page: number; pages: number; total: number };
@@ -90,6 +91,7 @@ export default function MemoryTokenGalleryPage() {
       themeVars={data.theme?.cssVars as MemoryThemeVars | undefined}
       viewToken={data.viewToken ?? token}
       canModerate={Boolean(data.canModerate)}
+      canRemoveMedia={Boolean(data.canRemoveMedia)}
       upload={data.upload}
       onRefresh={() => void loadGallery()}
       invitationHref={data.event.invitationHref}

@@ -78,6 +78,8 @@ interface PublicMemoriesGalleryProps {
   themeVars?: MemoryThemeVars;
   viewToken?: string;
   canModerate?: boolean;
+  /** Admin/organizer only — guests never get remove controls. */
+  canRemoveMedia?: boolean;
   onItemsChange?: (items: MemoryGalleryItem[]) => void;
   upload?: AlbumUploadConfig | null;
   onRefresh?: () => void;
@@ -122,6 +124,7 @@ export function PublicMemoriesGallery({
   themeVars,
   viewToken,
   canModerate = false,
+  canRemoveMedia = false,
   onItemsChange,
   upload,
   onRefresh,
@@ -313,7 +316,7 @@ export function PublicMemoriesGallery({
   }
 
   async function deleteMemory(item: MemoryGalleryItem) {
-    if (!viewToken || !item.canDelete) return;
+    if (!viewToken || !canRemoveMedia || !item.canDelete) return;
     if (!window.confirm("Remove this photo or video from the album? Only an admin or the organizer can do this.")) return;
     const res = await fetch(`/api/public/memories/${viewToken}/media/${item.id}`, {
       method: "DELETE",
@@ -626,7 +629,7 @@ export function PublicMemoriesGallery({
                     </span>
                   ) : null}
                 </button>
-                {item.canDelete ? (
+                {canRemoveMedia && item.canDelete ? (
                   <button
                     type="button"
                     className="absolute bottom-1.5 right-1.5 z-10 inline-flex min-h-7 items-center rounded-full bg-black/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"
@@ -773,7 +776,7 @@ export function PublicMemoriesGallery({
                 <span className="text-sm">Comment</span>
               </button>
               <span className="text-sm tabular-nums">{lightbox.commentCount ?? 0}</span>
-              {lightbox.canDelete ? (
+              {canRemoveMedia && lightbox.canDelete ? (
                 <button
                   type="button"
                   className="inline-flex items-center gap-1.5 px-2 min-h-11 ml-auto text-rose-300"
@@ -861,4 +864,4 @@ export function PublicMemoriesGallery({
 }
 
 /** @deprecated Prefer `@/components/thank-you/thank-you-public-view` */
-export { ThankYouPublicView } from "@/components/thank-you/thank-you-public-view";
+export { ThankYouKeepsakeExperience as ThankYouPublicView } from "@/components/thank-you/thank-you-public-view";

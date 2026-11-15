@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { useCurrency } from "@/components/commerce/currency-provider";
 import { DISPLAY_CURRENCIES } from "@/lib/commerce/constants";
@@ -16,7 +17,13 @@ interface PreferencesMenuProps {
   iconOnly?: boolean;
   /** Header/admin chrome. When true, the floating LocaleDock hides itself. */
   chrome?: boolean;
+  /** Where the picker opens relative to the trigger. Bottom docks should use `above`. */
+  panelPlacement?: "below" | "above";
 }
+
+const PANEL_GAP_PX = 10;
+const PANEL_EDGE_PAD_PX = 16;
+const PANEL_Z_INDEX = 200;
 
 const CURRENCIES = DISPLAY_CURRENCIES;
 
@@ -104,31 +111,160 @@ export function PreferencesMenu({
   compact = false,
   iconOnly = false,
   chrome = true,
+  panelPlacement = "below",
 }: PreferencesMenuProps) {
   const { locale, setLocale, labels, availableLocales, t } = useLocale();
   const { currency, setCurrency, loading: ratesLoading } = useCurrency();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [portalStyle, setPortalStyle] = useState<CSSProperties | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Floating LocaleDock sits at the bottom edge — always open upward there.
+  const openAbove = panelPlacement === "above" || (!chrome && iconOnly);
+  const usePortal = openAbove && mounted;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !usePortal) {
+      setPortalStyle(null);
+      return;
+    }
+
+    function placePanel() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const right = Math.max(PANEL_EDGE_PAD_PX, window.innerWidth - rect.right);
+      const bottom = Math.max(PANEL_EDGE_PAD_PX, window.innerHeight - rect.top + PANEL_GAP_PX);
+      setPortalStyle({
+        position: "fixed",
+        top: "auto",
+        left: "auto",
+        right,
+        bottom,
+        zIndex: PANEL_Z_INDEX,
+      });
+    }
+
+    placePanel();
+    window.addEventListener("resize", placePanel);
+    window.addEventListener("scroll", placePanel, true);
+    return () => {
+      window.removeEventListener("resize", placePanel);
+      window.removeEventListener("scroll", placePanel, true);
+    };
+  }, [open, usePortal]);
 
   useEffect(() => {
     if (!open) return;
-    function onPointerDown(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) {
+        return;
       }
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
-    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
   const showLanguage = availableLocales.length > 1;
+
+  const panel =
+    open && (!usePortal || portalStyle) ? (
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-label={t("header.preferences")}
+        data-prefs-placement={openAbove ? "above" : "below"}
+        data-prefs-portal={usePortal ? "true" : "false"}
+        style={usePortal ? portalStyle ?? undefined : undefined}
+        className={cn(
+          "w-[min(18.75rem,calc(100vw-2rem))] overflow-hidden",
+          "rounded-[1.25rem] p-[1px]",
+          "bg-gradient-to-br from-teal-400/30 via-white to-orange-400/25",
+          "shadow-[0_16px_40px_rgba(15,23,42,0.22)]",
+          !usePortal &&
+            (openAbove
+              ? "absolute right-0 bottom-[calc(100%+0.55rem)] z-[100]"
+              : "absolute right-0 top-[calc(100%+0.55rem)] z-[100]")
+        )}
+      >
+        <div className="max-h-[min(24rem,70vh)] overflow-y-auto rounded-[1.2rem] bg-white p-4 shadow-sm">
+          {showLanguage && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                {t("header.language")}
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {availableLocales.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => {
+                      setLocale(code as AppLocale);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors touch-manipulation",
+                      locale === code
+                        ? "bg-[#0B8A83] text-white shadow-sm"
+                        : "bg-slate-50/90 text-slate-700 hover:bg-slate-100"
+                    )}
+                    aria-pressed={locale === code}
+                  >
+                    <span className="text-base leading-none">{LOCALE_FLAGS[code]}</span>
+                    <span>{labels[code]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className={cn("space-y-2", showLanguage && "mt-4 border-t border-slate-100 pt-4")}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+              {t("header.currency")}
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {CURRENCIES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  disabled={ratesLoading}
+                  onClick={() => {
+                    setCurrency(c);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-xs font-semibold transition-colors touch-manipulation",
+                    currency === c
+                      ? "bg-[#0B8A83] text-white shadow-sm"
+                      : "bg-slate-50/90 text-slate-700 hover:bg-slate-100",
+                    ratesLoading && "opacity-60"
+                  )}
+                  aria-pressed={currency === c}
+                >
+                  <span className="text-base leading-none">{CURRENCY_FLAGS[c]}</span>
+                  <span className="tracking-wide">{c}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : null;
 
   return (
     <div
@@ -137,13 +273,19 @@ export function PreferencesMenu({
       {...(chrome ? { "data-celeventic-prefs": "" } : {})}
     >
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "group/pref relative inline-flex items-center justify-center touch-manipulation",
           "rounded-xl",
           iconOnly
-            ? "min-h-10 min-w-10 text-slate-600 hover:bg-slate-100 hover:text-brand-700"
+            ? cn(
+                "min-h-11 min-w-11",
+                openAbove
+                  ? "bg-white/92 text-slate-700 shadow-[0_8px_24px_rgba(0,0,0,0.22)] ring-1 ring-black/5 backdrop-blur-md hover:bg-white hover:text-brand-700"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-brand-700"
+              )
             : cn(
                 "rounded-[1.15rem] p-[1px]",
                 "bg-gradient-to-br from-teal-400/35 via-white/45 to-orange-400/30",
@@ -155,7 +297,8 @@ export function PreferencesMenu({
           open &&
             !iconOnly &&
             "shadow-[0_0_0_1px_rgba(20,184,166,0.22),0_6px_18px_rgba(15,118,110,0.12)]",
-          open && iconOnly && "bg-slate-100 text-brand-700"
+          open && iconOnly && !openAbove && "bg-slate-100 text-brand-700",
+          open && iconOnly && openAbove && "bg-white text-brand-700 ring-brand-500/30"
         )}
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -201,80 +344,7 @@ export function PreferencesMenu({
         )}
       </button>
 
-      {open && (
-        <div
-          role="dialog"
-          aria-label={t("header.preferences")}
-          className={cn(
-            "absolute right-0 top-[calc(100%+0.55rem)] z-[100]",
-            "w-[min(18.75rem,calc(100vw-2rem))] overflow-hidden",
-            "rounded-[1.25rem] p-[1px]",
-            "bg-gradient-to-br from-teal-400/30 via-white to-orange-400/25",
-            "shadow-[0_16px_40px_rgba(15,23,42,0.14)]"
-          )}
-        >
-          <div className="rounded-[1.2rem] bg-white/95 backdrop-blur-xl p-4">
-            {showLanguage && (
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  {t("header.language")}
-                </p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {availableLocales.map((code) => (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => {
-                        setLocale(code as AppLocale);
-                      }}
-                      className={cn(
-                        "flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors touch-manipulation",
-                        locale === code
-                          ? "bg-[#0B8A83] text-white shadow-sm"
-                          : "bg-slate-50/90 text-slate-700 hover:bg-slate-100"
-                      )}
-                      aria-pressed={locale === code}
-                    >
-                      <span className="text-base leading-none">{LOCALE_FLAGS[code]}</span>
-                      <span>{labels[code]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className={cn("space-y-2", showLanguage && "mt-4 pt-4 border-t border-slate-100")}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                {t("header.currency")}
-              </p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {CURRENCIES.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    disabled={ratesLoading}
-                    onClick={() => {
-                      setCurrency(c);
-                      setOpen(false);
-                    }}
-                    className={cn(
-                      "flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-xs font-semibold transition-colors touch-manipulation",
-                      currency === c
-                        ? "bg-[#0B8A83] text-white shadow-sm"
-                        : "bg-slate-50/90 text-slate-700 hover:bg-slate-100",
-                      ratesLoading && "opacity-60"
-                    )}
-                    aria-pressed={currency === c}
-                  >
-                    <span className="text-base leading-none">{CURRENCY_FLAGS[c]}</span>
-                    <span className="tracking-wide">{c}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {usePortal && panel ? createPortal(panel, document.body) : panel}
     </div>
   );
 }

@@ -18,17 +18,26 @@ export async function DELETE(
   }
 
   const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const canRemoveMedia = await canRemoveEventMemoryMedia(
     record.eventId,
-    session?.user?.id,
-    session?.user?.role
+    session.user.id,
+    session.user.role
   );
+  if (!canRemoveMedia) {
+    return NextResponse.json(
+      { error: "Only an admin or the organizer can remove photos and videos" },
+      { status: 403 }
+    );
+  }
 
   try {
     await eventMemorySocialService.deleteMemory({
       memoryId,
       eventId: record.eventId,
-      isModerator: canRemoveMedia,
+      isModerator: true,
     });
     return NextResponse.json({ success: true });
   } catch (error) {

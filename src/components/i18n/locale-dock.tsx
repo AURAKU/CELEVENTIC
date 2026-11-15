@@ -17,7 +17,7 @@ export function LocaleDock() {
   return (
     <div className="celeventic-locale-dock pointer-events-none fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[70]">
       <div className="pointer-events-auto">
-        <PreferencesMenu compact iconOnly chrome={false} />
+        <PreferencesMenu compact iconOnly chrome={false} panelPlacement="above" />
       </div>
     </div>
   );

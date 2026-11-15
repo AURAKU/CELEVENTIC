@@ -86,7 +86,7 @@ export const THANK_YOU_TEMPLATES: ThankYouTemplate[] = [
       overlayOpacity: 0.4,
       cardStyle: "editorial",
       cornerStyle: "soft",
-      motionStyle: "gentle",
+      motionStyle: "cinematic",
       contentWidth: "comfortable",
       bestFor: ["traditional marriage", "naming", "cultural celebrations"],
       isDark: true,
