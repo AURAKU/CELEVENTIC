@@ -146,13 +146,13 @@ export type ShareProfileInput = {
   title: string;
   text: string;
   url: string;
-  /** Live plate PNG, then OG tile. WhatsApp, iMessage, Snapchat, TikTok, X, and similar need the file. */
+  /** Saved + published plate PNG, then OG tile. Primary share attachment. */
   imageUrl?: string | string[] | null;
-  /** Already captured ID-1 plate. Wins over fetch. */
+  /** Already resolved plate file. Wins over fetch and capture. */
   imageFile?: File | Blob | null;
-  /** Capture the on-screen `.celecard-face`. Default true in the browser. */
+  /** Fallback: capture on-screen `.celecard-face` only if published plate fetch fails. */
   capturePlate?: boolean | (() => Promise<File | null>);
-  /** Owner card id. Stores the capture so OG unfurl uses the same live plate. */
+  /** Owner card id. Stores a fallback capture so OG can reuse the same live plate. */
   persistPlateCardId?: string | null;
   /**
    * URL placement in the share payload:
@@ -244,11 +244,13 @@ async function resolveLivePlateFile(input: ShareProfileInput): Promise<File | nu
   const provided = asPlateFile(input.imageFile);
   if (provided) return provided;
 
-  // Capture the on-screen live plate and fetch the published PNG/OG in parallel.
-  // Prefer the capture so Share / Copy Link always attach the exact cardholder face.
+  // Source of truth: the cardholder's saved + published plate (PNG / OG / snapshot).
+  // Capture the on-screen face only as a fallback when the published asset is unavailable.
   const capturePromise = captureOnScreenPlate(input.capturePlate);
   const fetchPromise = livePlateFile(input.imageUrl);
   const [captured, fetched] = await Promise.all([capturePromise, fetchPromise]);
+
+  if (fetched) return fetched;
 
   if (captured) {
     if (input.persistPlateCardId) {
@@ -258,7 +260,7 @@ async function resolveLivePlateFile(input: ShareProfileInput): Promise<File | nu
     }
     return captured;
   }
-  return fetched;
+  return null;
 }
 
 function shareCaption(text: string, url: string) {

@@ -299,8 +299,11 @@ describe("CeleYou studio share controls", () => {
     assert.match(desk, /usePersistLivePlateSnapshot/);
     assert.match(desk, /identityShare/);
     assert.match(desk, /usePublishedPlate/);
-    assert.match(desk, /const captureLiveFace = usePublishedPlate \? persistLivePlate : true/);
-    assert.match(desk, /capturePlate: captureLiveFace/);
+    assert.match(desk, /const captureLiveFace = !usePublishedPlate/);
+    assert.match(desk, /capturePlate: Boolean\(captureLiveFace\)/);
+    assert.match(desk, /saved \+ published plate/);
+    const shareEngine = readFileSync(join(process.cwd(), "src/lib/celeyou-share/engine.ts"), "utf8");
+    assert.match(shareEngine, /saved \+ published plate/);
     assert.match(desk, /copyCeleYouProfile/);
     assert.match(desk, /copyProfileLink/);
     assert.match(desk, /shareWhatsApp/);

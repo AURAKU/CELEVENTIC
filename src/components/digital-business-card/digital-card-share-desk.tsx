@@ -100,12 +100,11 @@ export function DigitalCardShareDesk({
     setTimeout(() => setCopied(null), 1800);
   }
 
-  /** Always attach the exact live cardholder plate (capture → published PNG/OG fallback). */
+  /** Always attach the cardholder's saved + published plate (never an unsaved draft face). */
   function livePlateShareInput(): ShareProfileInput | null {
     if (!identityShare) return null;
-    // Studio with unsaved draft: never rasterize the draft preview — use published plate URLs only.
-    // When the on-screen plate matches the live activated card, capture it so socials get this exact face.
-    const captureLiveFace = usePublishedPlate ? persistLivePlate : true;
+    // Studio with usePublishedPlate: never rasterize a draft. Elsewhere capture is engine fallback only.
+    const captureLiveFace = !usePublishedPlate;
     return {
       title: celeCardShareTitle({ displayName: vcard.displayName, title: vcard.title }),
       text: celeCardShareMessage(
@@ -120,8 +119,7 @@ export function DigitalCardShareDesk({
             origin
           )
         : null,
-      // Always try the on-screen live plate when it matches the activated card.
-      capturePlate: captureLiveFace,
+      capturePlate: Boolean(captureLiveFace),
       persistPlateCardId: persistLivePlate ? cardId || vcard.id || null : null,
     };
   }

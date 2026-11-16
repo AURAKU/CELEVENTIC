@@ -287,7 +287,7 @@ describe("CeleYou Smart Share Engine", () => {
     assert.doesNotMatch(analytics, /A nearby phone is not a tap/);
   });
 
-  it("attaches a captured on-screen plate before fetching OG tiles", async () => {
+  it("prefers the saved published plate over an on-screen capture", async () => {
     const payloads: Array<Record<string, unknown>> = [];
     const previousFetch = globalThis.fetch;
     globalThis.fetch = (async () =>
@@ -295,14 +295,46 @@ describe("CeleYou Smart Share Engine", () => {
         status: 200,
         headers: { "content-type": "image/png" },
       })) as typeof fetch;
+    const draftCapture = new File([new Uint8Array(128).fill(7)], "live-face.png", { type: "image/png" });
+    try {
+      const result = await shareCeleYouProfile(
+        {
+          title: "Kojo Mensah on CeleYou",
+          text: "Connect with Kojo Mensah on their CeleYou Card.",
+          url: "https://www.celeventic.com/u/kojo-mensah",
+          imageUrl: "/api/digital-business-cards/public/kojo-mensah/card?download=1&v=live",
+          capturePlate: async () => draftCapture,
+        },
+        {
+          share: async (payload: ShareData) => {
+            payloads.push(payload as Record<string, unknown>);
+          },
+          canShare: (payload?: ShareData) => Boolean(payload?.files?.length),
+        } as Navigator
+      );
+      assert.equal(result, "shared");
+      const files = payloads[0]?.files as File[] | undefined;
+      // Published PNG/OG wins — never the unsaved on-screen draft capture.
+      assert.equal(files?.[0]?.name, "celeyou-plate.png");
+      assert.equal(files?.[0]?.size, 96);
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
+
+  it("falls back to on-screen capture when the published plate is unavailable", async () => {
+    const payloads: Array<Record<string, unknown>> = [];
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response("missing", { status: 404 })) as typeof fetch;
     const plate = new File([new Uint8Array(128).fill(7)], "live-face.png", { type: "image/png" });
     try {
       const result = await shareCeleYouProfile(
         {
           title: "Kojo Mensah on CeleYou",
-          text: "Kojo Mensah on CeleYou. One Identity. Infinite Connections.",
+          text: "Connect with Kojo Mensah on their CeleYou Card.",
           url: "https://www.celeventic.com/u/kojo-mensah",
-          imageUrl: "/brand/icon.png",
+          imageUrl: "/api/digital-business-cards/public/kojo-mensah/card?download=1&v=live",
           capturePlate: async () => plate,
         },
         {
@@ -314,7 +346,6 @@ describe("CeleYou Smart Share Engine", () => {
       );
       assert.equal(result, "shared");
       const files = payloads[0]?.files as File[] | undefined;
-      // Capture wins over the parallel published PNG fetch.
       assert.equal(files?.[0]?.name, "celeyou-plate.png");
       assert.equal(files?.[0]?.size, 128);
     } finally {

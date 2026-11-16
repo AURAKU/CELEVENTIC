@@ -152,8 +152,7 @@ export function DigitalCardPublicView({
       text: shareCommentary,
       url: shareUrl,
       imageUrl: plateShareUrls,
-      persistPlateCardId: card.id || null,
-      // Prefer the on-screen live plate; fall back to published PNG/OG of this card.
+      // Attach the cardholder's saved + published plate; DOM capture is engine fallback only.
       capturePlate: true,
     });
     setSharing(false);
@@ -178,8 +177,7 @@ export function DigitalCardPublicView({
         text: celeCardShareMessage(card, shareUrl),
         url: shareUrl,
         imageUrl: plateShareUrls,
-        persistPlateCardId: card.id || null,
-        // Always capture the on-screen live cardholder plate for social paste/unfurl.
+        // Attach the cardholder's saved + published plate; DOM capture is engine fallback only.
         capturePlate: true,
       });
       if (result === "copied") {
