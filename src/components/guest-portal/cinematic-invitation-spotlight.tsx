@@ -434,7 +434,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
                   allowFullscreen
                   guestName={props.guestName ?? undefined}
                   caption="Show at the gate"
-                  showDownload
+                  showDownload={false}
                 />
                 {props.admissionManualCode && (
                   <ManualGateCodeReveal code={props.admissionManualCode} variant="dark" />
@@ -443,7 +443,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
             )}
             {showSeatPass && props.seatQrDataUrl && props.seatLookupUrl && (
               <>
-                <BrandedQrImage src={props.seatQrDataUrl} size={140} showDownload caption="Your seat" />
+                <BrandedQrImage src={props.seatQrDataUrl} size={140} showDownload={false} caption="Your seat" />
                 <Button variant="outline" size="sm" asChild className="border-white/30 text-white hover:bg-white/10">
                   <a href={props.seatLookupUrl} target="_blank" rel="noopener noreferrer">Find my seat</a>
                 </Button>

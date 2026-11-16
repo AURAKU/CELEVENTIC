@@ -43,8 +43,9 @@ export function BrandedQrImage({
   size = 200,
   token,
   className,
-  showDownload = true,
-  showSizeOptions = true,
+  /** Off by default so invitation passes stay clean (no 512/1024/2048 row). */
+  showDownload = false,
+  showSizeOptions = false,
   caption,
   mode = "brand",
   allowFullscreen = false,

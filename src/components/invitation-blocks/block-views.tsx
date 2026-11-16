@@ -618,7 +618,7 @@ export function BlockView({ block, ctx }: BlockViewProps) {
         <BlockShell variant={block.styleVariant}>
           <BlockHeader block={block} locale={locale} />
           <div className="text-center flex flex-col items-center justify-center gap-3">
-            {ctx.qrDataUrl && <BrandedQrImage src={ctx.qrDataUrl} size={140} showDownload />}
+            {ctx.qrDataUrl && <BrandedQrImage src={ctx.qrDataUrl} size={140} showDownload={false} />}
             {ctx.admissionManualCode && (
               <ManualGateCodeReveal code={ctx.admissionManualCode} variant="pass" />
             )}

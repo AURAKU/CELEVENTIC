@@ -814,7 +814,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                     <p className="text-xs text-slate-600 mb-2 flex items-center justify-center gap-1">
                       <Armchair className="h-3.5 w-3.5" /> Your table & seat
                     </p>
-                    <BrandedQrImage src={props.seatQrDataUrl} size={160} showDownload caption="Scan to find your seat" />
+                    <BrandedQrImage src={props.seatQrDataUrl} size={160} showDownload={false} caption="Scan to find your seat" />
                     <Button variant="outline" size="sm" className="mt-3" asChild>
                       <a href={props.seatLookupUrl} target="_blank" rel="noopener noreferrer">View my seating</a>
                     </Button>
@@ -831,7 +831,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                       allowFullscreen
                       guestName={props.guestName ?? undefined}
                       caption="Tap to enlarge · turn brightness up for scanning"
-                      showDownload
+                      showDownload={false}
                     />
                     {props.admissionManualCode && (
                       <ManualGateCodeReveal code={props.admissionManualCode} variant="pass" />
