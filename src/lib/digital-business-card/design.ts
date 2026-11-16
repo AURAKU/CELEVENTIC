@@ -371,7 +371,9 @@ export function applyCeleCardDesign(
     next.accent = pair.accent;
     next.accentSoft = pair.accentSoft;
   }
-  if (design.ink === "light" && !textIsDark(next.text)) {
+  // Dark paper keeps the theme plate (e.g. Teal Pulse) and light type for share/OG.
+  // Never cream-wash a dark paperTone — that made iMessage/WhatsApp show the wrong face.
+  if (design.ink === "light" && !textIsDark(next.text) && design.paperTone !== "dark") {
     next.text = "#1c1917";
     next.muted = "#57534e";
     next.qrInk = "#1c1917";

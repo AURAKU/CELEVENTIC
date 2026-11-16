@@ -85,6 +85,15 @@ export function CeleCardPlateBitmap({
   const houseLines = company?.trim() ? celecardCompanyDisplayLines(company.trim(), { uppercase: true }) : [];
   const plateTop = Math.round((height - plate.height) / 2);
   const plateLeft = Math.round((width - plate.width) / 2);
+  const darkPlate = (() => {
+    const hex = String(theme.text || "").replace("#", "");
+    if (hex.length < 6) return false;
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 >= 148;
+  })();
+  const paperOpacity = darkPlate ? 0.2 : 0.42;
 
   return (
     <div
@@ -137,10 +146,32 @@ export function CeleCardPlateBitmap({
                 width: plate.width,
                 height: plate.height,
                 objectFit: "cover",
-                opacity: 0.42,
+                opacity: paperOpacity,
               }}
             />
           ) : null}
+          {/* Satori-safe pulse lattice so dark teal socials match the live plate geometry. */}
+          {darkPlate
+            ? Array.from({ length: 30 }, (_, i) => {
+                const row = Math.floor(i / 6);
+                const col = i % 6;
+                return (
+                  <div
+                    key={`pulse-${i}`}
+                    style={{
+                      position: "absolute",
+                      left: Math.round((col * plate.width) / 5.2 - 18 * s),
+                      top: Math.round((row * plate.height) / 4.2 - 12 * s),
+                      width: Math.round(96 * s),
+                      height: Math.round(96 * s),
+                      borderRadius: 999,
+                      border: `1px solid ${theme.border}`,
+                      opacity: 0.22,
+                    }}
+                  />
+                );
+              })
+            : null}
           <div
             style={{
               position: "absolute",

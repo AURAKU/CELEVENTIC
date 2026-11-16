@@ -107,6 +107,19 @@ describe("CeleYou design desk", () => {
     assert.match(next.cardBackground, /rgba\(8,10,16/);
   });
 
+  it("keeps Teal Pulse dark for social share when paperTone is dark", () => {
+    const teal = resolveDigitalCardTheme("teal-pulse");
+    const next = applyCeleCardDesign(teal, {
+      ink: "light",
+      paperTone: "dark",
+      paperUrl: "/smartcard/textures/deco.jpg",
+      atmosphere: "spire",
+    });
+    assert.equal(next.text, "#f8fafc");
+    assert.match(next.cardBackground, /#0B8A83/);
+    assert.doesNotMatch(next.cardBackground, /255,252,247/);
+  });
+
   it("keeps hue when a dark paper sits on a light plate", () => {
     const frost = resolveDigitalCardTheme("elegant-frost");
     const paper = celeCardPaperStyle(frost, {
