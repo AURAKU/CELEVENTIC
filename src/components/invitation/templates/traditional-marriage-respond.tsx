@@ -128,7 +128,6 @@ export function TraditionalMarriageRespond({
     setAttendingCount(attending);
   }, [invitationId, guestId, seededStatus, seededAttending, allowance]);
 
-  const nameLocked = Boolean(guestId && guestName.trim());
   const showReachHosts = Boolean(reachHosts || organizerPhone || organizerEmail);
   const capacityLine = rsvpPartyCapacityLine(allowance);
   const slotGuidance = useMemo(
@@ -155,22 +154,23 @@ export function TraditionalMarriageRespond({
       phone: phone.trim() || undefined,
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
-    const payload = guestId
-      ? {
-          guestId,
-          invitationId,
-          ...(uniqueLink ? { uniqueLink } : {}),
-          response,
-          ...contact,
-        }
-      : { invitationId, guestName: guestName.trim(), response, ...contact };
-
-    if (!guestId && !guestName.trim()) {
+    if (!guestName.trim()) {
       setError(t("rsvp.name_required"));
       setLoading(false);
       setPressed(null);
       return;
     }
+
+    const payload = guestId
+      ? {
+          guestId,
+          invitationId,
+          ...(uniqueLink ? { uniqueLink } : {}),
+          guestName: guestName.trim(),
+          response,
+          ...contact,
+        }
+      : { invitationId, guestName: guestName.trim(), response, ...contact };
 
     try {
       const res = await fetch("/api/rsvp", {
@@ -346,24 +346,11 @@ export function TraditionalMarriageRespond({
                 <input
                   id="tm-rsvp-name"
                   value={guestName}
-                  onChange={(e) => {
-                    if (!nameLocked) setGuestName(e.target.value);
-                  }}
+                  onChange={(e) => setGuestName(e.target.value)}
                   placeholder={t("rsvp.your_name")}
                   autoComplete="name"
-                  readOnly={nameLocked}
-                  aria-readonly={nameLocked || undefined}
-                  title={nameLocked ? t("rsvp.name_locked") : undefined}
-                  className={cn(fieldClass, nameLocked && "cursor-default opacity-90")}
-                  style={{
-                    ...fieldStyle,
-                    ...(nameLocked
-                      ? {
-                          backgroundColor: `${PALETTE.peach}F0`,
-                          borderColor: `${PALETTE.mustard}88`,
-                        }
-                      : null),
-                  }}
+                  className={fieldClass}
+                  style={fieldStyle}
                   disabled={staticPreview || loading}
                 />
                 {collectEmail ? (

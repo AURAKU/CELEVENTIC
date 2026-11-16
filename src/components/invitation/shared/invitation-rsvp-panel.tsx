@@ -104,7 +104,6 @@ export function InvitationRsvpPanel({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [attendingCount, setAttendingCount] = useState(seededAttending);
-  const nameLocked = Boolean(guestId && guestName.trim());
   const capacityCopy = rsvpPartyCapacityLine(allowance);
   const slotGuidance = useMemo(
     () => rsvpPartySlotGuidance(allowance, attendingCount),
@@ -148,22 +147,23 @@ export function InvitationRsvpPanel({
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
     const note = guestMessage?.trim();
+    if (!guestName.trim()) {
+      setError(t("rsvp.name_required"));
+      setLoading(false);
+      return;
+    }
+
     const payload = guestId
       ? {
           guestId,
           invitationId,
           ...(uniqueLink ? { uniqueLink } : {}),
+          guestName: guestName.trim(),
           response,
           ...contact,
           ...(note ? { message: note } : {}),
         }
       : { invitationId, guestName: guestName.trim(), response, ...contact, ...(note ? { message: note } : {}) };
-
-    if (!guestId && !guestName.trim()) {
-      setError(t("rsvp.name_required"));
-      setLoading(false);
-      return;
-    }
 
     const res = await fetch("/api/rsvp", {
       method: "POST",
@@ -274,26 +274,15 @@ export function InvitationRsvpPanel({
     <FashionRsvpField
       placeholder={t("rsvp.your_name")}
       value={guestName}
-      onChange={(e) => {
-        if (!nameLocked) setGuestName(e.target.value);
-      }}
-      readOnly={nameLocked}
-      aria-readonly={nameLocked || undefined}
-      title={nameLocked ? t("rsvp.name_locked") : undefined}
-      className={nameLocked ? "ff-rsvp-field--locked" : undefined}
+      onChange={(e) => setGuestName(e.target.value)}
       disabled={loading}
     />
   ) : (
     <Input
       placeholder={t("rsvp.your_name")}
       value={guestName}
-      onChange={(e) => {
-        if (!nameLocked) setGuestName(e.target.value);
-      }}
-      readOnly={nameLocked}
-      aria-readonly={nameLocked || undefined}
-      title={nameLocked ? t("rsvp.name_locked") : undefined}
-      className={`${fieldClass}${nameLocked ? " cursor-default opacity-90" : ""}`}
+      onChange={(e) => setGuestName(e.target.value)}
+      className={fieldClass}
       disabled={loading}
     />
   );

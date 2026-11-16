@@ -11,6 +11,7 @@ import {
 import { DuplicateGuestError } from "@/lib/guest-search/duplicate-guests";
 import { RsvpClosedError } from "@/lib/rsvp/deadline";
 import { guestMatchesInvitationProof, rsvpGuestProofValid } from "@/lib/rsvp/guest-proof";
+import { cleanName } from "@/lib/guest-import/name";
 import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
 
@@ -19,6 +20,8 @@ const rsvpByGuestSchema = z.object({
   invitationId: z.string().optional(),
   uniqueLink: z.string().optional(),
   qrToken: z.string().optional(),
+  /** Optional rename of the existing guest card — never mints a second row. */
+  guestName: z.string().min(2).optional(),
   response: z.enum(["ACCEPTED", "DECLINED", "MAYBE"]),
   email: z.string().email().optional(),
   phone: z.string().optional(),
@@ -316,9 +319,10 @@ export async function POST(req: Request) {
       where: { id: data.guestId },
       select: {
         id: true,
+        name: true,
         invitationId: true,
         qrToken: true,
-        invitation: { select: { uniqueLink: true } },
+        invitation: { select: { id: true, name: true, uniqueLink: true, isGeneralPass: true } },
       },
     });
     if (!guestRow) {
@@ -337,14 +341,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invitation not found", code: "RSVP_PROOF_MISMATCH" }, { status: 403 });
     }
 
-    if (data.email || data.phone) {
+    const nextName = data.guestName ? cleanName(data.guestName) : "";
+    const rename =
+      nextName.length >= 2 &&
+      nextName.toLocaleLowerCase() !== (guestRow.name ?? "").trim().toLocaleLowerCase()
+        ? nextName
+        : null;
+
+    if (rename || data.email || data.phone) {
       await prisma.guest.update({
         where: { id: data.guestId },
         data: {
+          ...(rename ? { name: rename } : {}),
           ...(data.email ? { email: data.email } : {}),
           ...(data.phone ? { phone: data.phone } : {}),
         },
       });
+    }
+
+    // Keep the personalised invitation card title in sync when this guest owns it.
+    if (
+      rename &&
+      guestRow.invitationId &&
+      guestRow.invitation &&
+      !guestRow.invitation.isGeneralPass
+    ) {
+      const inviteName = (guestRow.invitation.name ?? "").trim();
+      const priorGuestName = (guestRow.name ?? "").trim();
+      const shouldSyncInviteName =
+        !inviteName ||
+        inviteName.toLocaleLowerCase() === priorGuestName.toLocaleLowerCase();
+      if (shouldSyncInviteName) {
+        await prisma.invitation.update({
+          where: { id: guestRow.invitationId },
+          data: { name: rename },
+        });
+      }
     }
 
     let allowance = 1;
