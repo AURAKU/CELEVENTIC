@@ -3,7 +3,10 @@ import { createAuditLog } from "@/lib/audit";
 import { getServerAppUrl } from "@/lib/app-url";
 import { cleanName, nameKey } from "@/lib/guest-import/name";
 import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact";
-import { findActiveGuestDuplicates } from "@/lib/guest-search/duplicate-guests";
+import {
+  DuplicateGuestError,
+  findActiveGuestDuplicates,
+} from "@/lib/guest-search/duplicate-guests";
 import type { DuplicateWarning } from "@/lib/guest-search/types";
 import { clampPartySize } from "@/lib/guest-search/party-allowance";
 import { isOpenHostInvitation } from "@/lib/guest-search/open-host-invitation";
@@ -111,6 +114,72 @@ export async function notifyOrganizersOfDuplicateGuest(input: {
   });
 }
 
+type OpenHostReuseGuest = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  invitationId: string | null;
+  qrToken: string | null;
+  invitation: { uniqueLink: string; admissionAllowance: number | null } | null;
+};
+
+async function reuseOpenHostGuest(input: {
+  guest: OpenHostReuseGuest;
+  email: string | null;
+  phone: string | null;
+  partySize: number;
+  organizerId: string;
+  eventId: string;
+  eventTitle: string;
+  organizerEmail: string | null;
+  collaboratorUserIds: string[];
+  collaboratorEmails: string[];
+}): Promise<{
+  invitationId: string;
+  guestId: string;
+  inviteUrl: string;
+  invitePath: string;
+  allowance: number;
+  duplicates: DuplicateWarning[];
+  organizerId: string;
+  eventId: string;
+  eventTitle: string;
+  organizerEmail: string | null;
+  collaboratorUserIds: string[];
+  collaboratorEmails: string[];
+}> {
+  const { guest } = input;
+  if (!guest.invitationId || !guest.invitation) {
+    throw new Error("Invitation not found");
+  }
+  if (input.email || input.phone) {
+    await prisma.guest.update({
+      where: { id: guest.id },
+      data: {
+        ...(input.email ? { email: input.email } : {}),
+        ...(input.phone ? { phone: input.phone } : {}),
+      },
+    });
+  }
+  const appUrl = await getServerAppUrl();
+  const invitePath = `/invite/${guest.invitation.uniqueLink}?guest=${guest.qrToken}`;
+  return {
+    invitationId: guest.invitationId,
+    guestId: guest.id,
+    inviteUrl: `${appUrl}${invitePath}`,
+    invitePath,
+    allowance: guest.invitation.admissionAllowance ?? input.partySize,
+    duplicates: [],
+    organizerId: input.organizerId,
+    eventId: input.eventId,
+    eventTitle: input.eventTitle,
+    organizerEmail: input.organizerEmail,
+    collaboratorUserIds: input.collaboratorUserIds,
+    collaboratorEmails: input.collaboratorEmails,
+  };
+}
+
 /**
  * Self-register from an open template RSVP: mint a personalised invitation so
  * the organiser sees/edit/shares a real guest-list card.
@@ -178,9 +247,18 @@ export async function registerOpenHostRsvp(input: {
   const email = normalizeEmail(input.email).value;
   const phone = normalizeGhanaPhone(input.phone).value;
   const partySize = clampPartySize(input.partySize ?? 1);
+  const organizerMeta = {
+    organizerId: source.event.organizerId,
+    eventId: source.eventId,
+    eventTitle: source.event.title,
+    organizerEmail: source.event.organizer.email,
+    collaboratorUserIds: source.event.collaborators.map((row) => row.userId),
+    collaboratorEmails: source.event.collaborators
+      .map((row) => row.user.email)
+      .filter((value): value is string => Boolean(value)),
+  };
 
-  // Same person re-submitting on the general link should update their existing
-  // personalised card, not mint a second invitation.
+  // Same person accepting again must update their existing card — never mint a twin.
   const existingGuests = await prisma.guest.findMany({
     where: {
       eventId: source.eventId,
@@ -196,37 +274,27 @@ export async function registerOpenHostRsvp(input: {
       qrToken: true,
       invitation: { select: { uniqueLink: true, admissionAllowance: true } },
     },
-    take: 80,
+    take: 200,
   });
-  const exact = existingGuests.find((guest) => nameKey(guest.name) === nameKey(displayName));
+  const phoneDigits = phone?.replace(/\D+/g, "") ?? "";
+  const exact =
+    existingGuests.find((guest) => nameKey(guest.name) === nameKey(displayName)) ??
+    existingGuests.find(
+      (guest) =>
+        Boolean(email) && guest.email?.trim().toLowerCase() === email!.toLowerCase()
+    ) ??
+    existingGuests.find((guest) => {
+      if (!phoneDigits || phoneDigits.length < 7 || !guest.phone) return false;
+      return guest.phone.replace(/\D+/g, "").slice(-9) === phoneDigits.slice(-9);
+    });
   if (exact?.invitationId && exact.invitation) {
-    if (email || phone) {
-      await prisma.guest.update({
-        where: { id: exact.id },
-        data: {
-          ...(email ? { email } : {}),
-          ...(phone ? { phone } : {}),
-        },
-      });
-    }
-    const appUrl = await getServerAppUrl();
-    const invitePath = `/invite/${exact.invitation.uniqueLink}?guest=${exact.qrToken}`;
-    return {
-      invitationId: exact.invitationId,
-      guestId: exact.id,
-      inviteUrl: `${appUrl}${invitePath}`,
-      invitePath,
-      allowance: exact.invitation.admissionAllowance ?? partySize,
-      duplicates: [],
-      organizerId: source.event.organizerId,
-      eventId: source.eventId,
-      eventTitle: source.event.title,
-      organizerEmail: source.event.organizer.email,
-      collaboratorUserIds: source.event.collaborators.map((row) => row.userId),
-      collaboratorEmails: source.event.collaborators
-        .map((row) => row.user.email)
-        .filter((value): value is string => Boolean(value)),
-    };
+    return reuseOpenHostGuest({
+      guest: exact,
+      email,
+      phone,
+      partySize,
+      ...organizerMeta,
+    });
   }
 
   const duplicates = await findActiveGuestDuplicates(
@@ -236,20 +304,88 @@ export async function registerOpenHostRsvp(input: {
     phone
   );
 
-  const created = await createQuickInvitation({
-    eventId: source.eventId,
-    name: displayName,
-    partySize,
-    phone,
-    email,
-    templateId: source.templateId,
-    publishImmediately: true,
-    issueEntryPass: true,
-    enablePlaceCard: true,
-    acknowledgeDuplicates: true,
-    actorUserId: source.event.organizerId,
-    notes: "Self-registered via general invitation RSVP",
-  });
+  // Name / contact collision from the wider duplicate scan — reuse that guest row.
+  const collidingGuestId = duplicates.find((row) => row.kind === "guest")?.id ?? null;
+  if (collidingGuestId) {
+    const colliding = await prisma.guest.findFirst({
+      where: {
+        id: collidingGuestId,
+        eventId: source.eventId,
+        archivedAt: null,
+        invitation: { isGeneralPass: false, archivedAt: null },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        invitationId: true,
+        qrToken: true,
+        invitation: { select: { uniqueLink: true, admissionAllowance: true } },
+      },
+    });
+    if (colliding?.invitationId && colliding.invitation) {
+      return reuseOpenHostGuest({
+        guest: colliding,
+        email,
+        phone,
+        partySize,
+        ...organizerMeta,
+      });
+    }
+  }
+
+  // Only mint when this name is new on the event guest list.
+  let created: Awaited<ReturnType<typeof createQuickInvitation>>;
+  try {
+    created = await createQuickInvitation({
+      eventId: source.eventId,
+      name: displayName,
+      partySize,
+      phone,
+      email,
+      templateId: source.templateId,
+      publishImmediately: true,
+      issueEntryPass: true,
+      enablePlaceCard: true,
+      acknowledgeDuplicates: false,
+      actorUserId: source.event.organizerId,
+      notes: "Self-registered via general invitation RSVP",
+    });
+  } catch (error) {
+    if (error instanceof DuplicateGuestError) {
+      const guestId = error.duplicates.find((row) => row.kind === "guest")?.id;
+      if (guestId) {
+        const colliding = await prisma.guest.findFirst({
+          where: {
+            id: guestId,
+            eventId: source.eventId,
+            archivedAt: null,
+            invitation: { isGeneralPass: false, archivedAt: null },
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            invitationId: true,
+            qrToken: true,
+            invitation: { select: { uniqueLink: true, admissionAllowance: true } },
+          },
+        });
+        if (colliding?.invitationId && colliding.invitation) {
+          return reuseOpenHostGuest({
+            guest: colliding,
+            email,
+            phone,
+            partySize,
+            ...organizerMeta,
+          });
+        }
+      }
+    }
+    throw error;
+  }
 
   await createAuditLog({
     userId: source.event.organizerId,
@@ -261,7 +397,7 @@ export async function registerOpenHostRsvp(input: {
       eventId: source.eventId,
       sourceInvitationId: source.id,
       guestId: created.guestId,
-      duplicateCount: duplicates.length,
+      duplicateCount: 0,
     },
   });
 
@@ -271,15 +407,8 @@ export async function registerOpenHostRsvp(input: {
     inviteUrl: created.inviteUrl,
     invitePath: created.invitePath,
     allowance: created.partySize,
-    duplicates,
-    organizerId: source.event.organizerId,
-    eventId: source.eventId,
-    eventTitle: source.event.title,
-    organizerEmail: source.event.organizer.email,
-    collaboratorUserIds: source.event.collaborators.map((row) => row.userId),
-    collaboratorEmails: source.event.collaborators
-      .map((row) => row.user.email)
-      .filter((email): email is string => Boolean(email)),
+    duplicates: [],
+    ...organizerMeta,
   };
 }
 

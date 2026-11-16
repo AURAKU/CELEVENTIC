@@ -11,7 +11,7 @@ import {
 import { DuplicateGuestError } from "@/lib/guest-search/duplicate-guests";
 import { RsvpClosedError } from "@/lib/rsvp/deadline";
 import { guestMatchesInvitationProof, rsvpGuestProofValid } from "@/lib/rsvp/guest-proof";
-import { cleanName } from "@/lib/guest-import/name";
+import { cleanName, nameKey } from "@/lib/guest-import/name";
 import { rateLimit } from "@/lib/rate-limit";
 import { requestClientIp } from "@/lib/http/client-ip";
 
@@ -225,14 +225,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
       }
       const { allowance } = allowanceInfo;
-      const normalizedName = data.guestName.trim().toLocaleLowerCase();
+      const wantedKey = nameKey(cleanName(data.guestName));
 
       const members = await prisma.guest.findMany({
         where: { invitationId: data.invitationId, archivedAt: null },
         select: { id: true, name: true, email: true, phone: true },
       });
-      const matched =
-        members.find((m) => m.name.trim().toLocaleLowerCase() === normalizedName) ?? null;
+      const matched = members.find((m) => nameKey(m.name) === wantedKey) ?? null;
 
       let guest = matched
         ? await prisma.guest.findUnique({ where: { id: matched.id } })
@@ -262,16 +261,26 @@ export async function POST(req: Request) {
           guest = created.guest;
         } catch (error) {
           if (error instanceof DuplicateGuestError) {
-            return NextResponse.json(
-              {
-                error: error.message,
-                code: "DUPLICATE_GUEST",
-                duplicates: error.duplicates,
-              },
-              { status: 409 }
-            );
+            // Same name already on the event — update that guest, never mint a twin.
+            const existingId = error.duplicates.find((row) => row.kind === "guest")?.id;
+            guest = existingId
+              ? await prisma.guest.findFirst({
+                  where: { id: existingId, eventId: invitation.eventId, archivedAt: null },
+                })
+              : null;
+            if (!guest) {
+              return NextResponse.json(
+                {
+                  error: error.message,
+                  code: "DUPLICATE_GUEST",
+                  duplicates: error.duplicates,
+                },
+                { status: 409 }
+              );
+            }
+          } else {
+            throw error;
           }
-          throw error;
         }
       } else if (data.email || data.phone) {
         guest = await prisma.guest.update({
