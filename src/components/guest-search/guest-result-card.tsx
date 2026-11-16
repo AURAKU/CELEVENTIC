@@ -253,6 +253,33 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
           {card.archivedAt && <Badge variant="outline">Archived</Badge>}
           {card.passRevoked && !card.archivedAt && <Badge variant="destructive">Pass revoked</Badge>}
           {card.status === "DRAFT" && <Badge variant="warning">Draft</Badge>}
+          {!card.archivedAt && card.guestStatus === "ACCEPTED" ? (
+            <Badge
+              variant="outline"
+              className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-800"
+              title="Guest tapped Accept on the invitation"
+            >
+              Accept
+            </Badge>
+          ) : null}
+          {!card.archivedAt && card.guestStatus === "DECLINED" ? (
+            <Badge
+              variant="outline"
+              className="border-rose-200 bg-rose-50 text-[10px] text-rose-800"
+              title="Guest tapped Decline on the invitation"
+            >
+              Decline
+            </Badge>
+          ) : null}
+          {!card.archivedAt && card.guestStatus === "MAYBE" ? (
+            <Badge
+              variant="outline"
+              className="border-amber-200 bg-amber-50 text-[10px] text-amber-900"
+              title="Guest tapped Maybe on the invitation"
+            >
+              Maybe
+            </Badge>
+          ) : null}
           {canResetAdmission && (
             <Badge variant="success" className="text-[10px]">
               Admitted
