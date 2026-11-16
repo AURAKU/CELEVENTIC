@@ -145,27 +145,37 @@ export function DigitalCardPublicView({
 
   const shareCard = useCallback(async () => {
     const shareUrl = profileUrl || scanUrl;
+    if (!shareUrl) return;
+    setHoldIntent("closed");
     setSharing(true);
-    const result = await shareCeleYouProfile({
-      title: celeCardShareTitle(card),
-      // Caption only — engine attaches one plate file; URL in text makes iMessage duplicate the card.
-      text: shareCommentary,
-      url: shareUrl,
-      imageUrl: plateShareUrls,
-      // Attach the cardholder's saved + published plate; DOM capture is engine fallback only.
-      capturePlate: true,
-    });
-    setSharing(false);
-    if (result === "cancelled") return;
-    if (result === "shared" || result === "copied" || result === "unavailable") {
-      trackCeleYouGuestEvent(card.slug, "share_tap");
-      setShareOpen(false);
+    try {
+      const result = await shareCeleYouProfile({
+        title: celeCardShareTitle(card),
+        // Caption only — engine attaches one plate file; URL in text makes iMessage duplicate the card.
+        text: shareCommentary,
+        url: shareUrl,
+        imageUrl: plateShareUrls,
+        // Attach the cardholder's saved + published plate; DOM capture is engine fallback only.
+        capturePlate: true,
+      });
+      if (result === "cancelled") return;
+      if (result === "shared" || result === "copied") {
+        trackCeleYouGuestEvent(card.slug, "share_tap");
+        setShareOpen(false);
+      }
+      if (result === "copied") {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+      if (result === "unavailable") {
+        trackCeleYouGuestEvent(card.slug, "share_tap");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2200);
+      }
+    } finally {
+      setSharing(false);
     }
-    if (result === "copied" || result === "unavailable") {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }, [card, plateShareUrls, profileUrl, scanUrl, shareCommentary]);
+  }, [card, plateShareUrls, profileUrl, scanUrl, shareCommentary, setHoldIntent]);
 
   const copyCard = useCallback(async () => {
     const shareUrl = profileUrl || scanUrl;
@@ -252,14 +262,17 @@ export function DigitalCardPublicView({
   }, [connectOpen, hold, setHoldIntent, shareOpen]);
 
   useEffect(() => {
+    // Guest share/connect sheets are portaled above the plate. Never let auto-hold dismiss them.
+    if (shareOpen || connectOpen) {
+      if (hold) setHoldIntent("closed");
+      return;
+    }
     if (hold) {
-      setConnectOpen(false);
-      setShareOpen(false);
       window.setTimeout(() => holdCloseRef.current?.focus(), 20);
     } else {
       holdFrameRef.current?.focus();
     }
-  }, [hold]);
+  }, [hold, shareOpen, connectOpen, setHoldIntent]);
 
   useEffect(() => {
     const el = dockRef.current;
@@ -600,7 +613,10 @@ export function DigitalCardPublicView({
               textTransform: dock.labelTransform,
               borderRadius: dock.actionRadius,
             }}
-            onClick={() => setShareOpen(true)}
+            onClick={() => {
+              setHoldIntent("closed");
+              setShareOpen(true);
+            }}
           >
             <span className="celecard-action-mark" aria-hidden>
               <Share2 />

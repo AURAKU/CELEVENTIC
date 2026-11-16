@@ -178,6 +178,24 @@ function looksLikeImage(type: string, buffer: ArrayBuffer) {
   return mime.includes("image/");
 }
 
+const PLATE_FETCH_TIMEOUT_MS = 3500;
+const PLATE_CAPTURE_TIMEOUT_MS = 5000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch(() => {
+        clearTimeout(timer);
+        resolve(null);
+      });
+  });
+}
+
 function absolutePlateFetchUrl(imageUrl: string): string {
   const raw = imageUrl.trim();
   if (!raw || /^https?:\/\//i.test(raw) || raw.startsWith("data:")) return raw;
@@ -192,7 +210,19 @@ function absolutePlateFetchUrl(imageUrl: string): string {
 async function fetchLivePlateFile(imageUrl: string): Promise<File | null> {
   try {
     const href = absolutePlateFetchUrl(imageUrl);
-    const res = await fetch(href, { cache: "no-store", credentials: "same-origin" });
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer =
+      controller && typeof window !== "undefined"
+        ? window.setTimeout(() => controller.abort(), PLATE_FETCH_TIMEOUT_MS)
+        : controller
+          ? setTimeout(() => controller.abort(), PLATE_FETCH_TIMEOUT_MS)
+          : null;
+    const res = await fetch(href, {
+      cache: "no-store",
+      credentials: "same-origin",
+      signal: controller?.signal,
+    });
+    if (timer) clearTimeout(timer);
     if (!res.ok) return null;
     const buffer = await res.arrayBuffer();
     if (buffer.byteLength < 64) return null;
@@ -246,8 +276,9 @@ async function resolveLivePlateFile(input: ShareProfileInput): Promise<File | nu
 
   // Source of truth: the cardholder's saved + published plate (PNG / OG / snapshot).
   // Capture the on-screen face only as a fallback when the published asset is unavailable.
-  const capturePromise = captureOnScreenPlate(input.capturePlate);
-  const fetchPromise = livePlateFile(input.imageUrl);
+  // Timeouts matter on live: hung DNS/fetch must not freeze SHARE on "Preparing card…".
+  const capturePromise = withTimeout(captureOnScreenPlate(input.capturePlate), PLATE_CAPTURE_TIMEOUT_MS);
+  const fetchPromise = withTimeout(livePlateFile(input.imageUrl), PLATE_FETCH_TIMEOUT_MS);
   const [captured, fetched] = await Promise.all([capturePromise, fetchPromise]);
 
   if (fetched) return fetched;

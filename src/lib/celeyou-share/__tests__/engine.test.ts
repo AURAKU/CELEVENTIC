@@ -430,6 +430,37 @@ describe("CeleYou Smart Share Engine", () => {
     }
   });
 
+
+  it("does not freeze SHARE when the published-plate fetch hangs", async () => {
+    const payloads: Array<Record<string, unknown>> = [];
+    const plate = new File([new Uint8Array(128).fill(7)], "celeyou-plate.png", { type: "image/png" });
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = (() => new Promise(() => undefined)) as typeof fetch;
+    try {
+      const result = await shareCeleYouProfile(
+        {
+          title: "AuraTheKing on CeleYou",
+          text: "Meet AuraTheKing. Their live CeleYou plate.",
+          url: "https://www.celeventic.com/u/owuraku-afari",
+          imageUrl: "https://www.celeventic.com/api/digital-business-cards/public/owuraku-afari/card",
+          capturePlate: async () => plate,
+        },
+        {
+          userAgent: "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
+          share: async (payload: ShareData) => {
+            payloads.push(payload as Record<string, unknown>);
+          },
+          canShare: (payload?: ShareData) => Boolean(payload?.files?.length),
+        } as Navigator
+      );
+      assert.equal(result, "shared");
+      const files = payloads[0]?.files as File[] | undefined;
+      assert.equal(files?.[0]?.name, "celeyou-plate.png");
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
+
   it("keeps the plate file and adds url only when files-only share is rejected", async () => {
     const payloads: Array<Record<string, unknown>> = [];
     const plate = new File([new Uint8Array(128).fill(3)], "celeyou-plate.png", { type: "image/png" });
