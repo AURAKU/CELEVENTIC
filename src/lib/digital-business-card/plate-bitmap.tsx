@@ -150,7 +150,7 @@ export function CeleCardPlateBitmap({
               }}
             />
           ) : null}
-          {/* Satori-safe pulse lattice so dark teal socials match the live plate geometry. */}
+          {/* Satori-safe Teal Pulse geometry + wave bands (matches proven WhatsApp plate). */}
           {darkPlate
             ? Array.from({ length: 30 }, (_, i) => {
                 const row = Math.floor(i / 6);
@@ -166,12 +166,26 @@ export function CeleCardPlateBitmap({
                       height: Math.round(96 * s),
                       borderRadius: 999,
                       border: `1px solid ${theme.border}`,
-                      opacity: 0.22,
+                      opacity: 0.18,
                     }}
                   />
                 );
               })
             : null}
+          {darkPlate ? (
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                bottom: 0,
+                width: plate.width,
+                height: Math.round(120 * s),
+                display: "flex",
+                background: `linear-gradient(180deg, rgba(11,138,131,0) 0%, ${theme.accentSoft || "rgba(251,191,36,0.12)"} 100%)`,
+                opacity: 0.55,
+              }}
+            />
+          ) : null}
           <div
             style={{
               position: "absolute",

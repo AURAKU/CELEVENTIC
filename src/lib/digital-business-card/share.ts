@@ -150,16 +150,14 @@ export function celeCardShareRoleLine(
   return title || company;
 }
 
-/** Share caption. Name, role, CeleYou Card. Never email, phone, or gender titles. */
+/** Share caption for WhatsApp / iMessage / socials. Matches the proven live plate share voice. */
 export function celeCardShareCommentary(
   card: Pick<CeleCardShareFields, "displayName" | "title" | "company">
 ): string {
   const name = card.displayName.trim();
-  const role = celeCardShareRoleLine(card);
-  // Exact Share Card voice: "Connect with AuraTheKing. CEO at Spark & Drive on their CeleYou Card."
-  if (name && role) return `Connect with ${name}. ${role} on their CeleYou Card.`;
-  if (name) return `Connect with ${name} on their CeleYou Card.`;
-  return `Connect with this CeleYou Card. ${SMARTCARD_BRAND_TAGLINE}`;
+  // Exact WhatsApp voice: "Meet AuraTheKing. Their live CeleYou plate."
+  if (name) return `Meet ${name}. Their live CeleYou plate.`;
+  return `Meet this live CeleYou plate. ${SMARTCARD_BRAND_TAGLINE}`;
 }
 
 /** Link preview subtitle on WhatsApp, iMessage, X, LinkedIn. Matches the share caption. */

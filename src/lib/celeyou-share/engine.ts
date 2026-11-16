@@ -156,10 +156,10 @@ export type ShareProfileInput = {
   persistPlateCardId?: string | null;
   /**
    * URL placement in the share payload:
-   * - default: when a plate file is attached, omit the URL from `text` so iMessage
-   *   does not show the PNG and the same OG plate (QR on the plate carries the link)
-   * - false: never append the URL into `text` (wallet); URL may still be a share field
-   * - true: always keep the live URL in `text` even when a plate file is attached
+   * - default: WhatsApp/Android keep "Meet {name}…\\n{url}" with the plate;
+   *   iMessage omits the URL when a plate file is attached (avoids a second OG plate)
+   * - false: never append the URL into `text` (wallet)
+   * - true: always keep the live URL in `text` even on iMessage
    */
   includeUrlInText?: boolean;
 };
@@ -279,12 +279,20 @@ function withoutShareUrl(text: string, url: string) {
     .trim();
 }
 
-function shareBodyText(input: ShareProfileInput, file: File | null) {
-  // Attached plate + URL in text → iMessage shows the PNG and the OG unfurl of the same card.
-  if (file && input.includeUrlInText !== true) {
+function shareBodyText(
+  input: ShareProfileInput,
+  file: File | null,
+  platform: TapPlatform = "unknown"
+) {
+  if (input.includeUrlInText === false) {
     return withoutShareUrl(input.text, input.url) || input.text.trim();
   }
-  if (input.includeUrlInText === false) {
+  if (input.includeUrlInText === true) {
+    return shareCaption(input.text, input.url);
+  }
+  // WhatsApp/Android: plate + "Meet {name}. Their live CeleYou plate." + URL (proven share voice).
+  // iMessage: omit URL when a plate file is attached so iOS does not also unfurl a second OG plate.
+  if (file && platform === "ios-safari") {
     return withoutShareUrl(input.text, input.url) || input.text.trim();
   }
   return shareCaption(input.text, input.url);
@@ -375,15 +383,15 @@ export async function shareCeleYouProfile(
 ): Promise<ShareProfileResult> {
   if (!input.url) return "unavailable";
   const file = await resolveLivePlateFile(input);
-  const text = shareBodyText(input, file);
+  const platform = detectTapPlatform(nav);
+  const text = shareBodyText(input, file, platform);
   if (nav && typeof nav.share === "function") {
     if (file) {
-      // Prefer file-only share: plate QR carries the live link.
-      // Do not put the profile URL in `text`/`url` or iMessage attaches the PNG and
-      // also unfurls the same OG cardplate (duplicate).
-      const plateOnly = { title: input.title, text, files: [file] };
-      if (canSharePayload(nav, plateOnly)) {
-        const attached = await tryNativeShare(nav, plateOnly);
+      // Attach the published plate. Caption carries Meet {name}… (+ URL on WhatsApp/Android).
+      // Never pass a separate `url` field first — WhatsApp/Snapchat drop the image when url is set.
+      const plateAndCaption = { title: input.title, text, files: [file] };
+      if (canSharePayload(nav, plateAndCaption)) {
+        const attached = await tryNativeShare(nav, plateAndCaption);
         if (attached !== "failed") return attached;
       }
       // Last resort for picky share targets that require a url field with files.
