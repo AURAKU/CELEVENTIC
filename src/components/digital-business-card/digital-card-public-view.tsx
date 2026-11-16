@@ -148,7 +148,8 @@ export function DigitalCardPublicView({
     setSharing(true);
     const result = await shareCeleYouProfile({
       title: celeCardShareTitle(card),
-      text: celeCardShareMessage(card, shareUrl),
+      // Caption only — engine attaches one plate file; URL in text makes iMessage duplicate the card.
+      text: shareCommentary,
       url: shareUrl,
       imageUrl: plateShareUrls,
       persistPlateCardId: card.id || null,
@@ -165,7 +166,7 @@ export function DigitalCardPublicView({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [card, plateShareUrls, profileUrl, scanUrl]);
+  }, [card, plateShareUrls, profileUrl, scanUrl, shareCommentary]);
 
   const copyCard = useCallback(async () => {
     const shareUrl = profileUrl || scanUrl;

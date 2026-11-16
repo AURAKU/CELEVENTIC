@@ -213,7 +213,8 @@ describe("CeleYou share metadata", () => {
     assert.match(usernameOg, /\/card\/\$\{encodeURIComponent\(slug\)\}\/og/);
     assert.match(ogRoute, /export async function HEAD/);
     assert.match(engine, /files: \[file\]/);
-    assert.match(engine, /WhatsApp, Snapchat, TikTok drop the image/);
+    assert.match(engine, /iMessage attaches the PNG and/);
+    assert.match(engine, /withoutShareUrl|shareBodyText/);
     assert.match(engine, /export async function copyCeleYouProfile/);
     assert.match(engine, /"image\/png"/);
     assert.match(engine, /"text\/plain"/);

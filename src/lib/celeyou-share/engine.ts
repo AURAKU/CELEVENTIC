@@ -155,8 +155,11 @@ export type ShareProfileInput = {
   /** Owner card id. Stores the capture so OG unfurl uses the same live plate. */
   persistPlateCardId?: string | null;
   /**
-   * When false, keep the URL in the share `url` field only.
-   * Wallet sharing uses this so destinations do not paste the link twice.
+   * URL placement in the share payload:
+   * - default: when a plate file is attached, omit the URL from `text` so iMessage
+   *   does not show the PNG and the same OG plate (QR on the plate carries the link)
+   * - false: never append the URL into `text` (wallet); URL may still be a share field
+   * - true: always keep the live URL in `text` even when a plate file is attached
    */
   includeUrlInText?: boolean;
 };
@@ -262,6 +265,29 @@ function shareCaption(text: string, url: string) {
   return text.includes(url) ? text : `${text}\n${url}`;
 }
 
+/** Drop the live profile URL from caption text so iMessage does not unfurl a second plate. */
+function withoutShareUrl(text: string, url: string) {
+  const live = url.trim();
+  if (!live) return text.trim();
+  return text
+    .split(live)
+    .join("")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+}
+
+function shareBodyText(input: ShareProfileInput, file: File | null) {
+  // Attached plate + URL in text → iMessage shows the PNG and the OG unfurl of the same card.
+  if (file && input.includeUrlInText !== true) {
+    return withoutShareUrl(input.text, input.url) || input.text.trim();
+  }
+  if (input.includeUrlInText === false) {
+    return withoutShareUrl(input.text, input.url) || input.text.trim();
+  }
+  return shareCaption(input.text, input.url);
+}
+
 function isShareAbort(error: unknown) {
   return (error as { name?: string })?.name === "AbortError";
 }
@@ -347,25 +373,27 @@ export async function shareCeleYouProfile(
 ): Promise<ShareProfileResult> {
   if (!input.url) return "unavailable";
   const file = await resolveLivePlateFile(input);
-  const text =
-    input.includeUrlInText === false && !file ? input.text : shareCaption(input.text, input.url);
+  const text = shareBodyText(input, file);
   if (nav && typeof nav.share === "function") {
     if (file) {
-      // WhatsApp, Snapchat, TikTok drop the image if `url` is a separate share field.
-      // The live card URL stays in `text` so the caption still carries the link.
-      const plateAndLink = { title: input.title, text, files: [file] };
-      if (canSharePayload(nav, plateAndLink)) {
-        const attached = await tryNativeShare(nav, plateAndLink);
+      // Prefer file-only share: plate QR carries the live link.
+      // Do not put the profile URL in `text`/`url` or iMessage attaches the PNG and
+      // also unfurls the same OG cardplate (duplicate).
+      const plateOnly = { title: input.title, text, files: [file] };
+      if (canSharePayload(nav, plateOnly)) {
+        const attached = await tryNativeShare(nav, plateOnly);
         if (attached !== "failed") return attached;
       }
+      // Last resort for picky share targets that require a url field with files.
       const platePlusUrl = { title: input.title, text, files: [file], url: input.url };
       if (canSharePayload(nav, platePlusUrl)) {
         const withUrl = await tryNativeShare(nav, platePlusUrl);
         if (withUrl !== "failed") return withUrl;
       }
     }
+    const linkText = shareCaption(text, input.url);
     try {
-      await nav.share({ title: input.title, text, url: input.url });
+      await nav.share({ title: input.title, text: linkText, url: input.url });
       return "shared";
     } catch (error) {
       if (isShareAbort(error)) return "cancelled";
