@@ -512,7 +512,10 @@ function DockTap({
   const one = group.items.length === 1;
   const allLocked = group.items.every((item) => item.locked);
   const placeLocked = isLocationGroup(group) && allLocked;
-  const expands = !one || (isLocationGroup(group) && !placeLocked);
+  const expands =
+    !one ||
+    (isLocationGroup(group) && !placeLocked) ||
+    (isMeetingGroup(group) && !allLocked);
   const mark = (
     <span className="relative inline-flex">
       <DigitalCardBrandMark
@@ -622,40 +625,64 @@ function StackTap({
   const placeLocked = isLocationGroup(group) && group.items.every((item) => item.locked);
   if (isMeetingGroup(group)) {
     const locked = group.items.every((item) => item.locked);
-    return (
-      <div className="grid gap-1.5">
-        <div
-          className={cn(
-            "celecard-reach-row group relative overflow-hidden border backdrop-blur",
-            compact ? "is-compact" : "is-live",
-            locked ? "is-locked" : null
-          )}
-          style={plate}
-        >
-          <span className="celecard-reach-accent" style={{ background: theme.accent }} aria-hidden />
-          <DigitalCardBrandMark id={group.brand} className="celecard-reach-mark" />
-          <span className="celecard-reach-copy">
-            <span className="celecard-reach-title">
-              <ReachTitleText text={copy.title} />
-            </span>
-            {copy.subtitle ? (
-              <span className="celecard-reach-hint" style={{ color: CELECARD_REACH_MUTED }}>
-                {copy.subtitle}
-              </span>
-            ) : null}
+    const meetingRowClass = cn(
+      "celecard-reach-row group relative overflow-hidden border backdrop-blur",
+      compact ? "is-compact" : "is-live",
+      locked ? "is-locked" : null
+    );
+    const meetingInner = (
+      <>
+        <span className="celecard-reach-accent" style={{ background: theme.accent }} aria-hidden />
+        <DigitalCardBrandMark id={group.brand} className="celecard-reach-mark" />
+        <span className="celecard-reach-copy">
+          <span className="celecard-reach-title">
+            <ReachTitleText text={copy.title} />
           </span>
-          {locked && group.items[0] ? (
-            <span
-              className="celecard-reach-go"
-              style={{ background: "#fffef8", color: CELECARD_REACH_INK }}
-              aria-hidden
-            >
-              <HiddenReachGlyph item={group.items[0]} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          {copy.subtitle ? (
+            <span className="celecard-reach-hint" style={{ color: CELECARD_REACH_MUTED }}>
+              {copy.subtitle}
             </span>
           ) : null}
+        </span>
+        <span
+          className={cn("celecard-reach-go", !locked && open ? "is-open" : null)}
+          style={{ background: "#fffef8", color: CELECARD_REACH_INK }}
+          aria-hidden
+        >
+          {locked && group.items[0] ? (
+            <HiddenReachGlyph item={group.items[0]} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          )}
+        </span>
+      </>
+    );
+
+    if (locked) {
+      return (
+        <div className={meetingRowClass} style={plate}>
+          {meetingInner}
         </div>
-        {locked ? null : (
+      );
+    }
+
+    return (
+      <div className="grid gap-1.5">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-haspopup="menu"
+          aria-controls={menuId}
+          aria-label={`${copy.title}. ${copy.subtitle ?? t("celeyou.choose_profile")}`}
+          onClick={onToggle}
+          className={meetingRowClass}
+          style={plate}
+        >
+          {meetingInner}
+        </button>
+        {open ? (
           <div
+            id={menuId}
             className="overflow-hidden rounded-[1.35rem] border shadow-[0_12px_28px_rgba(0,0,0,0.12)]"
             style={plate}
           >
@@ -668,7 +695,7 @@ function StackTap({
               ownerName={ownerName}
             />
           </div>
-        )}
+        ) : null}
       </div>
     );
   }
