@@ -231,9 +231,16 @@ describe("CeleYou share metadata", () => {
     assert.match(face, /data-celeyou-live-plate="true"/);
     assert.match(capture, /html-to-image/);
     assert.match(capture, /flattenLivePlate/);
+    assert.match(capture, /looksLikeId1Plate/);
     assert.match(capture, /CELEYOU_PLATE_FILE_NAME/);
-    assert.match(ogImage, /livePlateOgFromSnapshot/);
-    assert.match(ogImage, /readLivePlateSnapshotPng/);
+    assert.match(ogImage, /published ID-1 plate from saved card/);
+    assert.doesNotMatch(ogImage, /livePlateOgFromSnapshot|readLivePlateSnapshotPng/);
+    const cardRoute = readFileSync(
+      join(process.cwd(), "src/app/api/digital-business-cards/public/[slug]/card/route.tsx"),
+      "utf8"
+    );
+    assert.match(cardRoute, /Never serve DOM html-to-image snapshots/);
+    assert.doesNotMatch(cardRoute, /livePlateSnapshotResponse/);
     assert.match(wallet, /capturePlate: false/);
   });
 });

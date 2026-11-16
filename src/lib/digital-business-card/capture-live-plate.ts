@@ -153,11 +153,27 @@ function flattenLivePlate(node: HTMLElement): HTMLElement {
   return clone;
 }
 
+function looksLikeId1Plate(node: HTMLElement) {
+  const box = node.getBoundingClientRect();
+  if (box.width < 220 || box.height < 140) return false;
+  const aspect = box.width / box.height;
+  // ID-1 credit-card aspect (~1.586). Reject stage/paper-only captures.
+  if (aspect < 1.35 || aspect > 1.85) return false;
+  if (!node.hasAttribute("data-celeyou-live-plate") && !node.classList.contains("celecard-face")) {
+    return false;
+  }
+  // Live face always carries identity chrome (photo/QR/name). Paper-only captures do not.
+  const hasIdentity =
+    Boolean(node.querySelector("img, canvas, svg, [data-celecard-qr], .celecard-qr, .celecard-name, h1, h2")) ||
+    (node.textContent || "").trim().length >= 8;
+  return hasIdentity;
+}
+
 /** Rasterize the on-screen ID-1 plate. This is the cardholder's live face, not the site logo. */
 export async function captureLivePlateFile(root?: ParentNode | null): Promise<File | null> {
   if (typeof document === "undefined") return null;
   const node = pickLivePlateElement(root ?? document);
-  if (!node) return null;
+  if (!node || !looksLikeId1Plate(node)) return null;
   let clone: HTMLElement | null = null;
   try {
     try {
@@ -189,32 +205,16 @@ export async function captureLivePlateFile(root?: ParentNode | null): Promise<Fi
 }
 
 export async function persistLivePlateSnapshot(cardId: string, file: File): Promise<void> {
-  if (!cardId || file.size < 64) return;
-  const body = new FormData();
-  body.append("file", file, CELEYOU_PLATE_FILE_NAME);
-  await fetch(`/api/digital-business-cards/${encodeURIComponent(cardId)}/plate-snapshot`, {
-    method: "POST",
-    body,
-    credentials: "same-origin",
-  }).catch(() => undefined);
+  // DOM snapshots are no longer used for share/OG (they poisoned social previews).
+  // Keep the helper as a no-op so older call sites stay safe.
+  void cardId;
+  void file;
 }
 
-/** Owner studio: keep OG unfurl on the same live plate the cardholder sees. */
+/** Owner studio: plate share/OG now renders from published card data — no DOM snapshot write. */
 export function usePersistLivePlateSnapshot(cardId?: string | null, signature?: string | null) {
   useEffect(() => {
-    if (!cardId) return;
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      void captureLivePlateFile()
-        .then((file) => {
-          if (!file || cancelled) return;
-          return persistLivePlateSnapshot(cardId, file);
-        })
-        .catch(() => undefined);
-    }, 700);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
+    void cardId;
+    void signature;
   }, [cardId, signature]);
 }

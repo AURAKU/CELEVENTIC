@@ -17,11 +17,6 @@ import { getDigitalCardBySlug } from "@/services/digital-business-card/digital-b
 import { getCeleCardLifecyclePolicy } from "@/services/digital-business-card/lifecycle-policy.service";
 import { normalizeSocials } from "@/lib/digital-business-card/types";
 import type { CeleCardPortraitFrame } from "@/lib/digital-business-card/portrait-frame";
-import {
-  livePlateSnapshotResponse,
-  readLivePlateSnapshotPng,
-} from "@/lib/digital-business-card/live-plate-server";
-
 function renderOg(props: {
   displayName: string;
   title?: string | null;
@@ -135,25 +130,6 @@ async function renderOgSafe(props: OgRenderProps): Promise<Response> {
   }
 }
 
-/** Crawler tile: the captured live plate, cover-fit to 1200×630. Never the site icon. */
-export async function livePlateOgFromSnapshot(cardId: string, cacheControl: string): Promise<Response | null> {
-  const buffer = await readLivePlateSnapshotPng(cardId);
-  if (!buffer) return null;
-  try {
-    const framed = await sharp(buffer)
-      .rotate()
-      .resize(CELECARD_OG_WIDTH, CELECARD_OG_HEIGHT, {
-        fit: "contain",
-        background: { r: 11, g: 138, b: 131, alpha: 1 },
-      })
-      .jpeg({ quality: 78, mozjpeg: true })
-      .toBuffer();
-    return pngResponse(framed, cacheControl);
-  } catch {
-    return livePlateSnapshotResponse(cardId, cacheControl);
-  }
-}
-
 async function previewAssets(publicToken: string) {
   const origin = celeYouGuestOrigin(getAppUrlFromEnv());
   const destination = celeCardStableQrUrl(publicToken, origin);
@@ -203,12 +179,8 @@ export async function renderCeleCardOgBySlug(slug: string): Promise<Response> {
     return new Response("Not found", { status: 404 });
   }
 
-  const snapshot = await livePlateOgFromSnapshot(
-    card.id,
-    courtesy ? "private, no-store" : "public, max-age=60, stale-while-revalidate=86400"
-  );
-  if (snapshot) return snapshot;
-
+  // Render the published ID-1 plate from saved card fields (same as the live face).
+  // Skip DOM plate snapshots — bad captures were unfurling as dark cropped paper only.
   const socials = normalizeSocials(card.socials);
   const theme = applyCeleCardDesign(resolveDigitalCardTheme(card.themeId), compactCeleCardDesign(socials.design));
   const [photoSrc, qr, plate] = await Promise.all([
