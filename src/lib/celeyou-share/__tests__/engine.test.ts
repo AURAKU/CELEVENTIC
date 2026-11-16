@@ -334,7 +334,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await shareCeleYouProfile(
         {
           title: "Kojo Mensah on CeleYou",
-          text: "Connect with Kojo Mensah. Their CeleYou Card.\nhttps://www.celeventic.com/u/kojo-mensah",
+          text: "Connect with Kojo Mensah on their CeleYou Card.\nhttps://www.celeventic.com/u/kojo-mensah",
           url: "https://www.celeventic.com/u/kojo-mensah",
           imageUrl: [
             "/api/digital-business-cards/public/kojo-mensah/card?download=1&v=live",
@@ -352,7 +352,7 @@ describe("CeleYou Smart Share Engine", () => {
       assert.equal(payloads.length, 1);
       assert.equal(payloads[0]?.url, undefined);
       // Caption only — no live URL, or iMessage unfurls a second identical plate.
-      assert.equal(String(payloads[0]?.text), "Connect with Kojo Mensah. Their CeleYou Card.");
+      assert.equal(String(payloads[0]?.text), "Connect with Kojo Mensah on their CeleYou Card.");
       assert.doesNotMatch(String(payloads[0]?.text), /https:\/\/www\.celeventic\.com/);
       const files = payloads[0]?.files as File[] | undefined;
       assert.equal(files?.length, 1);
@@ -404,7 +404,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await copyCeleYouProfile(
         {
           title: "Kojo Mensah on CeleYou",
-          text: "Connect with Kojo Mensah. Their CeleYou Card.",
+          text: "Connect with Kojo Mensah on their CeleYou Card.",
           url: "https://www.celeventic.com/u/kojo-mensah",
           capturePlate: async () => plate,
         },

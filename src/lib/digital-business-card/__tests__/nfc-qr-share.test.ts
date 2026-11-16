@@ -119,7 +119,7 @@ describe("CeleYou NFC QR and universal sharing", () => {
 
   it("falls back to WhatsApp, email, and copy when native share is missing", () => {
     const href = celeYouWhatsAppShareHref(
-      "Connect with Kojo Mensah. Their CeleYou Card.",
+      "Connect with Kojo Mensah on their CeleYou Card.",
       "https://www.celeventic.com/u/kojo-mensah"
     );
     assert.match(href, /^https:\/\/wa\.me\/\?text=/);
@@ -127,7 +127,7 @@ describe("CeleYou NFC QR and universal sharing", () => {
     assert.equal(href.includes("+233"), false);
     const mail = celeYouEmailShareHref(
       "Kojo Mensah on CeleYou",
-      "Connect with Kojo Mensah. Their CeleYou Card.",
+      "Connect with Kojo Mensah on their CeleYou Card.",
       "https://www.celeventic.com/u/kojo-mensah"
     );
     assert.match(mail, /^mailto:\?subject=/);

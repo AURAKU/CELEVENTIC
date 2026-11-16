@@ -156,8 +156,9 @@ export function celeCardShareCommentary(
 ): string {
   const name = card.displayName.trim();
   const role = celeCardShareRoleLine(card);
-  if (name && role) return `Connect with ${name}. ${role}. Their CeleYou Card.`;
-  if (name) return `Connect with ${name}. Their CeleYou Card.`;
+  // Exact Share Card voice: "Connect with AuraTheKing. CEO at Spark & Drive on their CeleYou Card."
+  if (name && role) return `Connect with ${name}. ${role} on their CeleYou Card.`;
+  if (name) return `Connect with ${name} on their CeleYou Card.`;
   return `Connect with this CeleYou Card. ${SMARTCARD_BRAND_TAGLINE}`;
 }
 

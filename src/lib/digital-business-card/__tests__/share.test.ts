@@ -44,7 +44,7 @@ describe("CeleYou share metadata", () => {
     assert.equal(celeCardShareTitle(DEMO_CARD), "Ama Serwaa on CeleYou");
     const description = celeCardShareDescription(DEMO_CARD);
     assert.equal(description, celeCardShareCommentary(DEMO_CARD));
-    assert.equal(description, "Connect with Ama Serwaa. Creative Director at Folio Maison. Their CeleYou Card.");
+    assert.equal(description, "Connect with Ama Serwaa. Creative Director at Folio Maison on their CeleYou Card.");
     assert.equal(description.includes(" · "), false);
     assert.equal(description.includes(" - "), false);
     assert.equal(description.includes("This is my CeleYou"), false);
@@ -54,35 +54,35 @@ describe("CeleYou share metadata", () => {
     assert.equal(digitalCardOgImagePath("ama-serwaa", "card-tile"), "/card/ama-serwaa/og?v=card-tile");
     assert.equal(
       celeCardShareMessage(DEMO_CARD),
-      "Connect with Ama Serwaa. Creative Director at Folio Maison. Their CeleYou Card."
+      "Connect with Ama Serwaa. Creative Director at Folio Maison on their CeleYou Card."
     );
     assert.equal(
       celeCardShareMessage(DEMO_CARD, "https://www.celeventic.com/u/ama-serwaa"),
-      "Connect with Ama Serwaa. Creative Director at Folio Maison. Their CeleYou Card.\nhttps://www.celeventic.com/u/ama-serwaa"
+      "Connect with Ama Serwaa. Creative Director at Folio Maison on their CeleYou Card.\nhttps://www.celeventic.com/u/ama-serwaa"
     );
     assert.equal(
       celeCardShareClipboard(DEMO_CARD, "https://www.celeventic.com/c/demo-ama-serwaa"),
-      "Connect with Ama Serwaa. Creative Director at Folio Maison. Their CeleYou Card.\nhttps://www.celeventic.com/c/demo-ama-serwaa"
+      "Connect with Ama Serwaa. Creative Director at Folio Maison on their CeleYou Card.\nhttps://www.celeventic.com/c/demo-ama-serwaa"
     );
     assert.equal(
       celeCardShareCommentary({ displayName: "Kojo Mensah" }),
-      "Connect with Kojo Mensah. Their CeleYou Card."
+      "Connect with Kojo Mensah on their CeleYou Card."
     );
     assert.equal(
       celeCardShareCommentary({
         displayName: "AuraTheKing",
         title: "CEO",
-        company: "SPARK & DRIVE",
+        company: "Spark & Drive",
       }),
-      "Connect with AuraTheKing. CEO at SPARK & DRIVE. Their CeleYou Card."
+      "Connect with AuraTheKing. CEO at Spark & Drive on their CeleYou Card."
     );
     assert.equal(
       celeCardShareCommentary({ displayName: "Kojo Mensah", title: "Principal" }),
-      "Connect with Kojo Mensah. Principal. Their CeleYou Card."
+      "Connect with Kojo Mensah. Principal on their CeleYou Card."
     );
     assert.equal(
       celeCardShareCommentary({ displayName: "Kojo Mensah", company: "Frost House" }),
-      "Connect with Kojo Mensah. Frost House. Their CeleYou Card."
+      "Connect with Kojo Mensah. Frost House on their CeleYou Card."
     );
     assert.equal(celeCardQrTapPath("ama-serwaa"), "/card/ama-serwaa");
     assert.equal(celeCardStableQrUrl("demo-ama-serwaa", "https://www.celeventic.com"), "https://www.celeventic.com/c/demo-ama-serwaa");
