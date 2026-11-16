@@ -164,7 +164,7 @@ export type ShareProfileInput = {
   includeUrlInText?: boolean;
 };
 
-export type ShareProfileResult = "shared" | "copied" | "cancelled" | "unavailable";
+export type ShareProfileResult = "shared" | "copied" | "downloaded" | "cancelled" | "unavailable";
 
 function looksLikeImage(type: string, buffer: ArrayBuffer) {
   const mime = type.toLowerCase();
@@ -408,6 +408,29 @@ async function tryNativeShare(nav: Navigator, payload: ShareData): Promise<Share
   }
 }
 
+async function downloadPlateFallback(file: File): Promise<boolean> {
+  if (typeof document === "undefined") return false;
+  try {
+    const href = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = href;
+    anchor.download = file.name || "celeyou-plate.png";
+    anchor.rel = "noopener";
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => URL.revokeObjectURL(href), 2500);
+    } else {
+      URL.revokeObjectURL(href);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function shareCeleYouProfile(
   input: ShareProfileInput,
   nav: Navigator | null | undefined = typeof navigator !== "undefined" ? navigator : null
@@ -440,7 +463,22 @@ export async function shareCeleYouProfile(
       if (isShareAbort(error)) return "cancelled";
     }
   }
-  return copyCeleYouProfile({ ...input, imageFile: file, capturePlate: false }, nav);
+
+  // Desktop / embedded browsers often have no Web Share sheet. Copy first, then download the plate
+  // so Share Card still delivers the live card image instead of appearing broken.
+  const copied = await copyCeleYouProfile({ ...input, imageFile: file, capturePlate: false }, nav);
+  if (copied === "copied") return "copied";
+  if (file && (await downloadPlateFallback(file))) {
+    try {
+      if (nav?.clipboard && typeof nav.clipboard.writeText === "function") {
+        await nav.clipboard.writeText(shareCaption(text, input.url));
+      }
+    } catch {
+      /* plate download is enough */
+    }
+    return "downloaded";
+  }
+  return "unavailable";
 }
 
 /**

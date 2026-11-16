@@ -431,6 +431,52 @@ describe("CeleYou Smart Share Engine", () => {
   });
 
 
+
+  it("downloads the plate when Web Share and clipboard are missing", async () => {
+    const plate = new File([new Uint8Array(128).fill(4)], "celeyou-plate.png", { type: "image/png" });
+    const clicks: string[] = [];
+    const previousDocument = globalThis.document;
+    const previousURL = globalThis.URL;
+    globalThis.URL = {
+      createObjectURL: () => "blob:celeyou-plate",
+      revokeObjectURL: () => undefined,
+    } as unknown as typeof URL;
+    globalThis.document = {
+      body: { appendChild() {}, },
+      createElement(tag: string) {
+        assert.equal(tag, "a");
+        return {
+          style: {},
+          set href(_v: string) {},
+          get href() { return "blob:celeyou-plate"; },
+          set download(v: string) { clicks.push(v); },
+          get download() { return clicks[0] || ""; },
+          rel: "",
+          click() { clicks.push("clicked"); },
+          remove() {},
+        };
+      },
+    } as unknown as Document;
+    try {
+      const result = await shareCeleYouProfile(
+        {
+          title: "AuraTheKing on CeleYou",
+          text: "Meet AuraTheKing. Their live CeleYou plate.",
+          url: "https://www.celeventic.com/u/owuraku-afari",
+          imageFile: plate,
+          capturePlate: false,
+        },
+        { userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) Chrome/120.0.0.0" } as Navigator
+      );
+      assert.equal(result, "downloaded");
+      assert.equal(clicks.includes("clicked"), true);
+      assert.equal(clicks.includes("celeyou-plate.png"), true);
+    } finally {
+      globalThis.document = previousDocument;
+      globalThis.URL = previousURL;
+    }
+  });
+
   it("does not freeze SHARE when the published-plate fetch hangs", async () => {
     const payloads: Array<Record<string, unknown>> = [];
     const plate = new File([new Uint8Array(128).fill(7)], "celeyou-plate.png", { type: "image/png" });

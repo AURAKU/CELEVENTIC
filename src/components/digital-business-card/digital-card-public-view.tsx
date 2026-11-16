@@ -87,6 +87,7 @@ export function DigitalCardPublicView({
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [shareHint, setShareHint] = useState<string | null>(null);
   const [copying, setCopying] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [saveHint, setSaveHint] = useState<string | null>(null);
@@ -147,6 +148,7 @@ export function DigitalCardPublicView({
     const shareUrl = profileUrl || scanUrl;
     if (!shareUrl) return;
     setHoldIntent("closed");
+    setShareHint(null);
     setSharing(true);
     try {
       const result = await shareCeleYouProfile({
@@ -159,23 +161,26 @@ export function DigitalCardPublicView({
         capturePlate: true,
       });
       if (result === "cancelled") return;
-      if (result === "shared" || result === "copied") {
+      if (result === "shared" || result === "copied" || result === "downloaded") {
         trackCeleYouGuestEvent(card.slug, "share_tap");
+        if (result === "copied") {
+          setShareHint(t("celeyou.copied"));
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } else if (result === "downloaded") {
+          setShareHint(t("celeyou.plate_downloaded"));
+        }
         setShareOpen(false);
-      }
-      if (result === "copied") {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        return;
       }
       if (result === "unavailable") {
         trackCeleYouGuestEvent(card.slug, "share_tap");
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2200);
+        setShareHint(t("celeyou.share_failed"));
       }
     } finally {
       setSharing(false);
     }
-  }, [card, plateShareUrls, profileUrl, scanUrl, shareCommentary, setHoldIntent]);
+  }, [card, plateShareUrls, profileUrl, scanUrl, shareCommentary, setHoldIntent, t]);
 
   const copyCard = useCallback(async () => {
     const shareUrl = profileUrl || scanUrl;
@@ -615,6 +620,7 @@ export function DigitalCardPublicView({
             }}
             onClick={() => {
               setHoldIntent("closed");
+              setShareHint(null);
               setShareOpen(true);
             }}
           >
@@ -682,7 +688,7 @@ export function DigitalCardPublicView({
                 type="button"
                 disabled={sharing || copying}
                 onClick={() => void shareCard()}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white disabled:opacity-70"
                 style={{ background: "#0B8A83" }}
               >
                 <Share2 className="h-4 w-4" />
@@ -692,11 +698,16 @@ export function DigitalCardPublicView({
                 type="button"
                 disabled={sharing || copying}
                 onClick={() => void copyCard()}
-                className="inline-flex min-h-11 items-center justify-center rounded-full border text-sm font-semibold"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border text-sm font-semibold disabled:opacity-70"
                 style={{ borderColor: "rgba(28,25,23,0.14)", color: "#0B8A83" }}
               >
                 {copying ? t("celeyou.copying") : t("celeyou.copy_link")}
               </button>
+              {shareHint ? (
+                <p className="text-center text-xs font-medium text-[#0B8A83]" role="status">
+                  {shareHint}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
