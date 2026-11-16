@@ -22,7 +22,7 @@ export const CELEYOU_STUDIO_HELP_TOPICS: ContextHelpTopic[] = [
   },
   {
     title: "Identity and Design",
-    body: "Name, portrait, company, and look live here. Save to publish changes. Guests see the saved live plate, not an unsaved draft.",
+    body: "Name, portrait, company, and look live here. Save to publish changes. Guests see the saved live CeleYou Card, not an unsaved draft.",
   },
   {
     title: "Contact and Reach",
@@ -54,7 +54,7 @@ export const CELEYOU_STUDIO_HELP_TOPICS: ContextHelpTopic[] = [
   },
   {
     title: "Hold up this card",
-    body: "Fills the screen with only the plate, as if you were holding a physical card. Guests can also tap the plate on the public page. Tap again to return to the full page. The QR stays ready to scan.",
+    body: "Fills the screen with only the CeleYou Card, as if you were holding a physical card. Guests can also tap the CeleYou Card on the public page. Tap again to return to the full page. The QR stays ready to scan.",
   },
   {
     title: "NFC",
@@ -71,12 +71,12 @@ export const CELEYOU_GUEST_HELP_TOPICS: ContextHelpTopic[] = [
     body: "Scan the Smart QR with your camera, tap a programmed NFC card, or open the share link to their live /u/ profile.",
   },
   {
-    title: "Hold the plate",
+    title: "Hold the CeleYou Card",
     body: "Tap the card to fill the screen. Tap again to see the full page. The QR stays ready to scan.",
   },
   {
     title: "Share",
-    body: "Sends this CeleYou’s live public link. WhatsApp and similar apps show the live plate with the link.",
+    body: "Sends this CeleYou’s live public link. WhatsApp and similar apps show the live CeleYou Card with the link.",
   },
   {
     title: "Copy link",

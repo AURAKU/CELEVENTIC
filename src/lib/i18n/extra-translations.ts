@@ -610,7 +610,7 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "celeyou", key: "live_card", enValue: "Live card", frValue: "Carte en ligne" },
   { namespace: "celeyou", key: "share_card", enValue: "Share Card", frValue: "Partager la carte" },
   { namespace: "celeyou", key: "preparing_card", enValue: "Preparing card…", frValue: "Préparation de la carte…" },
-  { namespace: "celeyou", key: "plate_downloaded", enValue: "Plate downloaded — share the image or the link.", frValue: "Plaque téléchargée — partagez l’image ou le lien." },
+  { namespace: "celeyou", key: "plate_downloaded", enValue: "Card downloaded — share the image or the link.", frValue: "Carte téléchargée — partagez l’image ou le lien." },
   { namespace: "celeyou", key: "copy_link", enValue: "Copy link", frValue: "Copier le lien" },
   { namespace: "celeyou", key: "copying", enValue: "Copying…", frValue: "Copie…" },
   { namespace: "celeyou", key: "copied", enValue: "Copied", frValue: "Copié" },

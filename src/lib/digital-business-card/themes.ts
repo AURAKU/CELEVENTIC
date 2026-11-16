@@ -1,7 +1,7 @@
 /**
  * SmartCard theme system. Token-based compositions (not color swaps alone).
  * Legacy IDs remain valid so existing cards keep rendering.
- * elegant-frost is the original CeleYou plate. Do not change its default
+ * elegant-frost is the original CeleYou Card. Do not change its default
  * layout, teal, or gold without explicit brand approval.
  */
 

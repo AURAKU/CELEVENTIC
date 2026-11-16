@@ -395,7 +395,7 @@ function shareBodyText(
   if (input.includeUrlInText === true) {
     return shareCaption(input.text, input.url);
   }
-  // WhatsApp/Android: plate + "Meet {name}. Their live CeleYou plate." + URL (proven share voice).
+  // WhatsApp/Android: card image + "Meet {name}. Their live CeleYou Card." + URL.
   // iMessage: omit URL when a plate file is attached so iOS does not also unfurl a second OG plate.
   if (file && platform === "ios-safari") {
     return withoutShareUrl(input.text, input.url) || input.text.trim();

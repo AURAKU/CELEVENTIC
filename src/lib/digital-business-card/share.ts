@@ -159,14 +159,14 @@ export function celeCardShareRoleLine(
   return title || company;
 }
 
-/** Share caption for WhatsApp / iMessage / socials. Matches the proven live plate share voice. */
+/** Share caption for WhatsApp / iMessage / socials. Guest-facing voice always says CeleYou Card. */
 export function celeCardShareCommentary(
   card: Pick<CeleCardShareFields, "displayName" | "title" | "company">
 ): string {
   const name = card.displayName.trim();
-  // Exact WhatsApp voice: "Meet AuraTheKing. Their live CeleYou plate."
-  if (name) return `Meet ${name}. Their live CeleYou plate.`;
-  return `Meet this live CeleYou plate. ${SMARTCARD_BRAND_TAGLINE}`;
+  // Guest share voice: "Meet AuraTheKing. Their live CeleYou Card."
+  if (name) return `Meet ${name}. Their live CeleYou Card.`;
+  return `Meet this live CeleYou Card. ${SMARTCARD_BRAND_TAGLINE}`;
 }
 
 /** Link preview subtitle on WhatsApp, iMessage, X, LinkedIn. Matches the share caption. */

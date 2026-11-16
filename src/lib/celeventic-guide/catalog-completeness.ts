@@ -462,7 +462,7 @@ export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
     slug: "celeyou",
     title: "CeleYou",
     summary: "Design My CeleYou Card in Studio, publish on Free, and share your live /u/ link, Smart QR, or programmed NFC card.",
-    body: "CeleYou is Celeventic’s identity card. Studio is for you, the cardholder. Claim a username, design the plate, fill Reach, set which details stay public, and share one live link that stays current. Guests open the public page without an account. CeleYou Free keeps a published identity reachable. Pro trial and paid Pro add premium studio tools.",
+    body: "CeleYou is Celeventic’s identity card. Studio is for you, the cardholder. Claim a username, design the CeleYou Card, fill Reach, set which details stay public, and share one live link that stays current. Guests open the public page without an account. CeleYou Free keeps a published identity reachable. Pro trial and paid Pro add premium studio tools.",
     role: "ORGANIZER",
     category: "PLATFORM",
     status: "PUBLISHED",
@@ -493,11 +493,11 @@ export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
     steps: steps(
       ["Open Studio", "CeleYou Studio is for the cardholder. Guests never see this page. They open the live public CeleYou instead."],
       ["Claim a username", "Your unique public address is /u/your-username. Display name can match other people. Username cannot."],
-      ["Design your identity", "Add a photo or house mark, theme, mail, numbers, chat, and wallets. Save to publish. Guests see the saved live plate, not a draft."],
+      ["Design your identity", "Add a photo or house mark, theme, mail, numbers, chat, and wallets. Save to publish. Guests see the saved live CeleYou Card, not a draft."],
       ["Publish on Free", "A published CeleYou stays reachable on Free. Optional Pro trial is 7 days with no payment to start and nothing charged when it ends. Paid Pro adds premium tools for longer."],
       ["Read Activity", "Live counts from people who open this CeleYou and use published actions. Filter with Today, 7 days, 30 days, This month, All time, or the calendar."],
       ["Set access codes", "Mark each detail Public, Code, or Ask. Public stays open. Code stays hidden until the guest enters that code. Unmarked details stay public."],
-      ["Share in person", "Share My Card and Copy Profile Link use your live activated link. Wallet card shows only payment channels you uploaded. Hold up this card fills the screen with the plate. A programmed NFC card opens the same public profile."]
+      ["Share in person", "Share My Card and Copy Profile Link use your live activated link. Wallet card shows only payment channels you uploaded. Hold up this card fills the screen with the CeleYou Card. A programmed NFC card opens the same public profile."]
     ),
   },
   {
@@ -518,7 +518,7 @@ export const CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS: GuideCatalogEntry[] = [
     steps: steps(
       ["Scan, tap, or open the link", "Use the camera for Smart QR, tap a programmed NFC card, or follow their live /u/ share URL."],
       ["Meet the person", "Name, role, and the contact details they left public sit on one page."],
-      ["Share or copy the link", "Share sends the live public link with the plate preview. Copy link copies that same activated URL."],
+      ["Share or copy the link", "Share sends the live public link with the CeleYou Card preview. Copy link copies that same activated URL."],
       ["Save this contact", "Puts their filled name, phones, mail, company, and public links into the right fields in Contacts on your phone or computer."],
       ["Connect Back", "Leave your name and a way to reach you if you want them to keep the intro."],
       ["Needs a code", "If a detail says it needs a code, ask the person for their access code. Public details stay open without it."],

@@ -36,7 +36,7 @@ describe("CeleYou first-card activation", () => {
     assert.match(lib, /CELEYOU_ORIGINAL_THEME_ID/);
     assert.match(service, /isPublished: false/);
     assert.match(service, /CELEYOU_ORIGINAL_THEME_ID/);
-    assert.match(wizard, /Original CeleYou plate/);
+    assert.match(wizard, /Original CeleYou Card/);
     assert.match(wizard, /Elegant Frost/);
     assert.equal(SMARTCARD_BRAND_TAGLINE, "One Identity. Infinite Connections.");
   });

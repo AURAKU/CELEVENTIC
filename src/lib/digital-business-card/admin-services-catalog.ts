@@ -72,7 +72,7 @@ export const CELEYOU_ADMIN_SERVICES: readonly CeleYouAdminServiceDef[] = [
   {
     id: "public-profile",
     title: "Public profile",
-    summary: "Guests open the plate in any browser with no app and no account. Suspended or deleted cards stay unavailable.",
+    summary: "Guests open the CeleYou Card in any browser with no app and no account. Suspended or deleted cards stay unavailable.",
     requires: ["Published flag", "Not suspended", "Shareable lifecycle"],
     adminNeeds: ["Activate, deactivate, or suspend with a written reason"],
     href: "/admin/celecard",

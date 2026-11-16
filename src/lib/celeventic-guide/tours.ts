@@ -131,7 +131,7 @@ export const MINI_TOURS: MiniTour[] = [
       {
         id: "identity",
         title: "Identity",
-        body: "Claim a unique username for /u/your-name. Add name, portrait, and company. Save to publish. Guests see the saved live plate.",
+        body: "Claim a unique username for /u/your-name. Add name, portrait, and company. Save to publish. Guests see the saved live CeleYou Card.",
         targetSelector: "#studio-identity",
       },
       {
@@ -155,7 +155,7 @@ export const MINI_TOURS: MiniTour[] = [
       {
         id: "share",
         title: "Share",
-        body: "Share My Card sends your live activated /u/ link with the published plate. Copy Profile Link copies that URL. Wallet card opens payment channels you uploaded. Hold up this card fills the screen with only the plate.",
+        body: "Share My Card sends your live activated /u/ link with the published plate. Copy Profile Link copies that URL. Wallet card opens payment channels you uploaded. Hold up this card fills the screen with only the CeleYou Card.",
         targetSelector: "#share",
       },
       {

@@ -300,7 +300,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await shareCeleYouProfile(
         {
           title: "Kojo Mensah on CeleYou",
-          text: "Meet Kojo Mensah. Their live CeleYou plate.",
+          text: "Meet Kojo Mensah. Their live CeleYou Card.",
           url: "https://www.celeventic.com/u/kojo-mensah",
           imageUrl: "/api/digital-business-cards/public/kojo-mensah/card?download=1&v=live",
           capturePlate: async () => draftCapture,
@@ -332,7 +332,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await shareCeleYouProfile(
         {
           title: "Kojo Mensah on CeleYou",
-          text: "Meet Kojo Mensah. Their live CeleYou plate.",
+          text: "Meet Kojo Mensah. Their live CeleYou Card.",
           url: "https://www.celeventic.com/u/kojo-mensah",
           imageUrl: "/api/digital-business-cards/public/kojo-mensah/card?download=1&v=live",
           capturePlate: async () => plate,
@@ -365,7 +365,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await shareCeleYouProfile(
         {
           title: "Kojo Mensah on CeleYou",
-          text: "Meet Kojo Mensah. Their live CeleYou plate.\nhttps://www.celeventic.com/u/kojo-mensah",
+          text: "Meet Kojo Mensah. Their live CeleYou Card.\nhttps://www.celeventic.com/u/kojo-mensah",
           url: "https://www.celeventic.com/u/kojo-mensah",
           imageUrl: [
             "/api/digital-business-cards/public/kojo-mensah/card?download=1&v=live",
@@ -383,7 +383,7 @@ describe("CeleYou Smart Share Engine", () => {
       assert.equal(result, "shared");
       assert.equal(payloads.length, 1);
       assert.equal(payloads[0]?.url, undefined);
-      assert.equal(String(payloads[0]?.text), "Meet Kojo Mensah. Their live CeleYou plate.");
+      assert.equal(String(payloads[0]?.text), "Meet Kojo Mensah. Their live CeleYou Card.");
       assert.doesNotMatch(String(payloads[0]?.text), /https:\/\/www\.celeventic\.com/);
       const files = payloads[0]?.files as File[] | undefined;
       assert.equal(files?.length, 1);
@@ -405,7 +405,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await shareCeleYouProfile(
         {
           title: "AuraTheKing on CeleYou",
-          text: "Meet AuraTheKing. Their live CeleYou plate.",
+          text: "Meet AuraTheKing. Their live CeleYou Card.",
           url: "https://www.celeventic.com/u/owuraku-afari",
           imageUrl: "/api/digital-business-cards/public/owuraku-afari/card?download=1&v=live",
         },
@@ -421,7 +421,7 @@ describe("CeleYou Smart Share Engine", () => {
       assert.equal(payloads[0]?.url, undefined);
       assert.equal(
         String(payloads[0]?.text),
-        "Meet AuraTheKing. Their live CeleYou plate.\nhttps://www.celeventic.com/u/owuraku-afari"
+        "Meet AuraTheKing. Their live CeleYou Card.\nhttps://www.celeventic.com/u/owuraku-afari"
       );
       const files = payloads[0]?.files as File[] | undefined;
       assert.equal(files?.[0]?.name, "celeyou-plate.png");
@@ -450,7 +450,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await shareCeleYouProfile(
         {
           title: "AuraTheKing on CeleYou",
-          text: "Meet AuraTheKing. Their live CeleYou plate.",
+          text: "Meet AuraTheKing. Their live CeleYou Card.",
           url: "https://www.celeventic.com/u/owuraku-afari",
           imageUrl: "https://cdn.example.com/api/digital-business-cards/public/owuraku-afari/card?download=1",
           capturePlate: false,
@@ -502,7 +502,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await shareCeleYouProfile(
         {
           title: "AuraTheKing on CeleYou",
-          text: "Meet AuraTheKing. Their live CeleYou plate.",
+          text: "Meet AuraTheKing. Their live CeleYou Card.",
           url: "https://www.celeventic.com/u/owuraku-afari",
           imageFile: plate,
           capturePlate: false,
@@ -527,7 +527,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await shareCeleYouProfile(
         {
           title: "AuraTheKing on CeleYou",
-          text: "Meet AuraTheKing. Their live CeleYou plate.",
+          text: "Meet AuraTheKing. Their live CeleYou Card.",
           url: "https://www.celeventic.com/u/owuraku-afari",
           imageUrl: "https://www.celeventic.com/api/digital-business-cards/public/owuraku-afari/card",
           capturePlate: async () => plate,
@@ -554,7 +554,7 @@ describe("CeleYou Smart Share Engine", () => {
     const result = await shareCeleYouProfile(
       {
         title: "Kojo Mensah on CeleYou",
-        text: "Meet Kojo Mensah. Their live CeleYou plate.\nhttps://www.celeventic.com/u/kojo-mensah",
+        text: "Meet Kojo Mensah. Their live CeleYou Card.\nhttps://www.celeventic.com/u/kojo-mensah",
         url: "https://www.celeventic.com/u/kojo-mensah",
         capturePlate: async () => plate,
       },
@@ -570,7 +570,7 @@ describe("CeleYou Smart Share Engine", () => {
     assert.equal(payloads.length, 1);
     assert.equal(payloads[0]?.url, "https://www.celeventic.com/u/kojo-mensah");
     // iMessage fallback still omits URL from text to avoid a second unfurl.
-    assert.equal(String(payloads[0]?.text), "Meet Kojo Mensah. Their live CeleYou plate.");
+    assert.equal(String(payloads[0]?.text), "Meet Kojo Mensah. Their live CeleYou Card.");
     assert.doesNotMatch(String(payloads[0]?.text), /https:\/\/www\.celeventic\.com/);
     const files = payloads[0]?.files as File[] | undefined;
     assert.equal(files?.[0]?.name, "celeyou-plate.png");
@@ -590,7 +590,7 @@ describe("CeleYou Smart Share Engine", () => {
       const result = await copyCeleYouProfile(
         {
           title: "Kojo Mensah on CeleYou",
-          text: "Meet Kojo Mensah. Their live CeleYou plate.",
+          text: "Meet Kojo Mensah. Their live CeleYou Card.",
           url: "https://www.celeventic.com/u/kojo-mensah",
           capturePlate: async () => plate,
         },

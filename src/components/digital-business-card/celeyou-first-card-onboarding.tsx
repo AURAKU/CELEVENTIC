@@ -447,7 +447,7 @@ export function CeleYouFirstCardOnboarding() {
       {step === "look" ? (
         <section className="space-y-4">
           <div className="rounded-2xl border border-[#0B8A83]/20 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-900">Original CeleYou plate</p>
+            <p className="text-sm font-semibold text-slate-900">Original CeleYou Card</p>
             <p className="mt-1 text-xs leading-relaxed text-slate-500">
               Elegant Frost, classic landscape, gold edge. This is the default. You can change it later in studio.
             </p>
