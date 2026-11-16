@@ -486,7 +486,7 @@ export class InvitationService {
       await emailTemplateService
         .sendLocalized("rsvp_confirmation", input.guestEmail.trim(), locale, {
           name: input.guestName,
-          response: decisionLabel,
+          response: decision,
           event: input.eventTitle,
         })
         .catch((err) => {
