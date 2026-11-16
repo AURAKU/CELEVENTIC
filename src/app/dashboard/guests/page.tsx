@@ -13,6 +13,7 @@ import { QuickCreateCard } from "@/components/guest-search/quick-create-card";
 import { AdmissionIdentityAuditPanel } from "@/components/guest-search/admission-identity-audit-panel";
 import { VendorTeamPassesPanel } from "@/components/vendor-pass/vendor-team-passes-panel";
 import type { SearchResultCard } from "@/lib/guest-search/types";
+import { organizerRsvpLabel } from "@/lib/guest-search/rsvp-organizer-labels";
 
 const CRM_STATUSES = ["INVITED", "OPENED", "ACCEPTED", "DECLINED", "MAYBE", "CHECKED_IN"] as const;
 
@@ -251,13 +252,13 @@ function GuestsPageInner() {
             {eventId && stats.total > 0 && (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
                 {[
-                  { key: "all", label: "All", count: stats.total },
+                  { key: "all", label: "All people", count: stats.total },
                   ...CRM_STATUSES.map((s) => ({
                     key: s,
-                    label: s.replace("_", " "),
+                    label: organizerRsvpLabel(s),
                     count: stats.counts[s] ?? 0,
                   })),
-                  { key: "NO_RESPONSE", label: "No Response", count: stats.noResponse },
+                  { key: "NO_RESPONSE", label: organizerRsvpLabel("NO_RESPONSE"), count: stats.noResponse },
                 ].map((s) => (
                   <button
                     key={s.key}
@@ -266,9 +267,17 @@ function GuestsPageInner() {
                     title={
                       s.key === "all"
                         ? "Expected people including plus-ones / admission allowance"
-                        : s.key === "CHECKED_IN"
-                          ? "People admitted at the gate (including partial party arrivals)"
-                          : undefined
+                        : s.key === "ACCEPTED"
+                          ? "Guests who tapped Accept — coming"
+                          : s.key === "DECLINED"
+                            ? "Guests who tapped Decline — not coming"
+                            : s.key === "MAYBE"
+                              ? "Guests who tapped Maybe"
+                              : s.key === "NO_RESPONSE"
+                                ? "Invited guests who have not replied yet"
+                                : s.key === "CHECKED_IN"
+                                  ? "People admitted at the gate (including partial party arrivals)"
+                                  : undefined
                     }
                     className={`min-w-0 rounded-xl border p-2.5 text-center text-xs transition-colors sm:p-3 ${
                       filter === s.key
@@ -277,13 +286,7 @@ function GuestsPageInner() {
                     }`}
                   >
                     <p className="text-base font-bold tabular-nums sm:text-lg">{s.count}</p>
-                    <p className="mt-0.5 leading-tight capitalize text-slate-500">
-                      {s.key === "all"
-                        ? "All people"
-                        : s.key === "CHECKED_IN"
-                          ? "Checked in"
-                          : s.label}
-                    </p>
+                    <p className="mt-0.5 leading-tight text-slate-500">{s.label}</p>
                   </button>
                 ))}
               </div>

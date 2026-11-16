@@ -32,6 +32,10 @@ import {
   collapseDuplicateAbsoluteUrl,
   openWhatsAppShare,
 } from "@/lib/invitation/whatsapp-share";
+import {
+  organizerRsvpBadgeClass,
+  organizerRsvpLabel,
+} from "@/lib/guest-search/rsvp-organizer-labels";
 
 /** Official-style WhatsApp glyph so share actions are instantly recognizable. */
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -253,6 +257,15 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
           {card.archivedAt && <Badge variant="outline">Archived</Badge>}
           {card.passRevoked && !card.archivedAt && <Badge variant="destructive">Pass revoked</Badge>}
           {card.status === "DRAFT" && <Badge variant="warning">Draft</Badge>}
+          {card.guestStatus && !card.archivedAt ? (
+            <Badge
+              variant="outline"
+              className={`text-[10px] ${organizerRsvpBadgeClass(card.guestStatus)}`}
+              title="RSVP reply for seating and headcount"
+            >
+              {organizerRsvpLabel(card.guestStatus)}
+            </Badge>
+          ) : null}
           {canResetAdmission && (
             <Badge variant="success" className="text-[10px]">
               Admitted
