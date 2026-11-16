@@ -178,6 +178,22 @@ function looksLikeImage(type: string, buffer: ArrayBuffer) {
   return mime.includes("image/");
 }
 
+function browserWindow(): Window | null {
+  try {
+    return typeof globalThis !== "undefined" && globalThis.window ? globalThis.window : null;
+  } catch {
+    return null;
+  }
+}
+
+function browserDocument(): Document | null {
+  try {
+    return typeof globalThis !== "undefined" && globalThis.document ? globalThis.document : null;
+  } catch {
+    return null;
+  }
+}
+
 const PLATE_FETCH_TIMEOUT_MS = 3500;
 const PLATE_CAPTURE_TIMEOUT_MS = 5000;
 
@@ -199,44 +215,101 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
 function absolutePlateFetchUrl(imageUrl: string): string {
   const raw = imageUrl.trim();
   if (!raw || /^https?:\/\//i.test(raw) || raw.startsWith("data:")) return raw;
-  if (typeof window === "undefined") return raw;
+  const win = browserWindow();
+  if (!win?.location?.origin) return raw;
   try {
-    return new URL(raw, window.location.origin).href;
+    return new URL(raw, win.location.origin).href;
   } catch {
     return raw;
   }
 }
 
-async function fetchLivePlateFile(imageUrl: string): Promise<File | null> {
-  try {
-    const href = absolutePlateFetchUrl(imageUrl);
-    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timer =
-      controller && typeof window !== "undefined"
-        ? window.setTimeout(() => controller.abort(), PLATE_FETCH_TIMEOUT_MS)
-        : controller
-          ? setTimeout(() => controller.abort(), PLATE_FETCH_TIMEOUT_MS)
-          : null;
-    const res = await fetch(href, {
-      cache: "no-store",
-      credentials: "same-origin",
-      signal: controller?.signal,
-    });
-    if (timer) clearTimeout(timer);
-    if (!res.ok) return null;
-    const buffer = await res.arrayBuffer();
-    if (buffer.byteLength < 64) return null;
-    if (!looksLikeImage(res.headers.get("content-type") || "", buffer)) return null;
-    return new File([buffer], "celeyou-plate.png", { type: "image/png" });
-  } catch {
-    return null;
+/** Same-origin first so Share/Copy attach the cardplate from the live page host. */
+function plateFetchCandidates(imageUrl: string): string[] {
+  const raw = imageUrl.trim();
+  if (!raw) return [];
+  const out: string[] = [];
+  const win = browserWindow();
+  const origin = win?.location?.origin?.replace(/\/$/, "") || "";
+  if (origin) {
+    try {
+      const parsed = new URL(raw, origin);
+      out.push(`${origin}${parsed.pathname}${parsed.search}`);
+    } catch {
+      /* ignore */
+    }
   }
+  const absolute = absolutePlateFetchUrl(raw);
+  if (absolute && !out.includes(absolute)) out.push(absolute);
+  if (raw.startsWith("/") && !out.includes(raw)) out.push(raw);
+  return out;
+}
+
+const SHARE_PLATE_MAX_BYTES = 950_000;
+
+async function compressPlateForShare(file: File): Promise<File> {
+  if (file.size <= SHARE_PLATE_MAX_BYTES) return file;
+  const doc = browserDocument();
+  if (!doc || typeof createImageBitmap !== "function") return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, Math.sqrt(SHARE_PLATE_MAX_BYTES / Math.max(file.size, 1)) * 0.92);
+    const width = Math.max(640, Math.round(bitmap.width * Math.min(1, Math.max(0.55, scale))));
+    const height = Math.max(400, Math.round((bitmap.height / bitmap.width) * width));
+    const canvas = doc.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return file;
+    }
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((next) => resolve(next), "image/jpeg", 0.84)
+    );
+    if (!blob || blob.size < 64) return file;
+    return new File([blob], "celeyou-plate.jpg", { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
+
+async function fetchLivePlateFile(imageUrl: string): Promise<File | null> {
+  for (const href of plateFetchCandidates(imageUrl)) {
+    try {
+      const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+      // Always use the realm timer — preview/test window mocks often omit setTimeout.
+      const timer = controller ? setTimeout(() => controller.abort(), PLATE_FETCH_TIMEOUT_MS) : null;
+      const res = await fetch(href, {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: controller?.signal,
+      });
+      if (timer) clearTimeout(timer);
+      if (!res.ok) continue;
+      const buffer = await res.arrayBuffer();
+      if (buffer.byteLength < 64) continue;
+      if (!looksLikeImage(res.headers.get("content-type") || "", buffer)) continue;
+      const type = (res.headers.get("content-type") || "").includes("jpeg")
+        ? "image/jpeg"
+        : "image/png";
+      const name = type === "image/jpeg" ? "celeyou-plate.jpg" : "celeyou-plate.png";
+      return await compressPlateForShare(new File([buffer], name, { type }));
+    } catch {
+      /* try next candidate */
+    }
+  }
+  return null;
 }
 
 function asPlateFile(blob: File | Blob | null | undefined): File | null {
   if (!blob || blob.size < 64) return null;
   if (blob instanceof File && blob.type.startsWith("image/")) {
-    return blob.name === "celeyou-plate.png" ? blob : new File([blob], "celeyou-plate.png", { type: "image/png" });
+    if (blob.name === "celeyou-plate.png" || blob.name === "celeyou-plate.jpg") return blob;
+    const name = blob.type.includes("jpeg") ? "celeyou-plate.jpg" : "celeyou-plate.png";
+    return new File([blob], name, { type: blob.type.includes("jpeg") ? "image/jpeg" : "image/png" });
   }
   return new File([blob], "celeyou-plate.png", { type: "image/png" });
 }
@@ -272,7 +345,7 @@ async function captureOnScreenPlate(capturePlate?: ShareProfileInput["capturePla
 
 async function resolveLivePlateFile(input: ShareProfileInput): Promise<File | null> {
   const provided = asPlateFile(input.imageFile);
-  if (provided) return provided;
+  if (provided) return compressPlateForShare(provided);
 
   // Source of truth: the cardholder's saved + published plate (PNG / OG / snapshot).
   // Capture the on-screen face only as a fallback when the published asset is unavailable.
@@ -284,12 +357,13 @@ async function resolveLivePlateFile(input: ShareProfileInput): Promise<File | nu
   if (fetched) return fetched;
 
   if (captured) {
+    const shareReady = await compressPlateForShare(captured);
     if (input.persistPlateCardId) {
       void import("@/lib/digital-business-card/capture-live-plate")
         .then(({ persistLivePlateSnapshot }) => persistLivePlateSnapshot(input.persistPlateCardId!, captured))
         .catch(() => undefined);
     }
-    return captured;
+    return shareReady;
   }
   return null;
 }
@@ -409,19 +483,21 @@ async function tryNativeShare(nav: Navigator, payload: ShareData): Promise<Share
 }
 
 async function downloadPlateFallback(file: File): Promise<boolean> {
-  if (typeof document === "undefined") return false;
+  const doc = browserDocument();
+  if (!doc) return false;
   try {
     const href = URL.createObjectURL(file);
-    const anchor = document.createElement("a");
+    const anchor = doc.createElement("a");
     anchor.href = href;
     anchor.download = file.name || "celeyou-plate.png";
     anchor.rel = "noopener";
     anchor.style.display = "none";
-    document.body.appendChild(anchor);
+    doc.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    if (typeof window !== "undefined") {
-      window.setTimeout(() => URL.revokeObjectURL(href), 2500);
+    const win = browserWindow();
+    if (win) {
+      win.setTimeout(() => URL.revokeObjectURL(href), 2500);
     } else {
       URL.revokeObjectURL(href);
     }

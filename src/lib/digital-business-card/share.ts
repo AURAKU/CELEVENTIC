@@ -40,7 +40,7 @@ export function digitalCardPresentUrl(slug: string, origin?: string): string {
   return `${origin.replace(/\/$/, "")}${path}`;
 }
 
-export const CELECARD_PLATE_SHARE_GEN = "p5";
+export const CELECARD_PLATE_SHARE_GEN = "p6";
 
 export function digitalCardOgImagePath(slug: string, version?: string | number | null): string {
   const base = `/card/${encodeURIComponent(slug)}/og`;
@@ -104,10 +104,19 @@ export function absoluteCeleYouLivePlateShareUrls(
   version?: string | number | Date | null,
   origin?: string | null
 ): string[] {
-  const base =
-    origin?.replace(/\/$/, "") ||
-    (typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : "");
+  // Prefer the host the guest is actually on so Share/Copy fetch the same cardplate they see.
+  const browser =
+    typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : "";
+  const base = browser || origin?.replace(/\/$/, "") || "";
   return celeYouLivePlateShareUrls(slug, version).map((url) => absoluteCeleYouAssetUrl(url, base));
+}
+
+/** Relative plate paths for client share/copy (same-origin as the live cardplate page). */
+export function celeYouRelativeLivePlateShareUrls(
+  slug: string,
+  version?: string | number | Date | null
+): string[] {
+  return celeYouLivePlateShareUrls(slug, version);
 }
 
 /** Encoded into the QR bitmap. Survives slug edits. Always a camera-safe guest URL. */

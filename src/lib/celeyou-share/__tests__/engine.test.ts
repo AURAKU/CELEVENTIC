@@ -432,6 +432,47 @@ describe("CeleYou Smart Share Engine", () => {
 
 
 
+
+  it("fetches the live cardplate from the same origin the guest is viewing", async () => {
+    const payloads: Array<Record<string, unknown>> = [];
+    const previousFetch = globalThis.fetch;
+    const previousWindow = globalThis.window;
+    const fetched: string[] = [];
+    globalThis.window = { location: { origin: "https://www.celeventic.com" } } as unknown as Window & typeof globalThis;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      fetched.push(String(input));
+      return new Response(new Uint8Array(128).fill(9), {
+        status: 200,
+        headers: { "content-type": "image/png" },
+      });
+    }) as typeof fetch;
+    try {
+      const result = await shareCeleYouProfile(
+        {
+          title: "AuraTheKing on CeleYou",
+          text: "Meet AuraTheKing. Their live CeleYou plate.",
+          url: "https://www.celeventic.com/u/owuraku-afari",
+          imageUrl: "https://cdn.example.com/api/digital-business-cards/public/owuraku-afari/card?download=1",
+          capturePlate: false,
+        },
+        {
+          userAgent: "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
+          share: async (payload: ShareData) => {
+            payloads.push(payload as Record<string, unknown>);
+          },
+          canShare: (payload?: ShareData) => Boolean(payload?.files?.length),
+        } as Navigator
+      );
+      assert.equal(result, "shared");
+      assert.equal(fetched[0]?.startsWith("https://www.celeventic.com/api/digital-business-cards/public/owuraku-afari/card"), true);
+      const files = payloads[0]?.files as File[] | undefined;
+      assert.ok(files?.[0]?.name.startsWith("celeyou-plate"));
+    } finally {
+      globalThis.fetch = previousFetch;
+      globalThis.window = previousWindow;
+    }
+  });
+
   it("downloads the plate when Web Share and clipboard are missing", async () => {
     const plate = new File([new Uint8Array(128).fill(4)], "celeyou-plate.png", { type: "image/png" });
     const clicks: string[] = [];

@@ -40,6 +40,21 @@ describe("CeleYou share metadata", () => {
     assert.match(urls[1]!, /^https:\/\/www\.celeventic\.com\/card\/ama-serwaa\/og/);
   });
 
+
+  it("exposes relative live plate URLs for same-origin Share Card fetch", () => {
+    const source = readFileSync(join(process.cwd(), "src/lib/digital-business-card/share.ts"), "utf8");
+    assert.match(source, /export function celeYouRelativeLivePlateShareUrls/);
+    assert.match(source, /CELECARD_PLATE_SHARE_GEN = "p6"/);
+    const view = readFileSync(
+      join(process.cwd(), "src/components/digital-business-card/digital-card-public-view.tsx"),
+      "utf8"
+    );
+    assert.match(view, /celeYouRelativeLivePlateShareUrls/);
+    const engine = readFileSync(join(process.cwd(), "src/lib/celeyou-share/engine.ts"), "utf8");
+    assert.match(engine, /plateFetchCandidates/);
+    assert.match(engine, /compressPlateForShare/);
+  });
+
   it("builds a personalized title and public description", () => {
     assert.equal(celeCardShareTitle(DEMO_CARD), "Ama Serwaa on CeleYou");
     const description = celeCardShareDescription(DEMO_CARD);
