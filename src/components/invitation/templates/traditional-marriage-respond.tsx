@@ -8,7 +8,7 @@ import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import { buildWhatsAppUrl, buildEmailUrl } from "@/lib/invitation/guest-portal-actions";
 import {
   clampAttendingCount,
-  rsvpAcceptedThankYou,
+  rsvpGuestFeedback,
   rsvpPartyCapacityLine,
   rsvpPartySlotGuidance,
 } from "@/lib/invitation/rsvp-party-slots";
@@ -135,6 +135,9 @@ export function TraditionalMarriageRespond({
     [allowance, attendingCount]
   );
   const needsPartySlots = allowance > 1;
+  const feedback = rsvpStatus
+    ? rsvpGuestFeedback(rsvpStatus, confirmedAttending, allowance)
+    : null;
 
   if (!showRsvp && !showReachHosts) return null;
 
@@ -319,7 +322,7 @@ export function TraditionalMarriageRespond({
 
       {showRsvp && (
         <div className="relative space-y-4">
-          {rsvpStatus ? (
+          {rsvpStatus && feedback ? (
             <div
               className="tm-section-rise text-center px-4 py-5 rounded-sm border"
               style={{
@@ -327,14 +330,24 @@ export function TraditionalMarriageRespond({
                 backgroundColor: `${PALETTE.peach}CC`,
                 color: PALETTE.bronzeDeep,
               }}
+              role="status"
+              aria-live="polite"
+              data-testid="rsvp-guest-feedback"
             >
               <p className="font-[family-name:var(--font-great-vibes)] text-[1.85rem] leading-none mb-1.5">
                 Thank you
               </p>
-              <p className="font-[family-name:var(--font-cormorant)] text-sm sm:text-[0.95rem] leading-relaxed tracking-[0.04em]">
-                {rsvpStatus === "ACCEPTED"
-                  ? rsvpAcceptedThankYou(confirmedAttending, allowance)
-                  : "Your reply has been received with gratitude. The hosts have been notified for seating and planning."}
+              <p className="font-[family-name:var(--font-cormorant)] text-[12px] sm:text-[13px] tracking-[0.18em] uppercase font-medium">
+                {feedback.headline}
+              </p>
+              <p
+                className="mt-1 font-[family-name:var(--font-great-vibes)] text-[1.15rem] leading-none opacity-90"
+                style={{ color: PALETTE.bronze }}
+              >
+                {feedback.whisper}
+              </p>
+              <p className="mt-3 font-[family-name:var(--font-cormorant)] text-sm sm:text-[0.95rem] leading-relaxed tracking-[0.04em]">
+                {feedback.body}
               </p>
             </div>
           ) : (

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   clampAttendingCount,
   rsvpAcceptedThankYou,
+  rsvpGuestFeedback,
   rsvpPartyCapacityLine,
   rsvpPartySlotGuidance,
 } from "../rsvp-party-slots";
@@ -35,5 +36,21 @@ describe("rsvp party slots", () => {
   it("thanks acceptances with the confirmed headcount", () => {
     assert.match(rsvpAcceptedThankYou(2, 3), /2 of 3 seats/i);
     assert.match(rsvpAcceptedThankYou(1, 1), /gratitude/i);
+  });
+
+  it("keeps Accept / Decline / Maybe wording in guest feedback", () => {
+    const accept = rsvpGuestFeedback("ACCEPTED", 1, 1);
+    assert.equal(accept.headline, "Accept");
+    assert.equal(accept.whisper, "With joy");
+
+    const decline = rsvpGuestFeedback("DECLINED");
+    assert.equal(decline.headline, "Decline");
+    assert.equal(decline.whisper, "With regret");
+    assert.match(decline.body, /cannot join/i);
+
+    const maybe = rsvpGuestFeedback("MAYBE");
+    assert.equal(maybe.headline, "Maybe");
+    assert.equal(maybe.whisper, "Still hoping");
+    assert.match(maybe.body, /may still join/i);
   });
 });

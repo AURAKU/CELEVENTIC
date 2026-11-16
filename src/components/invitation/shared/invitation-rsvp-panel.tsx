@@ -11,6 +11,7 @@ import { styledInvitationButton } from "@/lib/invitation/invitation-button-style
 import {
   clampAttendingCount,
   rsvpAcceptedThankYou,
+  rsvpGuestFeedback,
   rsvpPartyCapacityLine,
   rsvpPartySlotGuidance,
 } from "@/lib/invitation/rsvp-party-slots";
@@ -195,6 +196,10 @@ export function InvitationRsvpPanel({
       : "";
 
   if (rsvpStatus) {
+    const choice =
+      rsvpStatus === "ACCEPTED" || rsvpStatus === "DECLINED" || rsvpStatus === "MAYBE"
+        ? rsvpGuestFeedback(rsvpStatus, confirmedAttending, allowance)
+        : null;
     return (
       <div
         className={
@@ -209,6 +214,9 @@ export function InvitationRsvpPanel({
             ? undefined
             : { backgroundColor: `${accentColor}18`, color: accentColor }
         }
+        role="status"
+        aria-live="polite"
+        data-testid="rsvp-guest-feedback"
       >
         <p
           className={
@@ -221,9 +229,23 @@ export function InvitationRsvpPanel({
         >
           {successCopy?.trim()
             ? successCopy.trim()
-            : `${t("rsvp.title")}: ${rsvpStatus.replace(/_/g, " ")}, ${t("rsvp.thank_you")}`}
+            : choice
+              ? `${t("rsvp.thank_you")} ${choice.headline}`
+              : `${t("rsvp.title")}: ${rsvpStatus.replace(/_/g, " ")}, ${t("rsvp.thank_you")}`}
         </p>
-        {rsvpStatus === "ACCEPTED" && allowance > 1 ? (
+        {choice && !successCopy?.trim() ? (
+          <p
+            className={
+              fashion
+                ? "ff-rsvp-confirmed-detail"
+                : memorial
+                  ? "inv-rsvp-confirmed-detail"
+                  : "text-sm font-normal opacity-90"
+            }
+          >
+            {choice.whisper}. {choice.body}
+          </p>
+        ) : rsvpStatus === "ACCEPTED" && allowance > 1 ? (
           <p
             className={
               fashion

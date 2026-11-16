@@ -69,3 +69,30 @@ export function rsvpAcceptedThankYou(attending: number, allowance: number): stri
   }
   return `You’ve confirmed ${confirmed} of ${max} seats. The hosts now have your exact party size for seating and planning.`;
 }
+
+/** Guest-facing confirmation after Accept / Decline / Maybe — button labels stay the same. */
+export function rsvpGuestFeedback(
+  response: "ACCEPTED" | "DECLINED" | "MAYBE",
+  attending = 1,
+  allowance = 1
+): { headline: string; whisper: string; body: string } {
+  if (response === "ACCEPTED") {
+    return {
+      headline: "Accept",
+      whisper: "With joy",
+      body: rsvpAcceptedThankYou(attending, allowance),
+    };
+  }
+  if (response === "DECLINED") {
+    return {
+      headline: "Decline",
+      whisper: "With regret",
+      body: "We've noted you cannot join. The hosts have been told with care for seating and planning.",
+    };
+  }
+  return {
+    headline: "Maybe",
+    whisper: "Still hoping",
+    body: "We've noted you may still join. The hosts will keep your place in hope for seating and planning.",
+  };
+}
