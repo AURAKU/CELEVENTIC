@@ -202,6 +202,8 @@ describe("CeleYou share metadata", () => {
     assert.doesNotMatch(bitmap, /logo-full\.png|brand\/icon\.png|celeventic-logo/i);
     // Company logo badge may use right/bottom; the plate face itself stays uncropped.
     assert.match(bitmap, /companyLogoSrc/);
+    assert.match(bitmap, /companyInk/);
+    assert.match(bitmap, /darkPlate && luminance\(theme\.accent\)/);
     assert.doesNotMatch(markup, /Open this CeleYou|Download this card|Share this card/);
     assert.match(assets, /\/smartcard\//);
     assert.match(assets, /Never a remote URL/);
