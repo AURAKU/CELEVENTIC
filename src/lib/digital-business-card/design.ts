@@ -338,6 +338,13 @@ function textIsDark(color: string) {
   return (r * 299 + g * 587 + b * 114) / 1000 < 148;
 }
 
+/** Company line on dark plates: use plate ink (white) when accent is too dark to read. */
+export function celecardCompanyInk(theme: Pick<DigitalCardTheme, "text" | "accent" | "muted">): string {
+  const darkPlate = !textIsDark(theme.text);
+  if (darkPlate && textIsDark(theme.accent)) return theme.text;
+  return theme.accent;
+}
+
 function accentPair(id: CeleCardAccent, theme: DigitalCardTheme) {
   if (id === "teal") return { accent: "#0B8A83", accentSoft: "rgba(11,138,131,0.14)" };
   if (id === "gold") return { accent: "#d4a63a", accentSoft: "rgba(212,166,58,0.16)" };

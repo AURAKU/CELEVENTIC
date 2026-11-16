@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
+import { celecardCompanyInk,
   applyCeleCardDesign,
   celeCardPaperStyle,
   compactCeleCardDesign,
@@ -189,6 +189,16 @@ describe("CeleYou design desk", () => {
       "utf8"
     );
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    assert.match(tokens, /export function celecardCompanyInk/);
+    assert.match(face, /celecardCompanyInk\(theme\)/);
+    assert.equal(
+      celecardCompanyInk({ text: "#f8fafc", accent: "#047857", muted: "#ccfbf1" }),
+      "#f8fafc"
+    );
+    assert.equal(
+      celecardCompanyInk({ text: "#f8fafc", accent: "#fbbf24", muted: "#ccfbf1" }),
+      "#fbbf24"
+    );
     assert.match(tokens, /label: "Double foil"/);
     assert.match(tokens, /label: "Filigree"/);
     assert.match(tokens, /label: "Script"/);

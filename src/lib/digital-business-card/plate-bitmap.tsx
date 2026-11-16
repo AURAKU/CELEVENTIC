@@ -6,6 +6,7 @@ import {
   resolveCeleCardPortraitFrame,
   type CeleCardPortraitFrame,
 } from "@/lib/digital-business-card/portrait-frame";
+import { celecardCompanyInk } from "@/lib/digital-business-card/design";
 import { CeleCardQrCenterOverlay } from "@/lib/digital-business-card/qr-center-overlay";
 import { celecardCompanyDisplayLines } from "@/lib/digital-business-card/type-voice";
 
@@ -85,18 +86,16 @@ export function CeleCardPlateBitmap({
   const houseLines = company?.trim() ? celecardCompanyDisplayLines(company.trim(), { uppercase: true }) : [];
   const plateTop = Math.round((height - plate.height) / 2);
   const plateLeft = Math.round((width - plate.width) / 2);
-  const luminance = (color: string) => {
-    const hex = String(color || "").replace("#", "");
-    if (hex.length < 6) return 0;
+  const darkPlate = (() => {
+    const hex = String(theme.text || "").replace("#", "");
+    if (hex.length < 6) return false;
     const r = parseInt(hex.slice(0, 2), 16);
     const g = parseInt(hex.slice(2, 4), 16);
     const b = parseInt(hex.slice(4, 6), 16);
-    return (r * 299 + g * 587 + b * 114) / 1000;
-  };
-  // Light text => dark paper. Dark accents (e.g. emerald) vanish on teal-pulse.
-  const darkPlate = luminance(theme.text) >= 148;
-  const companyInk =
-    darkPlate && luminance(theme.accent) < 140 ? theme.muted || theme.text : theme.accent;
+    return (r * 299 + g * 587 + b * 114) / 1000 >= 148;
+  })();
+  // Dark accents (e.g. emerald) vanish on teal-pulse — use white plate ink.
+  const companyInk = celecardCompanyInk(theme);
   const paperOpacity = darkPlate ? 0.2 : 0.42;
 
   return (

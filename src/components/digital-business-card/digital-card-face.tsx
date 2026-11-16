@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { resolveDigitalCardTheme, type DigitalCardTheme } from "@/lib/digital-business-card/themes";
 import {
   applyCeleCardDesign,
+  celecardCompanyInk,
   celeCardFaceLead,
   celeCardNameScaleFactor,
   celeCardPaperStyle,
@@ -800,7 +801,7 @@ function FaceIdentity({
                 mark={null}
                 uppercase={companyUppercase}
                 style={{
-                  color: theme.accent,
+                  color: celecardCompanyInk(theme),
                   fontFamily: voice.origin,
                   letterSpacing: companyLines.length > 1 ? "0.06em" : voice.companyTracking,
                   fontSize: `${celecardCompanyFitCqw(company, { uppercase: companyUppercase, compact })}cqw`,
