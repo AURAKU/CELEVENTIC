@@ -40,15 +40,27 @@ function deskForSocials(socials: unknown) {
   return persistMeetingDesk(parsed.meeting) ?? compactMeetingDesk(parsed.meeting);
 }
 
-async function takenStartsForCard(cardId: string): Promise<string[]> {
+/**
+ * Pending requests and confirmed (WON) meetings hold the calendar.
+ * Declined / archived meetings free the day and time again.
+ */
+async function busyWindowsForCard(cardId: string) {
   const rows = await prisma.smartCardConnection.findMany({
-    where: { cardId, source: "meeting", NOT: { status: "ARCHIVED" } },
-    select: { note: true },
-    take: 200,
+    where: {
+      cardId,
+      source: "meeting",
+      status: { in: ["NEW", "CONTACTED", "QUALIFIED", "FOLLOW_UP", "WON"] },
+    },
+    select: { note: true, status: true },
+    take: 300,
   });
   return rows
-    .map((row) => parseMeetingBooking(row.note)?.start)
-    .filter((value): value is string => Boolean(value));
+    .map((row) => {
+      const booking = parseMeetingBooking(row.note);
+      if (!booking?.start) return null;
+      return { start: booking.start, end: booking.end || null };
+    })
+    .filter((value): value is { start: string; end: string | null } => Boolean(value));
 }
 
 export async function GET(req: NextRequest) {
@@ -69,8 +81,12 @@ export async function GET(req: NextRequest) {
   }
   const desk = deskForSocials(card.socials);
   if (!desk?.enabled) return NextResponse.json({ slots: [] });
-  const taken = await takenStartsForCard(card.id);
-  return NextResponse.json({ slots: listOpenMeetingSlots(desk, taken), timezone: desk.timezone });
+  const busy = await busyWindowsForCard(card.id);
+  return NextResponse.json({
+    slots: listOpenMeetingSlots(desk, busy),
+    timezone: desk.timezone,
+    blocked: busy.length,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -108,11 +124,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Meetings are not open on this card" }, { status: 403 });
   }
 
-  const taken = await takenStartsForCard(card.id);
-  const open = listOpenMeetingSlots(desk, taken);
+  const busy = await busyWindowsForCard(card.id);
+  const open = listOpenMeetingSlots(desk, busy);
   const slot = open.find((item) => item.start === parsed.data.start);
   if (!slot) {
-    return NextResponse.json({ error: "That time is no longer open. Pick another." }, { status: 409 });
+    return NextResponse.json(
+      { error: "That time is no longer open. Pick another.", code: "MEETING_BUSY" },
+      { status: 409 }
+    );
   }
 
   try {

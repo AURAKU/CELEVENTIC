@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarPlus, Check, ChevronLeft, Clock, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -141,22 +141,31 @@ function MeetingBooker({
     setPicked(null);
   }, [localSlots]);
 
-  useEffect(() => {
+  const refreshOpenSlots = useCallback(async () => {
     if (preview || !slug) return;
-    let cancelled = false;
-    void fetch(`/api/digital-business-cards/meet?slug=${encodeURIComponent(slug)}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled || !Array.isArray(json.slots)) return;
-        const next = json.slots as CeleCardMeetingSlot[];
-        setSlots(next);
-        setDayKey((current) => (next.some((slot) => slot.dayKey === current) ? current : next[0]?.dayKey ?? ""));
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
+    try {
+      const res = await fetch(
+        `/api/digital-business-cards/meet?slug=${encodeURIComponent(slug)}`,
+        { cache: "no-store" }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!Array.isArray(json.slots)) return;
+      const next = json.slots as CeleCardMeetingSlot[];
+      setSlots(next);
+      setDayKey((current) =>
+        next.some((slot) => slot.dayKey === current) ? current : next[0]?.dayKey ?? ""
+      );
+      setPicked((current) =>
+        current && next.some((slot) => slot.start === current.start) ? current : null
+      );
+    } catch {
+      /* keep last known open slots */
+    }
   }, [preview, slug]);
+
+  useEffect(() => {
+    void refreshOpenSlots();
+  }, [refreshOpenSlots]);
 
   const days = groupMeetingDays(slots);
   const day = days.find((row) => row.key === dayKey) ?? days[0];
@@ -202,9 +211,12 @@ function MeetingBooker({
       if (!res.ok) {
         react("form");
         setError("busy");
+        // Slot already held by a pending or confirmed meeting — refresh open times.
+        await refreshOpenSlots();
         return;
       }
       setDone(picked);
+      await refreshOpenSlots();
     } catch {
       react("form");
       setError("network");

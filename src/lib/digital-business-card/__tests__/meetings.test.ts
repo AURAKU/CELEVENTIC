@@ -47,6 +47,34 @@ describe("CeleYou meeting desk", () => {
     assert.equal(days[0]?.slots[0]?.timeLabel, "09:00");
   });
 
+  it("blocks overlapping periods when a meeting is confirmed or pending", () => {
+    const desk = compactMeetingDesk({
+      enabled: true,
+      title: "Book a Meeting",
+      durationMin: 30,
+      timezone: "Africa/Accra",
+      weekdays: [1],
+      startHour: 10,
+      endHour: 12,
+      bufferMin: 0,
+      noticeHours: 0,
+      horizonDays: 8,
+      place: "Video",
+    })!;
+    const monday = zonedWallTime("Africa/Accra", 2026, 11, 9, 8, 0);
+    const open = listOpenMeetingSlots(desk, [], monday);
+    const held = open[0]!;
+    // Confirmed booking for 10:00–10:30 must also hide any overlapping candidate.
+    const afterConfirm = listOpenMeetingSlots(
+      desk,
+      [{ start: held.start, end: held.end }],
+      monday
+    );
+    assert.equal(afterConfirm.some((slot) => slot.start === held.start), false);
+    assert.ok(afterConfirm.every((slot) => slot.start !== held.start));
+    assert.equal(afterConfirm[0]?.timeLabel, "10:30");
+  });
+
   it("falls back from invalid timezones so Book a meeting still renders", () => {
     assert.equal(resolveMeetingTimezone("local"), "Africa/Accra");
     assert.equal(resolveMeetingTimezone("Not/AZone"), "Africa/Accra");

@@ -279,16 +279,61 @@ export function groupMeetingDays(slots: CeleCardMeetingSlot[]) {
   return days;
 }
 
+/** Pending request or confirmed meeting that still holds the calendar. */
+export type CeleCardBusyWindow = {
+  start: string;
+  end?: string | null;
+};
+
+export function rangesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number) {
+  return aStart < bEnd && aEnd > bStart;
+}
+
+/**
+ * Normalize taken starts / booking windows into absolute busy ranges.
+ * Pending + confirmed meetings block any overlapping guest slot (not only the exact start).
+ */
+export function normalizeMeetingBusyWindows(
+  taken: Array<string | CeleCardBusyWindow> = [],
+  durationMin: number,
+  bufferMin = 0
+): Array<{ start: number; end: number }> {
+  const lengthMs = Math.max(1, durationMin) * 60_000;
+  const padMs = Math.max(0, bufferMin) * 60_000;
+  const windows: Array<{ start: number; end: number }> = [];
+  for (const item of taken) {
+    const startRaw = typeof item === "string" ? item : item.start;
+    const start = new Date(startRaw).getTime();
+    if (!Number.isFinite(start)) continue;
+    const endRaw = typeof item === "string" ? null : item.end;
+    const endParsed = endRaw ? new Date(endRaw).getTime() : NaN;
+    const end = Number.isFinite(endParsed) && endParsed > start ? endParsed : start + lengthMs;
+    windows.push({ start: start - padMs, end: end + padMs });
+  }
+  return windows;
+}
+
+export function meetingSlotConflictsBusy(
+  slotStart: Date,
+  slotEnd: Date,
+  busy: Array<{ start: number; end: number }>
+) {
+  const a0 = slotStart.getTime();
+  const a1 = slotEnd.getTime();
+  if (!Number.isFinite(a0) || !Number.isFinite(a1) || a1 <= a0) return true;
+  return busy.some((window) => rangesOverlap(a0, a1, window.start, window.end));
+}
+
 export function listOpenMeetingSlots(
   desk: CeleCardMeetingDesk,
-  takenStarts: string[] = [],
+  taken: Array<string | CeleCardBusyWindow> = [],
   now: Date = new Date(),
   locale = "en-GB"
 ): CeleCardMeetingSlot[] {
   if (!desk.enabled || !desk.weekdays.length) return [];
   const timezone = resolveMeetingTimezone(desk.timezone);
   try {
-    const taken = new Set(takenStarts.map((value) => new Date(value).getTime()).filter((value) => Number.isFinite(value)));
+    const busy = normalizeMeetingBusyWindows(taken, desk.durationMin, desk.bufferMin);
     const lengthMs = desk.durationMin * 60_000;
     const earliest = new Date(now.getTime() + desk.noticeHours * 3_600_000);
     const slots: CeleCardMeetingSlot[] = [];
@@ -307,8 +352,8 @@ export function listOpenMeetingSlots(
         const min = minute % 60;
         const start = zonedWallTime(timezone, day.year, day.month, day.day, hour, min);
         if (start.getTime() < earliest.getTime()) continue;
-        if (taken.has(start.getTime())) continue;
         const end = new Date(start.getTime() + lengthMs);
+        if (meetingSlotConflictsBusy(start, end, busy)) continue;
         const dayMeta = formatMeetingDay(start.toISOString(), timezone, locale);
         slots.push({
           start: start.toISOString(),
