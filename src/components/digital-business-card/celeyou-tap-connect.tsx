@@ -13,7 +13,7 @@ import {
   celeCardShareMessage,
   celeCardShareTitle,
 } from "@/lib/digital-business-card/share";
-import { copyCeleYouProfile, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
+import { SHARE_MY_CARD_CTA, copyCeleYouProfile, shareCeleYouProfile, type ShareProfileResult } from "@/lib/celeyou-share/engine";
 import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { detectTapCapability, detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
 import { parseTapJoinScan } from "@/lib/celeyou-proximity/join-code";
@@ -47,7 +47,6 @@ import {
   universalConnectHint,
   type UniversalConnectActionId,
 } from "@/lib/celeyou-proximity/universal-connect";
-import { SHARE_MY_CARD_CTA } from "@/lib/celeyou-share/engine";
 import { screenForProximityStatus, type ProximityStatus } from "@/lib/celeyou-proximity/state-machine";
 import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-brand-mark";
 import { CeleCardQrBadge } from "@/components/digital-business-card/celecard-qr-badge";
@@ -431,10 +430,11 @@ export function CeleYouTapConnect({
   const displayName = card?.displayName || "CeleYou";
   const sessionLocked = busy || !card || card.proximityDiscoverable === false;
 
-  function markShare(result: "shared" | "copied" | "cancelled" | "unavailable") {
+  function markShare(result: ShareProfileResult) {
     if (result === "cancelled" || result === "unavailable") return;
-    setSharePulse(result);
-    if (result === "copied") setCopied("session");
+    const pulse = result === "downloaded" ? "copied" : result;
+    setSharePulse(pulse);
+    if (result === "copied" || result === "downloaded") setCopied("session");
     window.setTimeout(() => {
       setSharePulse(null);
       setCopied(false);
