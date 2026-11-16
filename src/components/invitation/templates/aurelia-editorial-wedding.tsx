@@ -1025,6 +1025,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
             <div className={styles.rsvpPanel}>
               <InvitationRsvpPanel
                 invitationId={props.invitation.id}
+                uniqueLink={props.invitation.uniqueLink}
                 guestId={props.guestId}
                 guestName={props.guestName}
                 partyAllowance={props.partyAllowance}

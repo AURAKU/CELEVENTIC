@@ -72,6 +72,7 @@ export function ClassicGoldTemplate({ invitation, event, design, guestId, guestN
           )}
           <InvitationRsvpPanel
             invitationId={invitation.id}
+            uniqueLink={invitation.uniqueLink}
             guestId={guestId}
             guestName={guestName}
             partyAllowance={partyAllowance}

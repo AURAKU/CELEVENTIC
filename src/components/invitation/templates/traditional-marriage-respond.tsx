@@ -32,6 +32,8 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 export interface TraditionalMarriageRespondProps {
   invitationId: string;
+  /** Invitation public link — strengthens RSVP proof with guestId. */
+  uniqueLink?: string;
   guestId?: string;
   guestName?: string | null;
   eventTitle: string;
@@ -66,6 +68,7 @@ const CHOICES: { id: RsvpChoice; label: string; whisper: string }[] = [
  */
 export function TraditionalMarriageRespond({
   invitationId,
+  uniqueLink,
   guestId,
   guestName: initialGuestName,
   eventTitle,
@@ -153,7 +156,13 @@ export function TraditionalMarriageRespond({
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
     const payload = guestId
-      ? { guestId, invitationId, response, ...contact }
+      ? {
+          guestId,
+          invitationId,
+          ...(uniqueLink ? { uniqueLink } : {}),
+          response,
+          ...contact,
+        }
       : { invitationId, guestName: guestName.trim(), response, ...contact };
 
     if (!guestId && !guestName.trim()) {

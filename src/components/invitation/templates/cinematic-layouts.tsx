@@ -83,6 +83,7 @@ function InviteBody({
       {showCardQr && qrDataUrl && <Image src={qrDataUrl} alt="Guest pass QR" width={112} height={112} className="mx-auto rounded-lg"  unoptimized />}
       <InvitationRsvpPanel
         invitationId={invitation.id}
+        uniqueLink={invitation.uniqueLink}
         guestId={guestId}
         guestName={guestName}
         partyAllowance={partyAllowance}

@@ -72,7 +72,7 @@ export function RusticLaceTemplate({ invitation, event, design, guestId, guestNa
           {showCardQr && qrDataUrl && (
             <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />
           )}
-          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor="#C9A227" variant="dark" />
+          <InvitationRsvpPanel invitationId={invitation.id} uniqueLink={invitation.uniqueLink} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor="#C9A227" variant="dark" />
           <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} variant="dark" />
         </div>
       </div>

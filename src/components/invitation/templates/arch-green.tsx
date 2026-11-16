@@ -66,6 +66,7 @@ export function ArchGreenTemplate({ invitation, event, design, guestId, guestNam
           )}
           <InvitationRsvpPanel
             invitationId={invitation.id}
+            uniqueLink={invitation.uniqueLink}
             guestId={guestId}
             guestName={guestName}
             partyAllowance={partyAllowance}

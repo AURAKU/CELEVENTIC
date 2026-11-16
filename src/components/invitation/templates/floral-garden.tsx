@@ -33,7 +33,7 @@ export function FloralGardenTemplate({ invitation, event, design, guestId, guest
           {(event.venueName || event.landmark) && (
             <p className="text-sm text-rose-950">{event.venueName}{event.landmark ? ` · ${event.landmark}` : ""}</p>
           )}
-          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor={colors.secondary} label={studio?.rsvpLabel} />
+          <InvitationRsvpPanel invitationId={invitation.id} uniqueLink={invitation.uniqueLink} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor={colors.secondary} label={studio?.rsvpLabel} />
           <StudioButton studio={studio} accent={colors.secondary}>
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} />
           </StudioButton>

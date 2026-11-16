@@ -6,6 +6,7 @@ import styles from "./luxury-fashion-flagship.module.css";
 
 export function FashionRsvpScene({
   invitationId,
+  uniqueLink,
   guestId,
   guestName,
   partyAllowance,
@@ -19,6 +20,7 @@ export function FashionRsvpScene({
   onCompleted,
 }: {
   invitationId: string;
+  uniqueLink?: string;
   guestId?: string;
   guestName?: string;
   partyAllowance?: number;
@@ -66,6 +68,7 @@ export function FashionRsvpScene({
       <div className={styles.rsvpWrap} onClick={onStarted}>
         <InvitationRsvpPanel
           invitationId={invitationId}
+          uniqueLink={uniqueLink}
           guestId={guestId}
           guestName={guestName}
           partyAllowance={partyAllowance}

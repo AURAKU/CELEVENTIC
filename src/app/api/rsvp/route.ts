@@ -119,7 +119,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    if (body.invitationId) {
+    // Personalized invite links send guestId + invitationId. Prefer updating that
+    // guest — never mint a second guest row for the same person.
+    const hasGuestId = typeof body.guestId === "string" && body.guestId.trim().length > 0;
+
+    if (!hasGuestId && body.invitationId) {
       const data = rsvpByInvitationSchema.parse(body);
       const invitation = await prisma.invitation.findUnique({
         where: { id: data.invitationId },

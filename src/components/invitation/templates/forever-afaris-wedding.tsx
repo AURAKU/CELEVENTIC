@@ -1469,6 +1469,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         <TraditionalMarriageRespond
           collectEmail={false}
           invitationId={invitation.id}
+          uniqueLink={invitation.uniqueLink}
           guestId={guestId}
           guestName={invitedGuestName}
           eventTitle={event.title}

@@ -33,7 +33,7 @@ export function GlassAcrylicTemplate({ invitation, event, design, guestId, guest
               <p className="text-sm inv-caption-on-dark pt-2">{event.venueName}{event.landmark ? `, ${event.landmark}` : ""}</p>
             )}
           </div>
-          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor="#7dd3fc" label={studio?.rsvpLabel} />
+          <InvitationRsvpPanel invitationId={invitation.id} uniqueLink={invitation.uniqueLink} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor="#7dd3fc" label={studio?.rsvpLabel} />
           <StudioButton studio={studio} accent="#7dd3fc">
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} />
           </StudioButton>

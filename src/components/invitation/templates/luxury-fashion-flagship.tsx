@@ -233,6 +233,7 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
         <section className={styles.section} id={SECTION_IDS.rsvp}>
           <FashionRsvpScene
             invitationId={props.invitation.id}
+            uniqueLink={props.invitation.uniqueLink}
             guestId={props.guestId}
             guestName={props.guestName}
             partyAllowance={props.partyAllowance}

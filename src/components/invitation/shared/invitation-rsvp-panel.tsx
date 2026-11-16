@@ -23,6 +23,8 @@ import {
 
 interface InvitationRsvpPanelProps {
   invitationId: string;
+  /** Invitation public link — strengthens RSVP proof with guestId. */
+  uniqueLink?: string;
   guestId?: string;
   guestName?: string;
   accentColor?: string;
@@ -67,6 +69,7 @@ function FashionRsvpField({
 
 export function InvitationRsvpPanel({
   invitationId,
+  uniqueLink,
   guestId,
   guestName: initialGuestName,
   accentColor = "#0D9488",
@@ -146,7 +149,14 @@ export function InvitationRsvpPanel({
     };
     const note = guestMessage?.trim();
     const payload = guestId
-      ? { guestId, invitationId, response, ...contact, ...(note ? { message: note } : {}) }
+      ? {
+          guestId,
+          invitationId,
+          ...(uniqueLink ? { uniqueLink } : {}),
+          response,
+          ...contact,
+          ...(note ? { message: note } : {}),
+        }
       : { invitationId, guestName: guestName.trim(), response, ...contact, ...(note ? { message: note } : {}) };
 
     if (!guestId && !guestName.trim()) {
