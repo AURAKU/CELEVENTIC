@@ -33,7 +33,7 @@ import {
   celeCardShareCommentary,
   celeCardShareMessage,
   celeCardShareTitle,
-  celeYouLivePlateShareUrls,
+  absoluteCeleYouLivePlateShareUrls,
 } from "@/lib/digital-business-card/share";
 import { CeleYouMarkIcon } from "@/components/digital-business-card/celeyou-brand-mark";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -138,8 +138,8 @@ export function DigitalCardPublicView({
   }, [card, origin, saveState, t]);
 
   const plateShareUrls = useMemo(
-    () => celeYouLivePlateShareUrls(card.slug, card.updatedAt || card.id),
-    [card.slug, card.updatedAt, card.id]
+    () => absoluteCeleYouLivePlateShareUrls(card.slug, card.updatedAt || card.id, origin),
+    [card.slug, card.updatedAt, card.id, origin]
   );
   const shareCommentary = celeCardShareCommentary(card);
 

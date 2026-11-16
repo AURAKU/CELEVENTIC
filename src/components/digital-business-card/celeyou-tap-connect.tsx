@@ -8,7 +8,11 @@ import { getCeleYouShareOrigin } from "@/lib/app-url";
 import { digitalCardQrImageSrc } from "@/lib/digital-business-card/types";
 import { celeYouLiveProfileUrl } from "@/lib/digital-business-card/share-identity";
 import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact";
-import { celeCardShareMessage, celeCardShareTitle, celeYouLivePlateShareUrls } from "@/lib/digital-business-card/share";
+import {
+  absoluteCeleYouLivePlateShareUrls,
+  celeCardShareMessage,
+  celeCardShareTitle,
+} from "@/lib/digital-business-card/share";
 import { copyCeleYouProfile, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
 import { nfcStudioPath } from "@/lib/digital-business-card/nfc-device";
 import { detectTapCapability, detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
@@ -363,7 +367,9 @@ export function CeleYouTapConnect({
         profileUrl
       ),
       url: profileUrl,
-      imageUrl: card.slug ? celeYouLivePlateShareUrls(card.slug, "live") : null,
+      imageUrl: card.slug
+        ? absoluteCeleYouLivePlateShareUrls(card.slug, "live", origin)
+        : null,
       capturePlate: true,
       persistPlateCardId: card.id || null,
     });
@@ -386,7 +392,9 @@ export function CeleYouTapConnect({
         profileUrl
       ),
       url: profileUrl,
-      imageUrl: card.slug ? celeYouLivePlateShareUrls(card.slug, "live") : null,
+      imageUrl: card.slug
+        ? absoluteCeleYouLivePlateShareUrls(card.slug, "live", origin)
+        : null,
       capturePlate: true,
       persistPlateCardId: card.id || null,
     });

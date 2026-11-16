@@ -14,6 +14,8 @@ import {
   celeCardQrTapPath,
   celeCardReadableQrLabel,
   celeCardStableQrUrl,
+  absoluteCeleYouAssetUrl,
+  absoluteCeleYouLivePlateShareUrls,
   celeCardShareImageUrls,
   CELECARD_PLATE_SHARE_GEN,
   digitalCardExportImagePath,
@@ -27,6 +29,17 @@ import { DEMO_CARD } from "@/lib/digital-business-card/demo-card";
 import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capability";
 
 describe("CeleYou share metadata", () => {
+  it("absolutizes live plate URLs for share and copy link", () => {
+    assert.equal(
+      absoluteCeleYouAssetUrl("/api/digital-business-cards/public/ama/card?download=1", "https://www.celeventic.com"),
+      "https://www.celeventic.com/api/digital-business-cards/public/ama/card?download=1"
+    );
+    const urls = absoluteCeleYouLivePlateShareUrls("ama-serwaa", "live", "https://www.celeventic.com");
+    assert.equal(urls.length, 2);
+    assert.match(urls[0]!, /^https:\/\/www\.celeventic\.com\/api\/digital-business-cards\/public\/ama-serwaa\/card/);
+    assert.match(urls[1]!, /^https:\/\/www\.celeventic\.com\/card\/ama-serwaa\/og/);
+  });
+
   it("builds a personalized title and public description", () => {
     assert.equal(celeCardShareTitle(DEMO_CARD), "Ama Serwaa on CeleYou");
     const description = celeCardShareDescription(DEMO_CARD);
@@ -190,7 +203,8 @@ describe("CeleYou share metadata", () => {
     assert.match(bitmap, /isEmbeddedImage\(markSrc\)/);
     assert.match(bitmap, /containPlateSize/);
     assert.doesNotMatch(bitmap, /logo-full\.png|brand\/icon\.png|celeventic-logo/i);
-    assert.doesNotMatch(bitmap, /\bright:\s|\bbottom:\s/);
+    // Company logo badge may use right/bottom; the plate face itself stays uncropped.
+    assert.match(bitmap, /companyLogoSrc/);
     assert.doesNotMatch(markup, /Open this CeleYou|Download this card|Share this card/);
     assert.match(assets, /\/smartcard\//);
     assert.match(assets, /Never a remote URL/);
@@ -278,7 +292,7 @@ describe("CeleYou studio share controls", () => {
     assert.doesNotMatch(desk, /SHOW_QR_CTA/);
     assert.match(desk, /CeleYouSmartShareEngine/);
     assert.match(desk, /WALLET_PASS_CTA/);
-    assert.match(desk, /celeYouLivePlateShareUrls/);
+    assert.match(desk, /absoluteCeleYouLivePlateShareUrls/);
     assert.match(desk, /imageUrl/);
     assert.match(desk, /persistPlateCardId/);
     assert.match(desk, /usePersistLivePlateSnapshot/);
@@ -290,6 +304,7 @@ describe("CeleYou studio share controls", () => {
     assert.match(desk, /copyProfileLink/);
     assert.match(desk, /shareWhatsApp/);
     assert.match(ownerStudio, /celeYouLiveProfileUrl/);
+    assert.match(ownerStudio, /absoluteCeleYouLivePlateShareUrls/);
     assert.match(ownerStudio, /const canonical = publicUrl/);
     assert.doesNotMatch(ownerStudio, /const canonical = shareUrl \|\| publicUrl/);
     assert.doesNotMatch(desk, /same public profile/);

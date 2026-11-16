@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { TAP_POLL_MS } from "@/lib/celeyou-proximity/product";
-import { celeCardShareMessage, celeCardShareTitle, celeYouLivePlateShareUrls } from "@/lib/digital-business-card/share";
+import { absoluteCeleYouLivePlateShareUrls, celeCardShareMessage, celeCardShareTitle } from "@/lib/digital-business-card/share";
+import { getCeleYouShareOrigin } from "@/lib/app-url";
 import { shareCeleYouProfile, type ShareProfileResult } from "@/lib/celeyou-share/engine";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 
@@ -98,14 +99,20 @@ export function useEmbeddedCardShare({
       title: celeCardShareTitle(card),
       text: celeCardShareMessage(card, profileUrl),
       url: profileUrl,
-      imageUrl: card.slug ? celeYouLivePlateShareUrls(card.slug, card.updatedAt || card.id) : null,
+      imageUrl: card.slug
+        ? absoluteCeleYouLivePlateShareUrls(
+            card.slug,
+            card.updatedAt || card.id,
+            getCeleYouShareOrigin()
+          )
+        : null,
       capturePlate: true,
       persistPlateCardId: hostCardId || card.id || null,
     });
     setSent(result);
     window.setTimeout(() => setSent(null), 2200);
     return result;
-  }, [card, profileUrl]);
+  }, [card, hostCardId, profileUrl]);
 
   return {
     sharingLive: Boolean(host?.id && OPEN_STATUSES.has(host.status)),

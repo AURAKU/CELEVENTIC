@@ -160,20 +160,25 @@ export async function captureLivePlateFile(root?: ParentNode | null): Promise<Fi
   if (!node) return null;
   let clone: HTMLElement | null = null;
   try {
+    try {
+      node.scrollIntoView({ block: "nearest", inline: "nearest" });
+    } catch {
+      /* ignore */
+    }
     await waitForPlateImages(node);
     clone = flattenLivePlate(node);
     document.body.appendChild(clone);
     const { toBlob } = await import("html-to-image");
-    const pixelRatio = Math.min(2, Math.max(1.5, window.devicePixelRatio || 2));
+    const pixelRatio = Math.min(2.5, Math.max(1.5, window.devicePixelRatio || 2));
     const blob = await Promise.race([
       toBlob(clone, {
         pixelRatio,
-        cacheBust: false,
+        cacheBust: true,
         skipFonts: false,
         backgroundColor: window.getComputedStyle(node).backgroundColor || "#ffffff",
         style: { transform: "none", inset: "auto" },
       }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 2200)),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 4500)),
     ]);
     return asPlateFile(blob);
   } catch {

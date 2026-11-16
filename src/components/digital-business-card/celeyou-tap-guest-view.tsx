@@ -13,7 +13,7 @@ import { type DigitalCardPublicPayload } from "@/lib/digital-business-card/types
 import { celeYouLiveProfileUrl } from "@/lib/digital-business-card/share-identity";
 import {
   celeCardShareCommentary,
-  celeYouLivePlateShareUrls,
+  absoluteCeleYouLivePlateShareUrls,
   celeCardShareTitle,
 } from "@/lib/digital-business-card/share";
 import { shareCeleYouProfile } from "@/lib/celeyou-share/engine";
@@ -77,8 +77,9 @@ export function CeleYouTapGuestView({
     return () => window.clearInterval(timer);
   }, [landing?.expiresAt]);
   const plateShareUrls = useMemo(
-    () => (host ? celeYouLivePlateShareUrls(host.slug, host.updatedAt || host.id) : []),
-    [host]
+    () =>
+      host ? absoluteCeleYouLivePlateShareUrls(host.slug, host.updatedAt || host.id, origin) : [],
+    [host, origin]
   );
 
   const saveContact = useCallback(async () => {

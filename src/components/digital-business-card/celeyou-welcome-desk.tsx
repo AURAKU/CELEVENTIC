@@ -19,10 +19,11 @@ import { CeleYouBrandMark } from "@/components/digital-business-card/celeyou-bra
 import { CeleYouTrialCta } from "@/components/digital-business-card/celeyou-trial-cta";
 import { SMARTCARD_BRAND_TAGLINE } from "@/lib/digital-business-card/product";
 import {
+  absoluteCeleYouLivePlateShareUrls,
   celeCardShareMessage,
   celeCardShareTitle,
-  celeYouLivePlateShareUrls,
 } from "@/lib/digital-business-card/share";
+import { getCeleYouShareOrigin } from "@/lib/app-url";
 import { celeYouEmailShareHref, celeYouPrintQrPngSrc, celeYouWhatsAppShareHref } from "@/lib/digital-business-card/share-channels";
 import { copyCeleYouProfile, shareCeleYouProfile } from "@/lib/celeyou-share/engine";
 import type { CeleYouWelcomeAction } from "@/lib/digital-business-card/activation";
@@ -66,7 +67,9 @@ export function CeleYouWelcomeDesk({
   const [shared, setShared] = useState(false);
   const qrDownload = qrUrl ? celeYouPrintQrPngSrc(qrUrl) : "";
   const caption = `${displayName} · CeleYou`;
-  const plateUrls = slug ? celeYouLivePlateShareUrls(slug, cardId || "live") : null;
+  const plateUrls = slug
+    ? absoluteCeleYouLivePlateShareUrls(slug, cardId || "live", getCeleYouShareOrigin())
+    : null;
 
   async function copyLink() {
     if (!profileUrl) return;

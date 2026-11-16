@@ -10,9 +10,9 @@ import { saveDigitalCardContact } from "@/lib/digital-business-card/save-contact
 import { CeleYouNameDropSetup } from "@/components/digital-business-card/celeyou-namedrop-setup";
 import type { DigitalCardPublicPayload } from "@/lib/digital-business-card/types";
 import {
+  absoluteCeleYouLivePlateShareUrls,
   celeCardShareMessage,
   celeCardShareTitle,
-  celeYouLivePlateShareUrls,
   digitalCardWalletPath,
 } from "@/lib/digital-business-card/share";
 import { getCeleYouShareOrigin, sanitizePublicUrl } from "@/lib/app-url";
@@ -114,8 +114,13 @@ export function DigitalCardShareDesk({
       ),
       url: identityShare,
       imageUrl: vcard.slug
-        ? celeYouLivePlateShareUrls(vcard.slug, vcard.updatedAt || vcard.id || "live")
+        ? absoluteCeleYouLivePlateShareUrls(
+            vcard.slug,
+            vcard.updatedAt || vcard.id || "live",
+            origin
+          )
         : null,
+      // Always try the on-screen live plate when it matches the activated card.
       capturePlate: captureLiveFace,
       persistPlateCardId: persistLivePlate ? cardId || vcard.id || null : null,
     };

@@ -289,12 +289,12 @@ describe("CeleYou Smart Share Engine", () => {
 
   it("attaches a captured on-screen plate before fetching OG tiles", async () => {
     const payloads: Array<Record<string, unknown>> = [];
-    let fetched = 0;
     const previousFetch = globalThis.fetch;
-    globalThis.fetch = (async () => {
-      fetched += 1;
-      return new Response("should-not-fetch", { status: 500 });
-    }) as typeof fetch;
+    globalThis.fetch = (async () =>
+      new Response(new Uint8Array(96).fill(1), {
+        status: 200,
+        headers: { "content-type": "image/png" },
+      })) as typeof fetch;
     const plate = new File([new Uint8Array(128).fill(7)], "live-face.png", { type: "image/png" });
     try {
       const result = await shareCeleYouProfile(
@@ -313,8 +313,8 @@ describe("CeleYou Smart Share Engine", () => {
         } as Navigator
       );
       assert.equal(result, "shared");
-      assert.equal(fetched, 0);
       const files = payloads[0]?.files as File[] | undefined;
+      // Capture wins over the parallel published PNG fetch.
       assert.equal(files?.[0]?.name, "celeyou-plate.png");
       assert.equal(files?.[0]?.size, 128);
     } finally {

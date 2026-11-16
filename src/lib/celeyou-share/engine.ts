@@ -175,9 +175,21 @@ function looksLikeImage(type: string, buffer: ArrayBuffer) {
   return mime.includes("image/");
 }
 
+function absolutePlateFetchUrl(imageUrl: string): string {
+  const raw = imageUrl.trim();
+  if (!raw || /^https?:\/\//i.test(raw) || raw.startsWith("data:")) return raw;
+  if (typeof window === "undefined") return raw;
+  try {
+    return new URL(raw, window.location.origin).href;
+  } catch {
+    return raw;
+  }
+}
+
 async function fetchLivePlateFile(imageUrl: string): Promise<File | null> {
   try {
-    const res = await fetch(imageUrl, { cache: "no-store", credentials: "omit" });
+    const href = absolutePlateFetchUrl(imageUrl);
+    const res = await fetch(href, { cache: "no-store", credentials: "same-origin" });
     if (!res.ok) return null;
     const buffer = await res.arrayBuffer();
     if (buffer.byteLength < 64) return null;
@@ -228,7 +240,13 @@ async function captureOnScreenPlate(capturePlate?: ShareProfileInput["capturePla
 async function resolveLivePlateFile(input: ShareProfileInput): Promise<File | null> {
   const provided = asPlateFile(input.imageFile);
   if (provided) return provided;
-  const captured = await captureOnScreenPlate(input.capturePlate);
+
+  // Capture the on-screen live plate and fetch the published PNG/OG in parallel.
+  // Prefer the capture so Share / Copy Link always attach the exact cardholder face.
+  const capturePromise = captureOnScreenPlate(input.capturePlate);
+  const fetchPromise = livePlateFile(input.imageUrl);
+  const [captured, fetched] = await Promise.all([capturePromise, fetchPromise]);
+
   if (captured) {
     if (input.persistPlateCardId) {
       void import("@/lib/digital-business-card/capture-live-plate")
@@ -237,7 +255,7 @@ async function resolveLivePlateFile(input: ShareProfileInput): Promise<File | nu
     }
     return captured;
   }
-  return livePlateFile(input.imageUrl);
+  return fetched;
 }
 
 function shareCaption(text: string, url: string) {

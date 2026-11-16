@@ -86,6 +86,30 @@ export function celeYouLivePlateShareUrls(
   return celeCardShareImageUrls(slug, version ?? "live");
 }
 
+/** Make plate/OG paths absolute so share/copy fetch always hits the live host. */
+export function absoluteCeleYouAssetUrl(pathOrUrl: string, origin?: string | null): string {
+  const raw = String(pathOrUrl || "").trim();
+  if (!raw || /^https?:\/\//i.test(raw) || raw.startsWith("data:")) return raw;
+  const base = String(origin || "").replace(/\/$/, "");
+  if (!base) return raw.startsWith("/") ? raw : `/${raw}`;
+  return `${base}${raw.startsWith("/") ? raw : `/${raw}`}`;
+}
+
+/**
+ * Absolute live plate PNG + OG URLs for the cardholder's activated plate.
+ * Always prefer these for Share / Copy Link so the exact plate is attached.
+ */
+export function absoluteCeleYouLivePlateShareUrls(
+  slug: string,
+  version?: string | number | Date | null,
+  origin?: string | null
+): string[] {
+  const base =
+    origin?.replace(/\/$/, "") ||
+    (typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : "");
+  return celeYouLivePlateShareUrls(slug, version).map((url) => absoluteCeleYouAssetUrl(url, base));
+}
+
 /** Encoded into the QR bitmap. Survives slug edits. Always a camera-safe guest URL. */
 export function celeCardStableQrUrl(publicToken: string, origin?: string): string {
   return celeYouCameraScanUrl(publicToken, origin);

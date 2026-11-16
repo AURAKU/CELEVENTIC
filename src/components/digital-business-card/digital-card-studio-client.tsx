@@ -146,7 +146,7 @@ import {
 import {
   celeCardShareMessage,
   celeCardShareTitle,
-  celeYouLivePlateShareUrls,
+  absoluteCeleYouLivePlateShareUrls,
   digitalCardPresentPath,
 } from "@/lib/digital-business-card/share";
 import { copyCeleYouProfile } from "@/lib/celeyou-share/engine";
@@ -908,7 +908,11 @@ export function DigitalCardStudioClient() {
       ),
       url: canonical,
       imageUrl: form.slug
-        ? celeYouLivePlateShareUrls(form.slug, active?.updatedAt || activeId || "live")
+        ? absoluteCeleYouLivePlateShareUrls(
+            form.slug,
+            active?.updatedAt || activeId || "live",
+            origin
+          )
         : null,
       // Match Share desk: capture only when the on-screen plate is the live published card.
       capturePlate: Boolean(publishedOnServer && !unsaved),
