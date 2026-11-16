@@ -394,18 +394,19 @@ export class InvitationService {
     const { languageService } = await import("@/services/i18n/language.service");
     const { createAuditLog } = await import("@/lib/audit");
 
-    const { organizerRsvpDecisionPhrase, organizerRsvpLabel } = await import(
-      "@/lib/guest-search/rsvp-organizer-labels"
-    );
-    const decisionPhrase = organizerRsvpDecisionPhrase(input.response);
-    const decisionLabel = organizerRsvpLabel(input.response);
+    const decision =
+      input.response === "ACCEPTED"
+        ? "Accepted"
+        : input.response === "DECLINED"
+          ? "Declined"
+          : "Maybe";
     const guestsLink = `/dashboard/guests?eventId=${encodeURIComponent(input.eventId)}`;
     const seatingLink = `/dashboard/seating?eventId=${encodeURIComponent(input.eventId)}`;
-    const title = `${input.guestName} ${decisionPhrase}`;
+    const title = `${input.guestName} ${decision}`;
     const body = [
-      `${input.guestName} ${decisionPhrase} for ${input.eventTitle}.`,
+      `${input.guestName} responded ${decision} for ${input.eventTitle}.`,
       input.message?.trim() ? `Note: ${input.message.trim()}` : null,
-      "Open Guests to see who is coming and plan seating.",
+      "Use Guests and Seating to plan tables and headcount.",
     ]
       .filter(Boolean)
       .join(" ");
@@ -457,7 +458,7 @@ export class InvitationService {
           emailTemplateService
             .sendLocalized("rsvp_organizer", to, locale, {
               guest: input.guestName,
-              response: decisionLabel,
+              response: decision,
               event: input.eventTitle,
               guestsUrl: `${getAppUrlFromEnv()}${guestsLink}`,
               seatingUrl: `${getAppUrlFromEnv()}${seatingLink}`,
