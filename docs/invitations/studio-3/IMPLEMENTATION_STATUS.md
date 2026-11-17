@@ -1,34 +1,42 @@
-# CELEVENTIC — Invitation Experience 3.0
+# CELEVENTIC — Invitation Studio / Experience 3.0
 
 ## Implementation Status
 
 **Last updated:** 2026-11-17  
 **Branch:** `feat/invitation-studio-3`  
-**Phase gate:** **Phase 2 complete — awaiting approval**  
-**Phase 3:** Not started  
-**Deploy / merge / protected-layout edits:** Forbidden
+**Deploy / merge:** Not authorized
 
-## Quick status (corrected)
+## Corrected scoreboard
 
-| Item | Status |
+| Component | Status |
 |---|---|
-| Protection manifest + in-place ban | IMPLEMENTED |
-| Immutable layout versioning | **IMPLEMENTED** |
-| Isolation tests | **29/29** pass |
-| Production usage audit | SQL ready · **BLOCKED** on authorization |
-| Catalogue ELIGIBLE | **0** |
-| Competitive research | VERIFIED (public) |
-| Three v2 creative specs | PROPOSED |
-| Design-family architecture decision | PROPOSED / planning-adopted |
-| Phase 3 | Not started |
+| 48 catalog SKUs / 24 layouts | Identified |
+| Protected-template manifest | Done |
+| Feature parity assessment | Done |
+| Experience engine architecture | Done + modules extended |
+| Production usage verification | Pending authorization |
+| Immutable layout versioning | **Done** |
+| New premium templates (`ix3-*`) | **Functional locally** (new slugs) |
+| Existing published invitations | Locked / unchanged |
+| Studio UI restructure | Not done (compatibility assessed only) |
 
-## Key documents
+## Local review
 
-- `PHASE_2_REPORT.md` — full Phase 2 report  
-- `PHASE_2_APPROVAL_BRIEF.md` — approval ask + corrected status table  
-- `phase-2/*` — SQL, auth, specs, architecture, Phase 3 plan, design-family ADR  
+```
+/invitations/experience3
+/invitations/experience3/ix3-editorial-wedding
+/invitations/experience3/ix3-brand-launch
+/invitations/experience3/ix3-memorial
+```
+
+## Reports
+
+- `BRANCH_RECONCILIATION.md`
+- `PHASE_EXECUTION_REPORT.md`
+- `classification-report.json`
+- `studio-editor-compatibility.md`
+- `performance-and-rollback.md`
 
 ## Git
 
-- Branch: `feat/invitation-studio-3`
-- Commit: `6b59e927`
+- Commit: pending

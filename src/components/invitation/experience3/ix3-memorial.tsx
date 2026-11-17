@@ -2,7 +2,9 @@
 
 import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer-types";
 import { Experience3Shell } from "@/components/invitation/experience3/experience3-shell";
+import { Experience3EssentialsTimeline } from "@/components/invitation/experience3/modules/essentials-timeline";
 import { IX3_MEMORIAL } from "@/lib/invitation/studio3/reference-definitions";
+import { formatInvitationDateParts } from "@/lib/invitation-templates";
 import styles from "./experience3-shell.module.css";
 
 export function Ix3MemorialTemplate(props: InvitationRendererProps) {
@@ -10,6 +12,23 @@ export function Ix3MemorialTemplate(props: InvitationRendererProps) {
     props.event.deceasedName?.trim() ||
     props.event.hostName?.trim() ||
     props.event.title;
+  const date = formatInvitationDateParts(props.event.startDateRaw ?? props.event.startDate);
+
+  const beats = [
+    {
+      label: "Service",
+      detail: `${date.weekday}, ${date.day} ${date.month} ${date.year}${date.time ? ` · ${date.time}` : ""}`,
+    },
+    props.event.venueName || props.event.landmark
+      ? {
+          label: "Venue",
+          detail: [props.event.venueName, props.event.landmark].filter(Boolean).join(" · "),
+        }
+      : null,
+    props.event.dressCode
+      ? { label: "Attire", detail: props.event.dressCode }
+      : null,
+  ].filter(Boolean) as Array<{ label: string; detail: string }>;
 
   return (
     <Experience3Shell
@@ -26,6 +45,7 @@ export function Ix3MemorialTemplate(props: InvitationRendererProps) {
           friends. Motion and sound remain gentle by design.
         </p>
       </section>
+      <Experience3EssentialsTimeline beats={beats} heading="Service details" tone="solemn" />
     </Experience3Shell>
   );
 }

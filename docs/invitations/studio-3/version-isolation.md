@@ -34,7 +34,9 @@ Guest rendering keys off `InvitationDesignConfig.layout`. Multiple catalogue SKU
 - version ≥ 2 + registry hit → Experience 3.0 component
 - version ≥ 2 + no registration → `Experience3Fallback` (never silently render a different layout)
 
-Registry: `src/lib/invitation/studio3/experience-registry.ts` (starts empty).
+Registry: `src/lib/invitation/studio3/experience-registry.ts`.  
+Native Experience 3.0 references (`ix3-*`) register on import via `register-references.ts`.  
+Existing catalogue layouts remain unregistered at v2 until explicitly approved — omitted/`layoutVersion: 1` stays on legacy.
 
 ## Schema
 

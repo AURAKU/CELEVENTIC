@@ -2,11 +2,29 @@
 
 import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer-types";
 import { Experience3Shell } from "@/components/invitation/experience3/experience3-shell";
+import { Experience3EventCountdown } from "@/components/invitation/experience3/modules/event-countdown";
+import { Experience3EssentialsTimeline } from "@/components/invitation/experience3/modules/essentials-timeline";
 import { IX3_BRAND_LAUNCH } from "@/lib/invitation/studio3/reference-definitions";
+import { formatInvitationDateParts } from "@/lib/invitation-templates";
 import styles from "./experience3-shell.module.css";
 
 export function Ix3BrandLaunchTemplate(props: InvitationRendererProps) {
   const brand = props.event.hostName || props.event.title;
+  const date = formatInvitationDateParts(props.event.startDateRaw ?? props.event.startDate);
+
+  const beats = [
+    {
+      label: "Reveal",
+      detail: `${date.weekday}, ${date.day} ${date.month} ${date.year}${date.time ? ` · ${date.time}` : ""}`,
+    },
+    props.event.venueName || props.event.landmark
+      ? {
+          label: "Location",
+          detail: [props.event.venueName, props.event.landmark].filter(Boolean).join(" · "),
+        }
+      : null,
+    props.event.dressCode ? { label: "Attire", detail: props.event.dressCode } : null,
+  ].filter(Boolean) as Array<{ label: string; detail: string }>;
 
   return (
     <Experience3Shell
@@ -24,6 +42,12 @@ export function Ix3BrandLaunchTemplate(props: InvitationRendererProps) {
           personal pass when provided.
         </p>
       </section>
+      <Experience3EventCountdown
+        startAtIso={props.event.startDateRaw}
+        label="Launch countdown"
+        tone="dark"
+      />
+      <Experience3EssentialsTimeline beats={beats} heading="Event programme" tone="dark" />
     </Experience3Shell>
   );
 }
