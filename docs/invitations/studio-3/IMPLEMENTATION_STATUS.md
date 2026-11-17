@@ -72,7 +72,7 @@ Not measured this stage. Flagship templates already lean on client media; Studio
 ### 11. Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: _(set on commit)_
+- Commit: `c042288d`
 
 ### 12. Recommended next stage
 
