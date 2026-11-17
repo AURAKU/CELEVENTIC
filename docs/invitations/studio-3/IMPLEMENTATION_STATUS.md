@@ -89,7 +89,7 @@ Not measured. Empty registry adds negligible resolve cost; no new template bundl
 ### 11. Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: pending this stage
+- Commit: `e6a88cef`
 
 ### 12. Recommended next stage
 
