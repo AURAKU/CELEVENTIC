@@ -3,6 +3,7 @@
 import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer-types";
 import { Experience3Shell } from "@/components/invitation/experience3/experience3-shell";
 import { IX3_MEMORIAL } from "@/lib/invitation/studio3/reference-definitions";
+import styles from "./experience3-shell.module.css";
 
 export function Ix3MemorialTemplate(props: InvitationRendererProps) {
   const remembered =
@@ -18,16 +19,9 @@ export function Ix3MemorialTemplate(props: InvitationRendererProps) {
       headline={remembered}
       kicker="A service of remembrance"
     >
+      <div className={styles.divider} aria-hidden />
       <section aria-label="Memorial tribute">
-        <p
-          style={{
-            fontFamily: IX3_MEMORIAL.tokens.bodyFont,
-            fontSize: "1.08rem",
-            lineHeight: 1.75,
-            color: IX3_MEMORIAL.tokens.muted,
-            textAlign: "center",
-          }}
-        >
+        <p className={styles.note}>
           With gratitude for a life remembered. Please join us for a calm gathering of family and
           friends. Motion and sound remain gentle by design.
         </p>

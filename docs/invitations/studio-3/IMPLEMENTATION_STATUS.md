@@ -3,95 +3,43 @@
 ## Implementation Status
 
 **Last updated:** 2026-11-17  
-**Initiative:** Invitation Experience 3.0 (Bespoke Design · Cinematic Motion · Intelligent Interactions)  
 **Branch:** `feat/invitation-studio-3`  
-**Deploy:** Not authorized — do not deploy / do not merge to `main` without explicit approval.
+**Deploy:** Not authorized
 
 ## Stage progress
 
 | Phase | Status |
 |---|---|
-| 1 — Inventory & protection | **Complete** |
-| 2 — Creative & competitive research | **Complete (docs)** |
-| 3 — Experience engine | **Complete (foundation)** — version branch, registry, definitions, modules shell |
-| 4 — Design systems / reference experiences | **In progress** — 3 native reference layouts registered (new slugs) |
-| 5 — Template transformation (catalogue ELIGIBLE) | Blocked — catalogue ELIGIBLE still **0** pending production proof |
-| 6 — Functional integration | Partial — RSVP / actions / maps / QR chrome reused on references |
-| 7 — QA | Unit **21/21**; visual/device QA pending |
-| 8 — Release readiness | Not started |
+| 1 — Inventory & protection | Complete |
+| 2 — Creative & competitive research | Complete (docs) |
+| 3 — Experience engine | Complete (foundation) |
+| 4 — Design systems / references | **Advanced** — polished shell + presets + preview gallery |
+| 5 — Catalogue template transformation | Blocked (0 catalogue ELIGIBLE) |
+| 6 — Functional integration | Partial (RSVP/actions/maps reused) |
+| 7 — QA | Unit tests expanded; interim report written; visual baselines pending |
+| 8 — Release readiness | **Not ready** — see `INTERIM_REPORT.md` |
 
-## Latest stage report
+## This stage
 
-### 1. Work completed
+- Polished Experience 3.0 shell / reference templates (responsive, category tones)
+- Design presets for `ix3-*` in `invitation-templates.ts`
+- Theme mapping + funeral demo `deceasedName` for memorial preview only
+- Safe preview gallery: `/invitations/experience3` (+ `/[layout]`) — `noindex`, demo guest only
+- Interim report against master directive §20
+- **No** protected template edits, **no** marketplace pricing changes, **no** deploy
 
-- Protection + renderer version isolation (prior).
-- **Three Experience 3.0 native reference layouts** (never historically used):
-  - `ix3-editorial-wedding`
-  - `ix3-brand-launch`
-  - `ix3-memorial`
-- Shared Experience 3.0 shell + skippable opening gate (reduced-motion aware).
-- Reused `InvitationRsvpPanel` + `InvitationActions` (no fabricated backend features).
-- Native layouts classified **ELIGIBLE**; all existing catalogue layouts remain PROTECTED/UNKNOWN.
-- **Did not** modify Forever Afaris, Traditional Marriage, Aurelia/Seraphine, Femmora, or Memorial candle sources.
-- **Did not** change marketplace pricing / catalogue SKUs.
-- **Did not** query/write production; **did not** deploy.
+## Tests
 
-### 2. Files changed (this continuation)
+`npm run test:invitation-studio3`
 
-- `src/types/invitation-design.ts` (3 new layout slug unions)
-- `src/lib/invitation/layout-version.ts` (native layout routing)
-- `src/lib/invitation/studio3/native-layouts.ts`
-- `src/lib/invitation/studio3/experience-definition.ts`
-- `src/lib/invitation/studio3/reference-definitions.ts`
-- `src/lib/invitation/studio3/experience-registry.ts` / `protected-manifest.ts` / `index.ts`
-- `src/components/invitation/experience3/**` (shell, opening, 3 templates, register)
-- `src/components/invitation/invitation-renderer.tsx` (import registrations)
-- Tests + `docs/invitations/studio-3/reference-experiences.md`
-
-### 3. Templates upgraded
-
-| Layout | Kind | Status |
-|---|---|---|
-| `ix3-editorial-wedding` | New slug reference | Registered |
-| `ix3-brand-launch` | New slug reference | Registered |
-| `ix3-memorial` | New slug reference | Registered |
-| Existing catalogue layouts | — | **Unchanged** |
-
-### 4. Protection summary
-
-| Metric | Count |
-|---|---|
-| Catalogue SKUs | 48 |
-| Catalogue ELIGIBLE | **0** |
-| Native Experience 3.0 ELIGIBLE layouts | **3** |
-| PROTECTED catalogue SKUs | 16 |
-| UNKNOWN catalogue SKUs | 32 |
-
-### 5–8. Tests
-
-`npm run test:invitation-studio3` → **21/21 pass**
-
-### 9. Remaining risks
-
-1. Production usage still unverified for catalogue UNKNOWN layouts.  
-2. References not yet in marketplace / Studio picker.  
-3. Visual QA across 320–1920px not yet executed.  
-4. Shared place-card / globals.css still sensitive for any future edits.
-
-### 10. Git
+## Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: `8b09f205`
+- Commit: pending
 
-### 11. Recommended next stage
+## Next
 
-1. Local preview of the three `ix3-*` layouts (fixture invites) + mobile/desktop polish.  
-2. Authorized read-only production SQL → catalogue ELIGIBLE.  
-3. Studio / marketplace surfacing **without** pricing changes (approval).  
-4. No production deploy without explicit approval.
-
-## Explicit non-actions
-
-- No production data writes / no deploy / no merge to `main`  
-- No edits to protected template sources  
-- No silent migration of historical invitations  
+1. Manual preview pass on `/invitations/experience3` (mobile/desktop toggle)  
+2. Authorized production usage SQL → catalogue ELIGIBLE  
+3. Studio controls / optional unlisted catalogue SKUs (approval)  
+4. Explicit approval before any deploy  

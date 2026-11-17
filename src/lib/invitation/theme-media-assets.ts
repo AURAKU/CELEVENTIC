@@ -24,6 +24,10 @@ const LAYOUT_THEME: Record<string, EventThemeCategory> = {
   "corporate-prestige-summit": "Corporate",
   "luxury-fashion-flagship": "Lunch",
   "floral-garden-romance": "Wedding",
+  /** Experience 3.0 native references */
+  "ix3-editorial-wedding": "Wedding",
+  "ix3-brand-launch": "Corporate",
+  "ix3-memorial": "Funeral",
 };
 
 /** Solemn. Candles, lilies, stone, stained glass. No wedding or party imagery. */

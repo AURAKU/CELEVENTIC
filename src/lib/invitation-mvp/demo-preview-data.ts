@@ -421,6 +421,8 @@ export function buildLivePreviewProps(
     contactPhone,
     dressCode: demo.dressCode ?? null,
     coverImageUrl: demoHero,
+    /** Demo-only memorial identity — never invent for live guest invites. */
+    deceasedName: theme === "Funeral" ? demo.hostName : undefined,
   };
 
   const themeBg = getDemoBackgroundUrl(layoutSlug, theme, identitySlug);
