@@ -6,6 +6,7 @@ import {
   shouldUseLegacyInvitationRenderer,
   studio3LayoutKey,
 } from "@/lib/invitation/layout-version";
+import { isExperience3NativeLayout } from "@/lib/invitation/studio3/native-layouts";
 
 /**
  * Experience 3.0 visual registry.
@@ -58,7 +59,8 @@ export function getExperience3Layout(
   layout: string,
   version: number
 ): Experience3LayoutComponent | null {
-  if (version < 2) return null;
+  // Existing layouts: only v2+ registry keys. Native Experience 3.0 slugs may use v1.
+  if (!isExperience3NativeLayout(layout) && version < 2) return null;
   return EXPERIENCE3_LAYOUT_REGISTRY.get(studio3LayoutKey(layout, version)) ?? null;
 }
 

@@ -1,4 +1,5 @@
 import type { InvitationDesignConfig, InvitationLayoutSlug } from "@/types/invitation-design";
+import { isExperience3NativeLayout } from "@/lib/invitation/studio3/native-layouts";
 
 /** Protected current visuals — every existing invite without an explicit pin. */
 export const DEFAULT_LAYOUT_VERSION = 1;
@@ -47,21 +48,28 @@ export function studio3LayoutKey(layout: string, version: number): string {
 
 /**
  * Guard for registering a new visual generation.
- * Version 1 registrations are rejected so protected files are not “replaced in place”.
+ * - Existing layouts: version ≥ 2 only (v1 files stay protected).
+ * - Experience 3.0 native layouts: version ≥ 1 allowed (no historical v1 to preserve).
  */
 export function canRegisterStudio3Version(layout: string, version: number): {
   ok: boolean;
   reason?: string;
 } {
   const v = Math.trunc(version);
+  if (!layout.trim()) {
+    return { ok: false, reason: "layout is required" };
+  }
+  if (isExperience3NativeLayout(layout)) {
+    if (!Number.isFinite(v) || v < 1) {
+      return { ok: false, reason: "Native Experience 3.0 layouts require layoutVersion ≥ 1." };
+    }
+    return { ok: true };
+  }
   if (!Number.isFinite(v) || v < 2) {
     return {
       ok: false,
       reason: "Studio 3 must register layoutVersion ≥ 2; version 1 stays the protected renderer.",
     };
-  }
-  if (!layout.trim()) {
-    return { ok: false, reason: "layout is required" };
   }
   return { ok: true };
 }
@@ -69,9 +77,11 @@ export function canRegisterStudio3Version(layout: string, version: number): {
 /**
  * Whether a design should use the legacy invitation-renderer switch.
  * True for all current production invites (no layoutVersion or version 1).
+ * Native Experience 3.0 layouts always use the Experience 3.0 registry path.
  */
 export function shouldUseLegacyInvitationRenderer(
   design: Pick<InvitationDesignConfig, "layout" | "layoutVersion">
 ): boolean {
+  if (isExperience3NativeLayout(design.layout)) return false;
   return isLegacyLayoutVersion(resolveLayoutVersion(design));
 }

@@ -1,6 +1,7 @@
 import type { InvitationLayoutSlug } from "@/types/invitation-design";
 import { CATALOG_TEMPLATES } from "@/lib/invitation-mvp/catalogue";
 import { PROTECTED_LAYOUT_SLUGS, isProtectedLayout } from "@/lib/invitation/layout-version";
+import { isExperience3NativeLayout } from "@/lib/invitation/studio3/native-layouts";
 
 /**
  * Invitation Experience 3.0 — protected template manifest.
@@ -87,7 +88,9 @@ export function mayModifyLayoutInPlace(_layout: string): false {
 
 export function classifyLayoutStatus(layout: string): TemplateProtectionStatus {
   if (isProtectedLayout(layout)) return "PROTECTED";
-  // Until production read-only usage is verified, nothing is ELIGIBLE.
+  // Brand-new Experience 3.0 native slugs have no historical usage by definition.
+  if (isExperience3NativeLayout(layout)) return "ELIGIBLE";
+  // Until production read-only usage is verified, existing catalogue layouts stay UNKNOWN.
   return "UNKNOWN";
 }
 

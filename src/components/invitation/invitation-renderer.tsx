@@ -15,6 +15,7 @@ import { Experience3Fallback } from "@/components/invitation/experience3-fallbac
 import { LegacyInvitationLayout } from "@/components/invitation/legacy-invitation-layout";
 import { InvitationMediaProvider } from "./invitation-media-context";
 import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer-types";
+import "@/components/invitation/experience3/register-references";
 
 export type { InvitationRendererProps } from "@/components/invitation/invitation-renderer-types";
 

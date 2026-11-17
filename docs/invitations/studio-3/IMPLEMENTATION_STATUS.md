@@ -11,97 +11,87 @@
 
 | Phase | Status |
 |---|---|
-| 1 — Inventory & protection | **Complete** — inventory, protected manifest, enforcement, renderer dependency analysis |
-| 2 — Creative & competitive research | **Complete (docs)** — internal benchmarks + competitor matrix + design families |
-| 3 — Experience engine | **In progress** — version branch wired in renderer; registry empty; no v2 templates yet |
-| 4 — Design systems / reference experiences | **Catalogued** (3 priority families) — visuals not started (0 ELIGIBLE) |
-| 5 — Template transformation | Blocked — **0 ELIGIBLE** |
-| 6 — Functional integration | Blocked |
-| 7 — QA | Unit tests: layout-version + manifest + registry + design families (16/16) |
+| 1 — Inventory & protection | **Complete** |
+| 2 — Creative & competitive research | **Complete (docs)** |
+| 3 — Experience engine | **Complete (foundation)** — version branch, registry, definitions, modules shell |
+| 4 — Design systems / reference experiences | **In progress** — 3 native reference layouts registered (new slugs) |
+| 5 — Template transformation (catalogue ELIGIBLE) | Blocked — catalogue ELIGIBLE still **0** pending production proof |
+| 6 — Functional integration | Partial — RSVP / actions / maps / QR chrome reused on references |
+| 7 — QA | Unit **21/21**; visual/device QA pending |
 | 8 — Release readiness | Not started |
 
 ## Latest stage report
 
 ### 1. Work completed
 
-- Protection manifest + in-place edit ban (prior).
-- Feature parity matrix + experience-engine architecture docs (prior).
-- **Renderer version isolation wired:** missing/`layoutVersion: 1` → `LegacyInvitationLayout` (extracted historical switch); `≥ 2` → Experience 3.0 registry or safe fallback (never silent layout swap).
-- Empty Experience 3.0 registry + registration guards.
-- Design family configuration for three priority references (Wedding editorial, Brand launch, Memorial).
-- Renderer dependency analysis doc.
-- **Did not** redesign any template; **did not** register any v2 layout; **did not** query/write production; **did not** deploy.
+- Protection + renderer version isolation (prior).
+- **Three Experience 3.0 native reference layouts** (never historically used):
+  - `ix3-editorial-wedding`
+  - `ix3-brand-launch`
+  - `ix3-memorial`
+- Shared Experience 3.0 shell + skippable opening gate (reduced-motion aware).
+- Reused `InvitationRsvpPanel` + `InvitationActions` (no fabricated backend features).
+- Native layouts classified **ELIGIBLE**; all existing catalogue layouts remain PROTECTED/UNKNOWN.
+- **Did not** modify Forever Afaris, Traditional Marriage, Aurelia/Seraphine, Femmora, or Memorial candle sources.
+- **Did not** change marketplace pricing / catalogue SKUs.
+- **Did not** query/write production; **did not** deploy.
 
 ### 2. Files changed (this continuation)
 
-- `src/components/invitation/invitation-renderer.tsx` (version branch; shared chrome unchanged)
-- `src/components/invitation/invitation-renderer-types.ts` (new)
-- `src/components/invitation/legacy-invitation-layout.tsx` (new — v1 switch)
-- `src/components/invitation/experience3-fallback.tsx` (new)
-- `src/lib/invitation/studio3/experience-registry.ts` (new)
-- `src/lib/invitation/studio3/design-families.ts` (new)
-- `src/lib/invitation/studio3/__tests__/experience-registry.test.ts` (new)
-- `src/lib/invitation/studio3/index.ts` (exports)
-- `docs/invitations/studio-3/renderer-dependency-analysis.md` (new)
-- `docs/invitations/studio-3/design-families.md` (new)
-- `docs/invitations/studio-3/IMPLEMENTATION_STATUS.md` (updated)
-- `package.json` (`test:invitation-studio3` includes studio3 tests)
+- `src/types/invitation-design.ts` (3 new layout slug unions)
+- `src/lib/invitation/layout-version.ts` (native layout routing)
+- `src/lib/invitation/studio3/native-layouts.ts`
+- `src/lib/invitation/studio3/experience-definition.ts`
+- `src/lib/invitation/studio3/reference-definitions.ts`
+- `src/lib/invitation/studio3/experience-registry.ts` / `protected-manifest.ts` / `index.ts`
+- `src/components/invitation/experience3/**` (shell, opening, 3 templates, register)
+- `src/components/invitation/invitation-renderer.tsx` (import registrations)
+- Tests + `docs/invitations/studio-3/reference-experiences.md`
 
 ### 3. Templates upgraded
 
-None.
+| Layout | Kind | Status |
+|---|---|---|
+| `ix3-editorial-wedding` | New slug reference | Registered |
+| `ix3-brand-launch` | New slug reference | Registered |
+| `ix3-memorial` | New slug reference | Registered |
+| Existing catalogue layouts | — | **Unchanged** |
 
 ### 4. Protection summary
 
 | Metric | Count |
 |---|---|
-| Catalog SKUs | 48 |
-| Unique layouts | 24 |
-| PROTECTED SKUs | 16 |
-| UNKNOWN SKUs | 32 |
-| ELIGIBLE | **0** |
-| Registered Experience 3.0 layouts | **0** |
-| In-place edits allowed | **false** |
+| Catalogue SKUs | 48 |
+| Catalogue ELIGIBLE | **0** |
+| Native Experience 3.0 ELIGIBLE layouts | **3** |
+| PROTECTED catalogue SKUs | 16 |
+| UNKNOWN catalogue SKUs | 32 |
 
-### 5. Features implemented
+### 5–8. Tests
 
-- Legacy vs Experience 3.0 render branch (guest-visible change only if someone sets `layoutVersion ≥ 2` without a registration → fallback message)
-- Registry API for future v2 components
-- Design family catalog (data only)
+`npm run test:invitation-studio3` → **21/21 pass**
 
-### 6–8. Tests
+### 9. Remaining risks
 
-| Suite | Result |
-|---|---|
-| `npm run test:invitation-studio3` | **16/16 pass** |
+1. Production usage still unverified for catalogue UNKNOWN layouts.  
+2. References not yet in marketplace / Studio picker.  
+3. Visual QA across 320–1920px not yet executed.  
+4. Shared place-card / globals.css still sensitive for any future edits.
 
-### 9. Performance findings
-
-Not measured. Empty registry adds negligible resolve cost; no new template bundles.
-
-### 10. Remaining risks
-
-1. Production usage still unverified → zero ELIGIBLE upgrades.  
-2. Shared Aurelia/Seraphine, cinematic, place-card, globals.css remain regression vectors if edited.  
-3. No visual snapshot baseline captured yet for protected invites.  
-4. First v2 registration must use new components/assets — never edit v1 files.
-
-### 11. Git
+### 10. Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: `e6a88cef`
+- Commit: pending this stage
 
-### 12. Recommended next stage
+### 11. Recommended next stage
 
-1. Authorized **read-only** production SQL → reclassify ELIGIBLE.  
-2. Capture protected invite screenshots / visual baselines.  
-3. Implement three **new-slug or v2** reference experiences (editorial-wedding, brand-launch, memorial) using existing GuestFeatureKey + experience-engine modules.  
-4. Extend Studio controls for experience config — still no deploy without approval.
+1. Local preview of the three `ix3-*` layouts (fixture invites) + mobile/desktop polish.  
+2. Authorized read-only production SQL → catalogue ELIGIBLE.  
+3. Studio / marketplace surfacing **without** pricing changes (approval).  
+4. No production deploy without explicit approval.
 
 ## Explicit non-actions
 
-- No production data writes  
-- No `prisma db push`  
-- No deploy / no merge to `main`  
-- No edits to Forever Afaris, Traditional Marriage, Aurelia/Seraphine, Femmora, or Memorial template sources  
-- No template redesigns until ELIGIBLE is proven or a new layout slug is introduced  
+- No production data writes / no deploy / no merge to `main`  
+- No edits to protected template sources  
+- No silent migration of historical invitations  

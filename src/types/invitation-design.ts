@@ -24,7 +24,11 @@ export type InvitationLayoutSlug =
   | "traditional-marriage-ceremony"
   | "forever-afaris-wedding"
   | "aurelia-editorial-wedding"
-  | "seraphine-champagne-wedding";
+  | "seraphine-champagne-wedding"
+  /** Experience 3.0 native reference layouts (new slugs — never historically used). */
+  | "ix3-editorial-wedding"
+  | "ix3-brand-launch"
+  | "ix3-memorial";
 
 export type MediaType = "image" | "video" | "pdf";
 

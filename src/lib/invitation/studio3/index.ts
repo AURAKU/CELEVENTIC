@@ -43,3 +43,23 @@ export {
   type Experience3DesignFamilyId,
   type Experience3OpeningStyle,
 } from "@/lib/invitation/studio3/design-families";
+
+export {
+  EXPERIENCE3_NATIVE_LAYOUT_SLUGS,
+  isExperience3NativeLayout,
+  type Experience3NativeLayoutSlug,
+} from "@/lib/invitation/studio3/native-layouts";
+
+export {
+  EXPERIENCE3_REFERENCE_DEFINITIONS,
+  IX3_BRAND_LAUNCH,
+  IX3_EDITORIAL_WEDDING,
+  IX3_MEMORIAL,
+} from "@/lib/invitation/studio3/reference-definitions";
+
+export type {
+  Experience3Definition,
+  Experience3SectionDef,
+  Experience3SectionModuleId,
+  Experience3TokenSet,
+} from "@/lib/invitation/studio3/experience-definition";

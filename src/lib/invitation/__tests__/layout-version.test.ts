@@ -9,6 +9,7 @@ import {
   shouldUseLegacyInvitationRenderer,
   studio3LayoutKey,
 } from "@/lib/invitation/layout-version";
+import { EXPERIENCE3_NATIVE_LAYOUT_SLUGS } from "@/lib/invitation/studio3/native-layouts";
 
 describe("invitation layout version isolation", () => {
   it("defaults missing and invalid versions to protected v1", () => {
@@ -50,5 +51,12 @@ describe("invitation layout version isolation", () => {
     assert.equal(canRegisterStudio3Version("classic-gold", 1).ok, false);
     assert.equal(canRegisterStudio3Version("classic-gold", 2).ok, true);
     assert.equal(studio3LayoutKey("classic-gold", 2), "classic-gold__v2");
+  });
+
+  it("routes Experience 3.0 native layouts away from the legacy renderer", () => {
+    for (const layout of EXPERIENCE3_NATIVE_LAYOUT_SLUGS) {
+      assert.equal(shouldUseLegacyInvitationRenderer({ layout }), false);
+      assert.equal(canRegisterStudio3Version(layout, 1).ok, true);
+    }
   });
 });
