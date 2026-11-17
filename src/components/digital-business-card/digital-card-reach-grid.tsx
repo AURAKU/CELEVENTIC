@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { createPortal } from "react-dom";
-import { ArrowUpRight, Check, ChevronDown, Copy, EyeOff, Lock, QrCode, X } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, Copy, Download, EyeOff, Lock, QrCode, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DigitalCardBrandMark } from "@/components/digital-business-card/digital-card-brand-mark";
 import {
@@ -44,6 +44,32 @@ import { isVerifiedPayAppHref } from "@/lib/digital-business-card/wallet-quality
 
 async function writeClipboard(value: string) {
   return copyText(value);
+}
+
+async function savePayQrImage(item: DigitalCardReachItem) {
+  if (!item.qrUrl) return false;
+  try {
+    const res = await fetch(item.qrUrl, { cache: "no-store", credentials: "omit" });
+    if (!res.ok) throw new Error("qr");
+    const blob = await res.blob();
+    const file = new File([blob], `${item.title.replace(/\s+/g, "-")}-pay-qr.png`, {
+      type: blob.type || "image/png",
+    });
+    if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: item.title, text: item.title });
+      return true;
+    }
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = file.name;
+    link.click();
+    URL.revokeObjectURL(href);
+    return true;
+  } catch {
+    window.open(item.qrUrl, "_blank", "noopener,noreferrer");
+    return false;
+  }
 }
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
@@ -919,17 +945,21 @@ function PayQrSheet({
 }) {
   const { t } = useLocale();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [qrSaved, setQrSaved] = useState(false);
   const copyTimer = useRef<number | null>(null);
+  const saveTimer = useRef<number | null>(null);
   const bank = item.brand === "bank" ? parseBankAccount(item.copyValue) : null;
   const bankRows = bank ? bankAccountDisplayRows(bank) : [];
   const qrShare = isQrShareNetwork(item.brand);
   const allValue = bank
     ? formatBankAccountCopy(bank)
     : item.copyValue || item.subtitle || item.title;
+  const saveQrInsteadOfCopy = Boolean(item.qrUrl) && !bankRows.length;
 
   useEffect(
     () => () => {
       if (copyTimer.current) window.clearTimeout(copyTimer.current);
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
     },
     []
   );
@@ -952,6 +982,14 @@ function PayQrSheet({
     setCopiedKey(key);
     if (copyTimer.current) window.clearTimeout(copyTimer.current);
     copyTimer.current = window.setTimeout(() => setCopiedKey(null), 1600);
+  }
+
+  async function saveQr() {
+    const ok = await savePayQrImage(item);
+    if (!ok) return;
+    setQrSaved(true);
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => setQrSaved(false), 1600);
   }
 
   useEffect(() => {
@@ -1025,14 +1063,27 @@ function PayQrSheet({
           </div>
         ) : null}
         <p className="sr-only" aria-live="polite">
-          {copiedKey === "all"
-            ? t("celeyou.copied_all_live")
-            : copiedKey
-              ? t("celeyou.copied_named", { label: copiedKey })
-              : ""}
+          {qrSaved
+            ? t("celeyou.saved")
+            : copiedKey === "all"
+              ? t("celeyou.copied_all_live")
+              : copiedKey
+                ? t("celeyou.copied_named", { label: copiedKey })
+                : ""}
         </p>
         <div className="mt-3 grid gap-2">
-          {allValue ? (
+          {saveQrInsteadOfCopy ? (
+            <button
+              type="button"
+              onClick={() => void saveQr()}
+              className="celecard-copy-all inline-flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold"
+              data-copied={qrSaved ? "true" : "false"}
+              style={{ background: CELECARD_REACH_INK, color: "#fffef8" }}
+            >
+              {qrSaved ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+              {qrSaved ? t("celeyou.saved") : t("celeyou.save_qr")}
+            </button>
+          ) : allValue ? (
             <button
               type="button"
               onClick={() => void copyValue("all", allValue)}
