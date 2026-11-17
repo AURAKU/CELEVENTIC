@@ -141,10 +141,17 @@ For this Phase 2 gate:
 
 ---
 
+## Design-family architectural decision (PROPOSED / planning-adopted)
+
+Do **not** treat 48 SKUs as 48 separate redesigns. Use premium **design families** with shared functional modules and independently art-directed variants, always behind immutable versioning.  
+Details: `phase-2/design-family-architecture-decision.md`.
+
 ## Approval ask
+
+See also: `PHASE_2_APPROVAL_BRIEF.md` (corrects stale “versioning not implemented” status).
 
 Please review this Phase 2 report and authorize one of:
 
 1. **Authorize production read-only audit** (run SQL pack) → then reclassify eligibility.  
-2. **Approve Phase 3** against native new-slug references only (still no catalogue in-place upgrades; still no deploy).  
+2. **Approve Phase 3** against native new-slug / v2 identities only (still no catalogue in-place upgrades; still no deploy).  
 3. **Request changes** before any further implementation.
