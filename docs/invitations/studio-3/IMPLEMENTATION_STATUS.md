@@ -8,86 +8,78 @@
 
 | Stage | Status |
 |---|---|
-| A — Foundation (inventory, protection, versioning design) | **In progress** — inventory + benchmark written; version isolation **not yet implemented** |
-| B — Premium reference templates (new versions) | Not started |
+| A — Foundation | **In progress** — inventory, benchmarks, competitive research, design standard, version-isolation module |
+| B — Premium reference templates (new versions) | Not started (blocked on production eligibility + renderer v2 wiring) |
 | C — Remaining eligible templates | Blocked (0 ELIGIBLE until production usage query) |
 | D — Studio integration | Not started |
-| E — QA / performance / a11y | Not started |
+| E — QA / performance / a11y | Partial unit tests for version isolation only |
 | F — Release prep | Not started |
 
-## This report (Phase 0 + Phase 1)
+## Latest stage report
 
 ### 1. Work completed
 
-- Created dedicated branch `feat/invitation-studio-3`.
-- Inspected catalogue (`48` SKUs), layout union (`24` layouts), renderer, Prisma models, feature registry, visibility rules.
-- Probed local `prisma/dev.db` (fixture only — not production).
-- Documented absolute protection rule and shared-dependency risk.
-- Wrote internal benchmark against Forever Afaris, Traditional Marriage, Aurelia/Seraphine, Femmora, Memorial.
+- Phase 0 inventory + Phase 1 internal benchmark (prior commits).
+- Phase 2 competitive benchmark from fetched public pages (Paperless Post, Partiful, Evite, Joy; Greenvelope blocked).
+- Phase 3 design standard draft for **new versions only**.
+- Version isolation architecture doc + `layoutVersion` field + pure helpers/tests.
+- **Did not** modify protected template components or `invitation-renderer` switch paths.
+- **Did not** query/write production DB; **did not** deploy.
 
-### 2. Files changed
+### 2. Files changed (this continuation)
 
-- `docs/invitations/studio-3/template-inventory.md` (new)
-- `docs/invitations/studio-3/internal-benchmark.md` (new)
-- `docs/invitations/studio-3/IMPLEMENTATION_STATUS.md` (new)
+- `docs/invitations/studio-3/competitive-benchmark.md` (new)
+- `docs/invitations/studio-3/design-standard.md` (new)
+- `docs/invitations/studio-3/version-isolation.md` (new)
+- `docs/invitations/studio-3/IMPLEMENTATION_STATUS.md` (updated)
+- `src/types/invitation-design.ts` (`layoutVersion?: number`)
+- `src/lib/invitation/layout-version.ts` (new)
+- `src/lib/invitation/__tests__/layout-version.test.ts` (new)
 
 ### 3. Templates upgraded
 
-None. (Correct — redesigns are blocked until version isolation + production eligibility.)
+None.
 
 ### 4. Templates protected
 
-All proven live / benchmark layouts and every UNKNOWN layout (default PROTECTED):
-
-- `forever-afaris-wedding`
-- `seraphine-champagne-wedding`
-- `aurelia-editorial-wedding`
-- `traditional-marriage-ceremony`
-- `luxury-fashion-flagship` (Femmora)
-- `memorial-candle-tribute` family (11 SKUs)
-- Plus all other catalogue layouts pending production proof
+Unchanged list — Forever Afaris, Seraphine, Aurelia, Traditional Marriage, Femmora, Memorial family, plus all UNKNOWN layouts treated as protected.
 
 ### 5. Features implemented
 
-None in product code this stage. Documentation and architecture constraints only.
+- Version pin helpers only (no guest-visible change when `layoutVersion` omitted).
 
 ### 6–8. Tests
 
-| Executed | Passed | Failed |
-|---|---|---|
-| N/A (docs-only stage) | — | — |
+| Suite | Result |
+|---|---|
+| `src/lib/invitation/__tests__/layout-version.test.ts` | Executed this stage |
 
 ### 9. Performance findings
 
-Not measured this stage. Flagship templates already lean on client media; Studio 3 must add lazy-load / CLS rules before new motion ships.
+Not measured. No new client bundles for invites yet.
 
 ### 10. Remaining risks
 
-1. **No visual version pin** on `Invitation.designConfig` — editing a layout file today would change live invites.  
-2. **SKU ≠ layout** — birthday/corporate/funeral families share layouts; one edit fans out.  
-3. **Production usage unknown** for most layouts — must run read-only VPS SQL before marking ELIGIBLE.  
-4. Shared Aurelia/Seraphine component means Seraphine protection covers Aurelia file changes and vice versa unless split by version.  
-5. Global invite CSS in `globals.css` is a silent regression vector.
+1. Production usage still unverified → zero ELIGIBLE upgrades.  
+2. Renderer not yet branched on `layoutVersion` (intentional until first v2 exists).  
+3. Shared Aurelia/Seraphine component still couples two protected layouts.  
+4. Global invite CSS remains a regression vector for any future careless edit.
 
 ### 11. Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: `c042288d`
+- Commit: _(filled on commit)_
 
 ### 12. Recommended next stage
 
-**Stage A continued — Foundation engineering (still no visual redesigns):**
-
-1. Authorized **read-only** production query for `invitation_orders.templateSlug` and `invitations.designConfig.layout`.  
-2. Design + implement **immutable layout versioning** (pin existing invites to v1; Studio opt-in to v2).  
-3. Baseline screenshots of protected invites (visual regression).  
-4. Then Phase 2 competitive research doc (`competitive-benchmark.md`) without copying proprietary art.  
-5. Only after (1)+(2): choose first **new** category reference versions (Stage B).
+1. Authorized **read-only** production SQL for template/layout usage → reclassify ELIGIBLE.  
+2. Wire `invitation-renderer` to `shouldUseLegacyInvitationRenderer` with **no behavior change** for v1 + unit/visual baseline.  
+3. Capture protected invite screenshots.  
+4. Build first **v2** reference for a conclusively unused layout (or a brand-new layout slug) — never edit v1 files.
 
 ## Explicit non-actions
 
 - No production data writes  
-- No `prisma db push` / migrate reset  
-- No deploy  
-- No merge to `main`  
-- No edits to Forever Afaris, Traditional Marriage, Aurelia/Seraphine, Femmora, or Memorial template sources in this stage  
+- No `prisma db push`  
+- No deploy / no merge to `main`  
+- No edits to Forever Afaris, Traditional Marriage, Aurelia/Seraphine, Femmora, or Memorial template sources  
