@@ -91,7 +91,7 @@ Not measured. No new client bundles for invites yet.
 ### 11. Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: pending this stage
+- Commit: `54aaa3bf`
 
 ### 12. Recommended next stage
 
