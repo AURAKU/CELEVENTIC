@@ -114,7 +114,7 @@
     "guide:coverage": "tsx scripts/celeventic-guide-coverage-gate.ts",
     "test:celeventic-guide:coverage": "tsx scripts/celeventic-guide-coverage-gate.ts && npm run test:celeventic-guide",
     "test:celeventic-guide:e2e": "playwright test e2e/celeventic-guide.smoke.spec.ts",
-    "test:invitation-studio3": "tsx --test src/lib/invitation/__tests__/layout-version.test.ts src/lib/invitation/studio3/__tests__/protected-manifest.test.ts",
+    "test:invitation-studio3": "tsx --test src/lib/invitation/__tests__/layout-version.test.ts src/lib/invitation/studio3/__tests__/*.test.ts",
     "invitation:export-protected-manifest": "tsx scripts/export-protected-invitation-manifest.ts"
   },
   "dependencies": {

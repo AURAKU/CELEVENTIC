@@ -208,9 +208,9 @@ Packs are configuration, not separate codebases.
 ## 10. Implementation order (engine-first)
 
 1. ~~Inventory + protection~~ (docs + `protected-manifest` + layout-version).  
-2. Feature parity matrix (this initiative).  
-3. Wire renderer branch on `layoutVersion` with **zero v1 drift**.  
-4. Register empty v2 registry + safe fallback.  
+2. ~~Feature parity matrix~~.  
+3. ~~Wire renderer branch on `layoutVersion` with **zero v1 drift**~~ (`LegacyInvitationLayout` + branch).  
+4. ~~Empty v2 registry + safe fallback~~.  
 5. Ship three reference experiences on ELIGIBLE or **new** slugs.  
 6. Extend Studio controls for experience config.  
 7. Upgrade remaining ELIGIBLE templates systematically.  

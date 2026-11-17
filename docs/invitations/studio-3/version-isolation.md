@@ -26,11 +26,15 @@ Guest rendering keys off `InvitationDesignConfig.layout`. Multiple catalogue SKU
 - `canRegisterStudio3Version(layout, version)` — rejects registering v2 that would replace v1 files in-place  
 - `studio3LayoutKey(layout, version)` — registry key  
 
-## Renderer wiring (next engineering step — not done yet)
+## Renderer wiring (implemented)
 
-`invitation-renderer.tsx` will call `resolveLayoutVersion`.  
-If version === 1 → existing switch (unchanged).  
-If version >= 2 → Studio 3 registry only; if missing, safe fallback message (never silently render a different layout).
+`invitation-renderer.tsx` uses `resolveInvitationLayoutBranch`:
+
+- version ≤ 1 → `LegacyInvitationLayout` (extracted historical switch; protected path)
+- version ≥ 2 + registry hit → Experience 3.0 component
+- version ≥ 2 + no registration → `Experience3Fallback` (never silently render a different layout)
+
+Registry: `src/lib/invitation/studio3/experience-registry.ts` (starts empty).
 
 ## Schema
 
