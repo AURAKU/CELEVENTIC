@@ -38,4 +38,4 @@ Catalogue ELIGIBLE: **0** (production audit not executed).
 ## Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: pending Phase 2 packaging commit
+- Commit: `4ff74281`
