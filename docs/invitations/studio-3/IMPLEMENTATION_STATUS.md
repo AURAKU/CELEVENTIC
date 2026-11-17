@@ -68,7 +68,7 @@ Not measured. No new client bundles for invites yet.
 ### 11. Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: _(filled on commit)_
+- Commit: `578ffadc`
 
 ### 12. Recommended next stage
 
