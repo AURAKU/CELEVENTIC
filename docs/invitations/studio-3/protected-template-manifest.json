@@ -1,0 +1,1057 @@
+{
+  "initiative": "CELEVENTIC — Invitation Experience 3.0",
+  "generatedAt": "2026-11-17T21:47:17.673Z",
+  "rules": {
+    "inPlaceEditsAllowed": false,
+    "defaultLayoutVersion": 1,
+    "eligibleRequiresProductionProof": true,
+    "unknownTreatedAsProtected": true
+  },
+  "summary": {
+    "catalogSkus": 48,
+    "uniqueLayouts": 24,
+    "protectedLayouts": 6,
+    "PROTECTED": 16,
+    "ELIGIBLE": 0,
+    "UNKNOWN": 32,
+    "eligibleForInPlaceEdit": 0,
+    "inPlaceEditsAllowed": false
+  },
+  "protectedLayoutSlugs": [
+    "forever-afaris-wedding",
+    "seraphine-champagne-wedding",
+    "aurelia-editorial-wedding",
+    "traditional-marriage-ceremony",
+    "luxury-fashion-flagship",
+    "memorial-candle-tribute"
+  ],
+  "protectedSourcePaths": [
+    "src/components/invitation/templates/forever-afaris-wedding.tsx",
+    "src/components/invitation/templates/forever-afaris-wedding-opening.tsx",
+    "src/components/invitation/templates/forever-afaris-wedding-pages.tsx",
+    "src/components/invitation/templates/forever-afaris-wedding-palette.ts",
+    "src/components/invitation/templates/forever-afaris-invitation-intro.module.css",
+    "src/components/invitation/templates/traditional-marriage-ceremony.tsx",
+    "src/components/invitation/templates/traditional-marriage-journey.tsx",
+    "src/components/invitation/templates/traditional-marriage-gallery.tsx",
+    "src/components/invitation/templates/traditional-marriage-respond.tsx",
+    "src/components/invitation/templates/traditional-marriage-thank-you.tsx",
+    "src/components/invitation/templates/traditional-marriage-countdown.tsx",
+    "src/components/invitation/templates/traditional-marriage-palette.ts",
+    "src/components/invitation/templates/aurelia-editorial-wedding.tsx",
+    "src/components/invitation/templates/aurelia-editorial-wedding.module.css",
+    "src/components/invitation/templates/luxury-fashion-flagship.tsx",
+    "src/components/invitation/templates/luxury-fashion",
+    "src/lib/invitation/edwin-published-design.ts"
+  ],
+  "layouts": [
+    {
+      "layoutSlug": "arch-green",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "arch-green",
+        "emerald-promise",
+        "emerald-cathedral"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "aurelia-editorial-wedding",
+      "status": "PROTECTED",
+      "upgradeEligibility": "v2-only",
+      "risk": "critical",
+      "catalogSkus": [
+        "aurelia-editorial-wedding"
+      ],
+      "evidence": [
+        "Public catalogue flagship",
+        "Shared renderer path with Seraphine"
+      ]
+    },
+    {
+      "layoutSlug": "boho-hexagon",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "boho-hexagon"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "classic-gold",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "classic-gold",
+        "gilded-vows",
+        "gilded-opulence-pages"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "corporate-prestige-summit",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "corporate-prestige-summit",
+        "executive-boardroom-brief",
+        "product-launch-pulse",
+        "investor-night-pass",
+        "keynote-agenda-flip"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "crystal-acrylic-luxury",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "crystal-acrylic-luxury"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "custom-media",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "custom-media"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "floral-garden",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "floral-garden"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "floral-garden-romance",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "floral-garden-romance"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "forever-afaris-wedding",
+      "status": "PROTECTED",
+      "upgradeEligibility": "v2-only",
+      "risk": "critical",
+      "catalogSkus": [
+        "forever-afaris-wedding"
+      ],
+      "evidence": [
+        "Edwin & Lordina published design (edwin-published-design.ts)",
+        "Deploy smoke + live guest invites"
+      ]
+    },
+    {
+      "layoutSlug": "glass-acrylic",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "glass-acrylic"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "golden-islamic-nikkah",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "golden-islamic-nikkah"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "kente-heritage-union",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "kente-heritage-union",
+        "kente-court",
+        "kente-royale-pages"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "luxury-fashion-flagship",
+      "status": "PROTECTED",
+      "upgradeEligibility": "v2-only",
+      "risk": "critical",
+      "catalogSkus": [
+        "femmora-flagship-soft-opening"
+      ],
+      "evidence": [
+        "Femmora flagship / soft-opening experience"
+      ]
+    },
+    {
+      "layoutSlug": "luxury-rings",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "luxury-rings"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "memorial-candle-tribute",
+      "status": "PROTECTED",
+      "upgradeEligibility": "v2-only",
+      "risk": "critical",
+      "catalogSkus": [
+        "memorial-candle-tribute",
+        "candlelight-farewell",
+        "white-lily-rest",
+        "royal-mourning-lite",
+        "candlelight-elegy-pages",
+        "white-lily-memorial-pages",
+        "royal-mourning-pages",
+        "black-red-cloth-rite",
+        "white-cloth-homegoing",
+        "kente-border-farewell",
+        "one-week-vigil-notice"
+      ],
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ]
+    },
+    {
+      "layoutSlug": "midnight-velvet-reception",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "midnight-velvet-reception"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "neon-celebration-party",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "neon-celebration-party",
+        "pastel-balloon-garden",
+        "gold-glam-milestone",
+        "concert-night-bash",
+        "surprise-gift-soiree"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "passport-destination-wedding",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "passport-destination-wedding"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "passport-luxe",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "passport-luxe"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "royal-emerald-wedding",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "royal-emerald-wedding"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "rustic-lace",
+      "status": "UNKNOWN",
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high",
+      "catalogSkus": [
+        "rustic-lace"
+      ],
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ]
+    },
+    {
+      "layoutSlug": "seraphine-champagne-wedding",
+      "status": "PROTECTED",
+      "upgradeEligibility": "v2-only",
+      "risk": "critical",
+      "catalogSkus": [
+        "seraphine-champagne-wedding"
+      ],
+      "evidence": [
+        "Kojo & Fafa seed/live layout",
+        "Shares AureliaEditorialWeddingTemplate with Aurelia"
+      ]
+    },
+    {
+      "layoutSlug": "traditional-marriage-ceremony",
+      "status": "PROTECTED",
+      "upgradeEligibility": "v2-only",
+      "risk": "critical",
+      "catalogSkus": [
+        "traditional-marriage-ceremony"
+      ],
+      "evidence": [
+        "Dedicated ceremony stack + renderer special cases",
+        "Internal creative benchmark"
+      ]
+    }
+  ],
+  "catalogEntries": [
+    {
+      "catalogSlug": "classic-gold",
+      "name": "Satin Bow Ivory",
+      "category": "Wedding",
+      "layoutSlug": "classic-gold",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "luxury-rings",
+      "name": "Onyx & Gold Vows",
+      "category": "Wedding",
+      "layoutSlug": "luxury-rings",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "arch-green",
+      "name": "Vine Cathedral",
+      "category": "Wedding",
+      "layoutSlug": "arch-green",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "rustic-lace",
+      "name": "Timber & Lace",
+      "category": "Wedding",
+      "layoutSlug": "rustic-lace",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "boho-hexagon",
+      "name": "Hexagon Reverie",
+      "category": "Wedding",
+      "layoutSlug": "boho-hexagon",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "floral-garden",
+      "name": "Secret Garden",
+      "category": "Wedding",
+      "layoutSlug": "floral-garden",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "passport-luxe",
+      "name": "Stamped Romance",
+      "category": "Wedding",
+      "layoutSlug": "passport-luxe",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "glass-acrylic",
+      "name": "Frostlight Premiere",
+      "category": "Wedding",
+      "layoutSlug": "glass-acrylic",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "royal-emerald-wedding",
+      "name": "Palace Emerald Reign",
+      "category": "Wedding",
+      "layoutSlug": "royal-emerald-wedding",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "midnight-velvet-reception",
+      "name": "Velvet Midnight Soirée",
+      "category": "Wedding",
+      "layoutSlug": "midnight-velvet-reception",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "kente-heritage-union",
+      "name": "Kente Covenant",
+      "category": "Wedding",
+      "layoutSlug": "kente-heritage-union",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "traditional-marriage-ceremony",
+      "name": "Peach Silk Ribbon",
+      "category": "Wedding",
+      "layoutSlug": "traditional-marriage-ceremony",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Dedicated ceremony stack + renderer special cases",
+        "Internal creative benchmark"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "forever-afaris-wedding",
+      "name": "The Aurora",
+      "category": "Wedding",
+      "layoutSlug": "forever-afaris-wedding",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Edwin & Lordina published design (edwin-published-design.ts)",
+        "Deploy smoke + live guest invites"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "aurelia-editorial-wedding",
+      "name": "Aurelia Editorial Wedding",
+      "category": "Wedding",
+      "layoutSlug": "aurelia-editorial-wedding",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Public catalogue flagship",
+        "Shared renderer path with Seraphine"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "seraphine-champagne-wedding",
+      "name": "Seraphine Champagne Wedding",
+      "category": "Wedding",
+      "layoutSlug": "seraphine-champagne-wedding",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Kojo & Fafa seed/live layout",
+        "Shares AureliaEditorialWeddingTemplate with Aurelia"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "floral-garden-romance",
+      "name": "Petal Promise",
+      "category": "Wedding",
+      "layoutSlug": "floral-garden-romance",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "passport-destination-wedding",
+      "name": "Horizon Boarding Pass",
+      "category": "Wedding",
+      "layoutSlug": "passport-destination-wedding",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "crystal-acrylic-luxury",
+      "name": "Champagne Crystal",
+      "category": "Wedding",
+      "layoutSlug": "crystal-acrylic-luxury",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "golden-islamic-nikkah",
+      "name": "Nikkah Gold Geometry",
+      "category": "Wedding",
+      "layoutSlug": "golden-islamic-nikkah",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "memorial-candle-tribute",
+      "name": "Candlelight Elegy",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "neon-celebration-party",
+      "name": "Electric Pulse",
+      "category": "Birthday",
+      "layoutSlug": "neon-celebration-party",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "pastel-balloon-garden",
+      "name": "Pastel Balloon Garden",
+      "category": "Birthday",
+      "layoutSlug": "neon-celebration-party",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "gold-glam-milestone",
+      "name": "Gold Glam Milestone",
+      "category": "Birthday",
+      "layoutSlug": "neon-celebration-party",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "concert-night-bash",
+      "name": "Concert Night Bash",
+      "category": "Birthday",
+      "layoutSlug": "neon-celebration-party",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "surprise-gift-soiree",
+      "name": "Surprise Gift Soiree",
+      "category": "Birthday",
+      "layoutSlug": "neon-celebration-party",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "corporate-prestige-summit",
+      "name": "Platinum Summit",
+      "category": "Corporate",
+      "layoutSlug": "corporate-prestige-summit",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "executive-boardroom-brief",
+      "name": "Executive Boardroom Brief",
+      "category": "Corporate",
+      "layoutSlug": "corporate-prestige-summit",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "product-launch-pulse",
+      "name": "Product Launch Pulse",
+      "category": "Corporate",
+      "layoutSlug": "corporate-prestige-summit",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "investor-night-pass",
+      "name": "Investor Night Pass",
+      "category": "Corporate",
+      "layoutSlug": "corporate-prestige-summit",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "keynote-agenda-flip",
+      "name": "Keynote Agenda Flip",
+      "category": "Corporate",
+      "layoutSlug": "corporate-prestige-summit",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "femmora-flagship-soft-opening",
+      "name": "Femmora Flagship Opening",
+      "category": "Lunch",
+      "layoutSlug": "luxury-fashion-flagship",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Femmora flagship / soft-opening experience"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "custom-media",
+      "name": "Your Canvas",
+      "category": "Private Event",
+      "layoutSlug": "custom-media",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "gilded-vows",
+      "name": "Gilded Vows",
+      "category": "Wedding",
+      "layoutSlug": "classic-gold",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "emerald-promise",
+      "name": "Emerald Promise",
+      "category": "Wedding",
+      "layoutSlug": "arch-green",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "kente-court",
+      "name": "Kente Court",
+      "category": "Wedding",
+      "layoutSlug": "kente-heritage-union",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "gilded-opulence-pages",
+      "name": "Gilded Opulence Gallery",
+      "category": "Wedding",
+      "layoutSlug": "classic-gold",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "emerald-cathedral",
+      "name": "Emerald Cathedral",
+      "category": "Wedding",
+      "layoutSlug": "arch-green",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "kente-royale-pages",
+      "name": "Kente Royale",
+      "category": "Wedding",
+      "layoutSlug": "kente-heritage-union",
+      "currentVersion": 1,
+      "status": "UNKNOWN",
+      "evidence": [
+        "No conclusive production usage proof in this audit",
+        "Default UNKNOWN → treat as protected; no in-place edits"
+      ],
+      "upgradeEligibility": "pending-production-proof",
+      "risk": "high"
+    },
+    {
+      "catalogSlug": "candlelight-farewell",
+      "name": "Candlelight Farewell",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "white-lily-rest",
+      "name": "White Lily Rest",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "royal-mourning-lite",
+      "name": "Royal Mourning Lite",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "candlelight-elegy-pages",
+      "name": "Candlelight Tribute Chapters",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "white-lily-memorial-pages",
+      "name": "White Lily Memorial",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "royal-mourning-pages",
+      "name": "Royal Mourning Estate",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "black-red-cloth-rite",
+      "name": "Black Red Cloth Rite",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "white-cloth-homegoing",
+      "name": "White Cloth Homegoing",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "kente-border-farewell",
+      "name": "Kente Border Farewell",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    },
+    {
+      "catalogSlug": "one-week-vigil-notice",
+      "name": "One Week Vigil Notice",
+      "category": "Funeral",
+      "layoutSlug": "memorial-candle-tribute",
+      "currentVersion": 1,
+      "status": "PROTECTED",
+      "evidence": [
+        "Funeral layout family (11 catalogue SKUs)",
+        "Local + production funeral invitation traffic"
+      ],
+      "upgradeEligibility": "v2-only",
+      "risk": "critical"
+    }
+  ]
+}

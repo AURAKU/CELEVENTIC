@@ -1,58 +1,80 @@
-# Invitation Studio 3.0 — Implementation Status
+# CELEVENTIC — Invitation Experience 3.0
+
+## Implementation Status
 
 **Last updated:** 2026-11-17  
+**Initiative:** Invitation Experience 3.0 (Bespoke Design · Cinematic Motion · Intelligent Interactions)  
 **Branch:** `feat/invitation-studio-3`  
 **Deploy:** Not authorized — do not deploy / do not merge to `main` without explicit approval.
 
 ## Stage progress
 
-| Stage | Status |
+| Phase | Status |
 |---|---|
-| A — Foundation | **In progress** — inventory, benchmarks, competitive research, design standard, version-isolation module |
-| B — Premium reference templates (new versions) | Not started (blocked on production eligibility + renderer v2 wiring) |
-| C — Remaining eligible templates | Blocked (0 ELIGIBLE until production usage query) |
-| D — Studio integration | Not started |
-| E — QA / performance / a11y | Partial unit tests for version isolation only |
-| F — Release prep | Not started |
+| 1 — Inventory & protection | **Complete (code + docs)** — catalog audit, protected manifest, enforcement helpers, JSON export |
+| 2 — Creative & competitive research | **Complete (docs)** — internal benchmarks + competitor matrix |
+| 3 — Experience engine architecture | **Documented** — compose existing `experience-engine` + version isolation; renderer v2 branch not wired yet |
+| 4 — Design systems / reference experiences | Not started (blocked on ELIGIBLE proof or new slugs) |
+| 5 — Template transformation | Blocked — **0 ELIGIBLE** |
+| 6 — Functional integration | Blocked |
+| 7 — QA | Partial — layout-version + protected-manifest unit tests |
+| 8 — Release readiness | Not started |
 
 ## Latest stage report
 
 ### 1. Work completed
 
-- Phase 0 inventory + Phase 1 internal benchmark (prior commits).
-- Phase 2 competitive benchmark from fetched public pages (Paperless Post, Partiful, Evite, Joy; Greenvelope blocked).
-- Phase 3 design standard draft for **new versions only**.
-- Version isolation architecture doc + `layoutVersion` field + pure helpers/tests.
+- Phase 0–1 inventory, internal benchmark, competitive research, design standard, version-isolation module (prior).
+- **Protected-template manifest** (TS enforcement + JSON + markdown).
+- **Hard safeguard:** `mayModifyLayoutInPlace()` always `false` — Experience 3.0 never edits layouts in place.
+- **Feature parity matrix** mapping GuestFeatureKey / engine capabilities vs flagship layouts.
+- **Experience engine architecture** proposing versioned definitions on top of existing `src/lib/experience-engine`.
 - **Did not** modify protected template components or `invitation-renderer` switch paths.
 - **Did not** query/write production DB; **did not** deploy.
 
 ### 2. Files changed (this continuation)
 
-- `docs/invitations/studio-3/competitive-benchmark.md` (new)
-- `docs/invitations/studio-3/design-standard.md` (new)
-- `docs/invitations/studio-3/version-isolation.md` (new)
+- `src/lib/invitation/studio3/protected-manifest.ts` (new)
+- `src/lib/invitation/studio3/index.ts` (new)
+- `src/lib/invitation/studio3/__tests__/protected-manifest.test.ts` (new)
+- `scripts/export-protected-invitation-manifest.ts` (new)
+- `docs/invitations/studio-3/protected-template-manifest.json` (new)
+- `docs/invitations/studio-3/protected-template-manifest.md` (new)
+- `docs/invitations/studio-3/feature-parity-matrix.md` (new)
+- `docs/invitations/studio-3/experience-engine-architecture.md` (new)
 - `docs/invitations/studio-3/IMPLEMENTATION_STATUS.md` (updated)
-- `src/types/invitation-design.ts` (`layoutVersion?: number`)
-- `src/lib/invitation/layout-version.ts` (new)
-- `src/lib/invitation/__tests__/layout-version.test.ts` (new)
+- `package.json` (`test:invitation-studio3`, `invitation:export-protected-manifest`)
 
 ### 3. Templates upgraded
 
 None.
 
-### 4. Templates protected
+### 4. Protection summary (from live catalogue)
 
-Unchanged list — Forever Afaris, Seraphine, Aurelia, Traditional Marriage, Femmora, Memorial family, plus all UNKNOWN layouts treated as protected.
+| Metric | Count |
+|---|---|
+| Catalog SKUs | 48 |
+| Unique layouts | 24 |
+| PROTECTED SKUs (proven layouts) | 16 |
+| UNKNOWN SKUs (treat as protected) | 32 |
+| ELIGIBLE | **0** |
+| In-place edits allowed | **false** |
+
+Proven layouts: Forever Afaris, Seraphine, Aurelia, Traditional Marriage, Femmora (`luxury-fashion-flagship`), Memorial candle family.
 
 ### 5. Features implemented
 
-- Version pin helpers only (no guest-visible change when `layoutVersion` omitted).
+- Manifest classification + export
+- In-place edit ban
+- Prior: `layoutVersion` pin helpers
+
+No guest-visible change when `layoutVersion` omitted.
 
 ### 6–8. Tests
 
-| Suite | Result |
+| Suite | Command |
 |---|---|
-| `src/lib/invitation/__tests__/layout-version.test.ts` | Executed this stage |
+| Layout version + protected manifest | `npm run test:invitation-studio3` |
 
 ### 9. Performance findings
 
@@ -63,19 +85,20 @@ Not measured. No new client bundles for invites yet.
 1. Production usage still unverified → zero ELIGIBLE upgrades.  
 2. Renderer not yet branched on `layoutVersion` (intentional until first v2 exists).  
 3. Shared Aurelia/Seraphine component still couples two protected layouts.  
-4. Global invite CSS remains a regression vector for any future careless edit.
+4. Global invite CSS remains a regression vector for any future careless edit.  
+5. Shared cinematic / place-card / portal modules can still leak changes into protected invites if edited without forks.
 
 ### 11. Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: `578ffadc`
+- Commit: pending this stage
 
 ### 12. Recommended next stage
 
 1. Authorized **read-only** production SQL for template/layout usage → reclassify ELIGIBLE.  
 2. Wire `invitation-renderer` to `shouldUseLegacyInvitationRenderer` with **no behavior change** for v1 + unit/visual baseline.  
 3. Capture protected invite screenshots.  
-4. Build first **v2** reference for a conclusively unused layout (or a brand-new layout slug) — never edit v1 files.
+4. Build three **v2 / new-slug** reference experiences (Luxury Wedding, Premium Brand Launch, Contemporary Memorial) — never edit v1 files.
 
 ## Explicit non-actions
 
@@ -83,3 +106,4 @@ Not measured. No new client bundles for invites yet.
 - No `prisma db push`  
 - No deploy / no merge to `main`  
 - No edits to Forever Afaris, Traditional Marriage, Aurelia/Seraphine, Femmora, or Memorial template sources  
+- No template redesigns until ELIGIBLE is proven or a new layout slug is introduced  
