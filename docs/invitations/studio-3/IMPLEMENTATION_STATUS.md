@@ -81,7 +81,7 @@
 ### 10. Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: pending this stage
+- Commit: `8b09f205`
 
 ### 11. Recommended next stage
 
