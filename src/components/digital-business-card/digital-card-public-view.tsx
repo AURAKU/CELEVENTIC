@@ -4,9 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
+  ArrowUpRight,
   Check,
   Contact,
+  Facebook,
   Handshake,
+  Linkedin,
+  Mail,
+  MessageCircle,
+  Send,
   Share2,
   X,
 } from "lucide-react";
@@ -48,11 +54,32 @@ import { contactSaveHintKey } from "@/lib/celeyou-share/namedrop";
 import { detectTapPlatform } from "@/lib/celeyou-proximity/capabilities";
 import { useCelecardSilentHold } from "@/components/digital-business-card/use-celecard-silent-hold";
 import { celecardHoldPresent } from "@/lib/digital-business-card/hold-viewport";
+import {
+  CELEYOU_GUEST_SHARE_CHANNELS,
+  openCeleYouShareChannel,
+  type CeleYouGuestShareChannel,
+} from "@/lib/digital-business-card/share-channels";
+import { copyText } from "@/lib/clipboard";
 
 function GuestLayer({ children }: { children: ReactNode }) {
   if (typeof document === "undefined") return null;
   return createPortal(children, document.body);
 }
+
+const GUEST_SHARE_CHANNEL_UI: Array<{
+  id: CeleYouGuestShareChannel;
+  labelKey?: string;
+  label?: string;
+  Icon: typeof Share2;
+}> = [
+  { id: "whatsapp", label: "WhatsApp", Icon: MessageCircle },
+  { id: "sms", labelKey: "celeyou.share_channel_sms", Icon: MessageCircle },
+  { id: "telegram", label: "Telegram", Icon: Send },
+  { id: "facebook", label: "Facebook", Icon: Facebook },
+  { id: "x", label: "X", Icon: Share2 },
+  { id: "linkedin", label: "LinkedIn", Icon: Linkedin },
+  { id: "email", labelKey: "celeyou.share_channel_email", Icon: Mail },
+];
 
 export function DigitalCardPublicView({
   card,
@@ -145,67 +172,113 @@ export function DigitalCardPublicView({
   );
   const shareCommentary = celeCardShareCommentary(card);
 
-  const shareCard = useCallback(async () => {
+  const sharePayload = useMemo(() => {
     const shareUrl = profileUrl || scanUrl;
-    if (!shareUrl) return;
+    if (!shareUrl) return null;
+    return {
+      title: celeCardShareTitle(card),
+      text: shareCommentary,
+      url: shareUrl,
+    };
+  }, [card, profileUrl, scanUrl, shareCommentary]);
+
+  const openShareChannel = useCallback(
+    (channel: CeleYouGuestShareChannel) => {
+      if (!sharePayload) return;
+      trackCeleYouGuestEvent(card.slug, "share_tap");
+      openCeleYouShareChannel(channel, sharePayload);
+    },
+    [card.slug, sharePayload]
+  );
+
+  const shareCard = useCallback(async () => {
+    if (!sharePayload) return;
     setHoldIntent("closed");
     setShareHint(null);
     setSharing(true);
     try {
       const result = await shareCeleYouProfile({
-        title: celeCardShareTitle(card),
+        title: sharePayload.title,
         // Caption only — engine attaches one plate file; URL in text makes iMessage duplicate the card.
-        text: shareCommentary,
-        url: shareUrl,
+        text: sharePayload.text,
+        url: sharePayload.url,
         imageUrl: plateShareUrls,
         // Attach the cardholder's saved + published plate; DOM capture is engine fallback only.
         capturePlate: true,
       });
       if (result === "cancelled") return;
-      if (result === "shared" || result === "copied" || result === "downloaded") {
+      if (result === "shared") {
+        trackCeleYouGuestEvent(card.slug, "share_tap");
+        setShareOpen(false);
+        return;
+      }
+      if (result === "copied" || result === "downloaded") {
         trackCeleYouGuestEvent(card.slug, "share_tap");
         if (result === "copied") {
           setShareHint(t("celeyou.copied"));
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
-        } else if (result === "downloaded") {
+        } else {
           setShareHint(t("celeyou.plate_downloaded"));
         }
-        setShareOpen(false);
+        // Keep sheet open so guests can still pick WhatsApp / socials on desktop.
         return;
       }
       if (result === "unavailable") {
+        // Last resort: open WhatsApp with Meet… + live URL so Share Card never dead-ends.
         trackCeleYouGuestEvent(card.slug, "share_tap");
-        setShareHint(t("celeyou.share_failed"));
+        openCeleYouShareChannel("whatsapp", sharePayload);
+        setShareHint(t("celeyou.share_pick_app"));
       }
     } finally {
       setSharing(false);
     }
-  }, [card, plateShareUrls, profileUrl, scanUrl, shareCommentary, setHoldIntent, t]);
+  }, [card.slug, plateShareUrls, sharePayload, setHoldIntent, t]);
 
   const copyCard = useCallback(async () => {
-    const shareUrl = profileUrl || scanUrl;
-    if (!shareUrl) return;
+    const shareUrl = (profileUrl || scanUrl || "").trim();
+    if (!shareUrl) {
+      setShareHint(t("celeyou.share_pick_app"));
+      return;
+    }
     setCopying(true);
+    setShareHint(null);
     try {
-      const result = await copyCeleYouProfile({
-        title: celeCardShareTitle(card),
-        text: celeCardShareMessage(card, shareUrl),
-        url: shareUrl,
-        imageUrl: plateShareUrls,
-        // Attach the cardholder's saved + published plate; DOM capture is engine fallback only.
-        capturePlate: true,
-      });
-      if (result === "copied") {
+      // Copy link must be instant and reliable — copy the live URL (+ Meet caption) first.
+      // Do not wait on plate fetch/capture; that path belongs to Share Card.
+      const linkText = celeCardShareMessage(card, shareUrl);
+      let ok = await copyText(linkText);
+      if (!ok) ok = await copyText(shareUrl);
+      if (!ok) {
+        // Rich clipboard (plate + text) as a secondary attempt, still no DOM capture wait.
+        const rich = await copyCeleYouProfile({
+          title: celeCardShareTitle(card),
+          text: linkText,
+          url: shareUrl,
+          imageUrl: plateShareUrls,
+          capturePlate: false,
+        });
+        ok = rich === "copied";
+      }
+      if (!ok) {
+        try {
+          ok = window.prompt(t("celeyou.copy_link"), shareUrl) !== null;
+        } catch {
+          ok = false;
+        }
+      }
+      if (ok) {
         trackCeleYouGuestEvent(card.slug, "share_tap");
-        setShareOpen(false);
+        setShareHint(t("celeyou.copied"));
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+        return;
       }
+      setShareHint(shareUrl);
     } finally {
       setCopying(false);
     }
-  }, [card, plateShareUrls, profileUrl, scanUrl]);
+  }, [card, plateShareUrls, profileUrl, scanUrl, t]);
 
   const submitConnect = useCallback(async () => {
     if (connecting) return;
@@ -448,16 +521,23 @@ export function DigitalCardPublicView({
           href={demoCardPreviewExplorePath()}
           className="celecard-guest-brand"
           aria-label={t("celeyou.create_aria")}
+          data-celecard-ad="create"
         >
-          <CeleYouMarkIcon className="celecard-guest-mark overflow-visible" />
-          <span className="celecard-guest-brand-copy">
-            <span className="celecard-guest-brand-name">
-              <span>Cele</span>
-              <span className="celecard-guest-brand-you">You</span>
-              <sup>®</sup>
+          <span className="celecard-guest-brand-main">
+            <CeleYouMarkIcon className="celecard-guest-mark overflow-visible" />
+            <span className="celecard-guest-brand-copy">
+              <span className="celecard-guest-brand-name">
+                <span>Cele</span>
+                <span className="celecard-guest-brand-you">You</span>
+                <sup>®</sup>
+              </span>
+              <span className="celecard-guest-brand-tag">{SMARTCARD_BRAND_TAGLINE}</span>
             </span>
-            <span className="celecard-guest-brand-tag">{SMARTCARD_BRAND_TAGLINE}</span>
+          </span>
+          <span className="celecard-guest-brand-action">
             <span className="celecard-guest-brand-cta">{t("celeyou.create_yours")}</span>
+            <span className="celecard-guest-brand-cta-sub">{t("celeyou.create_templates")}</span>
+            <ArrowUpRight className="celecard-guest-brand-cta-icon" aria-hidden />
           </span>
         </Link>
         <Link
@@ -687,7 +767,7 @@ export function DigitalCardPublicView({
             <div className="mt-4 grid gap-2">
               <button
                 type="button"
-                disabled={sharing || copying}
+                disabled={sharing || copying || !sharePayload}
                 onClick={() => void shareCard()}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white disabled:opacity-70"
                 style={{ background: "#0B8A83" }}
@@ -704,6 +784,34 @@ export function DigitalCardPublicView({
               >
                 {copying ? t("celeyou.copying") : t("celeyou.copy_link")}
               </button>
+              {sharePayload ? (
+                <div className="mt-1 grid gap-2">
+                  <p className="text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-[#0B8A83]/opacity-80">
+                    {t("celeyou.share_via")}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {GUEST_SHARE_CHANNEL_UI.filter((channel) =>
+                      CELEYOU_GUEST_SHARE_CHANNELS.includes(channel.id)
+                    ).map((channel) => {
+                      const Icon = channel.Icon;
+                      const label = channel.labelKey ? t(channel.labelKey) : channel.label || channel.id;
+                      return (
+                        <button
+                          key={channel.id}
+                          type="button"
+                          disabled={sharing || copying}
+                          onClick={() => openShareChannel(channel.id)}
+                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border bg-white px-3 text-xs font-semibold disabled:opacity-70"
+                          style={{ borderColor: "rgba(28,25,23,0.12)", color: "#1c1917" }}
+                        >
+                          <Icon className="h-3.5 w-3.5 text-[#0B8A83]" aria-hidden />
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
               {shareHint ? (
                 <p className="text-center text-xs font-medium text-[#0B8A83]" role="status">
                   {shareHint}

@@ -14,6 +14,7 @@ import {
   celeYouEmailShareHref,
   celeYouPrintQrPngSrc,
   celeYouPrintQrSvgSrc,
+  celeYouShareChannelHref,
   celeYouWhatsAppShareHref,
 } from "@/lib/digital-business-card/share-channels";
 import { celeYouCameraScanUrl } from "@/lib/digital-business-card/share-identity";
@@ -138,5 +139,24 @@ describe("CeleYou NFC QR and universal sharing", () => {
     assert.match(desk, /COPY_PROFILE_LINK_CTA/);
     const engine = source("src/lib/celeyou-share/engine.ts");
     assert.match(engine, /copyCeleYouProfile/);
+  });
+
+  it("builds guest Share Card channel intents for major socials", () => {
+    const payload = {
+      title: "Kojo Mensah on CeleYou",
+      text: "Meet Kojo Mensah. Their live CeleYou Card.",
+      url: "https://www.celeventic.com/u/kojo-mensah",
+    };
+    assert.match(celeYouShareChannelHref("whatsapp", payload), /^https:\/\/wa\.me\/\?text=/);
+    assert.match(celeYouShareChannelHref("sms", payload), /^sms:\?&body=/);
+    assert.match(celeYouShareChannelHref("telegram", payload), /t\.me\/share/);
+    assert.match(celeYouShareChannelHref("facebook", payload), /facebook\.com\/sharer/);
+    assert.match(celeYouShareChannelHref("x", payload), /twitter\.com\/intent\/tweet/);
+    assert.match(celeYouShareChannelHref("linkedin", payload), /linkedin\.com\/sharing/);
+    assert.match(celeYouShareChannelHref("email", payload), /^mailto:\?subject=/);
+    const guest = source("src/components/digital-business-card/digital-card-public-view.tsx");
+    assert.match(guest, /openCeleYouShareChannel/);
+    assert.match(guest, /CELEYOU_GUEST_SHARE_CHANNELS/);
+    assert.match(guest, /share_pick_app/);
   });
 });

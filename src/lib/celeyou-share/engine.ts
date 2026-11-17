@@ -1,3 +1,4 @@
+import { copyText } from "@/lib/clipboard";
 import { detectNfcWriteSupport } from "@/lib/digital-business-card/nfc-capability";
 import { detectTapPlatform, type TapPlatform } from "@/lib/celeyou-proximity/capabilities";
 import {
@@ -433,43 +434,38 @@ export async function copyCeleYouProfile(
   input: ShareProfileInput,
   nav: Navigator | null | undefined = typeof navigator !== "undefined" ? navigator : null
 ): Promise<"copied" | "unavailable"> {
-  if (!input.url || !nav?.clipboard) return "unavailable";
+  if (!input.url) return "unavailable";
   const text = shareCaption(input.text, input.url);
-  const filePromise = resolveLivePlateFile(input);
   const Item = clipboardItemCtor();
-  const write = typeof nav.clipboard.write === "function" ? nav.clipboard.write.bind(nav.clipboard) : null;
+  const write =
+    nav?.clipboard && typeof nav.clipboard.write === "function"
+      ? nav.clipboard.write.bind(nav.clipboard)
+      : null;
 
   if (write && Item) {
-    const image = filePromise.then((file) => {
-      if (!file) throw new Error("no-plate");
-      return asClipboardPng(file);
-    });
-    const plain = Promise.resolve(new Blob([text], { type: "text/plain" }));
-    try {
-      await write([new Item({ "image/png": image, "text/plain": plain })]);
-      return "copied";
-    } catch {
+    // Resolve the plate quickly; never hang Copy link waiting on a stuck fetch/capture.
+    const file = await withTimeout(resolveLivePlateFile(input), Math.min(PLATE_FETCH_TIMEOUT_MS, 1600));
+    if (file) {
+      const plain = new Blob([text], { type: "text/plain" });
       try {
-        await write([new Item({ "image/png": image })]);
+        const png = await asClipboardPng(file);
+        await write([new Item({ "image/png": png, "text/plain": plain })]);
         return "copied";
       } catch {
-        /* text fallback */
+        try {
+          const png = await asClipboardPng(file);
+          await write([new Item({ "image/png": png })]);
+          return "copied";
+        } catch {
+          /* text fallback */
+        }
       }
     }
   }
 
-  try {
-    if (typeof nav.clipboard.writeText !== "function") return "unavailable";
-    await Promise.race([
-      nav.clipboard.writeText(text),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error("clipboard-timeout")), 1200);
-      }),
-    ]);
-    return "copied";
-  } catch {
-    return "unavailable";
-  }
+  // Clipboard API is often missing in preview/embedded browsers — execCommand still works.
+  if (await copyText(text)) return "copied";
+  return "unavailable";
 }
 
 async function tryNativeShare(nav: Navigator, payload: ShareData): Promise<ShareProfileResult | "failed"> {
@@ -545,15 +541,10 @@ export async function shareCeleYouProfile(
   const copied = await copyCeleYouProfile({ ...input, imageFile: file, capturePlate: false }, nav);
   if (copied === "copied") return "copied";
   if (file && (await downloadPlateFallback(file))) {
-    try {
-      if (nav?.clipboard && typeof nav.clipboard.writeText === "function") {
-        await nav.clipboard.writeText(shareCaption(text, input.url));
-      }
-    } catch {
-      /* plate download is enough */
-    }
+    await copyText(shareCaption(text, input.url));
     return "downloaded";
   }
+  if (await copyText(shareCaption(text, input.url))) return "copied";
   return "unavailable";
 }
 
