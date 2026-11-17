@@ -6,7 +6,7 @@
 ## HEAD
 
 ```
-a0698b2b (and later commits on this branch as work continues)
+669630c6
 ```
 
 Verify locally with:
