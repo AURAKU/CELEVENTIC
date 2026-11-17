@@ -1,42 +1,36 @@
 # CELEVENTIC — Invitation Studio / Experience 3.0
 
-## Implementation Status
-
-**Last updated:** 2026-11-17  
 **Branch:** `feat/invitation-studio-3`  
-**Deploy / merge:** Not authorized
+**Deploy / merge:** Not authorized  
+**Last updated:** 2026-11-17
 
-## Corrected scoreboard
+## Scoreboard
 
 | Component | Status |
 |---|---|
-| 48 catalog SKUs / 24 layouts | Identified |
-| Protected-template manifest | Done |
-| Feature parity assessment | Done |
-| Experience engine architecture | Done + modules extended |
-| Production usage verification | Pending authorization |
+| Commit reconciliation (`0c547bb9`, `84e26fcc`) | Both ancestors of HEAD |
+| Protection manifest / UNKNOWN=protected | Done |
 | Immutable layout versioning | **Done** |
-| New premium templates (`ix3-*`) | **Functional locally** (new slugs) |
-| Existing published invitations | Locked / unchanged |
-| Studio UI restructure | Not done (compatibility assessed only) |
+| Production usage verification | Prepared · **blocked** on authorization |
+| Catalogue ELIGIBLE | **0** |
+| Experience 3.0 engine modules | Done |
+| Three premium references (`ix3-*`) | **Functional** |
+| Studio UI restructure | Not done (compat assessed) |
+| Unit tests | **31/31** |
+| Production `next build` | **Passed** (8GB heap) |
+| Existing published invitations | Unchanged |
 
 ## Local review
 
-```
-/invitations/experience3
-/invitations/experience3/ix3-editorial-wedding
-/invitations/experience3/ix3-brand-launch
-/invitations/experience3/ix3-memorial
-```
+- `/invitations/experience3`
+- `/invitations/experience3/ix3-editorial-wedding`
+- `/invitations/experience3/ix3-brand-launch`
+- `/invitations/experience3/ix3-memorial`
 
-## Reports
+## Primary report
 
-- `BRANCH_RECONCILIATION.md`
-- `PHASE_EXECUTION_REPORT.md`
-- `classification-report.json`
-- `studio-editor-compatibility.md`
-- `performance-and-rollback.md`
+`PHASE_EXECUTION_REPORT.md`
 
 ## Git
 
-- Commit: `669630c6`
+- Commit: pending

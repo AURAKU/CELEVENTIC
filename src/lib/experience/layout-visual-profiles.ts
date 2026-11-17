@@ -180,6 +180,27 @@ const PROFILES: Record<InvitationLayoutSlug, LayoutVisualProfile> = {
     vignette: "soft",
     overlayGradient: "from-orange-50/20 via-transparent to-stone-100/30",
   },
+  "ix3-editorial-wedding": {
+    background: "radial-gradient(ellipse at top, #f7f2ea 0%, #efe6d8 55%, #e4d5bc 100%)",
+    accentGlow: "rgba(138,106,61,0.28)",
+    environment: "none",
+    vignette: "soft",
+    overlayGradient: "from-amber-50/25 via-transparent to-stone-100/35",
+  },
+  "ix3-brand-launch": {
+    background: "radial-gradient(ellipse at top, #171717 0%, #0a0a0a 55%, #000 100%)",
+    accentGlow: "rgba(231,229,228,0.22)",
+    environment: "none",
+    vignette: "dramatic",
+    overlayGradient: "from-neutral-950/50 via-black/40 to-black/85",
+  },
+  "ix3-memorial": {
+    background: "linear-gradient(180deg, #efeae3 0%, #e7e0d6 50%, #d8d0c4 100%)",
+    accentGlow: "rgba(87,83,78,0.22)",
+    environment: "none",
+    vignette: "soft",
+    overlayGradient: "from-stone-200/30 via-transparent to-stone-300/40",
+  },
 };
 
 export function getLayoutVisualProfile(layout: string): LayoutVisualProfile {

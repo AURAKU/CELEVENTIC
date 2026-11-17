@@ -115,7 +115,8 @@
     "test:celeventic-guide:coverage": "tsx scripts/celeventic-guide-coverage-gate.ts && npm run test:celeventic-guide",
     "test:celeventic-guide:e2e": "playwright test e2e/celeventic-guide.smoke.spec.ts",
     "test:invitation-studio3": "tsx --test src/lib/invitation/__tests__/layout-version.test.ts src/lib/invitation/studio3/__tests__/*.test.ts",
-    "invitation:export-protected-manifest": "tsx scripts/export-protected-invitation-manifest.ts"
+    "invitation:export-protected-manifest": "tsx scripts/export-protected-invitation-manifest.ts",
+    "invitation:usage-audit": "tsx scripts/run-invitation-usage-audit.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",

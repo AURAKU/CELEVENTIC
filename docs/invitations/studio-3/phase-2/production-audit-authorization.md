@@ -52,8 +52,37 @@ sqlite3 -readonly "$DB_PATH" "PRAGMA query_only; SELECT 1;"
 4. [ ] No writes performed (verified)  
 5. [ ] Results attached to Phase 2 follow-up; ELIGIBLE reclassification only with full evidence set  
 
+## TypeScript runner (aggregates only)
+
+```bash
+# Always blocked unless explicitly authorized:
+npm run invitation:usage-audit
+
+# Authorized operator only:
+CELEVENTIC_USAGE_AUDIT_AUTHORIZED=YES DATABASE_URL="file:/absolute/path/to/readonly.db" \
+  npm run invitation:usage-audit
+```
+
+Script: `scripts/run-invitation-usage-audit.ts`  
+Exits `2` when unauthorized. Prints JSON aggregates only (no guest PII).
+
 ## Current session
 
-- Local workspace: **no production `.env` / no authorized production session detected**  
-- Therefore: **audit not executed in this Phase 2 pass**  
+- Local workspace: **no authorized production session**  
+- Unauthorized runner verified blocked (exit 2)  
+- Therefore: **production audit not executed**  
 - Eligibility remains: catalogue **ELIGIBLE = 0**; UNKNOWN stays protected  
+
+## TypeScript runner (aggregates only)
+
+```bash
+# Always blocked unless explicitly authorized:
+npm run invitation:usage-audit
+
+# Authorized operator only:
+CELEVENTIC_USAGE_AUDIT_AUTHORIZED=YES DATABASE_URL="file:/absolute/path/to/readonly.db" \
+  npm run invitation:usage-audit
+```
+
+Script: `scripts/run-invitation-usage-audit.ts`  
+Exits `2` when unauthorized. Prints JSON aggregates only (no guest PII).

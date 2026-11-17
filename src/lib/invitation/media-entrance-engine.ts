@@ -59,6 +59,9 @@ const LAYOUT_ENTRANCE: Record<InvitationLayoutSlug, MediaEntranceId> = {
   "luxury-fashion-flagship": "curtain-unveil",
   "aurelia-editorial-wedding": "gentle-fade",
   "seraphine-champagne-wedding": "gentle-fade",
+  "ix3-editorial-wedding": "gentle-fade",
+  "ix3-brand-launch": "grid-stagger",
+  "ix3-memorial": "gentle-fade",
 };
 
 export function getMediaEntranceForLayout(layout: string): MediaEntranceId {
