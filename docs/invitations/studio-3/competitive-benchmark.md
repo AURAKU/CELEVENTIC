@@ -1,8 +1,9 @@
 # Invitation Studio 3.0 — Competitive Benchmark
 
-**Access date:** 2026-11-17  
+**Research date:** 2026-11-17 (Phase 2 Workstream C refresh)  
 **Branch:** `feat/invitation-studio-3`  
-**Method:** Public marketing pages + published product positioning. No competitor accounts were created; no proprietary artwork, templates, or source were copied.
+**Method:** Public marketing pages + published product positioning. No competitor accounts were created; no proprietary artwork, templates, or source were copied.  
+**Status:** VERIFIED for publicly fetchable pages listed below; PARTIAL where blocked.
 
 ## Verified observations (public pages)
 
@@ -63,6 +64,27 @@ Competitors publicly emphasize RSVP tracking and catalogue breadth; Celeventic�
 - Scrape gated template HTML/CSS  
 - Claim accessibility/performance wins without measurements  
 
+## Competitor comparison matrix (public evidence)
+
+| Dimension | Paperless Post | Partiful | Evite | Joy | Greenvelope | Celeventic opportunity |
+|---|---|---|---|---|---|---|
+| Invitation presentation | Card catalogue | Social event pages | Cards + event pages | Wedding site suite | (blocked) | Ceremonial microsite depth already in flagships |
+| Opening interactions | Marketing-level | Light | Light | Site onboarding | — | Skippable cinematic openings (Experience 3.0) |
+| RSVP | Positioned | Explicit tracking | Explicit tracking | Planning + RSVP | — | Already strong; unify presentation across layouts |
+| Guest personalization | Guest list framing | Co-host / social | Host tools | Couple-centric | — | Place card + QR + exact capacity |
+| Sharing | Implied | Strong social | Event pages | Wedding share | — | Invite share + CeleYou already present |
+| Mobile UX | Responsive marketing | Mobile-first product | Responsive | Responsive | — | Must remain mobile-first for v2 |
+| Customization | Template editor (account) | Limited public detail | Editor (account) | Site builder | — | Extend Studio without replacing it |
+| Accessibility / perf | Not measured | Not measured | Not measured | Not measured | — | Require reduced-motion + lazy media on v2 |
+| Distinctive depth | Catalogue breadth | Social RSVP | Mass market | Registry/planning | — | Admission security + ceremonial storytelling |
+
+## Original opportunities (PROPOSED)
+
+1. **Immutable layout versions** so upgrades never mutate live invites.  
+2. **Category-intelligent section packs** (wedding ≠ memorial ≠ launch).  
+3. **Admission-grade personalization** (QR + party isolation) presented with editorial craft.  
+4. **Studio-configurable openings** that remain skippable and reduced-motion safe.  
+
 ## Phase 2 conclusion
 
-Market leaders win on **catalogue breadth + RSVP/host tooling**. Celeventic can lead on **bespoke ceremonial depth + admission security**, if Studio 3 upgrades unused layouts via **new versions** without touching protected live experiences.
+Market leaders win on **catalogue breadth + RSVP/host tooling**. Celeventic can lead on **bespoke ceremonial depth + admission security**, if Experience 3.0 upgrades unused layouts via **new versions** without touching protected live experiences.

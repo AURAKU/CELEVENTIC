@@ -4,42 +4,38 @@
 
 **Last updated:** 2026-11-17  
 **Branch:** `feat/invitation-studio-3`  
-**Deploy:** Not authorized
+**Phase gate:** **Phase 2 complete — awaiting approval** (Phase 3 not started)  
+**Deploy / merge:** Not authorized
 
-## Stage progress
+## Phase summary
 
 | Phase | Status |
 |---|---|
-| 1 — Inventory & protection | Complete |
-| 2 — Creative & competitive research | Complete (docs) |
-| 3 — Experience engine | Complete (foundation) |
-| 4 — Design systems / references | **Advanced** — polished shell + presets + preview gallery |
-| 5 — Catalogue template transformation | Blocked (0 catalogue ELIGIBLE) |
-| 6 — Functional integration | Partial (RSVP/actions/maps reused) |
-| 7 — QA | Unit tests expanded; interim report written; visual baselines pending |
-| 8 — Release readiness | **Not ready** — see `INTERIM_REPORT.md` |
+| 0–1 Inventory & protection | Complete |
+| **2 Version isolation, production audit prep, creative research** | **Complete — see `PHASE_2_REPORT.md`** |
+| 3 Experience implementation | **Not started** (awaiting approval) |
+| 4+ Design systems / upgrades / release | Blocked on Phase 3 approval + eligibility evidence |
 
-## This stage
+## Phase 2 deliverables
 
-- Polished Experience 3.0 shell / reference templates (responsive, category tones)
-- Design presets for `ix3-*` in `invitation-templates.ts`
-- Theme mapping + funeral demo `deceasedName` for memorial preview only
-- Safe preview gallery: `/invitations/experience3` (+ `/[layout]`) — `noindex`, demo guest only
-- Interim report against master directive §20
-- **No** protected template edits, **no** marketplace pricing changes, **no** deploy
+| Item | Location | Verdict |
+|---|---|---|
+| Versioning | `layout-version.ts`, legacy/experience3 renderer split | IMPLEMENTED |
+| Isolation tests | `studio3/__tests__/phase2-isolation.test.ts` (+ suite) | IMPLEMENTED (unit) |
+| Visual regression | — | **NOT RUN** |
+| Production SQL | `phase-2/production-usage-audit.sql` | PREPARED |
+| Audit authorization | `phase-2/production-audit-authorization.md` | BLOCKED (no prod session) |
+| Competitive research | `competitive-benchmark.md` | VERIFIED (public) |
+| V2 creative specs | `phase-2/v2-creative-specs.md` | PROPOSED |
+| Component architecture | `phase-2/component-architecture.md` | PROPOSED |
+| Phase 3 plan | `phase-2/phase-3-implementation-plan.md` | PROPOSED |
+| Full report | `PHASE_2_REPORT.md` | Ready for approval |
 
-## Tests
+## Eligibility
 
-`npm run test:invitation-studio3`
+Catalogue ELIGIBLE: **0** (production audit not executed).
 
 ## Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: `c5e97c26`
-
-## Next
-
-1. Manual preview pass on `/invitations/experience3` (mobile/desktop toggle)  
-2. Authorized production usage SQL → catalogue ELIGIBLE  
-3. Studio controls / optional unlisted catalogue SKUs (approval)  
-4. Explicit approval before any deploy  
+- Commit: pending Phase 2 packaging commit
