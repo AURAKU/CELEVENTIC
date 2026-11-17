@@ -35,7 +35,7 @@
 ## Git
 
 - Branch: `feat/invitation-studio-3`
-- Commit: pending
+- Commit: `c5e97c26`
 
 ## Next
 
