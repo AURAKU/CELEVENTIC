@@ -19,8 +19,8 @@
 | Studio UI restructure | Not done (compat assessed; presets for 9 layouts) |
 | Unit tests | **31/31** |
 | Production `next build` | Verifying / prior pass with 8GB heap |
-| Screenshot viewport audit | **Partial** (samples captured; full matrix incomplete) |
-| Lighthouse | **BLOCKED** (no Chromium CLI) |
+| Screenshot viewport audit | **Phase 3A matrix captured** (8 widths × 3 refs); protected baselines still missing |
+| Lighthouse | **Dev-only sample** (not production acceptance); Chrome-for-Testing available via Playwright |
 | Existing published invitations | Unchanged |
 | Protected template file drift vs `main` | **None** |
 
@@ -49,7 +49,9 @@
 |---|---|
 | 0–1 Inventory & protection | ✅ Completed |
 | 2 Versioning & references | ✅ Implemented |
-| 3 Visual refinement & families | ⚠️ Partial — code + sample screenshots; full matrix/Lighthouse pending |
+| 3 Visual refinement & families | ⚠️ Partial (earlier expansion) |
+| 3A Premium experience validation | ⚠️ Partial PASS — see `PHASE_3A_QA_REPORT.md` |
+| 3B Premium catalog expansion | **Not started** (gated on 3A blockers) |
 | 4 Feature + Studio customization | Pending |
 | 5 Catalog expansion | Pending |
 | 6 Regression / a11y / perf acceptance | Pending |

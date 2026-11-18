@@ -1,9 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { Experience3OpeningStyle } from "@/lib/invitation/studio3/design-families";
 import styles from "./opening-gate.module.css";
+
+function cssUrl(url: string): string {
+  return url.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
 
 type OpeningGateProps = {
   style: Experience3OpeningStyle;
@@ -39,8 +42,14 @@ export function Experience3OpeningGate({
   onComplete,
 }: OpeningGateProps) {
   const reducedMotion = usePrefersReducedMotion();
-  const instant = forceInstant || reducedMotion || style === "minimal-instant";
-  const [open, setOpen] = useState(!instant);
+  /** Prefer non-instant first paint so SSR/CSR match; apply reduced-motion after mount. */
+  const [open, setOpen] = useState(() => !(forceInstant || style === "minimal-instant"));
+
+  useEffect(() => {
+    if (forceInstant || style === "minimal-instant" || reducedMotion) {
+      setOpen(false);
+    }
+  }, [forceInstant, style, reducedMotion]);
 
   useEffect(() => {
     if (!open) onComplete?.();
@@ -74,15 +83,16 @@ export function Experience3OpeningGate({
     >
       <div className={styles.panel}>
         {style === "portrait" && portraitUrl ? (
-          <Image
-            src={portraitUrl}
-            alt=""
-            width={280}
-            height={360}
+          <div
             className={styles.portrait}
-            style={{ border: `1px solid ${palette.border}` }}
-            unoptimized
-            priority
+            style={{
+              border: `1px solid ${palette.border}`,
+              backgroundImage: `url("${cssUrl(portraitUrl)}")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+            role="img"
+            aria-label="Portrait"
           />
         ) : monogram ? (
           <div
@@ -97,7 +107,9 @@ export function Experience3OpeningGate({
           <p className="text-[11px] uppercase tracking-[0.35em]" style={{ color: palette.muted }}>
             {eyebrow}
           </p>
-          <h1 className="text-3xl font-light leading-tight sm:text-4xl">{title}</h1>
+          <p className="text-3xl font-light leading-tight sm:text-4xl" role="heading" aria-level={1}>
+            {title}
+          </p>
           {subtitle ? (
             <p className="text-sm" style={{ color: palette.muted }}>
               {subtitle}

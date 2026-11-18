@@ -11,6 +11,9 @@ import styles from "./experience3-shell.module.css";
 export function Ix3EditorialWeddingTemplate(props: InvitationRendererProps) {
   const { name1, name2 } = parseCoupleNames(props.event.title, props.event.hostName);
   const headline = name2 ? `${name1} & ${name2}` : props.event.title;
+  const monogram = name2
+    ? `${(name1[0] ?? "").toUpperCase()}${(name2[0] ?? "").toUpperCase()}`
+    : (name1[0] ?? "C").toUpperCase();
   const date = formatInvitationDateParts(props.event.startDateRaw ?? props.event.startDate);
 
   const beats = [
@@ -36,6 +39,7 @@ export function Ix3EditorialWeddingTemplate(props: InvitationRendererProps) {
       tone="light"
       composition="editorial"
       headline={headline}
+      monogram={monogram}
       kicker="Together with their families"
       welcomeEyebrow="Reserved for"
       welcomeLede="We would be honored by your presence."

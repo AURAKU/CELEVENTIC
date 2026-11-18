@@ -29,10 +29,12 @@ export function Experience3EventCountdown({
     return Number.isFinite(ms) ? ms : null;
   }, [startAtIso]);
 
-  const [now, setNow] = useState(() => Date.now());
+  /** null until mounted — avoids Date.now() hydration mismatch. */
+  const [now, setNow] = useState<number | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
+    setNow(Date.now());
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => setReducedMotion(mq.matches);
     sync();
@@ -41,18 +43,31 @@ export function Experience3EventCountdown({
   }, []);
 
   useEffect(() => {
-    if (!targetMs || reducedMotion) return;
+    if (!targetMs || reducedMotion || now === null) return;
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
-  }, [targetMs, reducedMotion]);
+  }, [targetMs, reducedMotion, now]);
 
   if (!targetMs) return null;
 
-  const { days, hours, minutes, seconds, done } = partsUntil(targetMs, now);
-  if (done) return null;
-
   const muted = tone === "dark" ? "#a8a29e" : "#78716c";
   const fg = tone === "dark" ? "#f5f5f4" : "#1c1917";
+  const parts = now === null ? null : partsUntil(targetMs, now);
+  if (parts?.done) return null;
+
+  const cells: Array<[string, string]> = parts
+    ? [
+        ["Days", String(parts.days).padStart(2, "0")],
+        ["Hours", String(parts.hours).padStart(2, "0")],
+        ["Min", String(parts.minutes).padStart(2, "0")],
+        ["Sec", String(reducedMotion ? 0 : parts.seconds).padStart(2, "0")],
+      ]
+    : [
+        ["Days", "––"],
+        ["Hours", "––"],
+        ["Min", "––"],
+        ["Sec", "––"],
+      ];
 
   return (
     <section aria-label={label} style={{ textAlign: "center" }}>
@@ -74,18 +89,19 @@ export function Experience3EventCountdown({
           gap: "0.5rem",
           color: fg,
         }}
+        aria-live="polite"
       >
-        {[
-          ["Days", days],
-          ["Hours", hours],
-          ["Min", minutes],
-          ["Sec", reducedMotion ? 0 : seconds],
-        ].map(([name, value]) => (
-          <div key={String(name)}>
-            <div style={{ fontSize: "1.35rem", fontVariantNumeric: "tabular-nums" }}>
-              {String(value).padStart(2, "0")}
-            </div>
-            <div style={{ fontSize: "0.6rem", letterSpacing: "0.18em", textTransform: "uppercase", color: muted }}>
+        {cells.map(([name, value]) => (
+          <div key={name}>
+            <div style={{ fontSize: "1.35rem", fontVariantNumeric: "tabular-nums" }}>{value}</div>
+            <div
+              style={{
+                fontSize: "0.6rem",
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: muted,
+              }}
+            >
               {name}
             </div>
           </div>
