@@ -167,7 +167,7 @@ Suites cover layout versioning, registry isolation, protected manifest, native p
 
 - Working branch: `feat/invitation-studio-3`
 - Phase 3 start packaged commit: `5de001a13ac0ca0f54f3bb12a2867be8ab1a31f9`
-- Phase 3 delivery commit: see `git rev-parse HEAD` after commit below
+- Phase 3 delivery commit: `7952fb8061abc9889cc86ec1ca347da1a09d3c83`
 
 ---
 

@@ -57,5 +57,5 @@
 
 ## Git
 
-- Branch HEAD (Phase 3 start packaged): `5de001a1`
-- Phase 3 edits pending commit after build verification
+- Phase 3 start packaged: `5de001a1`
+- Phase 3 delivery: `7952fb8061abc9889cc86ec1ca347da1a09d3c83`
