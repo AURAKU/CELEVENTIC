@@ -67,14 +67,15 @@ describe("Experience 3.0 layout registry", () => {
   });
 
   it("keeps protected layouts on legacy when layoutVersion is omitted", () => {
-    for (const layout of [
+    const protectedLayouts = [
       "forever-afaris-wedding",
       "seraphine-champagne-wedding",
       "aurelia-editorial-wedding",
       "traditional-marriage-ceremony",
       "luxury-fashion-flagship",
       "memorial-candle-tribute",
-    ]) {
+    ] as const;
+    for (const layout of protectedLayouts) {
       assert.equal(resolveInvitationLayoutBranch({ layout }).mode, "legacy");
     }
   });

@@ -19,11 +19,11 @@ export function Ix3BrandLaunchTemplate(props: InvitationRendererProps) {
     },
     props.event.venueName || props.event.landmark
       ? {
-          label: "Location",
+          label: "Showroom",
           detail: [props.event.venueName, props.event.landmark].filter(Boolean).join(" · "),
         }
       : null,
-    props.event.dressCode ? { label: "Attire", detail: props.event.dressCode } : null,
+    props.event.dressCode ? { label: "Dress", detail: props.event.dressCode } : null,
   ].filter(Boolean) as Array<{ label: string; detail: string }>;
 
   return (
@@ -31,15 +31,18 @@ export function Ix3BrandLaunchTemplate(props: InvitationRendererProps) {
       {...props}
       definition={IX3_BRAND_LAUNCH}
       tone="dark"
+      composition="launch"
       headline={props.event.title}
       kicker="Private launch experience"
       monogram={brand.slice(0, 1).toUpperCase()}
+      welcomeEyebrow="VIP access"
+      welcomeLede="Your place is confirmed for the reveal."
     >
       <div className={styles.divider} aria-hidden />
       <section aria-label="Launch briefing">
-        <p className={styles.note} style={{ letterSpacing: "0.03em", fontSize: "0.95rem" }}>
-          A refined reveal evening for {brand}. Arrival details and guest admission appear on your
-          personal pass when provided.
+        <p className={styles.note} style={{ letterSpacing: "0.04em", fontSize: "0.92rem" }}>
+          A controlled product reveal for {brand}. Editorial imagery, precise timing, and admission
+          details appear on your pass when provided.
         </p>
       </section>
       <Experience3EventCountdown
@@ -47,7 +50,7 @@ export function Ix3BrandLaunchTemplate(props: InvitationRendererProps) {
         label="Launch countdown"
         tone="dark"
       />
-      <Experience3EssentialsTimeline beats={beats} heading="Event programme" tone="dark" />
+      <Experience3EssentialsTimeline beats={beats} heading="Programme" tone="dark" />
     </Experience3Shell>
   );
 }

@@ -4,12 +4,13 @@ import { HeaderShell } from "@/components/layout/header-shell";
 import { Footer } from "@/components/layout/footer";
 import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
 import { EXPERIENCE3_REFERENCE_DEFINITIONS } from "@/lib/invitation/studio3/reference-definitions";
+import { EXPERIENCE3_EXPANDED_DEFINITIONS } from "@/lib/invitation/studio3/expanded-definitions";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: `Invitation Experience 3.0 · ${APP_NAME}`,
   description:
-    "Safe demo gallery for Experience 3.0 native reference layouts. Demo guest data only. No production deploy.",
+    "Safe demo gallery for Experience 3.0 native layouts. Demo guest data only. No production deploy.",
   robots: { index: false, follow: false },
 };
 
@@ -17,10 +18,18 @@ const CATEGORY_BY_LAYOUT: Record<string, string> = {
   "ix3-editorial-wedding": "Wedding",
   "ix3-brand-launch": "Corporate",
   "ix3-memorial": "Funeral",
+  "ix3-heritage-marriage": "Wedding",
+  "ix3-birthday-celebration": "Birthday",
+  "ix3-corporate-gala": "Corporate",
+  "ix3-concert-night": "Concert",
+  "ix3-graduation": "Private Event",
+  "ix3-baby-shower": "Private Event",
 };
 
+const ALL_DEFINITIONS = [...EXPERIENCE3_REFERENCE_DEFINITIONS, ...EXPERIENCE3_EXPANDED_DEFINITIONS];
+
 /**
- * Internal / staging preview gallery for Experience 3.0 native references.
+ * Internal / staging preview gallery for Experience 3.0 native layouts.
  * Does not list in the public marketplace catalogue and does not change pricing.
  */
 export default function Experience3PreviewGalleryPage() {
@@ -33,15 +42,15 @@ export default function Experience3PreviewGalleryPage() {
             Celeventic · Invitation Experience 3.0
           </p>
           <h1 className="mt-3 font-display text-3xl font-semibold text-[#0F172A] sm:text-4xl">
-            Reference experiences
+            Reference & design families
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
             Brand-new layout slugs for creative QA. Protected live invitations are not modified.
-            Previews use demo guest data only.
+            Previews use demo guest data only. Expanded families are not production-catalogued.
           </p>
 
           <div className="mt-10 grid gap-8 lg:grid-cols-3">
-            {EXPERIENCE3_REFERENCE_DEFINITIONS.map((def) => (
+            {ALL_DEFINITIONS.map((def) => (
               <section
                 key={def.layout}
                 className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm"

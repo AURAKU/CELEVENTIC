@@ -3,16 +3,25 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HeaderShell } from "@/components/layout/header-shell";
 import { Footer } from "@/components/layout/footer";
-import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
+import { Experience3DirectPreview } from "@/components/invitation/experience3/experience3-direct-preview";
 import { isExperience3NativeLayout } from "@/lib/invitation/studio3/native-layouts";
 import { EXPERIENCE3_REFERENCE_DEFINITIONS } from "@/lib/invitation/studio3/reference-definitions";
+import { EXPERIENCE3_EXPANDED_DEFINITIONS } from "@/lib/invitation/studio3/expanded-definitions";
 import { APP_NAME } from "@/lib/constants";
 
 const CATEGORY_BY_LAYOUT: Record<string, string> = {
   "ix3-editorial-wedding": "Wedding",
   "ix3-brand-launch": "Corporate",
   "ix3-memorial": "Funeral",
+  "ix3-heritage-marriage": "Wedding",
+  "ix3-birthday-celebration": "Birthday",
+  "ix3-corporate-gala": "Corporate",
+  "ix3-concert-night": "Concert",
+  "ix3-graduation": "Private Event",
+  "ix3-baby-shower": "Private Event",
 };
+
+const ALL_DEFINITIONS = [...EXPERIENCE3_REFERENCE_DEFINITIONS, ...EXPERIENCE3_EXPANDED_DEFINITIONS];
 
 export async function generateMetadata({
   params,
@@ -20,7 +29,7 @@ export async function generateMetadata({
   params: Promise<{ layout: string }>;
 }): Promise<Metadata> {
   const { layout } = await params;
-  const def = EXPERIENCE3_REFERENCE_DEFINITIONS.find((item) => item.layout === layout);
+  const def = ALL_DEFINITIONS.find((item) => item.layout === layout);
   return {
     title: def ? `${def.label} · ${APP_NAME}` : `Experience 3.0 · ${APP_NAME}`,
     robots: { index: false, follow: false },
@@ -34,7 +43,7 @@ export default async function Experience3LayoutPreviewPage({
 }) {
   const { layout } = await params;
   if (!isExperience3NativeLayout(layout)) notFound();
-  const def = EXPERIENCE3_REFERENCE_DEFINITIONS.find((item) => item.layout === layout);
+  const def = ALL_DEFINITIONS.find((item) => item.layout === layout);
   if (!def) notFound();
 
   return (
@@ -50,17 +59,18 @@ export default async function Experience3LayoutPreviewPage({
           </Link>
           <h1 className="mt-4 font-display text-3xl font-semibold text-[#0F172A]">{def.label}</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Demo preview only · layout <span className="font-mono text-xs">{def.layout}</span> ·
+            Direct shell preview · layout <span className="font-mono text-xs">{def.layout}</span> ·
             family {def.designFamily}
           </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Renders InvitationRenderer only (no PremiumInviteWrapper hub) so Experience 3.0
+            composition can be audited without cinematic scene chrome.
+          </p>
           <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-            <LiveTemplatePreview
+            <Experience3DirectPreview
               layoutSlug={def.layout}
               category={CATEGORY_BY_LAYOUT[def.layout]}
-              variant="detail"
-              showDeviceToggle
-              tapToOpen={false}
-              musicEnabled={false}
+              defaultDevice="mobile"
             />
           </div>
         </div>

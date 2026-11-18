@@ -31,7 +31,7 @@ describe("Experience 3.0 reference experiences", () => {
     }
   });
 
-  it("defines three category-distinct reference packs", () => {
+  it("defines three category-distinct reference packs plus expanded families", () => {
     assert.equal(EXPERIENCE3_REFERENCE_DEFINITIONS.length, 3);
     assert.equal(IX3_EDITORIAL_WEDDING.designFamily, "editorial-wedding");
     assert.equal(IX3_BRAND_LAUNCH.designFamily, "brand-launch");
@@ -40,14 +40,10 @@ describe("Experience 3.0 reference experiences", () => {
     assert.equal(IX3_MEMORIAL.audioDefaultEnabled, false);
     assert.equal(IX3_EDITORIAL_WEDDING.opening.skippable, true);
     assert.equal(IX3_BRAND_LAUNCH.opening.skippable, true);
-    assert.deepEqual(
-      EXPERIENCE3_NATIVE_LAYOUT_SLUGS.slice().sort(),
-      [
-        "ix3-brand-launch",
-        "ix3-editorial-wedding",
-        "ix3-memorial",
-      ].sort()
-    );
+    assert.equal(EXPERIENCE3_NATIVE_LAYOUT_SLUGS.length, 9);
+    assert.ok(EXPERIENCE3_NATIVE_LAYOUT_SLUGS.includes("ix3-editorial-wedding"));
+    assert.ok(EXPERIENCE3_NATIVE_LAYOUT_SLUGS.includes("ix3-heritage-marriage"));
+    assert.ok(EXPERIENCE3_NATIVE_LAYOUT_SLUGS.includes("ix3-baby-shower"));
   });
 
   it("registers native references on the Experience 3.0 path at v1", () => {

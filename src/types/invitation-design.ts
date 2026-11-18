@@ -28,7 +28,13 @@ export type InvitationLayoutSlug =
   /** Experience 3.0 native reference layouts (new slugs — never historically used). */
   | "ix3-editorial-wedding"
   | "ix3-brand-launch"
-  | "ix3-memorial";
+  | "ix3-memorial"
+  | "ix3-heritage-marriage"
+  | "ix3-birthday-celebration"
+  | "ix3-corporate-gala"
+  | "ix3-concert-night"
+  | "ix3-graduation"
+  | "ix3-baby-shower";
 
 export type MediaType = "image" | "video" | "pdf";
 

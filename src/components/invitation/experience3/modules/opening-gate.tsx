@@ -1,15 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { Experience3OpeningStyle } from "@/lib/invitation/studio3/design-families";
+import styles from "./opening-gate.module.css";
 
 type OpeningGateProps = {
   style: Experience3OpeningStyle;
   title: string;
   subtitle?: string | null;
   monogram?: string | null;
+  portraitUrl?: string | null;
   tone: "light" | "dark" | "solemn";
-  /** When true, skip animation chrome entirely. */
   forceInstant?: boolean;
   onComplete?: () => void;
 };
@@ -31,6 +33,7 @@ export function Experience3OpeningGate({
   title,
   subtitle,
   monogram,
+  portraitUrl,
   tone,
   forceInstant = false,
   onComplete,
@@ -52,18 +55,38 @@ export function Experience3OpeningGate({
         ? { bg: "#efeae3", fg: "#292524", muted: "#78716c", border: "rgba(87,83,78,0.25)" }
         : { bg: "#f7f2ea", fg: "#1c1917", muted: "#78716c", border: "rgba(138,106,61,0.3)" };
 
+  const eyebrow =
+    style === "portrait"
+      ? "In loving memory"
+      : style === "cinematic"
+        ? "You are invited"
+        : style === "envelope"
+          ? "An invitation awaits"
+          : "An invitation";
+
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center px-6"
+      className={styles.gate}
       style={{ backgroundColor: palette.bg, color: palette.fg }}
       role="dialog"
       aria-modal="true"
       aria-label="Invitation opening"
     >
-      <div className="flex max-w-md flex-col items-center gap-6 text-center">
-        {monogram ? (
+      <div className={styles.panel}>
+        {style === "portrait" && portraitUrl ? (
+          <Image
+            src={portraitUrl}
+            alt=""
+            width={280}
+            height={360}
+            className={styles.portrait}
+            style={{ border: `1px solid ${palette.border}` }}
+            unoptimized
+            priority
+          />
+        ) : monogram ? (
           <div
-            className="flex h-20 w-20 items-center justify-center rounded-full text-xl tracking-[0.2em]"
+            className={styles.monogram}
             style={{ border: `1px solid ${palette.border}` }}
             aria-hidden
           >
@@ -71,15 +94,8 @@ export function Experience3OpeningGate({
           </div>
         ) : null}
         <div className="space-y-3">
-          <p
-            className="text-[11px] uppercase tracking-[0.35em]"
-            style={{ color: palette.muted }}
-          >
-            {style === "portrait"
-              ? "In loving memory"
-              : style === "cinematic"
-                ? "You are invited"
-                : "An invitation"}
+          <p className="text-[11px] uppercase tracking-[0.35em]" style={{ color: palette.muted }}>
+            {eyebrow}
           </p>
           <h1 className="text-3xl font-light leading-tight sm:text-4xl">{title}</h1>
           {subtitle ? (
@@ -90,10 +106,16 @@ export function Experience3OpeningGate({
         </div>
         <button
           type="button"
-          className="min-h-11 rounded-full px-8 text-xs uppercase tracking-[0.28em] outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          className={styles.primary}
           style={{
             border: `1px solid ${palette.border}`,
             color: palette.fg,
+            borderRadius: 999,
+            paddingInline: "2rem",
+            fontSize: "0.7rem",
+            letterSpacing: "0.28em",
+            textTransform: "uppercase",
+            background: "transparent",
           }}
           onClick={() => setOpen(false)}
           onKeyDown={(event) => {
@@ -107,8 +129,17 @@ export function Experience3OpeningGate({
         </button>
         <button
           type="button"
-          className="text-[11px] uppercase tracking-[0.22em] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2"
-          style={{ color: palette.muted }}
+          className={styles.skip}
+          style={{
+            color: palette.muted,
+            fontSize: "0.68rem",
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            background: "transparent",
+            border: 0,
+            textDecoration: "underline",
+            textUnderlineOffset: 4,
+          }}
           onClick={() => setOpen(false)}
         >
           Skip

@@ -57,6 +57,16 @@ export {
   IX3_MEMORIAL,
 } from "@/lib/invitation/studio3/reference-definitions";
 
+export {
+  EXPERIENCE3_EXPANDED_DEFINITIONS,
+  IX3_BABY_SHOWER,
+  IX3_BIRTHDAY_CELEBRATION,
+  IX3_CONCERT_NIGHT,
+  IX3_CORPORATE_GALA,
+  IX3_GRADUATION,
+  IX3_HERITAGE_MARRIAGE,
+} from "@/lib/invitation/studio3/expanded-definitions";
+
 export type {
   Experience3Definition,
   Experience3SectionDef,

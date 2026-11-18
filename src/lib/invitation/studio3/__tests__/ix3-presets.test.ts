@@ -21,6 +21,9 @@ describe("Experience 3.0 presets + demo preview", () => {
     assert.equal(resolveEventTheme("ix3-editorial-wedding"), "Wedding");
     assert.equal(resolveEventTheme("ix3-brand-launch"), "Corporate");
     assert.equal(resolveEventTheme("ix3-memorial"), "Funeral");
+    assert.equal(resolveEventTheme("ix3-heritage-marriage"), "Wedding");
+    assert.equal(resolveEventTheme("ix3-birthday-celebration"), "Birthday");
+    assert.equal(resolveEventTheme("ix3-concert-night"), "Concert");
   });
 
   it("builds demo preview props with demo guest only", () => {

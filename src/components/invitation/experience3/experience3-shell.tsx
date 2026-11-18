@@ -10,12 +10,20 @@ import { InvitationActions } from "@/components/invitation/shared/invitation-act
 import { Experience3OpeningGate } from "@/components/invitation/experience3/modules/opening-gate";
 import styles from "./experience3-shell.module.css";
 
+/** Escape quotes for safe CSS url("...") usage. */
+function cssUrl(url: string): string {
+  return url.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 type Experience3ShellProps = InvitationRendererProps & {
   definition: Experience3Definition;
   tone: "light" | "dark" | "solemn";
+  composition?: "editorial" | "launch" | "memorial" | "heritage" | "celebration" | "gala" | "concert" | "academic" | "shower";
   monogram?: string | null;
   headline: string;
   kicker: string;
+  welcomeEyebrow?: string;
+  welcomeLede?: string;
   children?: ReactNode;
 };
 
@@ -33,9 +41,12 @@ function initialsFromTitle(title: string): string {
 export function Experience3Shell({
   definition,
   tone,
+  composition = "editorial",
   monogram,
   headline,
   kicker,
+  welcomeEyebrow = "With pleasure",
+  welcomeLede = "You are personally invited.",
   invitation,
   event,
   design,
@@ -53,12 +64,40 @@ export function Experience3Shell({
   const showInlineQr = Boolean(qrDataUrl) && !entryPass;
   const resolvedMonogram = monogram ?? initialsFromTitle(event.title);
   const cover = event.coverImageUrl ?? design.media?.find((m) => m.role === "hero")?.url ?? null;
+  const portrait =
+    design.media?.find((m) => m.role === "share")?.url ??
+    design.media?.find((m) => m.role === "intro")?.url ??
+    cover;
+
+  const compositionClass =
+    composition === "launch"
+      ? styles.comp_launch
+      : composition === "memorial"
+        ? styles.comp_memorial
+        : composition === "heritage"
+          ? styles.comp_heritage
+          : composition === "celebration"
+            ? styles.comp_celebration
+            : composition === "gala"
+              ? styles.comp_gala
+              : composition === "concert"
+                ? styles.comp_concert
+                : composition === "academic"
+                  ? styles.comp_academic
+                  : composition === "shower"
+                    ? styles.comp_shower
+                    : styles.comp_editorial;
 
   return (
     <div
-      className={`${styles.shell} ${tone === "dark" ? styles.dark : ""} ${
-        tone === "solemn" ? styles.solemn : ""
-      }`}
+      className={[
+        styles.shell,
+        tone === "dark" ? styles.dark : "",
+        tone === "solemn" ? styles.solemn : "",
+        compositionClass,
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={
         {
           "--ix3-bg": tokens.background,
@@ -77,25 +116,30 @@ export function Experience3Shell({
         style={definition.opening.style}
         title={headline}
         subtitle={kicker}
-        monogram={definition.opening.style === "monogram" ? resolvedMonogram : null}
+        monogram={
+          definition.opening.style === "monogram" || definition.opening.style === "cinematic"
+            ? resolvedMonogram
+            : null
+        }
+        portraitUrl={definition.opening.style === "portrait" ? portrait : null}
         tone={tone}
         forceInstant={definition.motionIntensity <= 0.25 && definition.opening.style === "minimal-instant"}
       />
 
       <div className={styles.frame}>
         <article className={styles.surface}>
-          <header className={styles.hero}>
-            {cover ? (
-              <Image
-                src={cover}
-                alt=""
-                fill
-                className={styles.heroMedia}
-                sizes="(max-width: 768px) 100vw, 42rem"
-                priority
-                unoptimized
-              />
-            ) : null}
+          <header
+            className={styles.hero}
+            style={
+              cover
+                ? {
+                    backgroundImage: `linear-gradient(165deg, rgba(0,0,0,0.08), rgba(0,0,0,0.45)), url("${cssUrl(cover)}")`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
+                : undefined
+            }
+          >
             <div className={styles.heroOverlay}>
               <p className={styles.eyebrow} style={{ color: "rgba(250,250,249,0.8)" }}>
                 {kicker}
@@ -109,11 +153,11 @@ export function Experience3Shell({
           <div className={styles.body}>
             {guestName ? (
               <section className={styles.welcome} aria-label="Personalized welcome">
-                <p className={styles.eyebrow}>With pleasure</p>
+                <p className={styles.eyebrow}>{welcomeEyebrow}</p>
                 <p className={styles.title} style={{ fontSize: "1.45rem" }}>
                   {guestName}
                 </p>
-                <p className={styles.lede}>You are personally invited.</p>
+                <p className={styles.lede}>{welcomeLede}</p>
               </section>
             ) : null}
 

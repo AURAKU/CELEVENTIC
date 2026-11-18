@@ -11,7 +11,7 @@ Integrate Experience 3.0 / native `ix3-*` layouts with the **existing** Studio E
 
 | Capability | Status | Notes |
 |---|---|---|
-| Design presets for `ix3-*` | Present | `INVITATION_TEMPLATE_PRESETS` entries with colors/fonts/`layoutVersion: 1` |
+| Design presets for `ix3-*` | Present | Nine presets (3 references + 6 Phase 3 families) with colors/fonts/`layoutVersion: 1` |
 | Guest renderer path | Present | `InvitationRenderer` → Experience 3.0 registry for native layouts |
 | Live preview (demo guest) | Present | `/invitations/experience3` + `LiveTemplatePreview` / `buildLivePreviewProps` |
 | RSVP / maps / share | Present | Shared panels reused inside Experience 3.0 shell |

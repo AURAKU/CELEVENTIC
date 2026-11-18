@@ -201,6 +201,48 @@ const PROFILES: Record<InvitationLayoutSlug, LayoutVisualProfile> = {
     vignette: "soft",
     overlayGradient: "from-stone-200/30 via-transparent to-stone-300/40",
   },
+  "ix3-heritage-marriage": {
+    background: "linear-gradient(180deg, #f3ebe1 0%, #e8d7c4 55%, #d7b992 100%)",
+    accentGlow: "rgba(154,91,46,0.3)",
+    environment: "none",
+    vignette: "soft",
+    overlayGradient: "from-amber-100/30 via-transparent to-stone-200/35",
+  },
+  "ix3-birthday-celebration": {
+    background: "radial-gradient(ellipse at top, #2a1540 0%, #12091a 55%, #08040c 100%)",
+    accentGlow: "rgba(240,166,255,0.32)",
+    environment: "none",
+    vignette: "dramatic",
+    overlayGradient: "from-fuchsia-950/40 via-transparent to-black/70",
+  },
+  "ix3-corporate-gala": {
+    background: "radial-gradient(ellipse at top, #1a2744 0%, #0b1220 55%, #060910 100%)",
+    accentGlow: "rgba(212,175,55,0.28)",
+    environment: "none",
+    vignette: "dramatic",
+    overlayGradient: "from-slate-950/45 via-transparent to-black/75",
+  },
+  "ix3-concert-night": {
+    background: "radial-gradient(ellipse at top, #111827 0%, #050505 50%, #000 100%)",
+    accentGlow: "rgba(34,211,238,0.35)",
+    environment: "none",
+    vignette: "dramatic",
+    overlayGradient: "from-cyan-950/35 via-black/40 to-black/85",
+  },
+  "ix3-graduation": {
+    background: "linear-gradient(180deg, #f4f1ea 0%, #e8e4d8 50%, #d6d0c0 100%)",
+    accentGlow: "rgba(29,78,216,0.25)",
+    environment: "none",
+    vignette: "soft",
+    overlayGradient: "from-blue-50/25 via-transparent to-stone-200/35",
+  },
+  "ix3-baby-shower": {
+    background: "linear-gradient(180deg, #f7f3ef 0%, #efe6df 55%, #e5d6cd 100%)",
+    accentGlow: "rgba(196,149,137,0.28)",
+    environment: "none",
+    vignette: "soft",
+    overlayGradient: "from-rose-50/30 via-transparent to-stone-100/35",
+  },
 };
 
 export function getLayoutVisualProfile(layout: string): LayoutVisualProfile {

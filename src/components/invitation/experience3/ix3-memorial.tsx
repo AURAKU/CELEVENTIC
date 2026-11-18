@@ -21,7 +21,7 @@ export function Ix3MemorialTemplate(props: InvitationRendererProps) {
     },
     props.event.venueName || props.event.landmark
       ? {
-          label: "Venue",
+          label: "Location",
           detail: [props.event.venueName, props.event.landmark].filter(Boolean).join(" · "),
         }
       : null,
@@ -35,17 +35,20 @@ export function Ix3MemorialTemplate(props: InvitationRendererProps) {
       {...props}
       definition={IX3_MEMORIAL}
       tone="solemn"
+      composition="memorial"
       headline={remembered}
       kicker="A service of remembrance"
+      welcomeEyebrow="With gratitude"
+      welcomeLede="Your presence brings comfort to the family."
     >
       <div className={styles.divider} aria-hidden />
       <section aria-label="Memorial tribute">
         <p className={styles.note}>
-          With gratitude for a life remembered. Please join us for a calm gathering of family and
-          friends. Motion and sound remain gentle by design.
+          A calm gathering in honor of a life remembered. Motion remains gentle; sound stays optional
+          and never intrusive.
         </p>
       </section>
-      <Experience3EssentialsTimeline beats={beats} heading="Service details" tone="solemn" />
+      <Experience3EssentialsTimeline beats={beats} heading="Memorial timeline" tone="solemn" />
     </Experience3Shell>
   );
 }

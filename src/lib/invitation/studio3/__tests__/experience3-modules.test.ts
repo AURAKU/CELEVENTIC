@@ -7,11 +7,17 @@ import { shouldUseLegacyInvitationRenderer } from "@/lib/invitation/layout-versi
 
 describe("Experience 3.0 guest personalization + isolation smoke", () => {
   it("keeps demo guest identity only in preview props for all native layouts", () => {
-    const categories = {
+    const categories: Record<string, string> = {
       "ix3-editorial-wedding": "Wedding",
       "ix3-brand-launch": "Corporate",
       "ix3-memorial": "Funeral",
-    } as const;
+      "ix3-heritage-marriage": "Wedding",
+      "ix3-birthday-celebration": "Birthday",
+      "ix3-corporate-gala": "Corporate",
+      "ix3-concert-night": "Concert",
+      "ix3-graduation": "Private Event",
+      "ix3-baby-shower": "Private Event",
+    };
 
     for (const layout of EXPERIENCE3_NATIVE_LAYOUT_SLUGS) {
       const preview = buildLivePreviewProps(layout, categories[layout]);
@@ -26,13 +32,14 @@ describe("Experience 3.0 guest personalization + isolation smoke", () => {
   });
 
   it("does not route protected flagships through experience3 when unversioned", () => {
-    for (const layout of [
+    const protectedLayouts = [
       "forever-afaris-wedding",
       "seraphine-champagne-wedding",
       "luxury-fashion-flagship",
       "memorial-candle-tribute",
       "traditional-marriage-ceremony",
-    ]) {
+    ] as const;
+    for (const layout of protectedLayouts) {
       assert.equal(shouldUseLegacyInvitationRenderer({ layout }), true);
       assert.equal(resolveInvitationLayoutBranch({ layout }).mode, "legacy");
     }
