@@ -51,13 +51,19 @@
 | 2 Versioning & references | ✅ Implemented |
 | 3 Visual refinement & families | ⚠️ Partial (earlier expansion) |
 | 3A Premium experience validation | ⚠️ Partial PASS — see `PHASE_3A_QA_REPORT.md` |
-| 3B Premium catalog expansion | **Not started** (gated on 3A blockers) |
+| 3B Premium catalog expansion | Skipped / superseded by Phase 5 batching |
 | 4 Feature + Studio customization | Pending |
+| 5 Catalog transformation | ⚠️ Batch 1 review — see `PHASE_5_CATALOG_TRANSFORMATION.md` |
 | 5 Catalog expansion | Pending |
 | 6 Regression / a11y / perf acceptance | Pending |
 | 7 Controlled production release | Pending |
 
+## Primary Phase 5 report
+
+`PHASE_5_CATALOG_TRANSFORMATION.md` — stopped after Batch 1 for approval.
+
 ## Git
 
 - Phase 3 start packaged: `5de001a1`
-- Phase 3 delivery: `7952fb8061abc9889cc86ec1ca347da1a09d3c83`
+- Phase 3 delivery: `7952fb80`
+- Phase 3A QA: `10435c4e`

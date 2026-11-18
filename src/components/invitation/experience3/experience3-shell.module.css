@@ -220,12 +220,27 @@
   box-shadow: 0 0 0 1px var(--ix3-accent), 0 24px 60px rgba(15, 15, 15, 0.1);
 }
 
+.comp_heritage .hero {
+  min-height: 20rem;
+  clip-path: inset(0 round 0.35rem 0.35rem 0 0);
+}
+
+.comp_heritage .title {
+  font-style: italic;
+}
+
 .comp_celebration .hero {
   min-height: 18rem;
 }
 
 .comp_celebration .title {
   letter-spacing: 0.01em;
+  font-weight: 600;
+}
+
+.comp_celebration .welcome {
+  border-left-width: 3px;
+  border-left-color: var(--ix3-accent);
 }
 
 .comp_gala .title {
@@ -234,17 +249,59 @@
   font-size: clamp(1.35rem, 3vw, 1.95rem);
 }
 
+.comp_gala .surface {
+  border-radius: 0.4rem;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ix3-accent) 45%, transparent),
+    0 30px 70px rgba(0, 0, 0, 0.35);
+}
+
+.comp_gala .eyebrow {
+  letter-spacing: 0.4em;
+}
+
 .comp_concert {
   background: radial-gradient(ellipse 90% 60% at 50% -20%, color-mix(in srgb, var(--ix3-accent) 28%, transparent), transparent),
     var(--ix3-bg);
+}
+
+.comp_concert .hero {
+  min-height: 21rem;
+  border-bottom: 2px solid color-mix(in srgb, var(--ix3-accent) 55%, transparent);
+}
+
+.comp_concert .title {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
 }
 
 .comp_academic .metaLabel {
   letter-spacing: 0.22em;
 }
 
+.comp_academic .surface {
+  border-radius: 0.25rem;
+  box-shadow: 0 0 0 1px var(--ix3-border), 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.comp_academic .hero {
+  min-height: 19rem;
+}
+
 .comp_shower .surface {
   border-radius: 2rem;
+}
+
+.comp_shower .hero {
+  min-height: 17rem;
+  border-radius: 1.5rem 1.5rem 0 0;
+}
+
+.comp_shower .welcome {
+  border-left: 0;
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--ix3-accent) 8%, transparent);
+  padding: 1rem 1.1rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
