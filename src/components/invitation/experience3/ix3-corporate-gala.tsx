@@ -4,6 +4,10 @@ import type { InvitationRendererProps } from "@/components/invitation/invitation
 import { Experience3Shell } from "@/components/invitation/experience3/experience3-shell";
 import { Experience3EventCountdown } from "@/components/invitation/experience3/modules/event-countdown";
 import {
+  Experience3DateLockup,
+  Experience3JourneyNote,
+} from "@/components/invitation/experience3/modules/editorial-lockups";
+import {
   Experience3AgendaTable,
   Experience3OrnamentRule,
   Experience3VenuePanel,
@@ -34,6 +38,7 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
       definition={IX3_CORPORATE_GALA}
       tone="dark"
       composition="gala"
+      frameMode="folio"
       headline={props.event.title}
       kicker="Black-tie evening"
       welcomeEyebrow="Guest of honour"
@@ -44,6 +49,17 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
     >
       <Experience3SectionReveal>
         <Experience3OrnamentRule tone="dark" mark="◆" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <Experience3DateLockup
+          tone="dark"
+          label="Evening"
+          weekday={date.weekday}
+          day={date.day}
+          month={date.month}
+          year={date.year}
+          time={date.time}
+        />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
         <section aria-label="Gala briefing">
@@ -72,6 +88,13 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
           venue={props.event.venueName}
           landmark={props.event.landmark}
           dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3JourneyNote
+          tone="dark"
+          title="Guest journey"
+          body="Review the programme, confirm your attendance, and present your admission QR at arrival."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

@@ -5,6 +5,10 @@ import { Experience3Shell } from "@/components/invitation/experience3/experience
 import { Experience3EssentialsTimeline } from "@/components/invitation/experience3/modules/essentials-timeline";
 import { Experience3EventCountdown } from "@/components/invitation/experience3/modules/event-countdown";
 import {
+  Experience3DateLockup,
+  Experience3JourneyNote,
+} from "@/components/invitation/experience3/modules/editorial-lockups";
+import {
   Experience3ChipRow,
   Experience3VenuePanel,
 } from "@/components/invitation/experience3/modules/feature-strips";
@@ -38,6 +42,7 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
       definition={IX3_BIRTHDAY_CELEBRATION}
       tone="dark"
       composition="celebration"
+      frameMode="bleed"
       headline={headline}
       kicker="You're invited to celebrate"
       welcomeEyebrow="Party pass"
@@ -48,6 +53,17 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
     >
       <Experience3SectionReveal>
         <Experience3ChipRow tone="dark" chips={["Celebrate", "Dance", "Toast", "Memories"]} />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <Experience3DateLockup
+          tone="dark"
+          label="Party night"
+          weekday={date.weekday}
+          day={date.day}
+          month={date.month}
+          year={date.year}
+          time={date.time}
+        />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
         <section aria-label="Celebration note">
@@ -74,6 +90,13 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
           venue={props.event.venueName}
           landmark={props.event.landmark}
           dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3JourneyNote
+          tone="dark"
+          title="Guest journey"
+          body="Enter the celebration, check the night plan, RSVP with your party size, and keep your admission QR for the door."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

@@ -114,13 +114,23 @@ try {
         await dismissGate(page);
         entry.metrics = await measure(page);
         const file = `${layout}-w${vp.w}.png`;
-        const frame = page.locator("div.mx-auto.w-full.overflow-hidden").first();
-        if (await frame.count()) {
-          await frame.screenshot({ path: join(OUT, file) });
-          await frame.screenshot({ path: join(ROOT, file) });
-        } else {
-          await page.screenshot({ path: join(OUT, file), fullPage: true });
-          await page.screenshot({ path: join(ROOT, file), fullPage: true });
+        // Stabilize motion for capture (low-disk, avoid flaky element screenshots)
+        await page.addStyleTag({
+          content: "*,*::before,*::after{animation:none!important;transition:none!important}",
+        }).catch(() => {});
+        await page.waitForTimeout(150);
+        try {
+          const frame = page.locator("div.mx-auto.w-full.overflow-hidden").first();
+          if (await frame.count()) {
+            await frame.screenshot({ path: join(OUT, file), timeout: 20000 });
+            await frame.screenshot({ path: join(ROOT, file), timeout: 20000 });
+          } else {
+            await page.screenshot({ path: join(OUT, file), fullPage: true, timeout: 20000 });
+            await page.screenshot({ path: join(ROOT, file), fullPage: true, timeout: 20000 });
+          }
+        } catch {
+          await page.screenshot({ path: join(OUT, file), fullPage: true, timeout: 60000 });
+          await page.screenshot({ path: join(ROOT, file), fullPage: true, timeout: 60000 });
         }
         entry.screenshot = file;
         entry.ok = entry.status === 200;

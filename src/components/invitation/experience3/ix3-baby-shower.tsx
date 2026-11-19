@@ -5,6 +5,10 @@ import { Experience3Shell } from "@/components/invitation/experience3/experience
 import { Experience3EssentialsTimeline } from "@/components/invitation/experience3/modules/essentials-timeline";
 import { Experience3EventCountdown } from "@/components/invitation/experience3/modules/event-countdown";
 import {
+  Experience3DateLockup,
+  Experience3JourneyNote,
+} from "@/components/invitation/experience3/modules/editorial-lockups";
+import {
   Experience3ChipRow,
   Experience3SoftCard,
   Experience3VenuePanel,
@@ -38,6 +42,7 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
       definition={IX3_BABY_SHOWER}
       tone="light"
       composition="shower"
+      frameMode="card"
       headline={props.event.title}
       kicker="A soft gathering"
       welcomeEyebrow="Dear guest"
@@ -56,6 +61,17 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
         </Experience3SoftCard>
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
+        <Experience3DateLockup
+          tone="light"
+          label="We gather"
+          weekday={date.weekday}
+          day={date.day}
+          month={date.month}
+          year={date.year}
+          time={date.time}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
         <section aria-label="Shower note">
           <p className={styles.note}>
             Gift details appear only when the host configures them. Everything else stays soft,
@@ -70,7 +86,7 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
           tone="light"
         />
       </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
+      <Experience3SectionReveal delay={3}>
         <Experience3EssentialsTimeline beats={beats} heading="Shower schedule" tone="light" />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
@@ -80,6 +96,13 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
           venue={props.event.venueName}
           landmark={props.event.landmark}
           dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3JourneyNote
+          tone="light"
+          title="Guest journey"
+          body="Open the invitation, note the gathering details, RSVP gently, and keep your admission QR if entry is required."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

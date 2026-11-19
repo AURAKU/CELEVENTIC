@@ -4,6 +4,7 @@ import type { InvitationRendererProps } from "@/components/invitation/invitation
 import { Experience3Shell } from "@/components/invitation/experience3/experience3-shell";
 import { Experience3EssentialsTimeline } from "@/components/invitation/experience3/modules/essentials-timeline";
 import { Experience3EventCountdown } from "@/components/invitation/experience3/modules/event-countdown";
+import { Experience3JourneyNote } from "@/components/invitation/experience3/modules/editorial-lockups";
 import {
   Experience3LineupList,
   Experience3TicketStub,
@@ -38,6 +39,7 @@ export function Ix3ConcertNightTemplate(props: InvitationRendererProps) {
       definition={IX3_CONCERT_NIGHT}
       tone="dark"
       composition="concert"
+      frameMode="ticket"
       headline={props.event.title}
       kicker="Live performance"
       welcomeEyebrow="Admit one"
@@ -84,6 +86,13 @@ export function Ix3ConcertNightTemplate(props: InvitationRendererProps) {
           venue={props.event.venueName}
           landmark={props.event.landmark}
           dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3JourneyNote
+          tone="dark"
+          title="Guest journey"
+          body="Reveal the night, check set timing, RSVP, and keep your admission QR ready at the door."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

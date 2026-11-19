@@ -40,6 +40,10 @@ type Experience3ShellProps = InvitationRendererProps & {
   heroMode?: "stacked" | "poster" | "center";
   /** Optional secondary line under the hero title. */
   heroSubline?: string | null;
+  /** Outer frame art direction — breaks same-card-for-all feeling. */
+  frameMode?: "card" | "folio" | "bleed" | "ticket";
+  /** Replace default hero headline block when a family owns hero typography. */
+  customHero?: ReactNode;
 };
 
 function initialsFromTitle(title: string): string {
@@ -76,6 +80,8 @@ export function Experience3Shell({
   hideDefaultMeta = false,
   heroMode = "stacked",
   heroSubline,
+  frameMode = "card",
+  customHero,
 }: Experience3ShellProps) {
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const tokens = definition.tokens;
@@ -121,6 +127,15 @@ export function Experience3Shell({
     .filter(Boolean)
     .join(" ");
 
+  const frameModeClass =
+    frameMode === "folio"
+      ? styles.frame_folio
+      : frameMode === "bleed"
+        ? styles.frame_bleed
+        : frameMode === "ticket"
+          ? styles.frame_ticket
+          : styles.frame_card;
+
   return (
     <div
       className={[
@@ -128,6 +143,7 @@ export function Experience3Shell({
         tone === "dark" ? styles.dark : "",
         tone === "solemn" ? styles.solemn : "",
         compositionClass,
+        frameModeClass,
       ]
         .filter(Boolean)
         .join(" ")}
@@ -176,17 +192,23 @@ export function Experience3Shell({
             }
           >
             <div className={overlayClass}>
-              <p className={styles.eyebrow} style={{ color: "rgba(250,250,249,0.82)" }}>
-                {kicker}
-              </p>
-              <h1 className={styles.title} style={{ color: "#fafaf9" }}>
-                {headline}
-              </h1>
-              {heroSubline ? (
-                <p className={styles.lede} style={{ color: "rgba(250,250,249,0.88)", margin: 0 }}>
-                  {heroSubline}
-                </p>
-              ) : null}
+              {customHero ? (
+                customHero
+              ) : (
+                <>
+                  <p className={styles.eyebrow} style={{ color: "rgba(250,250,249,0.82)" }}>
+                    {kicker}
+                  </p>
+                  <h1 className={styles.title} style={{ color: "#fafaf9" }}>
+                    {headline}
+                  </h1>
+                  {heroSubline ? (
+                    <p className={styles.lede} style={{ color: "rgba(250,250,249,0.88)", margin: 0 }}>
+                      {heroSubline}
+                    </p>
+                  ) : null}
+                </>
+              )}
             </div>
           </header>
 

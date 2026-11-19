@@ -5,6 +5,10 @@ import { Experience3Shell } from "@/components/invitation/experience3/experience
 import { Experience3EssentialsTimeline } from "@/components/invitation/experience3/modules/essentials-timeline";
 import { Experience3EventCountdown } from "@/components/invitation/experience3/modules/event-countdown";
 import {
+  Experience3DateLockup,
+  Experience3JourneyNote,
+} from "@/components/invitation/experience3/modules/editorial-lockups";
+import {
   Experience3DiplomaFrame,
   Experience3OrnamentRule,
   Experience3VenuePanel,
@@ -38,6 +42,7 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
       definition={IX3_GRADUATION}
       tone="light"
       composition="academic"
+      frameMode="folio"
       headline={props.event.title}
       kicker="Commencement invitation"
       welcomeEyebrow="Honored guest"
@@ -57,6 +62,17 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
+        <Experience3DateLockup
+          tone="light"
+          label="Ceremony"
+          weekday={date.weekday}
+          day={date.day}
+          month={date.month}
+          year={date.year}
+          time={date.time}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
         <section aria-label="Academic note">
           <p className={styles.note}>
             A refined celebration of scholarship and perseverance—framed with dignity, clarity, and
@@ -71,7 +87,7 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
           tone="light"
         />
       </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
+      <Experience3SectionReveal delay={3}>
         <Experience3EssentialsTimeline beats={beats} heading="Ceremony order" tone="light" />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
@@ -81,6 +97,13 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
           venue={props.event.venueName}
           landmark={props.event.landmark}
           dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3JourneyNote
+          tone="light"
+          title="Guest journey"
+          body="Review the commencement citation, confirm attendance, and keep your admission QR for the hall."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

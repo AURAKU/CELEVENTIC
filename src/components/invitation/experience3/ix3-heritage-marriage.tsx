@@ -5,8 +5,11 @@ import { Experience3Shell } from "@/components/invitation/experience3/experience
 import { Experience3EssentialsTimeline } from "@/components/invitation/experience3/modules/essentials-timeline";
 import { Experience3EventCountdown } from "@/components/invitation/experience3/modules/event-countdown";
 import {
-  Experience3ChipRow,
-  Experience3CoupleCard,
+  Experience3DateLockup,
+  Experience3JourneyNote,
+  Experience3NameStack,
+} from "@/components/invitation/experience3/modules/editorial-lockups";
+import {
   Experience3OrnamentRule,
   Experience3VenuePanel,
 } from "@/components/invitation/experience3/modules/feature-strips";
@@ -43,6 +46,7 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
       definition={IX3_HERITAGE_MARRIAGE}
       tone="light"
       composition="heritage"
+      frameMode="folio"
       headline={headline}
       monogram={monogram}
       kicker="In the tradition of our families"
@@ -50,18 +54,31 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
       welcomeLede="Your blessing completes this ceremony."
       hideDefaultMeta
       heroMode="stacked"
-      heroSubline={`${date.day} ${date.month} ${date.year}${date.time ? ` · ${date.time}` : ""}`}
+      customHero={
+        <div style={{ display: "grid", gap: "0.65rem", color: "#fafaf9" }}>
+          <p className={styles.eyebrow} style={{ color: "rgba(250,250,249,0.82)" }}>
+            In the tradition of our families
+          </p>
+          <h1 className="sr-only">{headline}</h1>
+          <Experience3NameStack name1={name1} name2={name2} tone="dark" />
+        </div>
+      }
     >
       <Experience3SectionReveal>
         <Experience3OrnamentRule tone="light" mark="◈" />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
-        <Experience3CoupleCard name1={name1} name2={name2} tone="light" />
+        <Experience3DateLockup
+          tone="light"
+          label="Ceremony day"
+          weekday={date.weekday}
+          day={date.day}
+          month={date.month}
+          year={date.year}
+          time={date.time}
+        />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
-        <Experience3ChipRow tone="light" chips={["Heritage rites", "Family blessing", "Feasting"]} />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
         <section aria-label="Heritage note">
           <p className={styles.note}>
             With reverence for custom and the warmth of family, we invite you to witness the joining of
@@ -76,7 +93,7 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
           tone="light"
         />
       </Experience3SectionReveal>
-      <Experience3SectionReveal delay={3}>
+      <Experience3SectionReveal delay={2}>
         <Experience3EssentialsTimeline beats={beats} heading="Ceremony programme" tone="light" />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
@@ -86,6 +103,13 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
           venue={props.event.venueName}
           landmark={props.event.landmark}
           dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3JourneyNote
+          tone="light"
+          title="Guest journey"
+          body="Open the seal, review the ceremony details, confirm your attendance, and keep your admission QR ready for the gathering."
         />
       </Experience3SectionReveal>
     </Experience3Shell>
