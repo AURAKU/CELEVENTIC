@@ -6,28 +6,52 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  backdrop-filter: blur(10px);
 }
 
 .panel {
   display: flex;
   max-width: 28rem;
+  width: min(100%, 28rem);
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.55rem;
   text-align: center;
-  animation: ix3GateIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ix3GateIn 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .monogram {
   display: flex;
-  height: 5.25rem;
-  width: 5.25rem;
+  height: 5.5rem;
+  width: 5.5rem;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   letter-spacing: 0.22em;
-  animation: ix3MonoIn 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ix3MonoIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.envelopeSeal {
+  position: relative;
+  display: flex;
+  height: 5.75rem;
+  width: 5.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 1.15rem;
+  letter-spacing: 0.2em;
+  animation: ix3MonoIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.envelopeSeal::before {
+  content: "";
+  position: absolute;
+  inset: -0.55rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  opacity: 0.28;
 }
 
 .portrait {
@@ -35,7 +59,8 @@
   aspect-ratio: 3 / 4;
   border-radius: 1rem;
   object-fit: cover;
-  animation: ix3MonoIn 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ix3MonoIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
 }
 
 .primary,
@@ -62,18 +87,18 @@
 @keyframes ix3GateIn {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(16px) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes ix3MonoIn {
   from {
     opacity: 0;
-    transform: scale(0.92);
+    transform: scale(0.9);
   }
   to {
     opacity: 1;
@@ -84,6 +109,7 @@
 @media (prefers-reduced-motion: reduce) {
   .panel,
   .monogram,
+  .envelopeSeal,
   .portrait {
     animation: none !important;
   }
@@ -91,5 +117,9 @@
   .primary,
   .skip {
     transition: none !important;
+  }
+
+  .gate {
+    backdrop-filter: none;
   }
 }

@@ -66,12 +66,23 @@ export function Experience3OpeningGate({
 
   const eyebrow =
     style === "portrait"
-      ? "In loving memory"
+      ? "In honour"
       : style === "cinematic"
         ? "You are invited"
         : style === "envelope"
           ? "An invitation awaits"
-          : "An invitation";
+          : style === "classic-reveal"
+            ? "Open when ready"
+            : "An invitation";
+
+  const cta =
+    style === "envelope"
+      ? "Break the seal"
+      : style === "cinematic"
+        ? "Enter the evening"
+        : style === "portrait"
+          ? "Continue"
+          : "Open invitation";
 
   return (
     <div
@@ -94,6 +105,14 @@ export function Experience3OpeningGate({
             role="img"
             aria-label="Portrait"
           />
+        ) : style === "envelope" && monogram ? (
+          <div
+            className={styles.envelopeSeal}
+            style={{ border: `1px solid ${palette.border}`, color: palette.fg }}
+            aria-hidden
+          >
+            {monogram}
+          </div>
         ) : monogram ? (
           <div
             className={styles.monogram}
@@ -137,7 +156,7 @@ export function Experience3OpeningGate({
             }
           }}
         >
-          Open invitation
+          {cta}
         </button>
         <button
           type="button"

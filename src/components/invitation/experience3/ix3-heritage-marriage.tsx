@@ -6,8 +6,11 @@ import { Experience3EssentialsTimeline } from "@/components/invitation/experienc
 import { Experience3EventCountdown } from "@/components/invitation/experience3/modules/event-countdown";
 import {
   Experience3ChipRow,
+  Experience3CoupleCard,
   Experience3OrnamentRule,
+  Experience3VenuePanel,
 } from "@/components/invitation/experience3/modules/feature-strips";
+import { Experience3SectionReveal } from "@/components/invitation/experience3/modules/section-reveal";
 import { IX3_HERITAGE_MARRIAGE } from "@/lib/invitation/studio3/expanded-definitions";
 import { formatInvitationDateParts, parseCoupleNames } from "@/lib/invitation-templates";
 import styles from "./experience3-shell.module.css";
@@ -45,24 +48,46 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
       kicker="In the tradition of our families"
       welcomeEyebrow="Blessed presence"
       welcomeLede="Your blessing completes this ceremony."
+      hideDefaultMeta
+      heroMode="stacked"
+      heroSubline={`${date.day} ${date.month} ${date.year}${date.time ? ` · ${date.time}` : ""}`}
     >
-      <Experience3OrnamentRule tone="light" />
-      <Experience3ChipRow
-        tone="light"
-        chips={["Heritage rites", "Family blessing", "Feasting"].filter(Boolean)}
-      />
-      <section aria-label="Heritage note">
-        <p className={styles.note}>
-          Warm parchment, ceremonial typography, and an envelope opening—composed for traditional
-          marriage gatherings. Distinct from the editorial wedding reference.
-        </p>
-      </section>
-      <Experience3EventCountdown
-        startAtIso={props.event.startDateRaw}
-        label="Until the ceremony"
-        tone="light"
-      />
-      <Experience3EssentialsTimeline beats={beats} heading="Ceremony programme" tone="light" />
+      <Experience3SectionReveal>
+        <Experience3OrnamentRule tone="light" mark="◈" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <Experience3CoupleCard name1={name1} name2={name2} tone="light" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <Experience3ChipRow tone="light" chips={["Heritage rites", "Family blessing", "Feasting"]} />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
+        <section aria-label="Heritage note">
+          <p className={styles.note}>
+            With reverence for custom and the warmth of family, we invite you to witness the joining of
+            two houses—ceremony, blessing, and celebration shared together.
+          </p>
+        </section>
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
+        <Experience3EventCountdown
+          startAtIso={props.event.startDateRaw}
+          label="Until the ceremony"
+          tone="light"
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3EssentialsTimeline beats={beats} heading="Ceremony programme" tone="light" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3VenuePanel
+          tone="light"
+          heading="Reception"
+          venue={props.event.venueName}
+          landmark={props.event.landmark}
+          dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
     </Experience3Shell>
   );
 }

@@ -4,7 +4,12 @@ import type { InvitationRendererProps } from "@/components/invitation/invitation
 import { Experience3Shell } from "@/components/invitation/experience3/experience3-shell";
 import { Experience3EssentialsTimeline } from "@/components/invitation/experience3/modules/essentials-timeline";
 import { Experience3EventCountdown } from "@/components/invitation/experience3/modules/event-countdown";
-import { Experience3DiplomaFrame } from "@/components/invitation/experience3/modules/feature-strips";
+import {
+  Experience3DiplomaFrame,
+  Experience3OrnamentRule,
+  Experience3VenuePanel,
+} from "@/components/invitation/experience3/modules/feature-strips";
+import { Experience3SectionReveal } from "@/components/invitation/experience3/modules/section-reveal";
 import { IX3_GRADUATION } from "@/lib/invitation/studio3/expanded-definitions";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
 import styles from "./experience3-shell.module.css";
@@ -37,24 +42,47 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
       kicker="Commencement invitation"
       welcomeEyebrow="Honored guest"
       welcomeLede="Join us as we celebrate this achievement."
+      hideDefaultMeta
+      heroMode="stacked"
+      heroSubline={`${date.day} ${date.month} ${date.year}`}
     >
-      <Experience3DiplomaFrame
-        tone="light"
-        title={graduate}
-        lede="Presented with pride on the occasion of commencement."
-      />
-      <section aria-label="Academic note">
-        <p className={styles.note}>
-          Academic prestige: parchment field, blue accent, portrait opening, and ceremony-first
-          order—separate creative DNA from celebration and wedding families.
-        </p>
-      </section>
-      <Experience3EventCountdown
-        startAtIso={props.event.startDateRaw}
-        label="Until commencement"
-        tone="light"
-      />
-      <Experience3EssentialsTimeline beats={beats} heading="Ceremony order" tone="light" />
+      <Experience3SectionReveal>
+        <Experience3OrnamentRule tone="light" mark="❖" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <Experience3DiplomaFrame
+          tone="light"
+          title={graduate}
+          lede="Presented with pride on the occasion of commencement."
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <section aria-label="Academic note">
+          <p className={styles.note}>
+            A refined celebration of scholarship and perseverance—framed with dignity, clarity, and
+            ceremonial calm.
+          </p>
+        </section>
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
+        <Experience3EventCountdown
+          startAtIso={props.event.startDateRaw}
+          label="Until commencement"
+          tone="light"
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
+        <Experience3EssentialsTimeline beats={beats} heading="Ceremony order" tone="light" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3VenuePanel
+          tone="light"
+          heading="Venue"
+          venue={props.event.venueName}
+          landmark={props.event.landmark}
+          dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
     </Experience3Shell>
   );
 }

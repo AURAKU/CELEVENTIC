@@ -69,9 +69,10 @@ export const CATALOG_TRANSFORMATION_ROWS: readonly CatalogTransformRow[] = [
     designFamily: "heritage-ceremony",
     batch: 1,
     visualCompletion: 0.75,
-    functionalCompletion: 0.5,
+    functionalCompletion: 0.75,
     status: "batch1-review",
-    notes: "Protected v1 untouched. Batch 1 heritage successor.",
+    notes:
+      "Protected v1 untouched. Phase 5 refinement: envelope seal, couple card, programme, venue panel. Not yet parity with Forever Afaris craft.",
   }),
   row({
     catalogSlug: "kente-heritage-union",
@@ -97,9 +98,9 @@ export const CATALOG_TRANSFORMATION_ROWS: readonly CatalogTransformRow[] = [
     designFamily: "celebration",
     batch: 1,
     visualCompletion: 0.75,
-    functionalCompletion: 0.5,
+    functionalCompletion: 0.75,
     status: "batch1-review",
-    notes: "Batch 1 birthday family.",
+    notes: "Phase 5 refinement: poster hero, night plan, venue panel. Still needs style variants for kids vs glam.",
   }),
   row({
     catalogSlug: "concert-night-bash",
@@ -111,9 +112,9 @@ export const CATALOG_TRANSFORMATION_ROWS: readonly CatalogTransformRow[] = [
     designFamily: "celebration",
     batch: 1,
     visualCompletion: 0.75,
-    functionalCompletion: 0.5,
+    functionalCompletion: 0.75,
     status: "batch1-review",
-    notes: "Maps to immersive concert family (Batch 1).",
+    notes: "Phase 5 refinement: ticket stub, lineup list, center hero. No background audio wired yet.",
   }),
   row({
     catalogSlug: "corporate-prestige-summit",
@@ -125,9 +126,9 @@ export const CATALOG_TRANSFORMATION_ROWS: readonly CatalogTransformRow[] = [
     designFamily: "conference",
     batch: 1,
     visualCompletion: 0.75,
-    functionalCompletion: 0.5,
+    functionalCompletion: 0.75,
     status: "batch1-review",
-    notes: "Batch 1 executive gala.",
+    notes: "Phase 5 refinement: centered black-tie hero, agenda table, arrival panel. Speakers module not wired.",
   }),
   row({
     catalogSlug: "product-launch-pulse",
@@ -141,7 +142,7 @@ export const CATALOG_TRANSFORMATION_ROWS: readonly CatalogTransformRow[] = [
     visualCompletion: 0.75,
     functionalCompletion: 0.5,
     status: "batch1-review",
-    notes: "Uses brand-launch reference as successor path.",
+    notes: "Uses brand-launch reference as successor path (reference polish, not Batch 1 family rewrite).",
   }),
   row({
     catalogSlug: "femmora-flagship-soft-opening",
@@ -166,10 +167,10 @@ export const CATALOG_TRANSFORMATION_ROWS: readonly CatalogTransformRow[] = [
     proposedSuccessor: "ix3-graduation",
     designFamily: "academic",
     batch: 1,
-    visualCompletion: 0.5,
-    functionalCompletion: 0.5,
+    visualCompletion: 0.75,
+    functionalCompletion: 0.75,
     status: "batch1-review",
-    notes: "Graduation family also covers academic private events; custom-media path preserved.",
+    notes: "Phase 5 refinement: diploma frame, ceremony order, venue panel. Gallery/Memory Vault not in shell.",
   }),
   row({
     catalogSlug: "surprise-gift-soiree",
@@ -180,10 +181,11 @@ export const CATALOG_TRANSFORMATION_ROWS: readonly CatalogTransformRow[] = [
     proposedSuccessor: "ix3-baby-shower",
     designFamily: "shower",
     batch: 1,
-    visualCompletion: 0.5,
-    functionalCompletion: 0.5,
+    visualCompletion: 0.75,
+    functionalCompletion: 0.75,
     status: "batch1-review",
-    notes: "Soft celebration maps toward shower minimalist family pending dedicated gift-soirée variant.",
+    notes:
+      "Phase 5 refinement soft shower family; dedicated gift-soirée variant still pending. Gift wallet only when configured.",
   }),
 
   // —— Batch 2: remaining wedding + birthday social ——

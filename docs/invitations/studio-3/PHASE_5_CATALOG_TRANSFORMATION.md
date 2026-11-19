@@ -10,9 +10,9 @@
 |---|---|
 | Map all 48 catalogue SKUs → premium successors | **Done** (planning map) |
 | Never edit protected / UNKNOWN originals in place | **Observed** |
-| Batch 1 — complete six registered families | **Review** (rendered + screenshots; not 100% exceptional yet) |
+| Batch 1 — complete six registered families | **Review** after creative refinement (see `PHASE_5_BATCH_1_REFINEMENT_REPORT.md`) |
 | Batch 2–4 | **Not started** |
-| Full catalog 100% premium redesign | **Not complete** (~32% average visual progress) |
+| Full catalog 100% premium redesign | **Not complete** (~33.3% average visual progress) |
 
 Machine-readable tracker: `src/lib/invitation/studio3/catalog-transformation-map.ts`  
 Summary helper: `catalogTransformSummary()`.
@@ -28,8 +28,10 @@ Summary helper: `catalogTransformSummary()`.
 | SKUs mapped to successors | **48 / 48** |
 | Catalogue ELIGIBLE for in-place edit | **0** |
 | Fully visually redesigned SKUs (completion = 1.0) | **0** |
-| Average visual completion | **32.3%** |
-| Average functional completion | **29.7%** |
+| Average visual completion | **33.3%** |
+| Average functional completion | **32.8%** |
+| Batch 1 average visual | **69.4%** |
+| Batch 1 average functional | **66.7%** |
 
 ### Batch plan
 
@@ -64,18 +66,19 @@ Protected originals (Forever Afaris, Traditional Marriage, Aurelia, Seraphine, F
 
 ### Distinct rendered experiences (not color swaps)
 
-Each of the six families now has dedicated template composition (beyond the shared shell):
+Each of the six families now has dedicated template composition (beyond the shared shell). Phase 5 refinement deepened openings, hero modes, owned schedules, and family modules:
 
 | Layout | Distinctive craft |
 |---|---|
-| `ix3-heritage-marriage` | Envelope open, ornament rule, heritage chips, italic title, parchment frame |
-| `ix3-birthday-celebration` | Neon-adjacent chips, bold celebration plan, countdown |
-| `ix3-corporate-gala` | Gold-rule agenda table, uppercase executive hierarchy |
-| `ix3-concert-night` | Ticket stub module, cyan stage wash, set timing |
-| `ix3-graduation` | Diploma citation frame, academic ceremony order |
-| `ix3-baby-shower` | Soft cards, blush chips, quiet schedule (no countdown) |
+| `ix3-heritage-marriage` | Envelope seal, couple card, parchment double-rule, ceremony programme |
+| `ix3-birthday-celebration` | Poster hero, party-pass welcome, night plan, magenta night field |
+| `ix3-corporate-gala` | Centered black-tie hero, gold architecture, agenda table |
+| `ix3-concert-night` | Stage hero, ticket stub, lineup list, cyan wash |
+| `ix3-graduation` | Diploma citation, ceremony order, academic frame |
+| `ix3-baby-shower` | Soft welcome/card, blush chips, gentle countdown + schedule |
 
-Shared feature strips: `modules/feature-strips.tsx`.
+Shared feature strips: `modules/feature-strips.tsx`.  
+Refinement report: `docs/invitations/studio-3/PHASE_5_BATCH_1_REFINEMENT_REPORT.md`.
 
 ### Screenshots
 

@@ -18,13 +18,28 @@ function cssUrl(url: string): string {
 type Experience3ShellProps = InvitationRendererProps & {
   definition: Experience3Definition;
   tone: "light" | "dark" | "solemn";
-  composition?: "editorial" | "launch" | "memorial" | "heritage" | "celebration" | "gala" | "concert" | "academic" | "shower";
+  composition?:
+    | "editorial"
+    | "launch"
+    | "memorial"
+    | "heritage"
+    | "celebration"
+    | "gala"
+    | "concert"
+    | "academic"
+    | "shower";
   monogram?: string | null;
   headline: string;
   kicker: string;
   welcomeEyebrow?: string;
   welcomeLede?: string;
   children?: ReactNode;
+  /** Hide default When/Where/Dress meta when the layout owns schedule presentation. */
+  hideDefaultMeta?: boolean;
+  /** Hero presentation mode. */
+  heroMode?: "stacked" | "poster" | "center";
+  /** Optional secondary line under the hero title. */
+  heroSubline?: string | null;
 };
 
 function initialsFromTitle(title: string): string {
@@ -58,6 +73,9 @@ export function Experience3Shell({
   initialRsvpStatus,
   initialAttendingCount,
   children,
+  hideDefaultMeta = false,
+  heroMode = "stacked",
+  heroSubline,
 }: Experience3ShellProps) {
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const tokens = definition.tokens;
@@ -88,6 +106,21 @@ export function Experience3Shell({
                     ? styles.comp_shower
                     : styles.comp_editorial;
 
+  const heroClass = [
+    styles.hero,
+    heroMode === "poster" ? styles.heroPoster : "",
+    heroMode === "center" ? styles.heroSplit : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const overlayClass = [
+    styles.heroOverlay,
+    heroMode === "center" ? styles.heroOverlayCenter : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
       className={[
@@ -117,7 +150,9 @@ export function Experience3Shell({
         title={headline}
         subtitle={kicker}
         monogram={
-          definition.opening.style === "monogram" || definition.opening.style === "cinematic"
+          definition.opening.style === "monogram" ||
+          definition.opening.style === "cinematic" ||
+          definition.opening.style === "envelope"
             ? resolvedMonogram
             : null
         }
@@ -129,24 +164,29 @@ export function Experience3Shell({
       <div className={styles.frame}>
         <article className={styles.surface}>
           <header
-            className={styles.hero}
+            className={heroClass}
             style={
               cover
                 ? {
-                    backgroundImage: `linear-gradient(165deg, rgba(0,0,0,0.08), rgba(0,0,0,0.45)), url("${cssUrl(cover)}")`,
+                    backgroundImage: `linear-gradient(165deg, rgba(0,0,0,0.1), rgba(0,0,0,0.48)), url("${cssUrl(cover)}")`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }
                 : undefined
             }
           >
-            <div className={styles.heroOverlay}>
-              <p className={styles.eyebrow} style={{ color: "rgba(250,250,249,0.8)" }}>
+            <div className={overlayClass}>
+              <p className={styles.eyebrow} style={{ color: "rgba(250,250,249,0.82)" }}>
                 {kicker}
               </p>
               <h1 className={styles.title} style={{ color: "#fafaf9" }}>
                 {headline}
               </h1>
+              {heroSubline ? (
+                <p className={styles.lede} style={{ color: "rgba(250,250,249,0.88)", margin: 0 }}>
+                  {heroSubline}
+                </p>
+              ) : null}
             </div>
           </header>
 
@@ -173,67 +213,71 @@ export function Experience3Shell({
               </section>
             ) : null}
 
-            <section className={styles.metaGrid} aria-label="Event essentials">
-              <div className={styles.metaRow}>
-                <span className={styles.metaLabel}>When</span>
-                <span className={styles.metaValue}>
-                  {date.weekday}, {date.day} {date.month} {date.year}
-                  {date.time ? ` · ${date.time}` : ""}
-                </span>
-              </div>
-              {(event.venueName || event.landmark) && (
+            {!hideDefaultMeta ? (
+              <section className={styles.metaGrid} aria-label="Event essentials">
                 <div className={styles.metaRow}>
-                  <span className={styles.metaLabel}>Where</span>
+                  <span className={styles.metaLabel}>When</span>
                   <span className={styles.metaValue}>
-                    {event.venueName}
-                    {event.landmark ? ` · ${event.landmark}` : ""}
+                    {date.weekday}, {date.day} {date.month} {date.year}
+                    {date.time ? ` · ${date.time}` : ""}
                   </span>
                 </div>
-              )}
-              {event.dressCode ? (
-                <div className={styles.metaRow}>
-                  <span className={styles.metaLabel}>
-                    {definition.designFamily === "memorial" ? "Attire" : "Dress code"}
-                  </span>
-                  <span className={styles.metaValue}>{event.dressCode}</span>
-                </div>
-              ) : null}
-            </section>
+                {(event.venueName || event.landmark) && (
+                  <div className={styles.metaRow}>
+                    <span className={styles.metaLabel}>Where</span>
+                    <span className={styles.metaValue}>
+                      {event.venueName}
+                      {event.landmark ? ` · ${event.landmark}` : ""}
+                    </span>
+                  </div>
+                )}
+                {event.dressCode ? (
+                  <div className={styles.metaRow}>
+                    <span className={styles.metaLabel}>
+                      {definition.designFamily === "memorial" ? "Attire" : "Dress code"}
+                    </span>
+                    <span className={styles.metaValue}>{event.dressCode}</span>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
 
             {children}
 
-            {showInlineQr && qrDataUrl ? (
-              <div className="flex justify-center pt-2">
-                <Image
-                  src={qrDataUrl}
-                  alt="Invitation QR code"
-                  width={120}
-                  height={120}
-                  className="rounded-md"
-                  unoptimized
-                />
-              </div>
-            ) : null}
+            <div className={styles.actionsBlock}>
+              {showInlineQr && qrDataUrl ? (
+                <div className="flex justify-center pt-2">
+                  <Image
+                    src={qrDataUrl}
+                    alt="Invitation QR code"
+                    width={120}
+                    height={120}
+                    className="rounded-md"
+                    unoptimized
+                  />
+                </div>
+              ) : null}
 
-            <InvitationRsvpPanel
-              invitationId={invitation.id}
-              uniqueLink={invitation.uniqueLink}
-              guestId={guestId}
-              guestName={guestName}
-              partyAllowance={partyAllowance}
-              initialRsvpStatus={initialRsvpStatus}
-              initialAttendingCount={initialAttendingCount}
-              accentColor={tokens.accent}
-              textColor={tokens.text}
-              variant={tone === "dark" ? "dark" : "light"}
-              label={definition.designFamily === "memorial" ? "Will you attend?" : undefined}
-            />
+              <InvitationRsvpPanel
+                invitationId={invitation.id}
+                uniqueLink={invitation.uniqueLink}
+                guestId={guestId}
+                guestName={guestName}
+                partyAllowance={partyAllowance}
+                initialRsvpStatus={initialRsvpStatus}
+                initialAttendingCount={initialAttendingCount}
+                accentColor={tokens.accent}
+                textColor={tokens.text}
+                variant={tone === "dark" ? "dark" : "light"}
+                label={definition.designFamily === "memorial" ? "Will you attend?" : undefined}
+              />
 
-            <InvitationActions
-              event={event}
-              pdfUrl={design.media?.find((m) => m.type === "pdf")?.url}
-              variant={tone === "dark" ? "dark" : "light"}
-            />
+              <InvitationActions
+                event={event}
+                pdfUrl={design.media?.find((m) => m.type === "pdf")?.url}
+                variant={tone === "dark" ? "dark" : "light"}
+              />
+            </div>
           </div>
         </article>
       </div>
