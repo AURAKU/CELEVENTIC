@@ -2,7 +2,7 @@
 
 **Branch:** `feat/invitation-studio-3`  
 **Prior verified checkpoint:** `c9d5f786`  
-**Verified HEAD for this report:** `a9656b95`  
+**Verified HEAD for this report:** `7b33a726` (implementation `a9656b95`)  
 **Scope:** Batch 1 only — six registered families  
 **Deploy / merge:** Not performed  
 **Batch 2:** Not started / not authorized  
