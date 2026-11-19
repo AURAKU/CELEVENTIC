@@ -135,24 +135,38 @@ export function InvitationRsvpPanel({
   }, [invitationId, guestId, seededStatus, seededAttending, allowance]);
 
   async function handleRsvp(response: "ACCEPTED" | "DECLINED" | "MAYBE") {
-    if (isPreviewInvitationId(invitationId)) {
-      setError("Preview mode, RSVP works on your published invitation link.");
+    setError("");
+    const cappedAttending = clampAttendingCount(attendingCount, allowance);
+    if (!guestName.trim()) {
+      setError(t("rsvp.name_required"));
       return;
     }
-    setError("");
+
+    /**
+     * Sandbox / Studio preview IDs never call `/api/rsvp`.
+     * Persist locally so guest-journey QA can verify Accept → thank-you → reload
+     * without touching production guests, payments, or messaging.
+     */
+    if (isPreviewInvitationId(invitationId)) {
+      setLoading(true);
+      setConfirmedAttending(cappedAttending);
+      setRsvpStatus(response);
+      writePersistedRsvp(invitationId, guestId, {
+        status: response,
+        attendingCount: cappedAttending,
+      });
+      onSubmitted?.(response);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    const cappedAttending = clampAttendingCount(attendingCount, allowance);
     const contact = {
       ...(showEmail ? { email: email.trim() || undefined } : {}),
       ...(showPhone ? { phone: phone.trim() || undefined } : {}),
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
     const note = guestMessage?.trim();
-    if (!guestName.trim()) {
-      setError(t("rsvp.name_required"));
-      setLoading(false);
-      return;
-    }
 
     const payload = guestId
       ? {
@@ -187,8 +201,9 @@ export function InvitationRsvpPanel({
   const btnClass = buttonStyle
     ? styledInvitationButton(buttonStyle, variant === "dark" ? "dark" : "light", "px-4")
     : variant === "dark"
-      ? "border-white/30 text-white hover:bg-white/10"
+      ? "border-white/45 bg-transparent text-white hover:bg-white/15 hover:text-white"
       : "";
+  const isSandboxPreview = isPreviewInvitationId(invitationId);
   const fieldClass = memorial
     ? "inv-rsvp-field"
     : variant === "dark"
@@ -217,7 +232,16 @@ export function InvitationRsvpPanel({
         role="status"
         aria-live="polite"
         data-testid="rsvp-guest-feedback"
+        data-sandbox={isSandboxPreview ? "true" : undefined}
       >
+        {isSandboxPreview ? (
+          <p
+            className="text-[10px] uppercase tracking-[0.22em] opacity-70 mb-1"
+            data-testid="rsvp-sandbox-badge"
+          >
+            Sandbox RSVP · test data only
+          </p>
+        ) : null}
         <p
           className={
             fashion

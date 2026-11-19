@@ -1,6 +1,6 @@
 {
   "base": "http://127.0.0.1:3002",
-  "capturedAt": "2026-11-19T00:17:47.274Z",
+  "capturedAt": "2026-11-19T03:58:36.511Z",
   "results": [
     {
       "layout": "ix3-heritage-marriage",
@@ -22,7 +22,7 @@
         "share": true,
         "calendar": true,
         "countdown": true,
-        "privacy": false
+        "privacy": true
       },
       "screenshot": "ix3-heritage-marriage-w375.png"
     },
@@ -46,7 +46,7 @@
         "share": true,
         "calendar": true,
         "countdown": true,
-        "privacy": false
+        "privacy": true
       },
       "screenshot": "ix3-heritage-marriage-w768.png"
     },
@@ -94,7 +94,7 @@
         "share": true,
         "calendar": true,
         "countdown": true,
-        "privacy": false
+        "privacy": true
       },
       "screenshot": "ix3-birthday-celebration-w375.png"
     },
@@ -142,7 +142,7 @@
         "share": true,
         "calendar": true,
         "countdown": true,
-        "privacy": false
+        "privacy": true
       },
       "screenshot": "ix3-birthday-celebration-w1440.png"
     },
@@ -238,7 +238,7 @@
         "share": true,
         "calendar": true,
         "countdown": true,
-        "privacy": false
+        "privacy": true
       },
       "screenshot": "ix3-concert-night-w375.png"
     },
@@ -334,7 +334,7 @@
         "share": true,
         "calendar": true,
         "countdown": true,
-        "privacy": false
+        "privacy": true
       },
       "screenshot": "ix3-graduation-w768.png"
     },
@@ -382,7 +382,7 @@
         "share": true,
         "calendar": true,
         "countdown": true,
-        "privacy": false
+        "privacy": true
       },
       "screenshot": "ix3-baby-shower-w375.png"
     },
@@ -430,7 +430,7 @@
         "share": true,
         "calendar": true,
         "countdown": true,
-        "privacy": false
+        "privacy": true
       },
       "screenshot": "ix3-baby-shower-w1440.png"
     }

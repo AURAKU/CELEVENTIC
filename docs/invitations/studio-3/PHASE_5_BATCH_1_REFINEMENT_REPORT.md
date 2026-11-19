@@ -12,6 +12,8 @@
 
 Batch 1 refinements deepen art direction for the six Experience 3.0 families so they no longer read as a single card with palette swaps. Each family now owns composition CSS, opening language, hero mode, schedule presentation, and module mix.
 
+**Guest-journey acceptance (added):** For each family, a sandbox end-to-end guest path was executed on mobile and desktop: personalized welcome → opening → event details → interactive sections → RSVP submit → admission QR → reload persistence. Test data only; no production RSVP writes, payments, or messaging.
+
 **Honest completion (recalculated from `catalogTransformSummary()` after this pass):**
 
 | Metric | Value |
@@ -23,10 +25,11 @@ Batch 1 refinements deepen art direction for the six Experience 3.0 families so 
 | Batch 1 row average visual | **69.4%** |
 | Batch 1 row average functional | **66.7%** |
 | Automated studio3 tests | **35 / 35 passing** |
+| Guest-journey E2E (sandbox) | **12 / 12 passing** (6 families × mobile + desktop) |
 | Protected template file drift vs `main` (`src/components/invitation/templates`) | **None** |
 | Production deployment | **None** |
 
-These six invitations are **stronger and more distinctive** than the Batch 1 checkpoint, but they do **not** yet match Forever Afaris / Femmora craftsmanship end-to-end. Do not approve Batch 2 solely on “renders OK.”
+These six invitations are **stronger and more distinctive** than the Batch 1 checkpoint, and guest controls are no longer decorative on the sandbox path. They still do **not** yet match Forever Afaris / Femmora craftsmanship end-to-end. Do not approve Batch 2 solely on “renders OK.”
 
 ---
 
@@ -130,9 +133,11 @@ Legend: **FF** fully functional · **FL** functional with limitations · **DEMO*
 | Schedule / programme | FF | FF | FF | FF | FF | FF |
 | Dress code (when configured) | FF | FF | FF | FF | FF | FF |
 | Venue / maps via InvitationActions | FF | FF | FF | FF | FF | FF |
-| RSVP panel | FF | FF | FF | FF | FF | FF |
-| Share / calendar actions | FF | FF | FF | FF | FF | FF |
-| Inline QR (when `qrDataUrl` and no entry pass) | FL | FL | FL | FL | FL | FL |
+| RSVP panel (sandbox local persist on preview IDs) | FF | FF | FF | FF | FF | FF |
+| RSVP panel (live published invitation → `/api/rsvp`) | FL | FL | FL | FL | FL | FL |
+| Share / calendar / maps actions | FF | FF | FF | FF | FF | FF |
+| Admission QR (sandbox demo pass in Experience 3.0 preview) | FF | FF | FF | FF | FF | FF |
+| Admission QR (live guest token / entry pass) | FL | FL | FL | FL | FL | FL |
 | Multiple ceremonies | NI | NI | NI | NI | NI | NI |
 | Speakers / hosts module | NI | NI | FL (host row only) | FL (lineup from host/title) | NI | NI |
 | Background audio | NI | NI | NI | NI | NI | NI |
@@ -143,22 +148,42 @@ Legend: **FF** fully functional · **FL** functional with limitations · **DEMO*
 
 **Studio note:** Presets + tokens exist for all six `ix3-*` layouts. Full Edit → Save → Reload → Guest View on production event rows was **not** executed in this pass (no production writes). Demo preview path verified via direct Experience 3.0 routes.
 
+### End-to-end guest experience acceptance (sandbox)
+
+**Harness:** `scripts/studio3-batch1-guest-journey-e2e.mjs`  
+**Results:** `docs/invitations/studio-3/phase-5/batch-1/guest-journey/guest-journey-results.json`  
+**Journey screenshots:** `docs/invitations/studio-3/phase-5/batch-1/guest-journey/*-journey.png`
+
+| Check | Result |
+|---|---|
+| Personalized guest visible | Pass (Alex Mensah) |
+| Opening dismiss / minimal-instant | Pass |
+| Event details / programme sections | Pass |
+| RSVP Accept → thank-you | Pass (local sandbox persist) |
+| RSVP persists after reload | Pass |
+| Admission QR visible | Pass (demo sandbox QR) |
+| Mobile 390 + desktop 1440 | **12 / 12** |
+| `/api/rsvp` production calls required | **0** (sandbox path; harness intercepted 0 unexpected calls) |
+| Payments / SMS / WhatsApp | Blocked by harness; none required |
+
+**Important distinction:** Sandbox RSVP proves the UI is not decorative and that state persists locally for preview IDs. Live published invitation RSVP still uses `/api/rsvp` and was **not** exercised against production records in this pass.
+
 ---
 
 ## D. Engineering
 
-### Files changed / added (refinement)
+### Files changed / added (refinement + guest-journey)
 
-- `src/components/invitation/experience3/experience3-shell.tsx` — hero modes, hideDefaultMeta, envelope monogram, actions block
+- `src/components/invitation/experience3/experience3-shell.tsx` — hero modes, hideDefaultMeta, admission QR presentation
 - `src/components/invitation/experience3/experience3-shell.module.css` — composition art direction rebuild
-- `src/components/invitation/experience3/modules/opening-gate.tsx` + `.module.css` — seal / cinematic CTAs, blur gate
-- `src/components/invitation/experience3/modules/feature-strips.tsx` — couple card, venue panel, lineup list, polish
-- `src/components/invitation/experience3/modules/section-reveal.tsx` + `.module.css` — reduced-motion-aware reveals
-- Six Batch 1 templates (`ix3-heritage-marriage`, `birthday`, `corporate-gala`, `concert-night`, `graduation`, `baby-shower`)
-- `src/lib/invitation/studio3/expanded-definitions.ts` — token / identity refinement
-- `src/lib/invitation/studio3/catalog-transformation-map.ts` — honest progress updates
-- `scripts/studio3-phase5-batch1-refine-qa.mjs` — after capture + overflow metrics
-- Screenshots under `docs/invitations/studio-3/phase-5/batch-1/screenshots/{before,after}/`
+- `src/components/invitation/experience3/experience3-direct-preview.tsx` — sandbox guest journey: demo QR + party allowance
+- `src/components/invitation/shared/invitation-rsvp-panel.tsx` — sandbox local RSVP for preview IDs; dark-button contrast fix
+- `src/components/invitation/shared/invitation-actions.tsx` — dark-button contrast fix
+- Opening gate / feature strips / section reveals / six Batch 1 templates / expanded definitions / catalog map
+- `scripts/studio3-phase5-batch1-refine-qa.mjs` — visual capture
+- `scripts/studio3-batch1-guest-journey-e2e.mjs` — E2E guest acceptance harness
+- Screenshots: `docs/invitations/studio-3/phase-5/batch-1/screenshots/{before,after,before-e2e}/`
+- Journey evidence: `docs/invitations/studio-3/phase-5/batch-1/guest-journey/`
 
 ### Modules reused
 
@@ -229,10 +254,11 @@ Companion catalog doc: `docs/invitations/studio-3/PHASE_5_CATALOG_TRANSFORMATION
 
 1. Close craft gap vs Forever Afaris / Traditional Marriage / Femmora (story density, media choreography, thank-you).
 2. Wire gallery / Memory Vault / audio only when entitlements + event data exist.
-3. Studio Edit → Save → Reload → Guest View on a **non-production** sandbox event for each family.
+3. Studio Edit → Save → Reload → Guest View on a **non-production** sandbox *published* invitation (live `/api/rsvp` + real QR token) for each family.
 4. Full 8-width responsive sweep + production-mode Lighthouse.
 5. Distinct SKU-level variants for interim mappings (Kente, gift soirée, fashion soft-opening).
 6. Speakers / multi-ceremony when backend fields are authorized.
+7. Dark-theme RSVP/action contrast was improved; continue visual QA on physical devices.
 
 ### Release blockers (unchanged)
 
@@ -245,7 +271,8 @@ Companion catalog doc: `docs/invitations/studio-3/PHASE_5_CATALOG_TRANSFORMATION
 
 > The six Batch 1 invitations must feel like original, professionally art-directed digital experiences… match or exceed Celeventic’s strongest existing live invitations.
 
-**Verdict:** **Not yet met.** Evidence shows clear distinctive progress and functional reliability on the demo path, but craftsmanship is **not** declared equal to the strongest live invitations. Batch 1 remains in **review**.
+**Verdict:** **Not yet met for Batch 2 approval.**  
+Visual craft and sandbox guest-journey reliability improved. Craftsmanship is still **not** declared equal to the strongest live invitations, and live published-link RSVP/QR token paths remain only partially verified. Batch 1 remains in **review**.
 
 ---
 

@@ -246,16 +246,32 @@ export function Experience3Shell({
 
             <div className={styles.actionsBlock}>
               {showInlineQr && qrDataUrl ? (
-                <div className="flex justify-center pt-2">
-                  <Image
-                    src={qrDataUrl}
-                    alt="Invitation QR code"
-                    width={120}
-                    height={120}
-                    className="rounded-md"
-                    unoptimized
-                  />
-                </div>
+                <section
+                  className="flex flex-col items-center gap-2 pt-2"
+                  aria-label="Admission pass"
+                  data-testid="ix3-admission-qr"
+                >
+                  <p className={styles.eyebrow}>Admission QR</p>
+                  <div
+                    className="rounded-lg p-2"
+                    style={{
+                      background: tone === "dark" ? "rgba(255,255,255,0.92)" : "#fff",
+                      border: `1px solid ${tokens.border}`,
+                    }}
+                  >
+                    <Image
+                      src={qrDataUrl}
+                      alt="Guest admission QR code"
+                      width={132}
+                      height={132}
+                      className="rounded-md"
+                      unoptimized
+                    />
+                  </div>
+                  <p className={styles.lede} style={{ fontSize: "0.85rem", textAlign: "center", margin: 0 }}>
+                    Present this pass at entry when admission is enabled for your event.
+                  </p>
+                </section>
               ) : null}
 
               <InvitationRsvpPanel

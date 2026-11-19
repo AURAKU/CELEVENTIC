@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { InvitationRenderer } from "@/components/invitation/invitation-renderer";
 import { buildLivePreviewProps } from "@/lib/invitation-mvp/demo-preview-data";
 
@@ -15,6 +15,9 @@ type Experience3DirectPreviewProps = {
  * Renders Experience 3.0 layouts through InvitationRenderer only.
  * Avoids PremiumInviteWrapper cinematic hub chrome so Studio 3 visual QA
  * inspects the versioned ix3 shell itself.
+ *
+ * Guest-journey sandbox: demo guest + local RSVP persistence + demo QR.
+ * Never calls production RSVP APIs, payments, or messaging.
  */
 export function Experience3DirectPreview({
   layoutSlug,
@@ -22,6 +25,7 @@ export function Experience3DirectPreview({
   defaultDevice = "mobile",
 }: Experience3DirectPreviewProps) {
   const [device, setDevice] = useState<"mobile" | "desktop">(defaultDevice);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const preview = useMemo(
     () =>
       buildLivePreviewProps(layoutSlug, category, {
@@ -34,6 +38,30 @@ export function Experience3DirectPreview({
     [layoutSlug, category]
   );
 
+  const invitationId = `ix3-preview-${layoutSlug}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    void import("qrcode")
+      .then((QRCode) =>
+        QRCode.toDataURL(`celeventic-sandbox-pass:${layoutSlug}:demo-guest`, {
+          margin: 1,
+          width: 240,
+          errorCorrectionLevel: "M",
+          color: { dark: "#111827", light: "#ffffff" },
+        })
+      )
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [layoutSlug]);
+
   const frameClass =
     device === "mobile"
       ? "mx-auto w-full max-w-[390px] overflow-hidden rounded-[1.75rem] border border-stone-300 bg-white shadow-lg"
@@ -41,9 +69,9 @@ export function Experience3DirectPreview({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">
-          Direct Experience 3.0 shell · demo guest
+          Direct Experience 3.0 shell · demo guest · sandbox RSVP
         </p>
         <div className="inline-flex rounded-full border border-stone-200 bg-stone-50 p-0.5">
           <button
@@ -72,7 +100,7 @@ export function Experience3DirectPreview({
         <div className={device === "mobile" ? "max-h-[812px] overflow-y-auto" : "max-h-[900px] overflow-y-auto"}>
           <InvitationRenderer
             invitation={{
-              id: `ix3-preview-${layoutSlug}`,
+              id: invitationId,
               name: preview.invitationName,
               message: preview.message,
               uniqueLink: "preview",
@@ -90,6 +118,8 @@ export function Experience3DirectPreview({
             design={preview.design}
             guestId="demo-guest"
             guestName={preview.guestName}
+            partyAllowance={2}
+            qrDataUrl={qrDataUrl}
             interactiveMedia={false}
           />
         </div>
