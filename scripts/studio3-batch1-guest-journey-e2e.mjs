@@ -59,7 +59,12 @@ async function runJourney(page, layout, label) {
       }
     });
 
-    const res = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120000 });
+    let res = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120000 });
+    if (!res || res.status() >= 500) {
+      await page.waitForTimeout(1500);
+      res = await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+      result.steps.retriedAfter5xx = true;
+    }
     result.steps.http = res?.status() ?? null;
     if (!res || res.status() >= 500) {
       result.errors.push(`HTTP ${res?.status()}`);

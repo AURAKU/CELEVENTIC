@@ -59,7 +59,7 @@ export function Experience3OpeningGate({
 
   const palette =
     tone === "dark"
-      ? { bg: "#070708", fg: "#f5f5f4", muted: "#a8a29e", border: "rgba(245,245,244,0.2)" }
+      ? { bg: "#070708", fg: "#f5f5f4", muted: "#a8a29e", border: "rgba(245,245,244,0.22)" }
       : tone === "solemn"
         ? { bg: "#efeae3", fg: "#292524", muted: "#78716c", border: "rgba(87,83,78,0.25)" }
         : { bg: "#f7f2ea", fg: "#1c1917", muted: "#78716c", border: "rgba(138,106,61,0.3)" };
@@ -84,9 +84,22 @@ export function Experience3OpeningGate({
           ? "Continue"
           : "Open invitation";
 
+  const titleClass =
+    style === "cinematic"
+      ? styles.titleCinematic
+      : style === "envelope"
+        ? styles.titleEnvelope
+        : styles.title;
+
   return (
     <div
-      className={styles.gate}
+      className={[
+        styles.gate,
+        style === "cinematic" ? styles.gateCinematic : "",
+        style === "envelope" ? styles.gateEnvelope : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={{ backgroundColor: palette.bg, color: palette.fg }}
       role="dialog"
       aria-modal="true"
@@ -122,15 +135,15 @@ export function Experience3OpeningGate({
             {monogram}
           </div>
         ) : null}
-        <div className="space-y-3">
-          <p className="text-[11px] uppercase tracking-[0.35em]" style={{ color: palette.muted }}>
+        <div className={styles.copy}>
+          <p className={styles.eyebrow} style={{ color: palette.muted }}>
             {eyebrow}
           </p>
-          <p className="text-3xl font-light leading-tight sm:text-4xl" role="heading" aria-level={1}>
+          <p className={titleClass} role="heading" aria-level={1}>
             {title}
           </p>
           {subtitle ? (
-            <p className="text-sm" style={{ color: palette.muted }}>
+            <p className={styles.subtitle} style={{ color: palette.muted }}>
               {subtitle}
             </p>
           ) : null}

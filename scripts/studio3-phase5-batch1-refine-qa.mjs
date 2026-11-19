@@ -81,6 +81,13 @@ try {
         viewport: { width: vp.w, height: vp.h },
         deviceScaleFactor: vp.w <= 430 ? 2 : 1,
       });
+      await context.addInitScript(() => {
+        try {
+          window.localStorage.setItem("celeventic_cookie_consent", "essential");
+        } catch {
+          /* ignore */
+        }
+      });
       const page = await context.newPage();
       const url = `${BASE}/invitations/experience3/${layout}`;
       const entry = { layout, width: vp.w, height: vp.h, url, ok: false };

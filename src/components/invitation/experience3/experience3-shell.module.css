@@ -272,6 +272,15 @@
   letter-spacing: 0.02em;
 }
 
+.comp_heritage .heroOverlay {
+  background: linear-gradient(
+    to top,
+    rgba(42, 28, 20, 0.72) 0%,
+    rgba(42, 28, 20, 0.18) 48%,
+    transparent 72%
+  );
+}
+
 .comp_heritage .welcome {
   border-left-width: 1px;
   padding-left: 1.2rem;
@@ -300,6 +309,15 @@
 .comp_celebration .title {
   letter-spacing: -0.01em;
   font-weight: 600;
+}
+
+.comp_celebration .heroOverlay {
+  background: linear-gradient(
+    to top,
+    rgba(13, 6, 20, 0.82) 0%,
+    rgba(13, 6, 20, 0.25) 55%,
+    transparent 78%
+  );
 }
 
 .comp_celebration .welcome {
@@ -403,6 +421,24 @@
 .comp_shower .title {
   font-weight: 400;
   letter-spacing: 0.01em;
+}
+
+.comp_shower .heroOverlay {
+  background: linear-gradient(
+    to top,
+    rgba(63, 56, 51, 0.58) 0%,
+    rgba(63, 56, 51, 0.12) 52%,
+    transparent 75%
+  );
+}
+
+.comp_academic .heroOverlay {
+  background: linear-gradient(
+    to top,
+    rgba(30, 41, 59, 0.7) 0%,
+    rgba(30, 41, 59, 0.18) 50%,
+    transparent 74%
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {

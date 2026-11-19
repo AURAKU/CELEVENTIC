@@ -52,6 +52,10 @@ export function Experience3EventCountdown({
 
   const muted = tone === "dark" ? "#a8a29e" : "#78716c";
   const fg = tone === "dark" ? "#f5f5f4" : "#1c1917";
+  const chip =
+    tone === "dark" ? "rgba(245,245,244,0.06)" : "rgba(28,25,23,0.035)";
+  const line =
+    tone === "dark" ? "rgba(245,245,244,0.16)" : "rgba(28,25,23,0.1)";
   const parts = now === null ? null : partsUntil(targetMs, now);
   if (parts?.done) return null;
 
@@ -73,11 +77,12 @@ export function Experience3EventCountdown({
     <section aria-label={label} style={{ textAlign: "center" }}>
       <p
         style={{
+          fontFamily: "var(--ix3-eyebrow, ui-sans-serif, system-ui, sans-serif)",
           fontSize: "0.65rem",
           letterSpacing: "0.3em",
           textTransform: "uppercase",
           color: muted,
-          marginBottom: "0.75rem",
+          marginBottom: "0.85rem",
         }}
       >
         {label}
@@ -86,17 +91,36 @@ export function Experience3EventCountdown({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: "0.5rem",
+          gap: "0.55rem",
           color: fg,
         }}
         aria-live="polite"
       >
         {cells.map(([name, value]) => (
-          <div key={name}>
-            <div style={{ fontSize: "1.35rem", fontVariantNumeric: "tabular-nums" }}>{value}</div>
+          <div
+            key={name}
+            style={{
+              border: `1px solid ${line}`,
+              background: chip,
+              borderRadius: "0.85rem",
+              padding: "0.7rem 0.35rem",
+            }}
+          >
             <div
               style={{
-                fontSize: "0.6rem",
+                fontFamily: "var(--ix3-heading, Georgia, serif)",
+                fontSize: "1.35rem",
+                fontVariantNumeric: "tabular-nums",
+                lineHeight: 1.1,
+              }}
+            >
+              {value}
+            </div>
+            <div
+              style={{
+                marginTop: "0.35rem",
+                fontFamily: "var(--ix3-eyebrow, ui-sans-serif, system-ui, sans-serif)",
+                fontSize: "0.58rem",
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
                 color: muted,
@@ -108,7 +132,7 @@ export function Experience3EventCountdown({
         ))}
       </div>
       {reducedMotion ? (
-        <p style={{ marginTop: "0.5rem", fontSize: "0.7rem", color: muted }}>
+        <p style={{ marginTop: "0.55rem", fontSize: "0.7rem", color: muted }}>
           Live seconds paused for reduced motion.
         </p>
       ) : null}

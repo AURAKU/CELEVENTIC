@@ -9,6 +9,20 @@
   backdrop-filter: blur(10px);
 }
 
+.gateCinematic {
+  background-image:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(34, 211, 238, 0.12), transparent),
+    radial-gradient(ellipse 50% 40% at 80% 100%, rgba(244, 63, 94, 0.08), transparent);
+}
+
+.gateEnvelope {
+  background-image: radial-gradient(
+    ellipse 60% 40% at 50% 0%,
+    rgba(143, 79, 36, 0.08),
+    transparent
+  );
+}
+
 .panel {
   display: flex;
   max-width: 28rem;
@@ -20,6 +34,55 @@
   animation: ix3GateIn 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.copy {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--ix3-eyebrow, ui-sans-serif, system-ui, sans-serif);
+  font-size: 0.68rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ix3-heading, Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(1.85rem, 5vw, 2.45rem);
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+}
+
+.titleEnvelope {
+  margin: 0;
+  font-family: var(--ix3-heading, Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(1.85rem, 5vw, 2.45rem);
+  line-height: 1.12;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.titleCinematic {
+  margin: 0;
+  font-family: var(--ix3-heading, ui-sans-serif, system-ui, sans-serif);
+  font-weight: 700;
+  font-size: clamp(1.55rem, 4.5vw, 2.15rem);
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--ix3-body, Georgia, serif);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
 .monogram {
   display: flex;
   height: 5.5rem;
@@ -27,6 +90,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
+  font-family: var(--ix3-heading, Georgia, serif);
   font-size: 1.25rem;
   letter-spacing: 0.22em;
   animation: ix3MonoIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -40,6 +104,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
+  font-family: var(--ix3-heading, Georgia, serif);
   font-size: 1.15rem;
   letter-spacing: 0.2em;
   animation: ix3MonoIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
