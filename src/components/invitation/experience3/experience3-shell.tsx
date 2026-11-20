@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import type { CSSProperties, ReactNode } from "react";
+import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Experience3Definition } from "@/lib/invitation/studio3/experience-definition";
 import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer-types";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
@@ -93,6 +93,22 @@ export function Experience3Shell({
     design.media?.find((m) => m.role === "intro")?.url ??
     cover;
 
+  const forceInstant =
+    definition.motionIntensity <= 0.25 && definition.opening.style === "minimal-instant";
+  const [openingActive, setOpeningActive] = useState(
+    () => !(forceInstant || definition.opening.style === "minimal-instant")
+  );
+  const mainRef = useRef<HTMLDivElement | null>(null);
+
+  const handleOpeningChange = useCallback((open: boolean) => {
+    setOpeningActive(open);
+    if (!open) {
+      requestAnimationFrame(() => {
+        mainRef.current?.focus({ preventScroll: true });
+      });
+    }
+  }, []);
+
   const compositionClass =
     composition === "launch"
       ? styles.comp_launch
@@ -174,10 +190,20 @@ export function Experience3Shell({
         }
         portraitUrl={definition.opening.style === "portrait" ? portrait : null}
         tone={tone}
-        forceInstant={definition.motionIntensity <= 0.25 && definition.opening.style === "minimal-instant"}
+        forceInstant={forceInstant}
+        onOpenChange={handleOpeningChange}
       />
 
-      <div className={styles.frame}>
+      <div
+        ref={mainRef}
+        className={styles.frame}
+        data-testid="ix3-invitation-main"
+        tabIndex={-1}
+        // While the opening dialog is active, invitation chrome (including RSVP)
+        // must not receive pointer or keyboard interaction underneath the modal.
+        {...(openingActive ? ({ inert: true } as { inert: boolean }) : {})}
+        aria-hidden={openingActive || undefined}
+      >
         <article className={styles.surface}>
           <header
             className={heroClass}

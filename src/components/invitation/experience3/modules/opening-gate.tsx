@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { Experience3OpeningStyle } from "@/lib/invitation/studio3/design-families";
 import styles from "./opening-gate.module.css";
 
@@ -17,6 +17,8 @@ type OpeningGateProps = {
   tone: "light" | "dark" | "solemn";
   forceInstant?: boolean;
   onComplete?: () => void;
+  /** Notifies the shell so invitation content can be marked inert while the gate is open. */
+  onOpenChange?: (open: boolean) => void;
 };
 
 function usePrefersReducedMotion() {
@@ -31,6 +33,14 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
+function getFocusable(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true");
+}
+
 export function Experience3OpeningGate({
   style,
   title,
@@ -40,10 +50,19 @@ export function Experience3OpeningGate({
   tone,
   forceInstant = false,
   onComplete,
+  onOpenChange,
 }: OpeningGateProps) {
   const reducedMotion = usePrefersReducedMotion();
   /** Prefer non-instant first paint so SSR/CSR match; apply reduced-motion after mount. */
   const [open, setOpen] = useState(() => !(forceInstant || style === "minimal-instant"));
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const primaryRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
+
+  const dismiss = useCallback(() => {
+    setOpen(false);
+  }, []);
 
   useEffect(() => {
     if (forceInstant || style === "minimal-instant" || reducedMotion) {
@@ -52,8 +71,59 @@ export function Experience3OpeningGate({
   }, [forceInstant, style, reducedMotion]);
 
   useEffect(() => {
+    onOpenChange?.(open);
     if (!open) onComplete?.();
-  }, [open, onComplete]);
+  }, [open, onComplete, onOpenChange]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    const primary = primaryRef.current;
+    primary?.focus();
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        dismiss();
+        return;
+      }
+      if (event.key !== "Tab" || !dialog) return;
+      const focusable = getFocusable(dialog);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        primary?.focus();
+        return;
+      }
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const active = document.activeElement as HTMLElement | null;
+      if (event.shiftKey) {
+        if (active === first || !dialog.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.body.style.overflow = previousOverflow;
+      const restore = previouslyFocusedRef.current;
+      if (restore && typeof restore.focus === "function" && document.contains(restore)) {
+        restore.focus();
+      }
+    };
+  }, [open, dismiss]);
 
   if (!open) return null;
 
@@ -101,6 +171,7 @@ export function Experience3OpeningGate({
 
   return (
     <div
+      ref={dialogRef}
       className={[
         styles.gate,
         style === "cinematic" ? styles.gateCinematic : "",
@@ -112,7 +183,10 @@ export function Experience3OpeningGate({
       style={{ backgroundColor: palette.bg, color: palette.fg }}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
       aria-label="Invitation opening"
+      data-testid="ix3-opening-gate"
+      data-ix3-opening-style={style}
     >
       <div className={styles.panel}>
         {style === "portrait" && portraitUrl ? (
@@ -148,7 +222,7 @@ export function Experience3OpeningGate({
           <p className={styles.eyebrow} style={{ color: palette.muted }}>
             {eyebrow}
           </p>
-          <p className={titleClass} role="heading" aria-level={1}>
+          <p className={titleClass} id={titleId} role="heading" aria-level={1}>
             {title}
           </p>
           {subtitle ? (
@@ -158,8 +232,10 @@ export function Experience3OpeningGate({
           ) : null}
         </div>
         <button
+          ref={primaryRef}
           type="button"
           className={styles.primary}
+          data-testid="ix3-opening-primary"
           style={{
             border: `1px solid ${palette.border}`,
             color: palette.fg,
@@ -170,19 +246,14 @@ export function Experience3OpeningGate({
             textTransform: "uppercase",
             background: "transparent",
           }}
-          onClick={() => setOpen(false)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " " || event.key === "Escape") {
-              event.preventDefault();
-              setOpen(false);
-            }
-          }}
+          onClick={dismiss}
         >
           {cta}
         </button>
         <button
           type="button"
           className={styles.skip}
+          data-testid="ix3-opening-skip"
           style={{
             color: palette.muted,
             fontSize: "0.68rem",
@@ -193,7 +264,7 @@ export function Experience3OpeningGate({
             textDecoration: "underline",
             textUnderlineOffset: 4,
           }}
-          onClick={() => setOpen(false)}
+          onClick={dismiss}
         >
           Skip
         </button>

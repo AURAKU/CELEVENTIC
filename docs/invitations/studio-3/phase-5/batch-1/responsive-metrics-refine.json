@@ -1,59 +1,63 @@
 {
   "base": "http://127.0.0.1:3002",
-  "capturedAt": "2026-11-20T01:24:02.971Z",
+  "capturedAt": "2026-11-20T02:22:07.540Z",
   "results": [
     {
-      "layout": "ix3-baby-shower",
-      "width": 1440,
-      "height": 900,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-baby-shower",
-      "ok": true,
-      "status": 200,
-      "metrics": {
-        "docOverflow": false,
-        "bodyOverflow": false,
-        "guest": true,
-        "dinner": false
-      },
-      "screenshot": "ix3-baby-shower-w1440.png"
-    },
-    {
-      "layout": "ix3-baby-shower",
+      "layout": "ix3-heritage-marriage",
       "width": 375,
       "height": 812,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-baby-shower",
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-heritage-marriage",
       "ok": true,
       "status": 200,
       "metrics": {
+        "vw": 375,
+        "vh": 812,
+        "scrollWidth": 375,
+        "clientWidth": 375,
         "docOverflow": false,
         "bodyOverflow": false,
         "guest": true,
-        "dinner": false
+        "rsvp": true,
+        "maps": true,
+        "share": true,
+        "calendar": true,
+        "countdown": true,
+        "privacy": false
       },
-      "screenshot": "ix3-baby-shower-w375.png"
+      "screenshot": "ix3-heritage-marriage-w375.png"
     },
     {
-      "layout": "ix3-baby-shower",
+      "layout": "ix3-heritage-marriage",
       "width": 768,
       "height": 1024,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-baby-shower",
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-heritage-marriage",
       "ok": true,
       "status": 200,
       "metrics": {
+        "vw": 768,
+        "vh": 1024,
+        "scrollWidth": 768,
+        "clientWidth": 768,
         "docOverflow": false,
         "bodyOverflow": false,
         "guest": true,
-        "dinner": false
+        "rsvp": true,
+        "maps": true,
+        "share": true,
+        "calendar": true,
+        "countdown": true,
+        "privacy": false
       },
-      "screenshot": "ix3-baby-shower-w768.png"
+      "screenshot": "ix3-heritage-marriage-w768.png"
     },
     {
-      "layout": "ix3-birthday-celebration",
+      "layout": "ix3-heritage-marriage",
       "width": 1440,
       "height": 900,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-birthday-celebration",
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-heritage-marriage",
       "ok": true,
       "status": 200,
+      "retried": true,
       "metrics": {
         "vw": 1440,
         "vh": 900,
@@ -69,7 +73,7 @@
         "countdown": true,
         "privacy": false
       },
-      "screenshot": "ix3-birthday-celebration-w1440.png"
+      "screenshot": "ix3-heritage-marriage-w1440.png"
     },
     {
       "layout": "ix3-birthday-celebration",
@@ -120,10 +124,10 @@
       "screenshot": "ix3-birthday-celebration-w768.png"
     },
     {
-      "layout": "ix3-concert-night",
+      "layout": "ix3-birthday-celebration",
       "width": 1440,
       "height": 900,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-concert-night",
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-birthday-celebration",
       "ok": true,
       "status": 200,
       "metrics": {
@@ -141,7 +145,79 @@
         "countdown": true,
         "privacy": false
       },
-      "screenshot": "ix3-concert-night-w1440.png"
+      "screenshot": "ix3-birthday-celebration-w1440.png"
+    },
+    {
+      "layout": "ix3-corporate-gala",
+      "width": 375,
+      "height": 812,
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-corporate-gala",
+      "ok": true,
+      "status": 200,
+      "metrics": {
+        "vw": 375,
+        "vh": 812,
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "docOverflow": false,
+        "bodyOverflow": false,
+        "guest": true,
+        "rsvp": true,
+        "maps": true,
+        "share": true,
+        "calendar": true,
+        "countdown": true,
+        "privacy": false
+      },
+      "screenshot": "ix3-corporate-gala-w375.png"
+    },
+    {
+      "layout": "ix3-corporate-gala",
+      "width": 768,
+      "height": 1024,
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-corporate-gala",
+      "ok": true,
+      "status": 200,
+      "metrics": {
+        "vw": 768,
+        "vh": 1024,
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "docOverflow": false,
+        "bodyOverflow": false,
+        "guest": true,
+        "rsvp": true,
+        "maps": true,
+        "share": true,
+        "calendar": true,
+        "countdown": true,
+        "privacy": false
+      },
+      "screenshot": "ix3-corporate-gala-w768.png"
+    },
+    {
+      "layout": "ix3-corporate-gala",
+      "width": 1440,
+      "height": 900,
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-corporate-gala",
+      "ok": true,
+      "status": 200,
+      "metrics": {
+        "vw": 1440,
+        "vh": 900,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "docOverflow": false,
+        "bodyOverflow": false,
+        "guest": true,
+        "rsvp": true,
+        "maps": true,
+        "share": true,
+        "calendar": true,
+        "countdown": true,
+        "privacy": false
+      },
+      "screenshot": "ix3-corporate-gala-w1440.png"
     },
     {
       "layout": "ix3-concert-night",
@@ -192,13 +268,12 @@
       "screenshot": "ix3-concert-night-w768.png"
     },
     {
-      "layout": "ix3-corporate-gala",
+      "layout": "ix3-concert-night",
       "width": 1440,
       "height": 900,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-corporate-gala",
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-concert-night",
       "ok": true,
       "status": 200,
-      "retried": true,
       "metrics": {
         "vw": 1440,
         "vh": 900,
@@ -214,82 +289,7 @@
         "countdown": true,
         "privacy": false
       },
-      "screenshot": "ix3-corporate-gala-w1440.png"
-    },
-    {
-      "layout": "ix3-corporate-gala",
-      "width": 375,
-      "height": 812,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-corporate-gala",
-      "ok": true,
-      "status": 200,
-      "retried": true,
-      "metrics": {
-        "vw": 375,
-        "vh": 812,
-        "scrollWidth": 375,
-        "clientWidth": 375,
-        "docOverflow": false,
-        "bodyOverflow": false,
-        "guest": true,
-        "rsvp": true,
-        "maps": true,
-        "share": true,
-        "calendar": true,
-        "countdown": true,
-        "privacy": false
-      },
-      "screenshot": "ix3-corporate-gala-w375.png"
-    },
-    {
-      "layout": "ix3-corporate-gala",
-      "width": 768,
-      "height": 1024,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-corporate-gala",
-      "ok": true,
-      "status": 200,
-      "retried": true,
-      "metrics": {
-        "vw": 768,
-        "vh": 1024,
-        "scrollWidth": 768,
-        "clientWidth": 768,
-        "docOverflow": false,
-        "bodyOverflow": false,
-        "guest": true,
-        "rsvp": true,
-        "maps": true,
-        "share": true,
-        "calendar": true,
-        "countdown": true,
-        "privacy": false
-      },
-      "screenshot": "ix3-corporate-gala-w768.png"
-    },
-    {
-      "layout": "ix3-graduation",
-      "width": 1440,
-      "height": 900,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-graduation",
-      "ok": true,
-      "status": 200,
-      "retried": true,
-      "metrics": {
-        "vw": 1440,
-        "vh": 900,
-        "scrollWidth": 1440,
-        "clientWidth": 1440,
-        "docOverflow": false,
-        "bodyOverflow": false,
-        "guest": true,
-        "rsvp": true,
-        "maps": true,
-        "share": true,
-        "calendar": true,
-        "countdown": true,
-        "privacy": false
-      },
-      "screenshot": "ix3-graduation-w1440.png"
+      "screenshot": "ix3-concert-night-w1440.png"
     },
     {
       "layout": "ix3-graduation",
@@ -340,10 +340,10 @@
       "screenshot": "ix3-graduation-w768.png"
     },
     {
-      "layout": "ix3-heritage-marriage",
+      "layout": "ix3-graduation",
       "width": 1440,
       "height": 900,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-heritage-marriage",
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-graduation",
       "ok": true,
       "status": 200,
       "metrics": {
@@ -361,13 +361,13 @@
         "countdown": true,
         "privacy": false
       },
-      "screenshot": "ix3-heritage-marriage-w1440.png"
+      "screenshot": "ix3-graduation-w1440.png"
     },
     {
-      "layout": "ix3-heritage-marriage",
+      "layout": "ix3-baby-shower",
       "width": 375,
       "height": 812,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-heritage-marriage",
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-baby-shower",
       "ok": true,
       "status": 200,
       "metrics": {
@@ -385,13 +385,13 @@
         "countdown": true,
         "privacy": false
       },
-      "screenshot": "ix3-heritage-marriage-w375.png"
+      "screenshot": "ix3-baby-shower-w375.png"
     },
     {
-      "layout": "ix3-heritage-marriage",
+      "layout": "ix3-baby-shower",
       "width": 768,
       "height": 1024,
-      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-heritage-marriage",
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-baby-shower",
       "ok": true,
       "status": 200,
       "metrics": {
@@ -409,7 +409,31 @@
         "countdown": true,
         "privacy": false
       },
-      "screenshot": "ix3-heritage-marriage-w768.png"
+      "screenshot": "ix3-baby-shower-w768.png"
+    },
+    {
+      "layout": "ix3-baby-shower",
+      "width": 1440,
+      "height": 900,
+      "url": "http://127.0.0.1:3002/invitations/experience3/ix3-baby-shower",
+      "ok": true,
+      "status": 200,
+      "metrics": {
+        "vw": 1440,
+        "vh": 900,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "docOverflow": false,
+        "bodyOverflow": false,
+        "guest": true,
+        "rsvp": true,
+        "maps": true,
+        "share": true,
+        "calendar": true,
+        "countdown": true,
+        "privacy": false
+      },
+      "screenshot": "ix3-baby-shower-w1440.png"
     }
   ]
 }

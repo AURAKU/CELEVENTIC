@@ -341,4 +341,113 @@ These absences alone do not force P0 if Batch 1 scope explicitly excludes them �
 - http://127.0.0.1:3002/invitations/experience3/ix3-baby-shower  
 - http://127.0.0.1:3002/invitations/experience3/ix3-graduation  
 - http://127.0.0.1:3002/invitations/experience3/ix3-birthday-celebration  
-- http://127.0.0.1:3002/invitations/experience3/ix3-concert-night  
+- http://127.0.0.1:3002/invitations/experience3/ix3-concert-night
+
+## P0-2 Resolution — Concert cinematic opening intercepting RSVP
+
+**Status:** **RESOLVED** (browser-verified)  
+**Resolution commit:** *(stamped at commit)*  
+**Authorized scope:** Concert RSVP P0 only — no creative redesigns, no Batch 2.
+
+### 1. Root cause
+
+The Experience 3.0 opening gate is a full-viewport `position: fixed` dialog (`role="dialog"` / `aria-modal="true"`, `z-index: 40`).
+
+While the cinematic gate remained open:
+
+1. Invitation content — including **Accept** — stayed in the DOM as visible, non-inert controls.
+2. Pointer / Playwright actions targeting **Accept** were intercepted by the dialog layer (TimeoutError: dialog subtree intercepts pointer events).
+3. The gate lacked a complete modal contract: no focus trap, no reliable Escape handling on the document, no `inert` / `aria-hidden` on the invitation surface, and no focus restoration after dismiss.
+
+The cinematic experience itself was not the bug; the missing modal isolation was.
+
+### 2. Exact implementation changes
+
+| File | Change |
+|---|---|
+| `src/components/invitation/experience3/modules/opening-gate.tsx` | Focus trap; Escape dismiss; initial focus on primary CTA; `onOpenChange`; body scroll lock; labelled dialog; test ids |
+| `src/components/invitation/experience3/experience3-shell.tsx` | Tracks `openingActive`; applies `inert` + `aria-hidden` to invitation main while gate open; restores focus to main on dismiss |
+| `scripts/studio3-concert-opening-rsvp-regression.mjs` | New P0 regression suite (see below) |
+
+Cinematic visuals / copy / motion language were **not** redesigned.
+
+### 3. Regression tests added
+
+Script: `scripts/studio3-concert-opening-rsvp-regression.mjs`
+
+Coverage:
+
+- RSVP while cinematic opening is active → **blocked** (main `inert`; Accept not actionable; no Thank you)
+- RSVP after dismissing opening → **Thank you** confirmation
+- Keyboard-only dismiss + RSVP (Enter / Escape paths)
+- Mobile touch (`hasTouch` / `tap`)
+- Repeated open/close across reloads
+- Decline response state
+- Smoke: all six Batch 1 families Accept after dismiss (or instant open for Gala)
+
+Result this pass: **ALL PASSED** (`failed: 0`).
+
+### 4. Browser reproduction before / verification after
+
+**Before (reproduced on HEAD prior to fix):**
+
+- Gate visible on Concert preview
+- `Accept` click → TimeoutError (dialog intercepts pointer events)
+- Evidence: `acceptance-audit/p0-concert-BEFORE-gate-open.jpg`
+
+**After (intended guest flow):**
+
+1. Cinematic gate shows; invitation main has `inert`
+2. Guest activates **Enter the evening** / Skip / Escape
+3. Gate unmounts; `inert` removed
+4. **Accept** succeeds → “Thank you!” confirmation
+5. Evidence: `acceptance-audit/p0-concert-AFTER-gate-inert-blocks-rsvp.jpg`, `acceptance-audit/p0-concert-AFTER-rsvp-confirmed.jpg`
+
+### 5. Accessibility verification
+
+| Check | Result |
+|---|---|
+| Dialog `aria-modal` + labelling | **Pass** |
+| Focus moves to primary CTA when opened | **Pass** |
+| Tab cycle trapped inside gate | **Pass** (implemented) |
+| Escape dismisses gate | **Pass** (regression) |
+| Background marked `inert` / `aria-hidden` while open | **Pass** |
+| Focus restored to invitation main after dismiss | **Pass** |
+| Reduced-motion still auto-skips gate | **Preserved** (existing behaviour) |
+
+### 6. Protected-template drift
+
+```
+git diff --name-only main -- src/components/invitation/templates
+→ (empty)
+```
+
+**Drift: 0**
+
+### 7. Suite results after fix
+
+| Suite | Result |
+|---|---|
+| `npm run test:invitation-studio3` | **35 / 35** |
+| Concert P0 regression script | **ALL PASSED** |
+| Guest-journey E2E | **11 / 12** once (Corporate Gala desktop `qr=false` timing flake); **QR re-verified present** on gala desktop; Concert mobile+desktop **PASS** |
+| Responsive refine QA | **18 / 18** |
+| Protected-template drift | **0** |
+
+### 8. Remaining P0 / P1 / P2 findings
+
+| ID | Status after this fix |
+|---|---|
+| **P0-2** opening-gate intercept | **RESOLVED** |
+| **P0-1** creative acceptance unmet | **Still open** (out of scope) |
+| **P1-1** Heritage monogram TK vs AK | Still open |
+| **P1-2** Graduation CELEBRATIN/G wrap | Still open |
+| **P1-3** Shared RSVP chrome | Still open |
+| **P1-4** Hero/media flatness | Still open |
+| **P1-5** Structural sameness | Still open |
+| **P1-6** Inline-only confirmation | Still open |
+| **P1-7** Dark “Confirming” wrap | Still open |
+| P2-* | Still open |
+
+**Final Batch 1 creative acceptance:** still **not** granted.  
+**Batch 2:** still **locked**.
