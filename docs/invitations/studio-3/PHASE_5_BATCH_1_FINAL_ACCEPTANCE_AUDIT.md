@@ -4,7 +4,7 @@
 **Branch:** `feat/invitation-studio-3`  
 **Original audit HEAD:** `fde76f5e`  
 **Stage 1 HEAD:** `3171d980`  
-**P1 remediation:** Stages 2–4 implemented; see §9 for post-commit checkpoint  
+**P1 remediation HEAD:** `37da3ef7` (Stages 2–4 + evidence; Stage 1 was `3171d980`)  
 **Referenced implementation:** `a3141004`  
 **Audit date (UTC):** 2026-11-20  
 **Auditor:** Cursor Agent (browser + screenshot evidence)  
