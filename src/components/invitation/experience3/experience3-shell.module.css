@@ -345,7 +345,15 @@
 }
 
 .comp_gala .heroOverlay {
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.78), rgba(11, 18, 32, 0.2) 55%, transparent);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(11, 18, 32, 0.12) 52%, transparent 78%);
+}
+
+.comp_gala .heroOverlayCenter {
+  background: linear-gradient(180deg, rgba(8, 14, 26, 0.2), rgba(8, 14, 26, 0.42));
+}
+
+.comp_concert .heroOverlayCenter {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.42));
 }
 
 .comp_gala .welcome {
@@ -426,19 +434,65 @@
 .comp_shower .heroOverlay {
   background: linear-gradient(
     to top,
-    rgba(58, 50, 44, 0.62) 0%,
-    rgba(58, 50, 44, 0.18) 48%,
-    rgba(243, 235, 228, 0.08) 100%
+    rgba(58, 50, 44, 0.42) 0%,
+    rgba(58, 50, 44, 0.1) 45%,
+    transparent 72%
   );
 }
 
 .comp_academic .heroOverlay {
   background: linear-gradient(
     to top,
-    rgba(30, 41, 59, 0.7) 0%,
-    rgba(30, 41, 59, 0.18) 50%,
-    transparent 74%
+    rgba(30, 41, 59, 0.48) 0%,
+    rgba(30, 41, 59, 0.12) 48%,
+    transparent 76%
   );
+}
+
+/* Composition body rhythm — storytelling cadence differs by family */
+.comp_heritage .body {
+  gap: 1.55rem;
+}
+
+.comp_gala .body {
+  gap: 1.85rem;
+}
+
+.comp_concert .body {
+  gap: 1.35rem;
+}
+
+.comp_academic .body {
+  gap: 1.7rem;
+}
+
+.comp_shower .body {
+  gap: 1.45rem;
+}
+
+.comp_celebration .body {
+  gap: 1.25rem;
+}
+
+.comp_heritage .actionsBlock,
+.comp_academic .actionsBlock {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+}
+
+.comp_concert .actionsBlock,
+.comp_celebration .actionsBlock {
+  margin-top: 0.15rem;
+}
+
+.comp_gala .actionsBlock {
+  border-top: 1px solid color-mix(in srgb, var(--ix3-accent) 35%, transparent);
+  padding-top: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.comp_shower .actionsBlock {
+  padding-top: 0.75rem;
 }
 
 /* Frame modes — distinct structural silhouettes */

@@ -86,9 +86,6 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
       }
     >
       <Experience3SectionReveal>
-        <Experience3OrnamentRule tone="light" mark="❖" />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={1}>
         <Experience3DiplomaFrame
           tone="light"
           title={graduate}
@@ -96,6 +93,29 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
+        <Experience3OrnamentRule tone="light" mark="❖" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <section aria-label="Milestone narrative">
+          <p className={styles.note}>
+            {props.event.message ||
+              "This invitation marks a milestone earned—procession, recognition, and a gathering of the people who carried the journey."}
+          </p>
+        </section>
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
+        <Experience3EssentialsTimeline beats={beats} heading="Ceremony order" tone="light" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
+        <Experience3VenuePanel
+          tone="light"
+          heading="Hall"
+          venue={props.event.venueName}
+          landmark={props.event.landmark}
+          dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
         <Experience3DateLockup
           tone="light"
           label="Ceremony"
@@ -106,15 +126,7 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
           time={date.time}
         />
       </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
-        <section aria-label="Milestone narrative">
-          <p className={styles.note}>
-            {props.event.message ||
-              "This invitation marks a milestone earned—procession, recognition, and a gathering of the people who carried the journey."}
-          </p>
-        </section>
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
+      <Experience3SectionReveal delay={3}>
         <Experience3EventCountdown
           startAtIso={props.event.startDateRaw}
           label="Until commencement"
@@ -122,22 +134,10 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
-        <Experience3EssentialsTimeline beats={beats} heading="Ceremony order" tone="light" />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={3}>
-        <Experience3VenuePanel
-          tone="light"
-          heading="Venue"
-          venue={props.event.venueName}
-          landmark={props.event.landmark}
-          dressCode={props.event.dressCode}
-        />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={3}>
         <Experience3JourneyNote
           tone="light"
           title="Guest journey"
-          body="Review the citation, confirm attendance, follow ceremony order, and keep your admission QR for the hall."
+          body="Read the citation, follow ceremony order, send your recognition reply, and keep your admission QR for the hall."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

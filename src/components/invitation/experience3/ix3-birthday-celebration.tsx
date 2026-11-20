@@ -9,7 +9,9 @@ import {
   Experience3JourneyNote,
 } from "@/components/invitation/experience3/modules/editorial-lockups";
 import {
+  Experience3ChipRow,
   Experience3SoftCard,
+  Experience3ToastList,
   Experience3VenuePanel,
 } from "@/components/invitation/experience3/modules/feature-strips";
 import { Experience3SectionReveal } from "@/components/invitation/experience3/modules/section-reveal";
@@ -74,12 +76,37 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
       }
     >
       <Experience3SectionReveal>
+        <Experience3ChipRow
+          tone="dark"
+          chips={["Toasts", "Playlist", "Midnight cake", "Photo booth"]}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
         <Experience3SoftCard tone="dark" title={`For ${celebrant}`}>
           {props.event.message ||
             "This celebration is personal—toasts, dancing, and the kind of joy you only get once a year. Bring your energy and your favourite stories."}
         </Experience3SoftCard>
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
+        <Experience3ToastList
+          tone="dark"
+          items={[
+            `A toast for ${celebrant}`,
+            "Stories from the year that shaped this milestone",
+            "Dancing until the playlist runs out",
+          ]}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
+        <Experience3VenuePanel
+          tone="dark"
+          heading="Where we meet"
+          venue={props.event.venueName}
+          landmark={props.event.landmark}
+          dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
         <Experience3DateLockup
           tone="dark"
           label="Party night"
@@ -90,38 +117,21 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
           time={date.time}
         />
       </Experience3SectionReveal>
-      <Experience3SectionReveal delay={1}>
-        <section aria-label="Celebration rhythm">
-          <p className={styles.note} style={{ letterSpacing: "0.01em" }}>
-            Not a gala. Not a concert ticket. A birthday with personality—arrive ready to mark the
-            milestone.
-          </p>
-        </section>
+      <Experience3SectionReveal delay={3}>
+        <Experience3EssentialsTimeline beats={beats} heading="Night rhythm" tone="dark" />
       </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
+      <Experience3SectionReveal delay={3}>
         <Experience3EventCountdown
           startAtIso={props.event.startDateRaw}
           label="Party starts in"
           tone="dark"
         />
       </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
-        <Experience3EssentialsTimeline beats={beats} heading="Night rhythm" tone="dark" />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={3}>
-        <Experience3VenuePanel
-          tone="dark"
-          heading="Where we meet"
-          venue={props.event.venueName}
-          landmark={props.event.landmark}
-          dressCode={props.event.dressCode}
-        />
-      </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
         <Experience3JourneyNote
           tone="dark"
           title="Guest journey"
-          body="Step into the celebration, check the night rhythm, RSVP with your party size, and keep your admission QR for the door."
+          body="Step into the celebration, skim the toast list, RSVP with your party size, and keep your admission QR for the door."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

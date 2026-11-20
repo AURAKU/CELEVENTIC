@@ -10,6 +10,8 @@ import {
   Experience3NameStack,
 } from "@/components/invitation/experience3/modules/editorial-lockups";
 import {
+  Experience3BlessingSeal,
+  Experience3CoupleCard,
   Experience3OrnamentRule,
   Experience3VenuePanel,
 } from "@/components/invitation/experience3/modules/feature-strips";
@@ -67,18 +69,17 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
       }
     >
       <Experience3SectionReveal>
-        <Experience3OrnamentRule tone="light" mark="◈" />
+        <Experience3BlessingSeal
+          tone="light"
+          mark={monogram || "AK"}
+          lede="Two houses · one blessing"
+        />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
-        <Experience3DateLockup
-          tone="light"
-          label="Ceremony day"
-          weekday={date.weekday}
-          day={date.day}
-          month={date.month}
-          year={date.year}
-          time={date.time}
-        />
+        <Experience3CoupleCard tone="light" name1={name1} name2={name2 || null} />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <Experience3OrnamentRule tone="light" mark="◈" />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
         <section aria-label="Heritage note">
@@ -89,16 +90,17 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
         </section>
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={2}>
-        <Experience3EventCountdown
-          startAtIso={props.event.startDateRaw}
-          label="Until the ceremony"
+        <Experience3DateLockup
           tone="light"
+          label="Ceremony day"
+          weekday={date.weekday}
+          day={date.day}
+          month={date.month}
+          year={date.year}
+          time={date.time}
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={2}>
-        <Experience3EssentialsTimeline beats={beats} heading="Ceremony programme" tone="light" />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={3}>
         <Experience3VenuePanel
           tone="light"
           heading="Reception"
@@ -108,10 +110,20 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
+        <Experience3EssentialsTimeline beats={beats} heading="Ceremony programme" tone="light" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3EventCountdown
+          startAtIso={props.event.startDateRaw}
+          label="Until the ceremony"
+          tone="light"
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
         <Experience3JourneyNote
           tone="light"
           title="Guest journey"
-          body="Open the seal, review the ceremony details, confirm your attendance, and keep your admission QR ready for the gathering."
+          body="Open the seal, honour the couple, review ceremony details, offer your ceremonial reply, and keep your admission QR for the gathering."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

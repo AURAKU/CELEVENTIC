@@ -1,8 +1,10 @@
 # Phase 5 Batch 1 — Final Acceptance Audit
 
-**Audit type:** Evidence-based acceptance review (no creative implementation this pass)  
+**Audit type:** Evidence-based acceptance review + authorized P1 remediation (§9)  
 **Branch:** `feat/invitation-studio-3`  
-**Verified HEAD:** `fde76f5e`  
+**Original audit HEAD:** `fde76f5e`  
+**Stage 1 HEAD:** `3171d980`  
+**P1 remediation:** Stages 2–4 implemented; see §9 for post-commit checkpoint  
 **Referenced implementation:** `a3141004`  
 **Audit date (UTC):** 2026-11-20  
 **Auditor:** Cursor Agent (browser + screenshot evidence)  
@@ -439,15 +441,142 @@ git diff --name-only main -- src/components/invitation/templates
 | ID | Status after this fix |
 |---|---|
 | **P0-2** opening-gate intercept | **RESOLVED** |
-| **P0-1** creative acceptance unmet | **Still open** (out of scope) |
-| **P1-1** Heritage monogram TK vs AK | Still open |
-| **P1-2** Graduation CELEBRATIN/G wrap | Still open |
-| **P1-3** Shared RSVP chrome | Still open |
-| **P1-4** Hero/media flatness | Still open |
-| **P1-5** Structural sameness | Still open |
-| **P1-6** Inline-only confirmation | Still open |
-| **P1-7** Dark “Confirming” wrap | Still open |
+| **P0-1** creative acceptance unmet | **Still open** (out of scope for P1 remediation) |
+| **P1-1** Heritage monogram TK vs AK | **RESOLVED** — see §9 |
+| **P1-2** Graduation CELEBRATIN/G wrap | **RESOLVED** — see §9 |
+| **P1-3** Shared RSVP chrome | **RESOLVED** — see §9 |
+| **P1-4** Hero/media flatness | **RESOLVED** — see §9 |
+| **P1-5** Structural sameness | **RESOLVED** (implementation) — human visual bar still required |
+| **P1-6** Inline-only confirmation | **RESOLVED** — see §9 |
+| **P1-7** Dark “Confirming” wrap | **RESOLVED** — see §9 |
 | P2-* | Still open |
 
 **Final Batch 1 creative acceptance:** still **not** granted.  
 **Batch 2:** still **locked**.
+
+---
+
+## 9. P1 remediation pass (authorized seven findings)
+
+**Remediation date (UTC):** 2026-11-20  
+**Pre-remediation HEAD:** `3171d980` (Stage 1 already landed: P1-1/2/7 code)  
+**Post-remediation checkpoint:** see commit on `feat/invitation-studio-3` after this section  
+**Batch 2 / merge / deploy:** Not performed  
+**Protected-template drift:** **0**
+
+### 9.1 Resolution status
+
+| ID | Status | Correction |
+|---|---|---|
+| **P1-1** | **RESOLVED** | Couple monogram prefers host partner names; Amara & Kwame → **AK** (not TK). |
+| **P1-2** | **RESOLVED** | Graduation hero splits “Celebrating” from graduate name; no mid-word wrap at 375px. |
+| **P1-3** | **RESOLVED** | Family-specific RSVP ritual chrome + labels; shared `InvitationRsvpPanel` backend retained. |
+| **P1-4** | **RESOLVED** | Category heroes for shower/graduation/concert/gala + lighter overlays so photography reads. |
+| **P1-5** | **RESOLVED** (code) | Distinctive modules + reordered storytelling + body rhythm per composition. Human craft bar pending. |
+| **P1-6** | **RESOLVED** | Composed confirmation/thank-you card for Accept / Decline / Maybe per family. |
+| **P1-7** | **RESOLVED** | NBSP in “Confirming…” summaries + wrap hardening in RSVP party summary. |
+
+### 9.2 Exact files modified (this remediation)
+
+**Stage 1 (already committed `3171d980`):**
+- `src/lib/invitation-templates.ts`
+- `src/components/invitation/experience3/ix3-heritage-marriage.tsx`
+- `src/components/invitation/experience3/ix3-graduation.tsx`
+- `src/components/invitation/shared/invitation-rsvp-panel.tsx`
+- `src/lib/invitation/rsvp-party-slots.ts`
+- `src/lib/invitation/__tests__/couple-monogram.test.ts`
+
+**Stages 2–4 + verification:**
+- `src/lib/invitation/theme-media-assets.ts`
+- `src/components/invitation/experience3/experience3-shell.tsx`
+- `src/components/invitation/experience3/experience3-shell.module.css`
+- `src/components/invitation/experience3/modules/ix3-rsvp-experience.tsx` *(new)*
+- `src/components/invitation/experience3/modules/ix3-rsvp-experience.module.css` *(new)*
+- `src/components/invitation/experience3/modules/feature-strips.tsx`
+- `src/components/invitation/experience3/ix3-heritage-marriage.tsx`
+- `src/components/invitation/experience3/ix3-corporate-gala.tsx`
+- `src/components/invitation/experience3/ix3-baby-shower.tsx`
+- `src/components/invitation/experience3/ix3-graduation.tsx`
+- `src/components/invitation/experience3/ix3-birthday-celebration.tsx`
+- `src/components/invitation/experience3/ix3-concert-night.tsx`
+- `src/components/invitation/shared/invitation-rsvp-panel.tsx` *(stable `rsvp-choice-*` test ids)*
+- `scripts/studio3-concert-opening-rsvp-regression.mjs`
+- `src/lib/invitation/__tests__/rsvp-party-slots.test.ts`
+- `src/lib/invitation/__tests__/ix3-theme-heroes.test.ts` *(new)*
+- `src/lib/invitation/studio3/__tests__/batch1-p1-differentiation.test.ts` *(new)*
+- Evidence JPEGs under `docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/p1-*`
+
+**Not modified:** protected flagship templates under `src/components/invitation/templates/**`.  
+**Preserved untracked:** `docs/.../batch-1/review-package/`.
+
+### 9.3 Before / after evidence
+
+| Finding | Before | After evidence |
+|---|---|---|
+| P1-1 | Opening monogram **TK** | `p1-1-heritage-monogram-AFTER.jpg` — **AK** present, TK absent |
+| P1-2 | **CELEBRATIN / G** | `p1-2-graduation-hero-AFTER-375.jpg` — “Celebrating” intact above name |
+| P1-3 / P1-6 | Generic shared panel | `p1-36-*-rsvp-confirm-AFTER.jpg` — family ritual + confirmation for all six |
+| P1-4 | Flat / gradient-dominant heroes | `p1-4-ix3-*-hero-AFTER.jpg` — category Unsplash photography visible |
+| P1-5 | Shared section rhythm | Blessing seal / place card / toast list / stage cue / diploma / shower story |
+| P1-7 | Awkward “Confirming” wrap | `p1-7-concert-rsvp-narrow-AFTER.jpg` + NBSP unit coverage |
+| P0-2 | Must remain fixed | Concert regression **ALL PASSED** after family label update |
+
+Machine log: `acceptance-audit/p1-remediation-verify.json`
+
+### 9.4 Functional regression results
+
+| Suite | Result |
+|---|---|
+| `npm run test:invitation-studio3` | **38 / 38** (includes new differentiation contracts) |
+| Couple monogram + RSVP slots + theme heroes | **9 / 9** |
+| Concert opening/RSVP P0 regression | **ALL PASSED** (family-label-aware) |
+| Protected-template drift vs `main` (`templates/`) | **0** |
+
+### 9.5 Guest-journey verification
+
+- Opening dismiss (primary / Escape) preserved for cinematic families.
+- RSVP Accept / Decline paths confirmed via regression + family smoke.
+- Family-specific choice labels no longer break harnesses (`rsvp-choice-ACCEPTED|DECLINED|MAYBE`).
+- Admission QR path unchanged in shell.
+
+### 9.6 Responsive + accessibility
+
+- Mobile 375/390 checks for graduation wrap + RSVP rituals.
+- Desktop hero captures for P1-4 layouts.
+- Keyboard Accept path still covered in concert regression.
+- Reduced-motion gate auto-skip preserved (unchanged opening logic).
+- RSVP ritual uses `role="status"` / `aria-live="polite"` for confirmation.
+
+### 9.7 Protected-template drift verification
+
+```
+git diff --name-only main -- src/components/invitation/templates
+→ (empty)
+```
+
+**Drift: 0**
+
+### 9.8 Remaining findings after P1 remediation
+
+| ID | Status |
+|---|---|
+| **P0-2** | **RESOLVED** |
+| **P1-1 … P1-7** | **RESOLVED** (implementation + automated/browser evidence) |
+| **P0-1** creative excellence vs Forever Afaris / Femmora | **Still open** — human visual acceptance required |
+| P2-* polish items | Still open |
+| Batch 1 final creative acceptance | **Pending human approval** |
+| Batch 2 | **Locked** |
+
+### 9.9 Final human visual acceptance requirements
+
+Reviewers should verify in browser (`http://127.0.0.1:3002/invitations/experience3/<layout>`):
+
+1. Each of the six families feels independently art-directed (not one shell with swapped tokens).
+2. Heritage monogram is **AK**; Graduation “Celebrating” never splits mid-word on 375px.
+3. RSVP chrome + confirmation language matches the family creative direction (ceremonial / formal / warm / academic / celebratory / admission).
+4. Hero photography is visible and category-appropriate for Graduation, Concert, Gala, Shower.
+5. No regressions to Concert opening-gate RSVP blocking (P0-2).
+6. No protected-template changes.
+7. Premium craft still compared honestly to Forever Afaris / Femmora — **do not auto-accept** on tests alone.
+
+**STOP:** Seven P1 findings implemented and verified. Awaiting explicit human approval before Batch 1 acceptance or Batch 2 unlock.

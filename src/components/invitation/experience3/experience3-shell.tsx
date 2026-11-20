@@ -5,9 +5,9 @@ import { useCallback, useRef, useState, type CSSProperties, type ReactNode } fro
 import type { Experience3Definition } from "@/lib/invitation/studio3/experience-definition";
 import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer-types";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
-import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-rsvp-panel";
 import { InvitationActions } from "@/components/invitation/shared/invitation-actions";
 import { Experience3OpeningGate } from "@/components/invitation/experience3/modules/opening-gate";
+import { Experience3RsvpExperience } from "@/components/invitation/experience3/modules/ix3-rsvp-experience";
 import styles from "./experience3-shell.module.css";
 
 /** Escape quotes for safe CSS url("...") usage. */
@@ -210,7 +210,8 @@ export function Experience3Shell({
             style={
               cover
                 ? {
-                    backgroundImage: `linear-gradient(165deg, rgba(0,0,0,0.1), rgba(0,0,0,0.48)), url("${cssUrl(cover)}")`,
+                    // Keep photography visible — heavy overlays are applied in composition CSS only where needed.
+                    backgroundImage: `linear-gradient(165deg, rgba(0,0,0,0.04), rgba(0,0,0,0.28)), url("${cssUrl(cover)}")`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }
@@ -322,18 +323,17 @@ export function Experience3Shell({
                 </section>
               ) : null}
 
-              <InvitationRsvpPanel
-                invitationId={invitation.id}
-                uniqueLink={invitation.uniqueLink}
+              <Experience3RsvpExperience
+                family={composition}
+                tone={tone}
+                accentColor={tokens.accent}
+                textColor={tokens.text}
+                invitation={invitation}
                 guestId={guestId}
                 guestName={guestName}
                 partyAllowance={partyAllowance}
                 initialRsvpStatus={initialRsvpStatus}
                 initialAttendingCount={initialAttendingCount}
-                accentColor={tokens.accent}
-                textColor={tokens.text}
-                variant={tone === "dark" ? "dark" : "light"}
-                label={definition.designFamily === "memorial" ? "Will you attend?" : undefined}
               />
 
               <InvitationActions

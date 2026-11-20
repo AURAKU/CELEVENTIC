@@ -81,9 +81,6 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
       }
     >
       <Experience3SectionReveal>
-        <Experience3AnticipationRibbon tone="light" line="Warmth · Anticipation · New beginnings" />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={1}>
         <Experience3ShowerStory
           tone="light"
           eyebrow="Our story"
@@ -95,6 +92,30 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
+        <Experience3AnticipationRibbon tone="light" line="Warmth · Anticipation · New beginnings" />
+      </Experience3SectionReveal>
+      {giftDetail ? (
+        <Experience3SectionReveal delay={1}>
+          <Experience3GiftWhisper tone="light" detail={giftDetail} />
+        </Experience3SectionReveal>
+      ) : (
+        <Experience3SectionReveal delay={1}>
+          <Experience3GiftWhisper
+            tone="light"
+            detail="Your presence is the gift—optional keepsakes are welcome if you wish."
+          />
+        </Experience3SectionReveal>
+      )}
+      <Experience3SectionReveal delay={2}>
+        <Experience3VenuePanel
+          tone="light"
+          heading="Where we gather"
+          venue={props.event.venueName}
+          landmark={props.event.landmark}
+          dressCode={props.event.dressCode}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
         <Experience3DateLockup
           tone="light"
           label="We gather"
@@ -105,12 +126,10 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
           time={date.time}
         />
       </Experience3SectionReveal>
-      {giftDetail ? (
-        <Experience3SectionReveal delay={2}>
-          <Experience3GiftWhisper tone="light" detail={giftDetail} />
-        </Experience3SectionReveal>
-      ) : null}
-      <Experience3SectionReveal delay={2}>
+      <Experience3SectionReveal delay={3}>
+        <Experience3EssentialsTimeline beats={beats} heading="Afternoon flow" tone="light" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
         <Experience3EventCountdown
           startAtIso={props.event.startDateRaw}
           label="Until we gather"
@@ -118,22 +137,10 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
-        <Experience3EssentialsTimeline beats={beats} heading="Afternoon flow" tone="light" />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={3}>
-        <Experience3VenuePanel
-          tone="light"
-          heading="Where we gather"
-          venue={props.event.venueName}
-          landmark={props.event.landmark}
-          dressCode={props.event.dressCode}
-        />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={3}>
         <Experience3JourneyNote
           tone="light"
           title="Your gentle path"
-          body="Open with care, linger on the story, note the gathering details, RSVP softly, and keep your admission QR if the hosts request it."
+          body="Open with care, linger on the story, note the gathering details, send a warm reply, and keep your admission QR if the hosts request it."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

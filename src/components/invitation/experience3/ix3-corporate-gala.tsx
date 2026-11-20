@@ -10,6 +10,7 @@ import {
 import {
   Experience3AgendaTable,
   Experience3OrnamentRule,
+  Experience3PlaceCard,
   Experience3VenuePanel,
 } from "@/components/invitation/experience3/modules/feature-strips";
 import { Experience3SectionReveal } from "@/components/invitation/experience3/modules/section-reveal";
@@ -70,20 +71,19 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
       }
     >
       <Experience3SectionReveal>
-        <Experience3OrnamentRule tone="dark" mark="◆" />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={1}>
-        <Experience3DateLockup
+        <Experience3PlaceCard
           tone="dark"
-          label="Evening"
-          weekday={date.weekday}
-          day={date.day}
-          month={date.month}
-          year={date.year}
-          time={date.time}
+          guestLabel={props.guestName?.trim() ? props.guestName : "Guest of honour"}
+          eventLabel={props.event.title}
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
+        <Experience3OrnamentRule tone="dark" mark="◆" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <Experience3AgendaTable rows={agenda} tone="dark" heading="Evening programme" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
         <section aria-label="Gala briefing">
           <p
             className={styles.note}
@@ -95,16 +95,6 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
         </section>
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={2}>
-        <Experience3EventCountdown
-          startAtIso={props.event.startDateRaw}
-          label="Doors open in"
-          tone="dark"
-        />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
-        <Experience3AgendaTable rows={agenda} tone="dark" heading="Evening programme" />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={3}>
         <Experience3VenuePanel
           tone="dark"
           heading="Arrival"
@@ -114,10 +104,28 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
+        <Experience3DateLockup
+          tone="dark"
+          label="Evening"
+          weekday={date.weekday}
+          day={date.day}
+          month={date.month}
+          year={date.year}
+          time={date.time}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
+        <Experience3EventCountdown
+          startAtIso={props.event.startDateRaw}
+          label="Doors open in"
+          tone="dark"
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
         <Experience3JourneyNote
           tone="dark"
           title="Guest journey"
-          body="Review the programme, confirm your attendance, and present your admission QR at arrival."
+          body="Review your place card, follow the programme, submit formal guest confirmation, and present your admission QR at arrival."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

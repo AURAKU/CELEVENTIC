@@ -555,6 +555,7 @@ export function InvitationRsvpPanel({
               key={choice.id}
               type="button"
               className={`ff-rsvp-choice ff-rsvp-choice--${choice.tone}`}
+              data-testid={`rsvp-choice-${choice.id}`}
               onClick={() => void handleRsvp(choice.id)}
               disabled={loading}
             >
@@ -575,6 +576,7 @@ export function InvitationRsvpPanel({
                 key={choice.id}
                 type="button"
                 className={`inv-rsvp-choice inv-rsvp-choice--${choice.tone}`}
+                data-testid={`rsvp-choice-${choice.id}`}
                 onClick={() => void handleRsvp(choice.id)}
                 disabled={loading}
               >
@@ -597,6 +599,7 @@ export function InvitationRsvpPanel({
             size="sm"
             variant="outline"
             className={btnClass}
+            data-testid="rsvp-choice-ACCEPTED"
             onClick={() => handleRsvp("ACCEPTED")}
             disabled={loading}
           >
@@ -606,6 +609,7 @@ export function InvitationRsvpPanel({
             size="sm"
             variant="outline"
             className={btnClass}
+            data-testid="rsvp-choice-DECLINED"
             onClick={() => handleRsvp("DECLINED")}
             disabled={loading}
           >
@@ -615,6 +619,7 @@ export function InvitationRsvpPanel({
             size="sm"
             variant="outline"
             className={btnClass}
+            data-testid="rsvp-choice-MAYBE"
             onClick={() => handleRsvp("MAYBE")}
             disabled={loading}
           >

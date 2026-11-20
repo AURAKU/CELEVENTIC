@@ -1,0 +1,136 @@
+{
+  "findings": [
+    {
+      "id": "P1-1",
+      "ok": true,
+      "detail": {
+        "hasAK": true,
+        "hasTK": false
+      }
+    },
+    {
+      "id": "P1-2",
+      "ok": false,
+      "detail": {
+        "hasCelebrating": true,
+        "bad": true
+      }
+    },
+    {
+      "id": "P1-3/6:heritage",
+      "ok": true,
+      "detail": {
+        "attr": "heritage",
+        "conf": 1
+      }
+    },
+    {
+      "id": "P1-3/6:gala",
+      "ok": false,
+      "detail": {
+        "attr": "gala",
+        "conf": 0
+      }
+    },
+    {
+      "id": "P1-3/6:shower",
+      "ok": true,
+      "detail": {
+        "attr": "shower",
+        "conf": 1
+      }
+    },
+    {
+      "id": "P1-3/6:academic",
+      "ok": true,
+      "detail": {
+        "attr": "academic",
+        "conf": 1
+      }
+    },
+    {
+      "id": "P1-3/6:celebration",
+      "ok": true,
+      "detail": {
+        "attr": "celebration",
+        "conf": 1
+      }
+    },
+    {
+      "id": "P1-3/6:concert",
+      "ok": true,
+      "detail": {
+        "attr": "concert",
+        "conf": 1
+      }
+    },
+    {
+      "id": "P1-4:ix3-graduation",
+      "ok": true,
+      "detail": {
+        "heroBg": "linear-gradient(165deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.28)), url(\"https://images.unsplash.com/photo-1523050854058-"
+      }
+    },
+    {
+      "id": "P1-4:ix3-concert-night",
+      "ok": true,
+      "detail": {
+        "heroBg": "linear-gradient(165deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.28)), url(\"https://images.unsplash.com/photo-1470229722913-"
+      }
+    },
+    {
+      "id": "P1-4:ix3-corporate-gala",
+      "ok": true,
+      "detail": {
+        "heroBg": "linear-gradient(165deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.28)), url(\"https://images.unsplash.com/photo-1486406146926-"
+      }
+    },
+    {
+      "id": "P1-4:ix3-baby-shower",
+      "ok": true,
+      "detail": {
+        "heroBg": "linear-gradient(165deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.28)), url(\"https://images.unsplash.com/photo-1490750967868-"
+      }
+    },
+    {
+      "id": "P1-5:ix3-heritage-marriage",
+      "ok": true,
+      "detail": {
+        "testid": "ix3-blessing-seal",
+        "count": 1
+      }
+    },
+    {
+      "id": "P1-5:ix3-corporate-gala",
+      "ok": true,
+      "detail": {
+        "testid": "ix3-place-card",
+        "count": 1
+      }
+    },
+    {
+      "id": "P1-5:ix3-birthday-celebration",
+      "ok": true,
+      "detail": {
+        "testid": "ix3-toast-list",
+        "count": 1
+      }
+    },
+    {
+      "id": "P1-5:ix3-concert-night",
+      "ok": true,
+      "detail": {
+        "testid": "ix3-stage-cue",
+        "count": 1
+      }
+    },
+    {
+      "id": "P1-7",
+      "ok": false,
+      "detail": {
+        "text": "Confirming 2 of 2 seats · you + 1 companion"
+      }
+    }
+  ],
+  "failed": 3
+}

@@ -331,3 +331,190 @@ export function Experience3LineupList({
     </section>
   );
 }
+
+/** Heritage — ceremonial seal before RSVP storytelling. */
+export function Experience3BlessingSeal({
+  mark = "AK",
+  lede = "Two families · one ceremony",
+  tone = "light",
+}: {
+  mark?: string;
+  lede?: string;
+  tone?: Tone;
+}) {
+  const c = toneColors(tone);
+  return (
+    <section
+      aria-label="Ceremonial seal"
+      data-testid="ix3-blessing-seal"
+      style={{
+        display: "grid",
+        justifyItems: "center",
+        gap: "0.65rem",
+        textAlign: "center",
+        padding: "1.15rem 0.75rem",
+        border: `1px solid ${c.line}`,
+        boxShadow: `inset 0 0 0 6px ${c.chip}`,
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          width: "3.4rem",
+          height: "3.4rem",
+          borderRadius: "999px",
+          display: "grid",
+          placeItems: "center",
+          border: `1px solid ${c.line}`,
+          letterSpacing: "0.12em",
+          fontFamily: "Georgia, 'Times New Roman', serif",
+          color: c.fg,
+        }}
+      >
+        {mark}
+      </p>
+      <p style={{ margin: 0, color: c.muted, fontSize: "0.78rem", letterSpacing: "0.18em", textTransform: "uppercase" }}>
+        {lede}
+      </p>
+    </section>
+  );
+}
+
+/** Birthday — expressive toast beats. */
+export function Experience3ToastList({
+  items,
+  tone = "dark",
+  heading = "Tonight's toasts",
+}: {
+  items: string[];
+  tone?: Tone;
+  heading?: string;
+}) {
+  const c = toneColors(tone);
+  if (!items.length) return null;
+  return (
+    <section aria-label={heading} data-testid="ix3-toast-list">
+      <p
+        style={{
+          margin: "0 0 0.75rem",
+          fontSize: "0.65rem",
+          letterSpacing: "0.28em",
+          textTransform: "uppercase",
+          color: c.muted,
+        }}
+      >
+        {heading}
+      </p>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "0.55rem" }}>
+        {items.map((item) => (
+          <li
+            key={item}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1.1rem 1fr",
+              gap: "0.55rem",
+              color: c.fg,
+              fontSize: "0.98rem",
+              lineHeight: 1.45,
+            }}
+          >
+            <span aria-hidden style={{ color: c.muted }}>
+              ✦
+            </span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Corporate gala — formal place-card identity. */
+export function Experience3PlaceCard({
+  guestLabel = "Guest of honour",
+  eventLabel,
+  tone = "dark",
+}: {
+  guestLabel?: string;
+  eventLabel: string;
+  tone?: Tone;
+}) {
+  const c = toneColors(tone);
+  return (
+    <section
+      aria-label="Place card"
+      data-testid="ix3-place-card"
+      style={{
+        display: "grid",
+        gap: "0.55rem",
+        justifyItems: "center",
+        textAlign: "center",
+        padding: "1.25rem 1rem",
+        borderTop: `1px solid ${c.line}`,
+        borderBottom: `1px solid ${c.line}`,
+      }}
+    >
+      <p style={{ margin: 0, fontSize: "0.62rem", letterSpacing: "0.36em", textTransform: "uppercase", color: c.muted }}>
+        {guestLabel}
+      </p>
+      <p
+        style={{
+          margin: 0,
+          fontFamily: "Georgia, 'Times New Roman', serif",
+          fontSize: "1.15rem",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: c.fg,
+          maxWidth: "22ch",
+        }}
+      >
+        {eventLabel}
+      </p>
+    </section>
+  );
+}
+
+/** Concert — doors / stage cue strip. */
+export function Experience3StageCue({
+  doors,
+  stage,
+  tone = "dark",
+}: {
+  doors: string;
+  stage: string;
+  tone?: Tone;
+}) {
+  const c = toneColors(tone);
+  return (
+    <section
+      aria-label="Stage cues"
+      data-testid="ix3-stage-cue"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "0.75rem",
+      }}
+    >
+      {[
+        { label: "Doors", value: doors },
+        { label: "Stage", value: stage },
+      ].map((row) => (
+        <div
+          key={row.label}
+          style={{
+            border: `1px solid ${c.line}`,
+            borderRadius: "0.85rem",
+            padding: "0.85rem 0.9rem",
+            background: c.chip,
+          }}
+        >
+          <p style={{ margin: 0, fontSize: "0.62rem", letterSpacing: "0.28em", textTransform: "uppercase", color: c.muted }}>
+            {row.label}
+          </p>
+          <p style={{ margin: "0.4rem 0 0", color: c.fg, fontSize: "0.92rem", lineHeight: 1.4 }}>{row.value}</p>
+        </div>
+      ))}
+    </section>
+  );
+}
+

@@ -7,6 +7,7 @@ import { Experience3EventCountdown } from "@/components/invitation/experience3/m
 import { Experience3JourneyNote } from "@/components/invitation/experience3/modules/editorial-lockups";
 import {
   Experience3LineupList,
+  Experience3StageCue,
   Experience3TicketStub,
   Experience3VenuePanel,
 } from "@/components/invitation/experience3/modules/feature-strips";
@@ -86,6 +87,16 @@ export function Ix3ConcertNightTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
+        <Experience3StageCue
+          tone="dark"
+          doors={`${date.weekday}${date.time ? ` · ${date.time}` : ""}`}
+          stage={venue}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <Experience3LineupList tone="dark" heading="On the bill" items={lineup.slice(0, 4)} />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
         <section aria-label="Stage note">
           <p className={styles.note}>
             Lights down, bass up—this is a night-of experience, not a static poster. Follow the set
@@ -93,18 +104,15 @@ export function Ix3ConcertNightTemplate(props: InvitationRendererProps) {
           </p>
         </section>
       </Experience3SectionReveal>
-      <Experience3SectionReveal delay={1}>
-        <Experience3LineupList tone="dark" heading="On the bill" items={lineup.slice(0, 4)} />
-      </Experience3SectionReveal>
       <Experience3SectionReveal delay={2}>
+        <Experience3EssentialsTimeline beats={beats} heading="Set timing" tone="dark" />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={3}>
         <Experience3EventCountdown
           startAtIso={props.event.startDateRaw}
           label="Showtime"
           tone="dark"
         />
-      </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
-        <Experience3EssentialsTimeline beats={beats} heading="Set timing" tone="dark" />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
         <Experience3VenuePanel
@@ -119,7 +127,7 @@ export function Ix3ConcertNightTemplate(props: InvitationRendererProps) {
         <Experience3JourneyNote
           tone="dark"
           title="Night-of path"
-          body="Enter the stage wash, check doors and set timing, RSVP, then present your admission QR at entry."
+          body="Scan the stub, check doors and stage cues, claim your admission reply, then present your QR at entry."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

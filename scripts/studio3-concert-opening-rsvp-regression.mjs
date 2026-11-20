@@ -88,12 +88,13 @@ async function dismissGate(page) {
 }
 
 async function acceptRsvp(page) {
-  const accept = page.getByRole("button", { name: /^Accept$/i }).first();
+  // Family-specific labels (P1-3) — use stable choice test ids, not English "Accept".
+  const accept = page.getByTestId("rsvp-choice-ACCEPTED").first();
   await accept.scrollIntoViewIfNeeded();
   await accept.click({ timeout: 8000 });
   await page.waitForTimeout(700);
   const body = await page.innerText("body");
-  return /Thank you/i.test(body);
+  return /Thank you|Pass confirmed|confirmed|blessing is received/i.test(body);
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -111,7 +112,7 @@ try {
     const main = page.getByTestId("ix3-invitation-main");
     const inert = await main.evaluate((el) => el.hasAttribute("inert") || el.inert === true);
     if (!inert) fail("invitation main must be inert while gate is open");
-    const accept = page.getByRole("button", { name: /^Accept$/i }).first();
+    const accept = page.getByTestId("rsvp-choice-ACCEPTED").first();
     let blocked = false;
     try {
       await accept.click({ timeout: 2500 });
@@ -120,7 +121,7 @@ try {
     }
     if (!blocked) fail("Accept must not be actionable while cinematic gate is open");
     if (!(await gate.isVisible())) fail("gate should remain open when Accept is blocked");
-    const thanked = /Thank you/i.test(await page.innerText("body"));
+    const thanked = /Thank you|Pass confirmed/i.test(await page.innerText("body"));
     if (thanked) fail("RSVP must not confirm while gate is open");
     await page.screenshot({
       path: join(OUT, "p0-concert-AFTER-gate-inert-blocks-rsvp.jpg"),
@@ -170,12 +171,12 @@ try {
       await page.getByTestId("ix3-opening-gate").waitFor({ state: "detached", timeout: 8000 });
     }
     if (await page.getByTestId("ix3-opening-gate").count()) fail("keyboard should dismiss gate");
-    const accept = page.getByRole("button", { name: /^Accept$/i }).first();
+    const accept = page.getByTestId("rsvp-choice-ACCEPTED").first();
     await accept.waitFor({ state: "visible", timeout: 8000 });
     await accept.focus();
     await page.keyboard.press("Enter");
     await page.waitForTimeout(700);
-    const ok = /Thank you/i.test(await page.innerText("body"));
+    const ok = /Thank you|Pass confirmed|confirmed/i.test(await page.innerText("body"));
     if (!ok) fail("keyboard Enter on Accept should confirm");
     results.push({ case: "keyboard-rsvp", ok });
     await context.close();
@@ -211,11 +212,11 @@ try {
     await gotoConcert(page);
     await page.getByTestId("ix3-opening-primary").tap();
     await page.waitForTimeout(350);
-    const accept = page.getByRole("button", { name: /^Accept$/i }).first();
+    const accept = page.getByTestId("rsvp-choice-ACCEPTED").first();
     await accept.scrollIntoViewIfNeeded();
     await accept.tap();
     await page.waitForTimeout(700);
-    const ok = /Thank you/i.test(await page.innerText("body"));
+    const ok = /Thank you|Pass confirmed|confirmed/i.test(await page.innerText("body"));
     if (!ok) fail("mobile tap RSVP should confirm");
     results.push({ case: "mobile-touch-rsvp", ok });
     await context.close();
@@ -247,12 +248,13 @@ try {
     await seed(page);
     await gotoConcert(page);
     await dismissGate(page);
-    const decline = page.getByRole("button", { name: /^Decline$/i }).first();
+    const decline = page.getByTestId("rsvp-choice-DECLINED").first();
     await decline.scrollIntoViewIfNeeded();
     await decline.click({ timeout: 8000 });
     await page.waitForTimeout(700);
     const body = await page.innerText("body");
-    const declined = /Thank you|Decline|not attending|won't|cannot|declined/i.test(body);
+    const declined =
+      /Thank you|Decline|not attending|won't|cannot|declined|Pass released|regrets/i.test(body);
     if (!declined) fail("Decline should produce a confirmation/response state");
     results.push({ case: "rsvp-decline-state", ok: declined });
     await context.close();

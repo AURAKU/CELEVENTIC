@@ -162,6 +162,10 @@ const ACADEMIC_BG =
   "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1600&q=60&auto=format&fit=crop&blur=8";
 
 const LAYOUT_GALLERY_OVERRIDES: Record<string, string[]> = {
+  "ix3-baby-shower": SHOWER_GALLERY,
+  "ix3-graduation": ACADEMIC_GALLERY,
+  "ix3-concert-night": CONCERT_GALLERY,
+  "ix3-corporate-gala": CORPORATE_GALLERY,
   "kente-heritage-union": [
     "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?w=800&q=80&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80&auto=format&fit=crop",
@@ -249,6 +253,8 @@ export function getThemeHeroUrl(layout: string, category?: string, catalogSlug?:
   if (pack) return pack.hero;
   if (layout === "ix3-baby-shower") return SHOWER_HERO;
   if (layout === "ix3-graduation") return ACADEMIC_HERO;
+  if (layout === "ix3-concert-night") return CONCERT_GALLERY[0]!;
+  if (layout === "ix3-corporate-gala") return CORPORATE_GALLERY[0]!;
   const theme = resolveEventTheme(layout, category);
   return LAYOUT_GALLERY_OVERRIDES[layout]?.[0] ?? THEME_PACKS[theme].hero;
 }

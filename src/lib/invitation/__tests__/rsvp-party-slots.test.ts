@@ -33,6 +33,15 @@ describe("rsvp party slots", () => {
     assert.match(partial.detail, /2 seats/i);
   });
 
+  it("keeps Confirming status labels from mid-word wrapping (P1-7)", () => {
+    const solo = rsvpPartySlotGuidance(1, 1);
+    assert.match(solo.summary, /^Confirming\u00A01 seat$/);
+
+    const party = rsvpPartySlotGuidance(3, 2);
+    assert.match(party.summary, /^Confirming\u00A02 of 3 seats/);
+    assert.equal(party.summary.includes("Confirming "), false);
+  });
+
   it("thanks acceptances with the confirmed headcount", () => {
     assert.match(rsvpAcceptedThankYou(2, 3), /2 of 3 seats/i);
     assert.match(rsvpAcceptedThankYou(1, 1), /gratitude/i);
