@@ -9,6 +9,8 @@
 
 ---
 
+> **Acceptance audit:** See `docs/invitations/studio-3/PHASE_5_BATCH_1_FINAL_ACCEPTANCE_AUDIT.md` (checkpoint `fde76f5e`). Final creative acceptance was **not** granted.
+
 ## 1. Verified starting state
 
 | Check | Result |
