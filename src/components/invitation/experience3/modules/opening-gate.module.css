@@ -188,3 +188,19 @@
     backdrop-filter: none;
   }
 }
+
+.gateSoft {
+  background-image:
+    radial-gradient(ellipse 55% 40% at 50% 0%, rgba(196, 164, 132, 0.18), transparent),
+    radial-gradient(ellipse 40% 35% at 20% 100%, rgba(255, 250, 246, 0.55), transparent);
+}
+
+.titleSoft {
+  margin: 0;
+  font-family: var(--ix3-heading, Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(1.9rem, 5.2vw, 2.55rem);
+  line-height: 1.15;
+  font-style: italic;
+  letter-spacing: 0.015em;
+}

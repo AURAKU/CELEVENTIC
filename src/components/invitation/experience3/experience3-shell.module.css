@@ -407,7 +407,7 @@
 }
 
 .comp_shower .hero {
-  min-height: 18rem;
+  min-height: 20.5rem;
 }
 
 .comp_shower .welcome {
@@ -426,9 +426,9 @@
 .comp_shower .heroOverlay {
   background: linear-gradient(
     to top,
-    rgba(63, 56, 51, 0.58) 0%,
-    rgba(63, 56, 51, 0.12) 52%,
-    transparent 75%
+    rgba(58, 50, 44, 0.62) 0%,
+    rgba(58, 50, 44, 0.18) 48%,
+    rgba(243, 235, 228, 0.08) 100%
   );
 }
 

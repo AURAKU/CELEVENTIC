@@ -1,177 +1,186 @@
 # CELEVENTIC Invitation Experience 3.0 — Phase 5 Batch 1 Creative Refinement Report
 
 **Branch:** `feat/invitation-studio-3`  
-**Prior verified checkpoint:** `c9d5f786`  
-**Verified HEAD for this report:** `7b33a726` (implementation `a9656b95`)  
+**Verified starting HEAD:** `c79b2282`  
+**Prior implementation:** `a9656b95`  
+**Verified HEAD for this report:**   
 **Scope:** Batch 1 only — six registered families  
-**Deploy / merge:** Not performed  
-**Batch 2:** Not started / not authorized  
+**Deploy / merge / Batch 2:** Not performed / not authorized  
 
 ---
 
-## 1. Verified checkpoint
+## 1. Verified starting state
 
 | Check | Result |
 |---|---|
 | Branch | `feat/invitation-studio-3` |
-| Starting HEAD | `c9d5f786` |
-| Working tree policy | Untracked `docs/.../review-package/` preserved |
-| Catalog map | **48 / 48** SKUs mapped |
-| Automated tests | **35 / 35** |
-| Guest-journey E2E (sandbox) | **12 / 12** |
-| Responsive screenshots | **18 / 18** (overflow false) |
-| Protected-template drift vs `main` | **0** (`src/components/invitation/templates`) |
-| Preview server | `http://127.0.0.1:3002` |
-| Disk (approx.) | ~7–8 Gi free — lean recapture only; no Cursor DB cleanup |
+| Starting HEAD | `c79b2282` |
+| Uncommitted preserved | `docs/.../review-package/` (untracked) |
+| Tests at start | 35/35 |
+| Guest journey at start | 12/12 |
+| Responsive at start | 18/18 |
+| Protected-template drift | 0 |
 
-### Tracker averages (discrete 0 / 0.25 / 0.5 / 0.75 / 1.0)
+---
 
-From `catalogTransformSummary()` — **not** raised to 1.0 this pass:
+## 2. Concrete acceptance gaps addressed this pass
 
-| Metric | Value |
+### Baby Shower — root-cause diagnosis (was ~62%)
+
+**Components that made it feel like a formal dinner:**
+
+1. **Demo copy** — category `Private Event` resolved to `Private Celebration Dinner` / “intimate evening with family”.
+2. **Demo hero media** — `Private Event` reused wedding dining-table hero pack.
+3. **Template language** — generic “Private Celebration Dinner” framing via shared Private Event path; chip-row felt like reused celebration chrome rather than shower storytelling.
+4. **Opening** — generic classic-reveal, not shower-specific.
+
+**How this pass resolves those components:**
+
+| Gap component | Fix |
 |---|---|
-| Fully completed premium redesigns (`visual = 1.0`) | **0** |
-| Average visual (all 48) | **33.3%** |
-| Average functional (all 48) | **32.8%** |
-| Batch 1 average visual (tracker) | **~69%** |
-| Batch 1 average functional (tracker) | **~67%** |
+| Dinner title/copy | `CATALOG_DEMO_IDENTITIES["ix3-baby-shower"]` → “A Soft Gathering for Ama”, hosts Efua & Kojo Mensah, soft garden venue |
+| Dining-table hero | Layout-specific `SHOWER_HERO` / gallery (soft florals + linen), not wedding dinner pack |
+| Template identity | Rewrote `ix3-baby-shower` with custom hero, anticipation ribbon, shower story panel, gift whisper (only if configured), soft-unveil opening |
+| Opening | New `soft-unveil` gate (“A gathering of love” / “Open with care”) |
 
-Primary family rows remain capped at **0.75 / 0.75** on the discrete tracker. Creative assessments below are independent of that ladder.
+**Verified in browser:** `Private Celebration Dinner` **absent**; soft gathering + guest personalization present.
 
----
+### Other families — concrete gaps targeted
 
-## 2. Family-by-family completion assessment
-
-Assessed against Forever Afaris / Femmora craft (originality, immersion, motion, composition) — **not** against “tests pass.”
-
-| Family | Layout | Frame | Visual (honest) | Functional (honest) | Ready for final visual acceptance? |
-|---|---|---|---|---|---|
-| Heritage Marriage | `ix3-heritage-marriage` | folio + custom hero NameStack | **~78%** | **~75%** | **No** |
-| Corporate Gala | `ix3-corporate-gala` | folio | **~74%** | **~75%** | **No** |
-| Graduation | `ix3-graduation` | folio + diploma | **~72%** | **~75%** | **No** |
-| Birthday | `ix3-birthday-celebration` | bleed | **~70%** | **~75%** | **No** |
-| Concert | `ix3-concert-night` | ticket | **~68%** | **~75%** | **No** |
-| Baby Shower | `ix3-baby-shower` | card | **~62%** | **~75%** | **No** |
-
-**Weighted Batch 1 creative visual (six primaries, equal weight):** ≈ **70.7%**  
-**Weighted Batch 1 creative functional:** ≈ **75%** guest-journey / RSVP / QR sandbox readiness; still short of live production RSVP/QR proof.
-
-### Heritage Marriage — strongest of Batch 1 (~78% / ~75%)
-
-**Improved:** Folio frame; custom hero with `Experience3NameStack`; date lockup; ceremony programme; journey note; Cinzel/Cormorant-facing tokens.  
-**Remaining gaps:** Still lighter than Forever Afaris density (ornament, multi-beat storytelling, ceremonial photography language). Couple narrative modules exist but do not yet feel like a fully authored heritage booklet.  
-**Blockers:** Creative craft — not engineering.
-
-### Corporate Gala (~74% / ~75%)
-
-**Improved:** Folio + gold architectural language; agenda table; date lockup; quiet minimal-instant open retained intentionally.  
-**Remaining gaps:** Hero/copy still lean for a true black-tie product unveil; limited “evening programme” cinematic pacing vs strongest live gala-style invites. Demo title year vs date string can read inconsistent in preview data.  
-**Blockers:** Art direction depth.
-
-### Graduation (~72% / ~75%)
-
-**Improved:** Folio; diploma frame; date lockup; ceremony-order timeline.  
-**Remaining gaps:** Hero photography still reads dining/table rather than academic commencement; academic identity is present in modules but not yet fully owned in the opening frame.  
-**Blockers:** Category-true hero + richer diploma/programme storytelling.
-
-### Birthday (~70% / ~75%)
-
-**Improved:** Bleed frame; party-pass personalization; chip row; date lockup; night plan.  
-**Remaining gaps:** Opening still leans concert-crowd energy; chip row can feel control-like rather than editorial; celebration craft not yet Femmora-adjacent originality.  
-**Blockers:** Birthday-specific visual storytelling (not nightlife stock).
-
-### Concert (~68% / ~75%)
-
-**Improved:** Ticket frame + stub; lineup; set timing; journey note; cinematic open.  
-**Remaining gaps:** Mid-page storytelling thinner than heritage/gala; fewer editorial lockups; immersion is “good ticket UI” more than a full night-of experience.  
-**Blockers:** Deeper stage narrative / motion without clutter.
-
-### Baby Shower — furthest behind (~62% / ~75%)
-
-**Improved:** Soft card modules; chips; date lockup; journey note; soft reveal.  
-**Remaining gaps (material):** Preview hero/copy still reads “Private Celebration Dinner” / formal table — **not** a baby-shower identity. Soft gathering chips help tone but do not fix category mismatch. Lowest visual originality of the six.  
-**Blockers:** Category-true art direction + photography language (highest priority for next refinement).
+| Family | Concrete gap before | Change this pass |
+|---|---|---|
+| Concert | Flat poster hierarchy; thin stage storytelling | Custom stage hero (title / headliner / venue), ticket stub + lineup + set timing retained, stronger night-of copy |
+| Birthday | Chip-row felt control-like; too close to concert energy | SoftCard celebrant story, Playfair heading tokens, bleed poster custom hero, “not a gala / not a concert” framing |
+| Graduation | Same Private Event dinner copy + dinner hero | `ix3-graduation` demo identity + academic media pack; custom commencement hero; diploma + milestone narrative |
+| Corporate Gala | Hero/subline lean | Custom black-tie hero lockup; programme briefing uses host message |
+| Heritage Marriage | Story note static | Uses configured message when present; cultural journey copy refined |
 
 ---
 
-## 3. Changes implemented this pass (from `c9d5f786`)
+## 3. Changes by invitation family
 
-### Shared shell / modules
+### Priority 1 — Baby Shower
+- Soft-unveil opening + shower composition CSS
+- Modules: `shower-moments` (ribbon, story, gift whisper)
+- Occasion-true demo identity + floral hero media
+- End-to-end guest journey language (“Your gentle path”)
 
-- `Experience3Shell`: `frameMode` (`card` | `folio` | `bleed` | `ticket`) + `customHero`.
-- Shell CSS: folio / bleed / ticket surface treatments.
-- New `modules/editorial-lockups.tsx`: `Experience3DateLockup`, `Experience3NameStack`, `Experience3JourneyNote`.
-- Expanded definitions: Cinzel / Cormorant token updates for Batch 1 families.
-- Refine QA script: animation freeze + screenshot fallback (disk-safe, fewer flaky element timeouts).
+### Priority 2 — Concert
+- Custom immersive hero hierarchy
+- Ticket + lineup + showtime path clarified
 
-### Per family
+### Priority 3 — Birthday
+- Celebrant-forward SoftCard + italic Playfair hero
+- Removed chip-row as primary differentiator
 
-| Family | Notable composition changes |
-|---|---|
-| Heritage | folio + custom NameStack hero + date lockup + journey note |
-| Birthday | bleed + date lockup + journey note |
-| Gala | folio + date lockup + journey note |
-| Concert | ticket frame + journey note (stub/lineup retained) |
-| Graduation | folio + diploma + date lockup + journey note |
-| Baby Shower | card + soft card + date lockup + journey note |
+### Priority 4 — Graduation
+- Academic demo + media; commencement custom hero; diploma storytelling
+
+### Priority 5 — Corporate Gala
+- Executive hero lockup + briefing polish
+
+### Priority 6 — Heritage Marriage
+- Preserve folio + NameStack; refine story binding to event message
+
+### Shared / infrastructure
+- `soft-unveil` opening style (design-families + opening-gate)
+- Layout-specific demo identities for all six `ix3-*` Batch 1 layouts
+- Theme media overrides for shower + academic
+- Guest-journey / refine-QA dismiss regex includes “Open with care”
 
 ---
 
-## 4. Evidence
+## 4. Family-by-family quality assessment (honest)
+
+Assessed for **creative acceptance**, not test passage. Forever Afaris / Femmora remain the craft bar. **None claimed complete.**
+
+| Family | Visual | Functional | Final creative acceptance? |
+|---|---|---|---|
+| Heritage Marriage | **~80%** | **~75%** | **No** |
+| Corporate Gala | **~76%** | **~75%** | **No** |
+| Graduation | **~74%** | **~75%** | **No** |
+| Birthday | **~73%** | **~75%** | **No** |
+| Concert | **~72%** | **~75%** | **No** |
+| Baby Shower | **~74%** | **~75%** | **No** |
+
+Tracker discrete ladder for primary SKUs remains capped at **0.75** (no invented 1.0). Catalog averages remain ~33.3% / ~32.8% overall; Batch 1 tracker ~69% / ~67%.
+
+---
+
+## 5. Remaining concrete acceptance gaps (next creative pass)
+
+### Baby Shower
+- Still structurally close to other Experience 3.0 shells (welcome card + sections). Needs more unique interaction choreography (e.g. soft RSVP confirmation microcopy, shower-only motion beats) without childish iconography.
+- Hero is now floral/occasion-appropriate; further art direction could deepen “anticipation” beyond a single floral still.
+
+### Concert
+- Needs richer mid-scroll stage atmosphere (lighting washes / timed section reveals) without becoming a poster collage.
+- Lineup is still derived from host/title — true multi-artist data model when Studio provides it.
+
+### Birthday
+- Personality improved; still needs signature motion + celebration-specific RSVP/party-size confirmation craft above SoftCard + countdown.
+
+### Graduation
+- Academic copy/media fixed; diploma module should gain more editorial weight (citation block, progression narrative beats) to match ceremonial density.
+
+### Corporate Gala
+- Executive tone solid; needs sharper programme typography hierarchy and arrival ritual (not just agenda table).
+
+### Heritage Marriage
+- Closest to bar; still short of Forever Afaris ceremonial density (multi-beat cultural storytelling, richer ornament without cloning Afaris).
+
+---
+
+## 6. Test results
 
 | Suite | Result |
 |---|---|
 | `npm run test:invitation-studio3` | **35 / 35** |
-| Guest-journey E2E | **12 / 12** (sandbox RSVP persist + demo QR; no production `/api/rsvp`) |
-| Responsive capture | **18 / 18** OK, overflow false, guest true |
-| Protected templates vs `main` | **0** name drift |
+| Guest-journey E2E | **12 / 12** |
+| Responsive capture | **18 / 18** (overflow false) |
+| Baby Shower dinner-language check | **PASS** (absent) |
 
-Paths:
-
+Evidence:
 - `docs/invitations/studio-3/phase-5/batch-1/guest-journey/`
 - `docs/invitations/studio-3/phase-5/batch-1/screenshots/after/`
 - `docs/invitations/studio-3/phase-5/batch-1/responsive-metrics-refine.json`
 
 ---
 
-## 5. Protected-template drift verification
+## 7. Protected-template drift
 
 ```
 git diff --name-only main -- src/components/invitation/templates
 → (empty)
 ```
 
-No live/published/historical invitation templates modified. Experience 3.0 work remains on `ix3-*` + shared Experience 3.0 modules + sandbox-safe shared RSVP/actions preview behavior.
+No live/published/historical templates modified.
 
 ---
 
-## 6. Outstanding blockers (quality gate)
+## 8. Recommendation for final Batch 1 acceptance
 
-1. **Quality gate not met** — zero families at Forever Afaris / Femmora parity; **0** at visual 1.0.
-2. **Baby Shower category identity** is the clearest visual miss (dinner-table language).
-3. **Birthday / Graduation heroes** still weakly category-true in preview assets.
-4. Gallery / Memory Vault / audio / multi-ceremony still **NI** in Batch 1 shells.
-5. Live `/api/rsvp` + real admission tokens not exercised on production rows (sandbox only — intentional).
-6. Production-mode Lighthouse still pending (next-dev only).
+**Do not grant final Batch 1 creative acceptance yet.**
 
----
+This pass removed the largest verifiable defect (Baby Shower dinner identity) and strengthened differentiation, but the six experiences are not yet Forever Afaris / Femmora grade.
 
-## 7. Restrictions held
+**Recommended:** one more focused creative-excellence pass against the concrete gaps in §5 — especially shower interaction choreography, concert immersion, and heritage ceremonial density — then human visual acceptance review.
 
-- No Batch 2  
-- No deployment  
-- No merge  
-- No destructive Git  
-- Review-package left untracked  
-- No Cursor local DB / agent-history cleanup  
+**Batch 2 remains locked** until that acceptance is explicit.
 
 ---
 
-## 8. Verdict
+## Preview URLs (local :3002)
 
-**Batch 1 refinement continued.** Frames and editorial lockups materially reduce the “one shared card” problem and differentiate the six families, but **none** are ready for final visual acceptance.
+- http://127.0.0.1:3002/invitations/experience3/ix3-baby-shower
+- http://127.0.0.1:3002/invitations/experience3/ix3-concert-night
+- http://127.0.0.1:3002/invitations/experience3/ix3-birthday-celebration
+- http://127.0.0.1:3002/invitations/experience3/ix3-graduation
+- http://127.0.0.1:3002/invitations/experience3/ix3-corporate-gala
+- http://127.0.0.1:3002/invitations/experience3/ix3-heritage-marriage
 
-**Recommended focus order for the next Batch 1 pass:**  
-1) Baby Shower identity · 2) Birthday hero/story · 3) Graduation academic open · 4) Concert depth · 5) Gala evening density · 6) Heritage Afaris-level polish.
+---
 
-**Awaiting explicit approval before Batch 2.**
+## Verdict
+
+Creative-excellence pass completed for Batch 1 priorities. Baby Shower dinner mis-identity resolved with evidence. Quality gate for final acceptance **not** met. Awaiting approval before Batch 2.

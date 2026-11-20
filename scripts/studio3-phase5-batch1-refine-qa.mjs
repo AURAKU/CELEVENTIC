@@ -39,7 +39,7 @@ async function dismissCookies(page) {
 async function dismissGate(page) {
   const btn = page
     .getByRole("button", {
-      name: /open invitation|skip|break the seal|enter the evening|continue/i,
+      name: /open invitation|open with care|skip|break the seal|enter the evening|continue/i,
     })
     .first();
   if (await btn.count()) {

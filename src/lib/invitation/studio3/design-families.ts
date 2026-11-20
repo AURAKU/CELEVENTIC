@@ -22,7 +22,8 @@ export type Experience3OpeningStyle =
   | "cinematic"
   | "monogram"
   | "portrait"
-  | "minimal-instant";
+  | "minimal-instant"
+  | "soft-unveil";
 
 export type Experience3DesignFamily = {
   id: Experience3DesignFamilyId;
@@ -106,7 +107,7 @@ export const EXPERIENCE3_DESIGN_FAMILIES: readonly Experience3DesignFamily[] = [
     id: "shower",
     label: "Baby Showers & Naming Ceremonies",
     categories: ["Private Event"],
-    openingDefaults: ["classic-reveal", "minimal-instant"],
+    openingDefaults: ["soft-unveil", "classic-reveal", "minimal-instant"],
     motionTone: "festive",
     isPriorityReference: false,
     notes: "Gentle motion; gift info only when configured.",

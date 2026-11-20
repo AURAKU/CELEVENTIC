@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-11-19T06:07:33.733Z",
+  "capturedAt": "2026-11-20T01:21:39.347Z",
   "base": "http://127.0.0.1:3002",
   "criterion": "End-to-end guest experience acceptance (sandbox): open → intro → details → RSVP → QR; mobile+desktop; persist; no production writes",
   "results": [
@@ -190,6 +190,7 @@
       "viewport": "desktop",
       "ok": true,
       "steps": {
+        "retriedAfter5xx": true,
         "http": 200,
         "openingPresentOrSkipped": true,
         "openingDismissed": true,

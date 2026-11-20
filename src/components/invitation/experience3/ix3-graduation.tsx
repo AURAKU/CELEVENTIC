@@ -24,7 +24,7 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
 
   const beats = [
     {
-      label: "Commencement",
+      label: "Procession",
       detail: `${date.weekday}, ${date.day} ${date.month} ${date.year}${date.time ? ` · ${date.time}` : ""}`,
     },
     props.event.venueName || props.event.landmark
@@ -44,12 +44,27 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
       composition="academic"
       frameMode="folio"
       headline={props.event.title}
-      kicker="Commencement invitation"
+      kicker="Commencement"
       welcomeEyebrow="Honored guest"
-      welcomeLede="Join us as we celebrate this achievement."
+      welcomeLede="Stand with us as this chapter closes and the next begins."
       hideDefaultMeta
       heroMode="stacked"
-      heroSubline={`${date.day} ${date.month} ${date.year}`}
+      customHero={
+        <div style={{ display: "grid", gap: "0.55rem", color: "#f8fafc" }}>
+          <p className={styles.eyebrow} style={{ color: "rgba(248,250,252,0.82)" }}>
+            Commencement
+          </p>
+          <h1
+            className={styles.title}
+            style={{ color: "#f8fafc", fontWeight: 500, maxWidth: "16ch", letterSpacing: "0.01em" }}
+          >
+            {props.event.title}
+          </h1>
+          <p className={styles.lede} style={{ color: "rgba(226,232,240,0.92)" }}>
+            Achievement · Progression · Celebration
+          </p>
+        </div>
+      }
     >
       <Experience3SectionReveal>
         <Experience3OrnamentRule tone="light" mark="❖" />
@@ -58,7 +73,7 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
         <Experience3DiplomaFrame
           tone="light"
           title={graduate}
-          lede="Presented with pride on the occasion of commencement."
+          lede="Presented with pride on the occasion of commencement—years of study, sealed with honour."
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
@@ -73,10 +88,10 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={2}>
-        <section aria-label="Academic note">
+        <section aria-label="Milestone narrative">
           <p className={styles.note}>
-            A refined celebration of scholarship and perseverance—framed with dignity, clarity, and
-            ceremonial calm.
+            {props.event.message ||
+              "This invitation marks a milestone earned—procession, recognition, and a gathering of the people who carried the journey."}
           </p>
         </section>
       </Experience3SectionReveal>
@@ -103,7 +118,7 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
         <Experience3JourneyNote
           tone="light"
           title="Guest journey"
-          body="Review the commencement citation, confirm attendance, and keep your admission QR for the hall."
+          body="Review the citation, confirm attendance, follow ceremony order, and keep your admission QR for the hall."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

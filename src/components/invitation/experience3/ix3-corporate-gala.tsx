@@ -42,10 +42,32 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
       headline={props.event.title}
       kicker="Black-tie evening"
       welcomeEyebrow="Guest of honour"
-      welcomeLede="Your presence is requested for the gala."
+      welcomeLede="Your presence is requested for an evening of recognition."
       hideDefaultMeta
       heroMode="center"
-      heroSubline={`${date.weekday} · ${date.day} ${date.month} ${date.year}`}
+      customHero={
+        <div style={{ display: "grid", gap: "0.5rem", justifyItems: "center", textAlign: "center" }}>
+          <p className={styles.eyebrow} style={{ color: "rgba(201,162,39,0.92)" }}>
+            Black-tie evening
+          </p>
+          <h1
+            className={styles.title}
+            style={{
+              color: "#f4f7ff",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              fontWeight: 500,
+              maxWidth: "18ch",
+              fontSize: "clamp(1.35rem, 4.5vw, 1.85rem)",
+            }}
+          >
+            {props.event.title}
+          </h1>
+          <p className={styles.lede} style={{ color: "rgba(154,168,199,0.95)" }}>
+            {date.weekday} · {date.day} {date.month} {date.year}
+          </p>
+        </div>
+      }
     >
       <Experience3SectionReveal>
         <Experience3OrnamentRule tone="dark" mark="◆" />
@@ -67,7 +89,8 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
             className={styles.note}
             style={{ letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.72rem" }}
           >
-            An exclusive evening of recognition, conversation, and refined hospitality.
+            {props.event.message ||
+              "Recognition, conversation, and refined hospitality—an executive evening with quiet authority."}
           </p>
         </section>
       </Experience3SectionReveal>

@@ -137,6 +137,30 @@ const THEME_DEMO_VIDEOS: Partial<Record<EventThemeCategory, string[]>> = {
   ],
 };
 
+/** Soft textiles & florals — no dining tables, no baby clip-art. */
+const SHOWER_HERO =
+  "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=900&q=80&auto=format&fit=crop";
+const SHOWER_GALLERY = [
+  "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1487530811176-3780da371d77?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&q=80&auto=format&fit=crop",
+];
+const SHOWER_BG =
+  "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1600&q=60&auto=format&fit=crop&blur=8";
+
+/** Academic milestone — campus/library architecture, not dinner service. */
+const ACADEMIC_HERO =
+  "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=900&q=80&auto=format&fit=crop";
+const ACADEMIC_GALLERY = [
+  "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1562774053-701939374585?w=800&q=80&auto=format&fit=crop",
+];
+const ACADEMIC_BG =
+  "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1600&q=60&auto=format&fit=crop&blur=8";
+
 const LAYOUT_GALLERY_OVERRIDES: Record<string, string[]> = {
   "kente-heritage-union": [
     "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?w=800&q=80&auto=format&fit=crop",
@@ -223,6 +247,8 @@ export function resolveEventTheme(layout: string, category?: string): EventTheme
 export function getThemeHeroUrl(layout: string, category?: string, catalogSlug?: string | null): string {
   const pack = getLayoutMediaPack(layout, catalogSlug);
   if (pack) return pack.hero;
+  if (layout === "ix3-baby-shower") return SHOWER_HERO;
+  if (layout === "ix3-graduation") return ACADEMIC_HERO;
   const theme = resolveEventTheme(layout, category);
   return LAYOUT_GALLERY_OVERRIDES[layout]?.[0] ?? THEME_PACKS[theme].hero;
 }
@@ -262,6 +288,8 @@ export function getThemeBackgroundUrl(
 ): string {
   const pack = getLayoutMediaPack(layout, catalogSlug);
   if (pack) return pack.background;
+  if (layout === "ix3-baby-shower") return SHOWER_BG;
+  if (layout === "ix3-graduation") return ACADEMIC_BG;
   const theme = resolveEventTheme(layout, category);
   return THEME_PACKS[theme].background;
 }

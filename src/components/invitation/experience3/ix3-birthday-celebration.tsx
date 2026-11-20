@@ -9,7 +9,7 @@ import {
   Experience3JourneyNote,
 } from "@/components/invitation/experience3/modules/editorial-lockups";
 import {
-  Experience3ChipRow,
+  Experience3SoftCard,
   Experience3VenuePanel,
 } from "@/components/invitation/experience3/modules/feature-strips";
 import { Experience3SectionReveal } from "@/components/invitation/experience3/modules/section-reveal";
@@ -20,20 +20,20 @@ import styles from "./experience3-shell.module.css";
 export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
   const headline = props.event.title;
   const date = formatInvitationDateParts(props.event.startDateRaw ?? props.event.startDate);
-  const host = props.event.hostName || "the host";
+  const celebrant = props.event.hostName || "the birthday star";
 
   const beats = [
     {
-      label: "Arrive",
+      label: "Doors open",
       detail: `${date.weekday}, ${date.day} ${date.month} ${date.year}${date.time ? ` · ${date.time}` : ""}`,
     },
     props.event.venueName || props.event.landmark
       ? {
-          label: "Venue",
+          label: "The place",
           detail: [props.event.venueName, props.event.landmark].filter(Boolean).join(" · "),
         }
       : null,
-    props.event.dressCode ? { label: "Look", detail: props.event.dressCode } : null,
+    props.event.dressCode ? { label: "The look", detail: props.event.dressCode } : null,
   ].filter(Boolean) as Array<{ label: string; detail: string }>;
 
   return (
@@ -44,15 +44,40 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
       composition="celebration"
       frameMode="bleed"
       headline={headline}
-      kicker="You're invited to celebrate"
-      welcomeEyebrow="Party pass"
-      welcomeLede={`Save the night with ${host}.`}
+      kicker="Milestone night"
+      welcomeEyebrow="You're on the list"
+      welcomeLede={`Come celebrate ${celebrant}.`}
       hideDefaultMeta
       heroMode="poster"
-      heroSubline="A night made for memories"
+      customHero={
+        <div style={{ display: "grid", gap: "0.5rem", color: "#faf5ff" }}>
+          <p className={styles.eyebrow} style={{ color: "rgba(250,245,255,0.8)" }}>
+            Milestone night
+          </p>
+          <h1
+            className={styles.title}
+            style={{
+              color: "#faf5ff",
+              fontFamily: "var(--ix3-heading, Georgia, serif)",
+              fontWeight: 500,
+              fontStyle: "italic",
+              letterSpacing: "0.01em",
+              maxWidth: "14ch",
+            }}
+          >
+            {headline}
+          </h1>
+          <p className={styles.lede} style={{ color: "rgba(250,245,255,0.88)" }}>
+            Lights low. Friends close. A night that feels like {celebrant}.
+          </p>
+        </div>
+      }
     >
       <Experience3SectionReveal>
-        <Experience3ChipRow tone="dark" chips={["Celebrate", "Dance", "Toast", "Memories"]} />
+        <Experience3SoftCard tone="dark" title={`For ${celebrant}`}>
+          {props.event.message ||
+            "This celebration is personal—toasts, dancing, and the kind of joy you only get once a year. Bring your energy and your favourite stories."}
+        </Experience3SoftCard>
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
         <Experience3DateLockup
@@ -66,10 +91,10 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
-        <section aria-label="Celebration note">
+        <section aria-label="Celebration rhythm">
           <p className={styles.note} style={{ letterSpacing: "0.01em" }}>
-            Lights low, music high, and a celebration that feels personal—come ready to mark the
-            milestone with good company.
+            Not a gala. Not a concert ticket. A birthday with personality—arrive ready to mark the
+            milestone.
           </p>
         </section>
       </Experience3SectionReveal>
@@ -81,7 +106,7 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={2}>
-        <Experience3EssentialsTimeline beats={beats} heading="Night plan" tone="dark" />
+        <Experience3EssentialsTimeline beats={beats} heading="Night rhythm" tone="dark" />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
         <Experience3VenuePanel
@@ -96,7 +121,7 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
         <Experience3JourneyNote
           tone="dark"
           title="Guest journey"
-          body="Enter the celebration, check the night plan, RSVP with your party size, and keep your admission QR for the door."
+          body="Step into the celebration, check the night rhythm, RSVP with your party size, and keep your admission QR for the door."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

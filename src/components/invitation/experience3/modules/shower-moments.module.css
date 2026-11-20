@@ -1,0 +1,100 @@
+.ribbon {
+  margin: 0;
+  text-align: center;
+  font-family: var(--ix3-eyebrow, ui-sans-serif, system-ui, sans-serif);
+  font-size: 0.68rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ix3-muted);
+  padding: 0.55rem 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--ix3-border) 70%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ix3-border) 70%, transparent);
+}
+
+.ribbonDark {
+  color: color-mix(in srgb, var(--ix3-muted) 90%, white);
+}
+
+.story {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1.35rem 1.2rem 1.45rem;
+  border-radius: 1.65rem;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--ix3-accent) 12%, transparent),
+      transparent 55%
+    ),
+    color-mix(in srgb, var(--ix3-surface) 88%, white);
+  border: 1px solid var(--ix3-border);
+  text-align: center;
+}
+
+.storyDark {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--ix3-accent) 18%, transparent),
+      transparent 55%
+    ),
+    color-mix(in srgb, var(--ix3-surface) 92%, black);
+}
+
+.storyEyebrow {
+  margin: 0;
+  font-family: var(--ix3-eyebrow, ui-sans-serif, system-ui, sans-serif);
+  font-size: 0.66rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ix3-muted);
+}
+
+.storyTitle {
+  margin: 0;
+  font-family: var(--ix3-heading, Georgia, serif);
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(1.45rem, 4vw, 1.85rem);
+  line-height: 1.2;
+  color: var(--ix3-text);
+}
+
+.storyBody {
+  margin: 0;
+  font-family: var(--ix3-body, Georgia, serif);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--ix3-muted);
+}
+
+.gift {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1.25rem;
+  border: 1px dashed var(--ix3-border);
+  background: color-mix(in srgb, var(--ix3-accent) 6%, transparent);
+  text-align: left;
+}
+
+.giftDark {
+  background: color-mix(in srgb, var(--ix3-accent) 10%, transparent);
+}
+
+.giftLabel {
+  margin: 0;
+  font-family: var(--ix3-eyebrow, ui-sans-serif, system-ui, sans-serif);
+  font-size: 0.64rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ix3-muted);
+}
+
+.giftBody {
+  margin: 0;
+  font-family: var(--ix3-body, Georgia, serif);
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: var(--ix3-text);
+}

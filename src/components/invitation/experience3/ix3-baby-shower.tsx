@@ -8,11 +8,12 @@ import {
   Experience3DateLockup,
   Experience3JourneyNote,
 } from "@/components/invitation/experience3/modules/editorial-lockups";
+import { Experience3VenuePanel } from "@/components/invitation/experience3/modules/feature-strips";
 import {
-  Experience3ChipRow,
-  Experience3SoftCard,
-  Experience3VenuePanel,
-} from "@/components/invitation/experience3/modules/feature-strips";
+  Experience3AnticipationRibbon,
+  Experience3GiftWhisper,
+  Experience3ShowerStory,
+} from "@/components/invitation/experience3/modules/shower-moments";
 import { Experience3SectionReveal } from "@/components/invitation/experience3/modules/section-reveal";
 import { IX3_BABY_SHOWER } from "@/lib/invitation/studio3/expanded-definitions";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
@@ -20,20 +21,27 @@ import styles from "./experience3-shell.module.css";
 
 export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
   const date = formatInvitationDateParts(props.event.startDateRaw ?? props.event.startDate);
-  const host = props.event.hostName;
+  const hosts = props.event.hostName || "the family";
+  const title = props.event.title;
+  const giftDetail =
+    typeof (props.event as { giftNote?: string }).giftNote === "string"
+      ? (props.event as { giftNote?: string }).giftNote
+      : props.event.message?.toLowerCase().includes("gift")
+        ? props.event.message
+        : null;
 
   const beats = [
     {
-      label: "Gathering",
+      label: "Arrive & settle",
       detail: `${date.weekday}, ${date.day} ${date.month} ${date.year}${date.time ? ` · ${date.time}` : ""}`,
     },
     props.event.venueName || props.event.landmark
       ? {
-          label: "Home / venue",
+          label: "Gathering place",
           detail: [props.event.venueName, props.event.landmark].filter(Boolean).join(" · "),
         }
       : null,
-    props.event.dressCode ? { label: "Attire", detail: props.event.dressCode } : null,
+    props.event.dressCode ? { label: "Comfortable elegance", detail: props.event.dressCode } : null,
   ].filter(Boolean) as Array<{ label: string; detail: string }>;
 
   return (
@@ -43,22 +51,48 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
       tone="light"
       composition="shower"
       frameMode="card"
-      headline={props.event.title}
+      headline={title}
       kicker="A soft gathering"
-      welcomeEyebrow="Dear guest"
-      welcomeLede="Please join us for a gentle celebration."
+      welcomeEyebrow="With warm hearts"
+      welcomeLede={`You are gently invited by ${hosts}.`}
       hideDefaultMeta
       heroMode="stacked"
-      heroSubline={host ? `Hosted by ${host}` : null}
+      customHero={
+        <div style={{ display: "grid", gap: "0.55rem", color: "#fffaf6", textAlign: "left" }}>
+          <p className={styles.eyebrow} style={{ color: "rgba(255,250,246,0.86)" }}>
+            A soft gathering
+          </p>
+          <h1
+            className={styles.title}
+            style={{
+              color: "#fffaf6",
+              fontStyle: "italic",
+              fontWeight: 400,
+              letterSpacing: "0.01em",
+              maxWidth: "16ch",
+            }}
+          >
+            {title}
+          </h1>
+          <p className={styles.lede} style={{ color: "rgba(255,250,246,0.88)", maxWidth: "28ch" }}>
+            Warmth, anticipation, and a quiet celebration for the little one on the way.
+          </p>
+        </div>
+      }
     >
       <Experience3SectionReveal>
-        <Experience3ChipRow tone="light" chips={["Soft gathering", "Warm company", "Joy"]} />
+        <Experience3AnticipationRibbon tone="light" line="Warmth · Anticipation · New beginnings" />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
-        <Experience3SoftCard tone="light" title="With love">
-          A modern, intimate shower—quiet joy, gentle motion, and space to celebrate the little one
-          on the way.
-        </Experience3SoftCard>
+        <Experience3ShowerStory
+          tone="light"
+          eyebrow="Our story"
+          title="Something tender is beginning"
+          body={
+            props.event.message ||
+            "We are gathering close friends and family to celebrate this chapter—soft laughter, gentle company, and room to share in the joy ahead."
+          }
+        />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
         <Experience3DateLockup
@@ -71,14 +105,11 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
           time={date.time}
         />
       </Experience3SectionReveal>
-      <Experience3SectionReveal delay={2}>
-        <section aria-label="Shower note">
-          <p className={styles.note}>
-            Gift details appear only when the host configures them. Everything else stays soft,
-            clear, and welcoming.
-          </p>
-        </section>
-      </Experience3SectionReveal>
+      {giftDetail ? (
+        <Experience3SectionReveal delay={2}>
+          <Experience3GiftWhisper tone="light" detail={giftDetail} />
+        </Experience3SectionReveal>
+      ) : null}
       <Experience3SectionReveal delay={2}>
         <Experience3EventCountdown
           startAtIso={props.event.startDateRaw}
@@ -87,12 +118,12 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
-        <Experience3EssentialsTimeline beats={beats} heading="Shower schedule" tone="light" />
+        <Experience3EssentialsTimeline beats={beats} heading="Afternoon flow" tone="light" />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={3}>
         <Experience3VenuePanel
           tone="light"
-          heading="Where"
+          heading="Where we gather"
           venue={props.event.venueName}
           landmark={props.event.landmark}
           dressCode={props.event.dressCode}
@@ -101,8 +132,8 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
       <Experience3SectionReveal delay={3}>
         <Experience3JourneyNote
           tone="light"
-          title="Guest journey"
-          body="Open the invitation, note the gathering details, RSVP gently, and keep your admission QR if entry is required."
+          title="Your gentle path"
+          body="Open with care, linger on the story, note the gathering details, RSVP softly, and keep your admission QR if the hosts request it."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

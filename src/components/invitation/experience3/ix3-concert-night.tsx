@@ -18,7 +18,8 @@ import styles from "./experience3-shell.module.css";
 export function Ix3ConcertNightTemplate(props: InvitationRendererProps) {
   const date = formatInvitationDateParts(props.event.startDateRaw ?? props.event.startDate);
   const venue = [props.event.venueName, props.event.landmark].filter(Boolean).join(" · ") || "Venue TBA";
-  const host = props.event.hostName;
+  const headliner = props.event.hostName || props.event.title;
+  const support = props.event.title !== headliner ? props.event.title : null;
 
   const beats = [
     {
@@ -29,8 +30,8 @@ export function Ix3ConcertNightTemplate(props: InvitationRendererProps) {
     props.event.dressCode ? { label: "Look", detail: props.event.dressCode } : null,
   ].filter(Boolean) as Array<{ label: string; detail: string }>;
 
-  const lineup = [host, props.event.title].filter((value, index, arr): value is string =>
-    Boolean(value) && arr.indexOf(value) === index
+  const lineup = [headliner, support, "Special guests"].filter(
+    (value, index, arr): value is string => Boolean(value) && arr.indexOf(value) === index
   );
 
   return (
@@ -42,33 +43,59 @@ export function Ix3ConcertNightTemplate(props: InvitationRendererProps) {
       frameMode="ticket"
       headline={props.event.title}
       kicker="Live performance"
-      welcomeEyebrow="Admit one"
-      welcomeLede="Your ticket is waiting—see you on the floor."
+      welcomeEyebrow="Floor access"
+      welcomeLede="Your pass is ready—arrive early for soundcheck energy."
       hideDefaultMeta
       heroMode="center"
-      heroSubline="One night. One stage."
+      customHero={
+        <div style={{ display: "grid", gap: "0.55rem", justifyItems: "center", textAlign: "center" }}>
+          <p className={styles.eyebrow} style={{ color: "rgba(255,255,255,0.78)" }}>
+            Tonight only
+          </p>
+          <h1
+            className={styles.title}
+            style={{
+              color: "#f8fafc",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              fontWeight: 700,
+              fontSize: "clamp(1.45rem, 5vw, 2rem)",
+              maxWidth: "18ch",
+            }}
+          >
+            {props.event.title}
+          </h1>
+          <p className={styles.lede} style={{ color: "rgba(226,232,240,0.9)" }}>
+            {headliner}
+          </p>
+          <p
+            className={styles.eyebrow}
+            style={{ color: "rgba(148,163,184,0.95)", letterSpacing: "0.28em" }}
+          >
+            {date.day} {date.month} · {venue}
+          </p>
+        </div>
+      }
     >
       <Experience3SectionReveal>
         <Experience3TicketStub
           tone="dark"
-          title={props.event.title}
-          subtitle={host || "Live night"}
+          title={headliner}
+          subtitle="Admit one · live night"
           meta={`${date.day} ${date.month} ${date.year}${date.time ? ` · ${date.time}` : ""} · ${venue}`}
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
-        <section aria-label="Concert note">
+        <section aria-label="Stage note">
           <p className={styles.note}>
-            Immersive entertainment energy—bold type, stage-black wash, and a ticket-forward reveal
-            built for the night ahead.
+            Lights down, bass up—this is a night-of experience, not a static poster. Follow the set
+            timing, claim your spot on the floor, and keep your pass ready at the door.
           </p>
         </section>
       </Experience3SectionReveal>
-      {lineup.length ? (
-        <Experience3SectionReveal delay={1}>
-          <Experience3LineupList tone="dark" heading="On the bill" items={lineup.slice(0, 4)} />
-        </Experience3SectionReveal>
-      ) : null}
+      <Experience3SectionReveal delay={1}>
+        <Experience3LineupList tone="dark" heading="On the bill" items={lineup.slice(0, 4)} />
+      </Experience3SectionReveal>
       <Experience3SectionReveal delay={2}>
         <Experience3EventCountdown
           startAtIso={props.event.startDateRaw}
@@ -91,8 +118,8 @@ export function Ix3ConcertNightTemplate(props: InvitationRendererProps) {
       <Experience3SectionReveal delay={3}>
         <Experience3JourneyNote
           tone="dark"
-          title="Guest journey"
-          body="Reveal the night, check set timing, RSVP, and keep your admission QR ready at the door."
+          title="Night-of path"
+          body="Enter the stage wash, check doors and set timing, RSVP, then present your admission QR at entry."
         />
       </Experience3SectionReveal>
     </Experience3Shell>

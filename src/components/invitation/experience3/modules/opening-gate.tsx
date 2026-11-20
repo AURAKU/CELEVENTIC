@@ -62,7 +62,9 @@ export function Experience3OpeningGate({
       ? { bg: "#070708", fg: "#f5f5f4", muted: "#a8a29e", border: "rgba(245,245,244,0.22)" }
       : tone === "solemn"
         ? { bg: "#efeae3", fg: "#292524", muted: "#78716c", border: "rgba(87,83,78,0.25)" }
-        : { bg: "#f7f2ea", fg: "#1c1917", muted: "#78716c", border: "rgba(138,106,61,0.3)" };
+        : style === "soft-unveil"
+          ? { bg: "#f6efe8", fg: "#3a322c", muted: "#8d7f74", border: "rgba(196, 164, 132, 0.45)" }
+          : { bg: "#f7f2ea", fg: "#1c1917", muted: "#78716c", border: "rgba(138,106,61,0.3)" };
 
   const eyebrow =
     style === "portrait"
@@ -71,25 +73,31 @@ export function Experience3OpeningGate({
         ? "You are invited"
         : style === "envelope"
           ? "An invitation awaits"
-          : style === "classic-reveal"
-            ? "Open when ready"
-            : "An invitation";
+          : style === "soft-unveil"
+            ? "A gathering of love"
+            : style === "classic-reveal"
+              ? "Open when ready"
+              : "An invitation";
 
   const cta =
     style === "envelope"
       ? "Break the seal"
       : style === "cinematic"
         ? "Enter the evening"
-        : style === "portrait"
-          ? "Continue"
-          : "Open invitation";
+        : style === "soft-unveil"
+          ? "Open with care"
+          : style === "portrait"
+            ? "Continue"
+            : "Open invitation";
 
   const titleClass =
     style === "cinematic"
       ? styles.titleCinematic
       : style === "envelope"
         ? styles.titleEnvelope
-        : styles.title;
+        : style === "soft-unveil"
+          ? styles.titleSoft
+          : styles.title;
 
   return (
     <div
@@ -97,6 +105,7 @@ export function Experience3OpeningGate({
         styles.gate,
         style === "cinematic" ? styles.gateCinematic : "",
         style === "envelope" ? styles.gateEnvelope : "",
+        style === "soft-unveil" ? styles.gateSoft : "",
       ]
         .filter(Boolean)
         .join(" ")}
