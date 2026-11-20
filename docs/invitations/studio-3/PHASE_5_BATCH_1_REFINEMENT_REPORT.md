@@ -3,7 +3,7 @@
 **Branch:** `feat/invitation-studio-3`  
 **Verified starting HEAD:** `c79b2282`  
 **Prior implementation:** `a9656b95`  
-**Verified HEAD for this report:**   
+**Verified HEAD for this report:** `9112aab2` (implementation `a3141004`)  
 **Scope:** Batch 1 only — six registered families  
 **Deploy / merge / Batch 2:** Not performed / not authorized  
 
