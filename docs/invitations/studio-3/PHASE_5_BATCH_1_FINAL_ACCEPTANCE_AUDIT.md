@@ -460,7 +460,7 @@ git diff --name-only main -- src/components/invitation/templates
 
 **Remediation date (UTC):** 2026-11-20  
 **Pre-remediation HEAD:** `3171d980` (Stage 1 already landed: P1-1/2/7 code)  
-**Post-remediation checkpoint:** see commit on `feat/invitation-studio-3` after this section  
+**Post-remediation checkpoint:** `37da3ef7` on `feat/invitation-studio-3`  
 **Batch 2 / merge / deploy:** Not performed  
 **Protected-template drift:** **0**
 
