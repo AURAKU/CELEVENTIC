@@ -874,15 +874,34 @@ export function applyCatalogCreativeIdentity(
 }
 
 export function parseCoupleNames(title: string, hostName: string) {
+  // Prefer configured partner names (host) over title prefixes like "The Marriage of …".
+  const hostParts = hostName
+    .split(/\s*[&+]\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (hostParts.length >= 2) {
+    return { name1: hostParts[0]!, name2: hostParts[1]! };
+  }
+
   const cleaned = title
     .replace(/the\s+wedding\s+(and\s+reception\s+)?of\s+/i, "")
+    .replace(/the\s+marriage\s+(ceremony\s+)?of\s+/i, "")
     .replace(/wedding\s+of\s+/i, "")
+    .replace(/marriage\s+of\s+/i, "")
     .trim();
   const match = cleaned.match(/^(.+?)\s*[&+]\s*(.+)$/i);
-  if (match) return { name1: match[1].trim(), name2: match[2].trim() };
-  const hostParts = hostName.split(/\s*[&+]\s*/);
-  if (hostParts.length >= 2) return { name1: hostParts[0].trim(), name2: hostParts[1].trim() };
+  if (match) return { name1: match[1]!.trim(), name2: match[2]!.trim() };
   return { name1: cleaned || hostName, name2: "" };
+}
+
+/** First letter of the first given name — safe for monograms. */
+export function coupleMonogramInitials(name1: string, name2?: string | null): string {
+  const initial = (value: string) => {
+    const token = value.trim().split(/\s+/)[0] ?? "";
+    return (token[0] ?? "").toUpperCase();
+  };
+  if (name2?.trim()) return `${initial(name1)}${initial(name2)}`;
+  return initial(name1) || "C";
 }
 
 export function formatInvitationDateParts(dateStr: string) {

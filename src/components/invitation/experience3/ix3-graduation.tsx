@@ -50,17 +50,36 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
       hideDefaultMeta
       heroMode="stacked"
       customHero={
-        <div style={{ display: "grid", gap: "0.55rem", color: "#f8fafc" }}>
+        <div style={{ display: "grid", gap: "0.45rem", color: "#f8fafc" }}>
           <p className={styles.eyebrow} style={{ color: "rgba(248,250,252,0.82)" }}>
             Commencement
           </p>
+          <p
+            className={styles.lede}
+            style={{
+              margin: 0,
+              color: "rgba(248,250,252,0.9)",
+              fontStyle: "italic",
+              letterSpacing: "0.02em",
+            }}
+          >
+            Celebrating
+          </p>
           <h1
             className={styles.title}
-            style={{ color: "#f8fafc", fontWeight: 500, maxWidth: "16ch", letterSpacing: "0.01em" }}
+            style={{
+              color: "#f8fafc",
+              fontWeight: 500,
+              letterSpacing: "0.01em",
+              overflowWrap: "normal",
+              wordBreak: "normal",
+              hyphens: "manual",
+              maxWidth: "18rem",
+            }}
           >
-            {props.event.title}
+            {graduate}
           </h1>
-          <p className={styles.lede} style={{ color: "rgba(226,232,240,0.92)" }}>
+          <p className={styles.lede} style={{ margin: 0, color: "rgba(226,232,240,0.92)" }}>
             Achievement · Progression · Celebration
           </p>
         </div>

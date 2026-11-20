@@ -15,15 +15,17 @@ import {
 } from "@/components/invitation/experience3/modules/feature-strips";
 import { Experience3SectionReveal } from "@/components/invitation/experience3/modules/section-reveal";
 import { IX3_HERITAGE_MARRIAGE } from "@/lib/invitation/studio3/expanded-definitions";
-import { formatInvitationDateParts, parseCoupleNames } from "@/lib/invitation-templates";
+import {
+  coupleMonogramInitials,
+  formatInvitationDateParts,
+  parseCoupleNames,
+} from "@/lib/invitation-templates";
 import styles from "./experience3-shell.module.css";
 
 export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
   const { name1, name2 } = parseCoupleNames(props.event.title, props.event.hostName);
   const headline = name2 ? `${name1} & ${name2}` : props.event.title;
-  const monogram = name2
-    ? `${(name1[0] ?? "").toUpperCase()}${(name2[0] ?? "").toUpperCase()}`
-    : (name1[0] ?? "C").toUpperCase();
+  const monogram = coupleMonogramInitials(name1, name2);
   const date = formatInvitationDateParts(props.event.startDateRaw ?? props.event.startDate);
 
   const beats = [

@@ -460,7 +460,11 @@ export function InvitationRsvpPanel({
                   <Minus className="h-4 w-4" />
                 </Button>
               )}
-              <div className={fashion ? "ff-rsvp-party-copy" : "flex-1 text-center"}>
+              <div
+                className={
+                  fashion ? "ff-rsvp-party-copy" : "min-w-[9.5rem] flex-1 px-1 text-center"
+                }
+              >
                 <p
                   className={
                     fashion
@@ -479,7 +483,18 @@ export function InvitationRsvpPanel({
                       ? "ff-rsvp-party-summary"
                       : memorial
                         ? "inv-rsvp-party-summary"
-                        : "text-xs opacity-80"
+                        : "text-xs leading-snug opacity-80"
+                  }
+                  data-testid="rsvp-party-summary"
+                  style={
+                    fashion || memorial
+                      ? undefined
+                      : {
+                          overflowWrap: "normal",
+                          wordBreak: "normal",
+                          hyphens: "manual",
+                          whiteSpace: "normal",
+                        }
                   }
                 >
                   {slotGuidance.summary}

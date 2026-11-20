@@ -36,7 +36,8 @@ export function rsvpPartySlotGuidance(allowance: number, attending: number): {
 
   if (max === 1) {
     return {
-      summary: "Confirming 1 seat",
+      // NBSP keeps "Confirming" with its count so narrow columns wrap at spaces only.
+      summary: "Confirming\u00A01 seat",
       detail: "This invitation is for you alone.",
       companions: 0,
       remaining: 0,
@@ -46,10 +47,10 @@ export function rsvpPartySlotGuidance(allowance: number, attending: number): {
 
   const summary =
     companions === 0
-      ? `Confirming 1 of ${max} seats · just you`
+      ? `Confirming\u00A01 of ${max} seats · just you`
       : companions === 1
-        ? `Confirming ${confirmed} of ${max} seats · you + 1 companion`
-        : `Confirming ${confirmed} of ${max} seats · you + ${companions} companions`;
+        ? `Confirming\u00A0${confirmed} of ${max} seats · you + 1 companion`
+        : `Confirming\u00A0${confirmed} of ${max} seats · you + ${companions} companions`;
 
   const detail =
     remaining === 0
