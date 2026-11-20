@@ -346,7 +346,7 @@ These absences alone do not force P0 if Batch 1 scope explicitly excludes them �
 ## P0-2 Resolution — Concert cinematic opening intercepting RSVP
 
 **Status:** **RESOLVED** (browser-verified)  
-**Resolution commit:** *(stamped at commit)*  
+**Resolution commit:** `7feb8e5f`  
 **Authorized scope:** Concert RSVP P0 only — no creative redesigns, no Batch 2.
 
 ### 1. Root cause
