@@ -82,6 +82,41 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
+        <section
+          aria-label="Birthday reveal"
+          data-testid="ix3-birthday-reveal"
+          style={{
+            display: "grid",
+            gap: "0.45rem",
+            padding: "1.1rem 1rem",
+            borderRadius: "1.35rem",
+            border: "1px solid color-mix(in srgb, var(--ix3-accent) 45%, transparent)",
+            background:
+              "radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--ix3-accent) 22%, transparent), transparent 55%)",
+            textAlign: "center",
+          }}
+        >
+          <p
+            className={styles.eyebrow}
+            style={{ margin: 0, letterSpacing: "0.32em", color: "rgba(250,245,255,0.72)" }}
+          >
+            Tonight&apos;s reveal
+          </p>
+          <p
+            className={styles.title}
+            style={{
+              margin: 0,
+              fontStyle: "italic",
+              fontWeight: 500,
+              fontSize: "clamp(1.25rem, 4vw, 1.7rem)",
+              color: "#faf5ff",
+            }}
+          >
+            A night written for {celebrant}
+          </p>
+        </section>
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
         <Experience3SoftCard tone="dark" title={`For ${celebrant}`}>
           {props.event.message ||
             "This celebration is personal—toasts, dancing, and the kind of joy you only get once a year. Bring your energy and your favourite stories."}

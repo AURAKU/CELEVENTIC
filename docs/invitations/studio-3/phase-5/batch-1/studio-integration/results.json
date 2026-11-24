@@ -1,0 +1,41 @@
+{
+  "results": [
+    {
+      "layout": "ix3-heritage-marriage",
+      "key": "heritage",
+      "ok": true,
+      "title": "Experience 3.0 — Heritage Luxury Marriage"
+    },
+    {
+      "layout": "ix3-corporate-gala",
+      "key": "gala",
+      "ok": true,
+      "title": "Experience 3.0 — Executive Gala"
+    },
+    {
+      "layout": "ix3-baby-shower",
+      "key": "shower",
+      "ok": true,
+      "title": "Experience 3.0 — Modern Baby Shower"
+    },
+    {
+      "layout": "ix3-graduation",
+      "key": "graduation",
+      "ok": true,
+      "title": "Experience 3.0 — Academic Prestige"
+    },
+    {
+      "layout": "ix3-birthday-celebration",
+      "key": "birthday",
+      "ok": true,
+      "title": "Experience 3.0 — Contemporary Birthday"
+    },
+    {
+      "layout": "ix3-concert-night",
+      "key": "concert",
+      "ok": true,
+      "title": "Experience 3.0 — Immersive Concert"
+    }
+  ],
+  "failed": 0
+}

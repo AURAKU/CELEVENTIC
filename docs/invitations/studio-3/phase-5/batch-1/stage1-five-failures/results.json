@@ -1,0 +1,37 @@
+{
+  "base": "http://127.0.0.1:3002",
+  "results": [
+    {
+      "id": "birthday-t768-http",
+      "status": 200,
+      "ok": true,
+      "class": "pass"
+    },
+    {
+      "id": "graduation-m375-http",
+      "status": 200,
+      "ok": true,
+      "class": "pass"
+    },
+    {
+      "id": "gala-confirm",
+      "ok": true,
+      "err": null,
+      "class": "pass"
+    },
+    {
+      "id": "concert-accept",
+      "ok": true,
+      "err": null,
+      "class": "pass"
+    },
+    {
+      "id": "heritage-accept-control",
+      "ok": true,
+      "dismissed": true,
+      "visible": true,
+      "class": "pass"
+    }
+  ],
+  "failed": 0
+}

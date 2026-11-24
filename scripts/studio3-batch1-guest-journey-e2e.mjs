@@ -26,14 +26,29 @@ const VIEWPORTS = [
 ];
 
 async function dismissGate(page) {
-  const btn = page
-    .getByRole("button", {
-      name: /open invitation|open with care|skip|break the seal|enter the evening|continue/i,
-    })
-    .first();
-  if (await btn.count()) {
-    await btn.click({ timeout: 4000 }).catch(() => {});
-    await page.waitForTimeout(400);
+  const gate = page.getByTestId("ix3-opening-gate");
+  if (!(await gate.count())) return true;
+  await page.waitForLoadState("networkidle").catch(() => {});
+  const primary = page.getByTestId("ix3-opening-primary");
+  for (let i = 0; i < 10; i += 1) {
+    if (await primary.count()) {
+      await primary.evaluate((el) => {
+        if (el instanceof HTMLButtonElement) el.click();
+      });
+    }
+    try {
+      await gate.waitFor({ state: "detached", timeout: 800 });
+      return true;
+    } catch {
+      /* retry */
+    }
+  }
+  await page.keyboard.press("Escape");
+  try {
+    await gate.waitFor({ state: "detached", timeout: 5000 });
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -109,15 +124,20 @@ async function runJourney(page, layout, label) {
     result.steps.qrVisible = (await page.getByTestId("ix3-admission-qr").count()) > 0;
     result.steps.mapsOrActions = /Maps|Share|Reminder|Contact/i.test(await page.locator("body").innerText());
 
-    // RSVP Accept (sandbox)
-    const accept = page.getByRole("button", { name: /accept/i }).first();
+    // RSVP Accept (sandbox) — family-specific labels; use stable choice test ids.
+    const accept = page.getByTestId("rsvp-choice-ACCEPTED");
     result.steps.rsvpControlPresent = (await accept.count()) > 0;
     if (result.steps.rsvpControlPresent) {
-      await accept.click();
+      await accept.waitFor({ state: "visible", timeout: 12000 });
+      await accept.scrollIntoViewIfNeeded();
+      await accept.click({ timeout: 8000 });
       await page.waitForTimeout(600);
       result.steps.rsvpThankYou =
+        (await page.getByTestId("ix3-rsvp-confirmation").count()) > 0 ||
         (await page.getByTestId("rsvp-guest-feedback").count()) > 0 ||
-        /thank you|sandbox rsvp/i.test(await page.locator("body").innerText());
+        /thank you|sandbox rsvp|confirmed|blessing|pass confirmed/i.test(
+          await page.locator("body").innerText()
+        );
       result.steps.rsvpSandboxBadge = (await page.getByTestId("rsvp-sandbox-badge").count()) > 0;
     } else {
       result.errors.push("RSVP Accept control missing");

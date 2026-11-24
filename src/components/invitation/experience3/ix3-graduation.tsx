@@ -9,6 +9,7 @@ import {
   Experience3JourneyNote,
 } from "@/components/invitation/experience3/modules/editorial-lockups";
 import {
+  Experience3AchievementStrip,
   Experience3DiplomaFrame,
   Experience3OrnamentRule,
   Experience3VenuePanel,
@@ -102,6 +103,16 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
               "This invitation marks a milestone earned—procession, recognition, and a gathering of the people who carried the journey."}
           </p>
         </section>
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
+        <Experience3AchievementStrip
+          tone="light"
+          items={[
+            "Years of study, sealed with honour",
+            "A procession of peers and mentors",
+            "The first chapter of what comes next",
+          ]}
+        />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={2}>
         <Experience3EssentialsTimeline beats={beats} heading="Ceremony order" tone="light" />

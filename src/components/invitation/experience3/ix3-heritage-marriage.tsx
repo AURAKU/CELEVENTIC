@@ -11,6 +11,7 @@ import {
 } from "@/components/invitation/experience3/modules/editorial-lockups";
 import {
   Experience3BlessingSeal,
+  Experience3CeremonyChapters,
   Experience3CoupleCard,
   Experience3OrnamentRule,
   Experience3VenuePanel,
@@ -88,6 +89,25 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
               "With reverence for custom and the warmth of family, we invite you to witness the joining of two houses—libation, blessing, and celebration shared together."}
           </p>
         </section>
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={2}>
+        <Experience3CeremonyChapters
+          tone="light"
+          chapters={[
+            {
+              title: "Libation",
+              detail: "Elders open the day with gratitude for the families gathered.",
+            },
+            {
+              title: "Blessing",
+              detail: "The couple receives the prayers that bind two houses as one.",
+            },
+            {
+              title: "Celebration",
+              detail: "Music, cloth, and shared joy close the ceremonial circle.",
+            },
+          ]}
+        />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={2}>
         <Experience3DateLockup

@@ -100,10 +100,17 @@ async function acceptRsvp(page) {
 const browser = await chromium.launch({ headless: true });
 const results = [];
 
+function openContext(options = {}) {
+  return browser.newContext({
+    reducedMotion: "no-preference",
+    ...options,
+  });
+}
+
 try {
   // —— 1) RSVP while cinematic opening is active (must NOT succeed through overlay) ——
   {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+    const context = await openContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
     const page = await context.newPage();
     await seed(page);
     await gotoConcert(page);
@@ -134,7 +141,7 @@ try {
 
   // —— 2) RSVP after dismissing opening ——
   {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+    const context = await openContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
     const page = await context.newPage();
     await seed(page);
     await gotoConcert(page);
@@ -155,7 +162,7 @@ try {
 
   // —— 3) Keyboard-only RSVP (Enter on CTA, then Enter on Accept) + Escape path ——
   {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const context = await openContext({ viewport: { width: 390, height: 844 } });
     const page = await context.newPage();
     await seed(page);
     await gotoConcert(page);
@@ -184,7 +191,7 @@ try {
 
   // —— 3b) Escape-only dismiss (fresh page) ——
   {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const context = await openContext({ viewport: { width: 390, height: 844 } });
     const page = await context.newPage();
     await seed(page);
     await gotoConcert(page);
@@ -202,7 +209,7 @@ try {
 
   // —— 4) Mobile touch: primary CTA then Accept ——
   {
-    const context = await browser.newContext({
+    const context = await openContext({
       viewport: { width: 390, height: 844 },
       hasTouch: true,
       isMobile: true,
@@ -224,7 +231,7 @@ try {
 
   // —— 5) Repeated opening/closing across reloads ——
   {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const context = await openContext({ viewport: { width: 390, height: 844 } });
     const page = await context.newPage();
     await seed(page);
     for (const mode of ["primary", "skip"]) {
@@ -243,7 +250,7 @@ try {
 
   // —— 6) Confirmation + decline (error/negative) states ——
   {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const context = await openContext({ viewport: { width: 390, height: 844 } });
     const page = await context.newPage();
     await seed(page);
     await gotoConcert(page);
@@ -262,7 +269,7 @@ try {
 
   // —— 7) Other Batch 1 families smoke: dismiss (if any) + Accept ——
   for (const layout of BATCH1) {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const context = await openContext({ viewport: { width: 390, height: 844 } });
     const page = await context.newPage();
     await seed(page);
     await page.goto(`${BASE}/invitations/experience3/${layout}`, {

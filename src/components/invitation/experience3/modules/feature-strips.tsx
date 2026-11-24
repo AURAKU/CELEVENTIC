@@ -474,6 +474,114 @@ export function Experience3PlaceCard({
   );
 }
 
+/** Heritage — ceremonial chapter beats (libation → blessing → feast). */
+export function Experience3CeremonyChapters({
+  chapters,
+  tone = "light",
+  heading = "Ceremony chapters",
+}: {
+  chapters: Array<{ title: string; detail: string }>;
+  tone?: Tone;
+  heading?: string;
+}) {
+  const c = toneColors(tone);
+  if (!chapters.length) return null;
+  return (
+    <section aria-label={heading} data-testid="ix3-ceremony-chapters">
+      <p
+        style={{
+          margin: "0 0 0.85rem",
+          fontSize: "0.65rem",
+          letterSpacing: "0.28em",
+          textTransform: "uppercase",
+          color: c.muted,
+        }}
+      >
+        {heading}
+      </p>
+      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "0.85rem" }}>
+        {chapters.map((chapter, index) => (
+          <li
+            key={chapter.title}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "2rem 1fr",
+              gap: "0.75rem",
+              borderTop: index === 0 ? "none" : `1px solid ${c.line}`,
+              paddingTop: index === 0 ? 0 : "0.85rem",
+            }}
+          >
+            <span style={{ color: c.muted, fontSize: "0.72rem", letterSpacing: "0.08em" }}>
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <span>
+              <span
+                style={{
+                  display: "block",
+                  color: c.fg,
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontSize: "1.05rem",
+                  marginBottom: "0.25rem",
+                }}
+              >
+                {chapter.title}
+              </span>
+              <span style={{ color: c.muted, fontSize: "0.9rem", lineHeight: 1.5 }}>{chapter.detail}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/** Graduation — milestone achievements strip. */
+export function Experience3AchievementStrip({
+  items,
+  tone = "light",
+  heading = "The journey sealed",
+}: {
+  items: string[];
+  tone?: Tone;
+  heading?: string;
+}) {
+  const c = toneColors(tone);
+  if (!items.length) return null;
+  return (
+    <section aria-label={heading} data-testid="ix3-achievement-strip">
+      <p
+        style={{
+          margin: "0 0 0.75rem",
+          fontSize: "0.65rem",
+          letterSpacing: "0.28em",
+          textTransform: "uppercase",
+          color: c.muted,
+        }}
+      >
+        {heading}
+      </p>
+      <div style={{ display: "grid", gap: "0.55rem" }}>
+        {items.map((item) => (
+          <p
+            key={item}
+            style={{
+              margin: 0,
+              padding: "0.75rem 0.9rem",
+              border: `1px solid ${c.line}`,
+              background: c.chip,
+              color: c.fg,
+              fontSize: "0.95rem",
+              lineHeight: 1.45,
+            }}
+          >
+            {item}
+          </p>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /** Concert — doors / stage cue strip. */
 export function Experience3StageCue({
   doors,

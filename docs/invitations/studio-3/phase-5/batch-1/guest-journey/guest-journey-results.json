@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-11-20T02:18:55.874Z",
+  "capturedAt": "2026-11-24T19:09:44.295Z",
   "base": "http://127.0.0.1:3002",
   "criterion": "End-to-end guest experience acceptance (sandbox): open → intro → details → RSVP → QR; mobile+desktop; persist; no production writes",
   "results": [
@@ -107,20 +107,20 @@
     {
       "layout": "ix3-corporate-gala",
       "viewport": "desktop",
-      "ok": false,
+      "ok": true,
       "steps": {
         "http": 200,
         "openingPresentOrSkipped": true,
         "openingDismissed": true,
         "personalizedGuest": true,
         "eventDetails": true,
-        "qrVisible": false,
+        "qrVisible": true,
         "mapsOrActions": true,
         "rsvpControlPresent": true,
         "rsvpThankYou": true,
         "rsvpSandboxBadge": true,
         "rsvpPersistedAfterReload": true,
-        "noDecorativeOnly": false
+        "noDecorativeOnly": true
       },
       "errors": []
     },
@@ -209,6 +209,7 @@
       "viewport": "mobile",
       "ok": true,
       "steps": {
+        "retriedAfter5xx": true,
         "http": 200,
         "openingPresentOrSkipped": true,
         "openingDismissed": true,
@@ -229,6 +230,7 @@
       "viewport": "desktop",
       "ok": true,
       "steps": {
+        "retriedAfter5xx": true,
         "http": 200,
         "openingPresentOrSkipped": true,
         "openingDismissed": true,
@@ -246,6 +248,6 @@
     }
   ],
   "warnings": [],
-  "passed": 11,
+  "passed": 12,
   "total": 12
 }

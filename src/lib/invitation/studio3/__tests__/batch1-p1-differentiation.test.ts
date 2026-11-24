@@ -37,7 +37,7 @@ describe("Batch 1 P1 differentiation contracts", () => {
     const checks: Array<[string, RegExp]> = [
       [
         "src/components/invitation/experience3/ix3-heritage-marriage.tsx",
-        /Experience3BlessingSeal/,
+        /Experience3BlessingSeal[\s\S]*Experience3CeremonyChapters/,
       ],
       [
         "src/components/invitation/experience3/ix3-corporate-gala.tsx",
@@ -45,7 +45,7 @@ describe("Batch 1 P1 differentiation contracts", () => {
       ],
       [
         "src/components/invitation/experience3/ix3-birthday-celebration.tsx",
-        /Experience3ToastList/,
+        /ix3-birthday-reveal[\s\S]*Experience3ToastList/,
       ],
       [
         "src/components/invitation/experience3/ix3-concert-night.tsx",
@@ -53,7 +53,7 @@ describe("Batch 1 P1 differentiation contracts", () => {
       ],
       [
         "src/components/invitation/experience3/ix3-graduation.tsx",
-        /Experience3DiplomaFrame/,
+        /Experience3DiplomaFrame[\s\S]*Experience3AchievementStrip/,
       ],
       [
         "src/components/invitation/experience3/ix3-baby-shower.tsx",

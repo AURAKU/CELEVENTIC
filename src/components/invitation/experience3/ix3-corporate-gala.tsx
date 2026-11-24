@@ -9,6 +9,7 @@ import {
 } from "@/components/invitation/experience3/modules/editorial-lockups";
 import {
   Experience3AgendaTable,
+  Experience3ChipRow,
   Experience3OrnamentRule,
   Experience3PlaceCard,
   Experience3VenuePanel,
@@ -75,6 +76,12 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
           tone="dark"
           guestLabel={props.guestName?.trim() ? props.guestName : "Guest of honour"}
           eventLabel={props.event.title}
+        />
+      </Experience3SectionReveal>
+      <Experience3SectionReveal delay={1}>
+        <Experience3ChipRow
+          tone="dark"
+          chips={["Black tie", "Recognition", "Reception", "Programme"]}
         />
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
