@@ -12,7 +12,7 @@
 | 4 Functional + a11y | **PASSED** | Concert P0 regression ALL PASSED; family labels + gate/focus preserved; confirmation chrome verified |
 | 5 Premium creative | **IMPLEMENTED** | Ceremony chapters, birthday reveal, gala atmosphere chips, graduation achievement strip, concert hero atmosphere. **Human visual bar pending** |
 | 6 Regression + safety | **PASSED** | `test:invitation-studio3` 39/39; stage1; concert P0; protected drift 0 |
-| 7 Final review package | IN PROGRESS | |
+| 7 Final review package | **READY** | `CELEVENTIC_STUDIO3_BATCH1_REVIEW.zip` @ `9fac1752` (~9.0 MB) |
 | 8 Human acceptance | LOCKED | Awaiting human |
 | 9 Batch 2 | LOCKED | |
 

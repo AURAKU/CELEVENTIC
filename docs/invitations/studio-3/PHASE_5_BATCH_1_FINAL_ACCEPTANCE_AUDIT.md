@@ -580,3 +580,32 @@ Reviewers should verify in browser (`http://127.0.0.1:3002/invitations/experienc
 7. Premium craft still compared honestly to Forever Afaris / Femmora — **do not auto-accept** on tests alone.
 
 **STOP:** Seven P1 findings implemented and verified. Awaiting explicit human approval before Batch 1 acceptance or Batch 2 unlock.
+
+---
+
+## 10. Final completion pass (stages 1–7)
+
+**Completion HEAD:** `9fac1752` (+ subsequent package commit if present)  
+**Progress log:** `docs/invitations/studio-3/PHASE_5_BATCH_1_FINAL_COMPLETION_PROGRESS.md`
+
+| Stage | Result |
+|---|---|
+| 1 Five verification failures | **PASSED** — classified + hardened; `stage1-five-failures` ALL PASSED |
+| 2 Guest journeys | **PASSED** — 12/12 |
+| 3 Studio integration | **Sandbox PASSED**; authenticated Studio Edit→Save→Reload **not browser-verified** (auth/DB limitation) |
+| 4 Functional + a11y | **PASSED** for in-scope Batch 1 guest paths; Concert P0 green |
+| 5 Premium creative refinements | **Implemented** — pending human craft acceptance |
+| 6 Regression + safety | **PASSED** — studio3 39/39; protected drift 0 |
+| 7 Review package | Rebuilt from this checkpoint for human review |
+
+### Human acceptance checklist
+
+- [ ] Six families feel independently designed
+- [ ] P1-1…P1-7 visibly resolved in fresh screenshots
+- [ ] RSVP + confirmation feel premium per family
+- [ ] Mobile/tablet/desktop polish acceptable
+- [ ] Craft comparable in seriousness to Forever Afaris / Femmora (not clones)
+- [ ] No critical functional defects remain
+
+**Batch 1 creative acceptance:** not auto-granted  
+**Batch 2:** locked  
