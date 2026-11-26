@@ -177,25 +177,11 @@ function GuestPlaceName({
   );
 }
 
-const COUNT_WORDS = [
-  "",
-  "one",
-  "two",
-  "three",
-  "four",
-  "five",
-  "six",
-  "seven",
-  "eight",
-  "nine",
-  "ten",
-] as const;
-
 export function formatPassAdmitCount(partySize: number): { capacity: number; label: string } {
   const capacity = Math.max(1, Math.trunc(partySize || 1));
-  const word = capacity <= 10 ? COUNT_WORDS[capacity] : String(capacity);
   const unit = capacity === 1 ? "guest" : "guests";
-  return { capacity, label: `Admits ${word} ${unit}` };
+  // Use numerals so the total admitted count is unambiguous.
+  return { capacity, label: `Admits ${capacity} ${unit}` };
 }
 
 export function GuestPassCard({

@@ -11,11 +11,8 @@ export function clampAttendingCount(attending: number, allowance: number): numbe
 
 export function rsvpPartyCapacityLine(allowance: number): string {
   const max = Math.max(1, Math.trunc(allowance) || 1);
-  if (max === 1) return "This invitation admits only you.";
-  const companions = max - 1;
-  return companions === 1
-    ? "This invitation admits you and 1 companion."
-    : `This invitation admits you and ${companions} companions.`;
+  // Exact total admitted — no "you and N additional" phrasing.
+  return max === 1 ? "1 guest total" : `${max} guests total`;
 }
 
 /**
