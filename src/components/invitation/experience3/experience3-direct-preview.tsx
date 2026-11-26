@@ -25,7 +25,7 @@ export function Experience3DirectPreview({
   defaultDevice = "mobile",
 }: Experience3DirectPreviewProps) {
   const [device, setDevice] = useState<"mobile" | "desktop">(defaultDevice);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | undefined>(undefined);
   const preview = useMemo(
     () =>
       buildLivePreviewProps(layoutSlug, category, {
@@ -55,7 +55,7 @@ export function Experience3DirectPreview({
         if (!cancelled) setQrDataUrl(url);
       })
       .catch(() => {
-        if (!cancelled) setQrDataUrl(null);
+        if (!cancelled) setQrDataUrl(undefined);
       });
     return () => {
       cancelled = true;
