@@ -24,7 +24,17 @@ export type InvitationLayoutSlug =
   | "traditional-marriage-ceremony"
   | "forever-afaris-wedding"
   | "aurelia-editorial-wedding"
-  | "seraphine-champagne-wedding";
+  | "seraphine-champagne-wedding"
+  /** Experience 3.0 native reference layouts (new slugs — never historically used). */
+  | "ix3-editorial-wedding"
+  | "ix3-brand-launch"
+  | "ix3-memorial"
+  | "ix3-heritage-marriage"
+  | "ix3-birthday-celebration"
+  | "ix3-corporate-gala"
+  | "ix3-concert-night"
+  | "ix3-graduation"
+  | "ix3-baby-shower";
 
 export type MediaType = "image" | "video" | "pdf";
 
@@ -63,6 +73,12 @@ import type { InvitationThemeTokens } from "@/lib/invitation-theme/theme-types";
 
 export interface InvitationDesignConfig {
   layout: InvitationLayoutSlug;
+  /**
+   * Visual layout generation. Omitted / 1 = protected current renderer (Studio 3 must not alter).
+   * Values ≥ 2 opt into Studio 3 versioned experiences. Existing invites stay on v1 forever unless
+   * an organizer explicitly switches (never auto-migrated).
+   */
+  layoutVersion?: number;
   colors: InvitationDesignColors;
   /** Studio 2.0 token theme; when present, `colors`/`fonts` derive from it and the paged viewer activates */
   theme?: InvitationThemeTokens;

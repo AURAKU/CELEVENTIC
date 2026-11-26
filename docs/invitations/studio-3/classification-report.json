@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-11-17T22:05:56.643Z",
+  "branchNote": "feat/invitation-studio-3",
+  "rules": {
+    "unknownMeansProtected": true,
+    "inPlaceEditsAllowed": false,
+    "eligibleRequiresFullUsageEvidence": true,
+    "productionAuditExecuted": false
+  },
+  "catalogueSummary": {
+    "catalogSkus": 48,
+    "uniqueLayouts": 24,
+    "protectedLayouts": 6,
+    "PROTECTED": 16,
+    "ELIGIBLE": 0,
+    "UNKNOWN": 32,
+    "eligibleForInPlaceEdit": 0,
+    "inPlaceEditsAllowed": false
+  },
+  "nativeExperience3Layouts": [
+    {
+      "layout": "ix3-editorial-wedding",
+      "status": "ELIGIBLE"
+    },
+    {
+      "layout": "ix3-brand-launch",
+      "status": "ELIGIBLE"
+    },
+    {
+      "layout": "ix3-memorial",
+      "status": "ELIGIBLE"
+    }
+  ],
+  "note": "Catalogue ELIGIBLE remains 0 until authorized production audit covers all usage paths."
+}

@@ -1,0 +1,274 @@
+"use client";
+
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type { Experience3OpeningStyle } from "@/lib/invitation/studio3/design-families";
+import styles from "./opening-gate.module.css";
+
+function cssUrl(url: string): string {
+  return url.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+type OpeningGateProps = {
+  style: Experience3OpeningStyle;
+  title: string;
+  subtitle?: string | null;
+  monogram?: string | null;
+  portraitUrl?: string | null;
+  tone: "light" | "dark" | "solemn";
+  forceInstant?: boolean;
+  onComplete?: () => void;
+  /** Notifies the shell so invitation content can be marked inert while the gate is open. */
+  onOpenChange?: (open: boolean) => void;
+};
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduced(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return reduced;
+}
+
+function getFocusable(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true");
+}
+
+export function Experience3OpeningGate({
+  style,
+  title,
+  subtitle,
+  monogram,
+  portraitUrl,
+  tone,
+  forceInstant = false,
+  onComplete,
+  onOpenChange,
+}: OpeningGateProps) {
+  const reducedMotion = usePrefersReducedMotion();
+  /** Prefer non-instant first paint so SSR/CSR match; apply reduced-motion after mount. */
+  const [open, setOpen] = useState(() => !(forceInstant || style === "minimal-instant"));
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const primaryRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
+
+  const dismiss = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (forceInstant || style === "minimal-instant" || reducedMotion) {
+      setOpen(false);
+    }
+  }, [forceInstant, style, reducedMotion]);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+    if (!open) onComplete?.();
+  }, [open, onComplete, onOpenChange]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    const primary = primaryRef.current;
+    primary?.focus();
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        dismiss();
+        return;
+      }
+      if (event.key !== "Tab" || !dialog) return;
+      const focusable = getFocusable(dialog);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        primary?.focus();
+        return;
+      }
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const active = document.activeElement as HTMLElement | null;
+      if (event.shiftKey) {
+        if (active === first || !dialog.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.body.style.overflow = previousOverflow;
+      const restore = previouslyFocusedRef.current;
+      if (restore && typeof restore.focus === "function" && document.contains(restore)) {
+        restore.focus();
+      }
+    };
+  }, [open, dismiss]);
+
+  if (!open) return null;
+
+  const palette =
+    tone === "dark"
+      ? { bg: "#070708", fg: "#f5f5f4", muted: "#a8a29e", border: "rgba(245,245,244,0.22)" }
+      : tone === "solemn"
+        ? { bg: "#efeae3", fg: "#292524", muted: "#78716c", border: "rgba(87,83,78,0.25)" }
+        : style === "soft-unveil"
+          ? { bg: "#f6efe8", fg: "#3a322c", muted: "#8d7f74", border: "rgba(196, 164, 132, 0.45)" }
+          : { bg: "#f7f2ea", fg: "#1c1917", muted: "#78716c", border: "rgba(138,106,61,0.3)" };
+
+  const eyebrow =
+    style === "portrait"
+      ? "In honour"
+      : style === "cinematic"
+        ? "You are invited"
+        : style === "envelope"
+          ? "An invitation awaits"
+          : style === "soft-unveil"
+            ? "A gathering of love"
+            : style === "classic-reveal"
+              ? "Open when ready"
+              : "An invitation";
+
+  const cta =
+    style === "envelope"
+      ? "Break the seal"
+      : style === "cinematic"
+        ? "Enter the evening"
+        : style === "soft-unveil"
+          ? "Open with care"
+          : style === "portrait"
+            ? "Continue"
+            : "Open invitation";
+
+  const titleClass =
+    style === "cinematic"
+      ? styles.titleCinematic
+      : style === "envelope"
+        ? styles.titleEnvelope
+        : style === "soft-unveil"
+          ? styles.titleSoft
+          : styles.title;
+
+  return (
+    <div
+      ref={dialogRef}
+      className={[
+        styles.gate,
+        style === "cinematic" ? styles.gateCinematic : "",
+        style === "envelope" ? styles.gateEnvelope : "",
+        style === "soft-unveil" ? styles.gateSoft : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={{ backgroundColor: palette.bg, color: palette.fg }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-label="Invitation opening"
+      data-testid="ix3-opening-gate"
+      data-ix3-opening-style={style}
+    >
+      <div className={styles.panel}>
+        {style === "portrait" && portraitUrl ? (
+          <div
+            className={styles.portrait}
+            style={{
+              border: `1px solid ${palette.border}`,
+              backgroundImage: `url("${cssUrl(portraitUrl)}")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+            role="img"
+            aria-label="Portrait"
+          />
+        ) : style === "envelope" && monogram ? (
+          <div
+            className={styles.envelopeSeal}
+            style={{ border: `1px solid ${palette.border}`, color: palette.fg }}
+            aria-hidden
+          >
+            {monogram}
+          </div>
+        ) : monogram ? (
+          <div
+            className={styles.monogram}
+            style={{ border: `1px solid ${palette.border}` }}
+            aria-hidden
+          >
+            {monogram}
+          </div>
+        ) : null}
+        <div className={styles.copy}>
+          <p className={styles.eyebrow} style={{ color: palette.muted }}>
+            {eyebrow}
+          </p>
+          <p className={titleClass} id={titleId} role="heading" aria-level={1}>
+            {title}
+          </p>
+          {subtitle ? (
+            <p className={styles.subtitle} style={{ color: palette.muted }}>
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+        <button
+          ref={primaryRef}
+          type="button"
+          className={styles.primary}
+          data-testid="ix3-opening-primary"
+          style={{
+            border: `1px solid ${palette.border}`,
+            color: palette.fg,
+            borderRadius: 999,
+            paddingInline: "2rem",
+            fontSize: "0.7rem",
+            letterSpacing: "0.28em",
+            textTransform: "uppercase",
+            background: "transparent",
+          }}
+          onClick={dismiss}
+        >
+          {cta}
+        </button>
+        <button
+          type="button"
+          className={styles.skip}
+          data-testid="ix3-opening-skip"
+          style={{
+            color: palette.muted,
+            fontSize: "0.68rem",
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            background: "transparent",
+            border: 0,
+            textDecoration: "underline",
+            textUnderlineOffset: 4,
+          }}
+          onClick={dismiss}
+        >
+          Skip
+        </button>
+      </div>
+    </div>
+  );
+}

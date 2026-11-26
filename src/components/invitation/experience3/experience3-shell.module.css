@@ -1,0 +1,563 @@
+.shell {
+  min-height: 100dvh;
+  width: 100%;
+  color: var(--ix3-text);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--ix3-accent) 14%, transparent), transparent),
+    var(--ix3-bg);
+}
+
+.frame {
+  width: 100%;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: max(1.25rem, env(safe-area-inset-top)) 1.1rem
+    max(2.75rem, env(safe-area-inset-bottom));
+}
+
+.surface {
+  background: var(--ix3-surface);
+  border: 1px solid var(--ix3-border);
+  border-radius: 1.35rem;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 28px 70px rgba(15, 15, 15, 0.1);
+}
+
+.hero {
+  position: relative;
+  min-height: 18.5rem;
+  background: linear-gradient(165deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.42)),
+    var(--ix3-bg);
+}
+
+.heroPoster {
+  min-height: min(72vw, 28rem);
+}
+
+.heroSplit {
+  min-height: 16rem;
+}
+
+.heroMedia {
+  object-fit: cover;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 1.75rem 1.55rem 1.6rem;
+  color: #fafaf9;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.68), transparent 62%);
+}
+
+.heroOverlayCenter {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.55));
+}
+
+.body {
+  display: grid;
+  gap: 1.75rem;
+  padding: 1.9rem 1.45rem 2.2rem;
+}
+
+.eyebrow {
+  font-family: var(--ix3-eyebrow);
+  font-size: 0.68rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--ix3-muted);
+}
+
+.title {
+  font-family: var(--ix3-heading);
+  font-weight: 400;
+  font-size: clamp(1.85rem, 4.4vw, 2.55rem);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+.lede {
+  font-family: var(--ix3-body);
+  font-size: 1.06rem;
+  line-height: 1.72;
+  color: var(--ix3-muted);
+}
+
+.metaGrid {
+  display: grid;
+  gap: 1rem;
+  padding: 1.15rem 0;
+  border-top: 1px solid var(--ix3-border);
+  border-bottom: 1px solid var(--ix3-border);
+}
+
+.metaRow {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.metaLabel {
+  font-family: var(--ix3-eyebrow);
+  font-size: 0.64rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ix3-muted);
+}
+
+.metaValue {
+  font-family: var(--ix3-body);
+  font-size: 1.02rem;
+  line-height: 1.45;
+}
+
+.welcome {
+  border-left: 2px solid var(--ix3-accent);
+  padding-left: 1.05rem;
+}
+
+.note {
+  text-align: center;
+  font-family: var(--ix3-body);
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--ix3-muted);
+}
+
+.divider {
+  width: 3rem;
+  height: 1px;
+  margin: 0 auto;
+  background: var(--ix3-accent);
+  opacity: 0.55;
+}
+
+.actionsBlock {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.dark {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% -8%, rgba(231, 229, 228, 0.08), transparent),
+    var(--ix3-bg);
+}
+
+.dark .surface {
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
+  border-color: rgba(231, 229, 228, 0.14);
+}
+
+.dark .hero {
+  min-height: 19rem;
+}
+
+.solemn .hero {
+  min-height: 19rem;
+}
+
+.solemn .surface {
+  box-shadow: 0 18px 48px rgba(41, 37, 36, 0.08);
+}
+
+@media (min-width: 768px) {
+  .frame {
+    max-width: 48rem;
+    padding-top: 2.75rem;
+    padding-bottom: 3.25rem;
+  }
+
+  .hero {
+    min-height: 23rem;
+  }
+
+  .heroPoster {
+    min-height: 30rem;
+  }
+
+  .body {
+    padding: 2.45rem 2.2rem 2.7rem;
+    gap: 2rem;
+  }
+
+  .splitLayout {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 0;
+  }
+
+  .splitLayout .hero {
+    min-height: 100%;
+    border-radius: 0;
+  }
+
+  .splitLayout .body {
+    align-content: start;
+  }
+}
+
+@media (min-width: 1280px) {
+  .frame {
+    max-width: 54rem;
+  }
+
+  .hero {
+    min-height: 25rem;
+  }
+}
+
+/* —— Composition art direction —— */
+
+.comp_editorial .surface {
+  border-radius: 1.5rem;
+}
+
+.comp_launch .frame {
+  max-width: 56rem;
+}
+
+.comp_launch .surface {
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, rgba(17, 17, 20, 0.96), rgba(7, 7, 8, 0.98));
+}
+
+.comp_launch .hero {
+  min-height: 22rem;
+}
+
+.comp_launch .title {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: clamp(1.45rem, 3.4vw, 2.1rem);
+}
+
+.comp_memorial .hero {
+  min-height: 20rem;
+}
+
+.comp_memorial .surface {
+  border-radius: 1.75rem;
+}
+
+.comp_memorial .welcome {
+  border-left-color: transparent;
+  border-top: 1px solid var(--ix3-border);
+  padding-left: 0;
+  padding-top: 1rem;
+  text-align: center;
+}
+
+.comp_heritage .surface {
+  border-radius: 0.45rem;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ix3-accent) 55%, transparent),
+    0 0 0 6px color-mix(in srgb, var(--ix3-accent) 10%, transparent),
+    0 28px 70px rgba(42, 28, 20, 0.12);
+}
+
+.comp_heritage .hero {
+  min-height: 21rem;
+}
+
+.comp_heritage .title {
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.comp_heritage .heroOverlay {
+  background: linear-gradient(
+    to top,
+    rgba(42, 28, 20, 0.72) 0%,
+    rgba(42, 28, 20, 0.18) 48%,
+    transparent 72%
+  );
+}
+
+.comp_heritage .welcome {
+  border-left-width: 1px;
+  padding-left: 1.2rem;
+}
+
+.comp_heritage .metaLabel {
+  letter-spacing: 0.36em;
+}
+
+.comp_celebration {
+  background:
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--ix3-accent) 22%, transparent), transparent 42%),
+    radial-gradient(circle at 88% 8%, rgba(255, 255, 255, 0.08), transparent 35%),
+    var(--ix3-bg);
+}
+
+.comp_celebration .surface {
+  border-radius: 1.75rem;
+  border-color: color-mix(in srgb, var(--ix3-accent) 35%, transparent);
+}
+
+.comp_celebration .hero {
+  min-height: 20rem;
+}
+
+.comp_celebration .title {
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+.comp_celebration .heroOverlay {
+  background: linear-gradient(
+    to top,
+    rgba(13, 6, 20, 0.82) 0%,
+    rgba(13, 6, 20, 0.25) 55%,
+    transparent 78%
+  );
+}
+
+.comp_celebration .welcome {
+  border-left-width: 3px;
+  border-radius: 0 1rem 1rem 0;
+  background: color-mix(in srgb, var(--ix3-accent) 8%, transparent);
+  padding: 0.95rem 1rem 0.95rem 1.1rem;
+}
+
+.comp_gala .title {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: clamp(1.3rem, 2.8vw, 1.85rem);
+}
+
+.comp_gala .surface {
+  border-radius: 0.25rem;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ix3-accent) 50%, transparent),
+    0 36px 80px rgba(0, 0, 0, 0.45);
+}
+
+.comp_gala .eyebrow {
+  letter-spacing: 0.42em;
+}
+
+.comp_gala .heroOverlay {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(11, 18, 32, 0.12) 52%, transparent 78%);
+}
+
+.comp_gala .heroOverlayCenter {
+  background: linear-gradient(180deg, rgba(8, 14, 26, 0.2), rgba(8, 14, 26, 0.42));
+}
+
+.comp_concert .heroOverlayCenter {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.42));
+}
+
+.comp_gala .welcome {
+  border-left: 0;
+  border-top: 1px solid color-mix(in srgb, var(--ix3-accent) 45%, transparent);
+  padding: 1rem 0 0;
+}
+
+.comp_concert {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -15%, color-mix(in srgb, var(--ix3-accent) 32%, transparent), transparent),
+    radial-gradient(circle at 80% 70%, rgba(255, 80, 120, 0.08), transparent 40%),
+    var(--ix3-bg);
+}
+
+.comp_concert .surface {
+  border-radius: 1.1rem;
+  border-color: color-mix(in srgb, var(--ix3-accent) 40%, transparent);
+}
+
+.comp_concert .hero {
+  min-height: 22rem;
+  border-bottom: 2px solid color-mix(in srgb, var(--ix3-accent) 60%, transparent);
+  box-shadow: inset 0 -48px 80px rgba(0, 0, 0, 0.35);
+}
+
+.comp_concert .welcome {
+  border-left: 0;
+  border-radius: 1rem;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ix3-accent) 18%, transparent),
+      transparent 70%
+    ),
+    color-mix(in srgb, var(--ix3-surface) 80%, transparent);
+  padding: 1rem 1.1rem;
+}
+
+.comp_concert .title {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  font-size: clamp(1.55rem, 4vw, 2.2rem);
+}
+
+.comp_concert .heroOverlayCenter .title {
+  text-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+}
+
+.comp_academic .metaLabel {
+  letter-spacing: 0.22em;
+}
+
+.comp_academic .surface {
+  border-radius: 0.2rem;
+  box-shadow:
+    0 0 0 1px var(--ix3-border),
+    0 0 0 5px color-mix(in srgb, var(--ix3-accent) 8%, transparent),
+    0 22px 48px rgba(15, 23, 42, 0.08);
+}
+
+.comp_academic .hero {
+  min-height: 20rem;
+}
+
+.comp_academic .title {
+  letter-spacing: 0.01em;
+}
+
+.comp_shower .surface {
+  border-radius: 2.1rem;
+}
+
+.comp_shower .hero {
+  min-height: 20.5rem;
+}
+
+.comp_shower .welcome {
+  border-left: 0;
+  border-radius: 1.4rem;
+  background: color-mix(in srgb, var(--ix3-accent) 10%, transparent);
+  padding: 1.05rem 1.15rem;
+  text-align: center;
+}
+
+.comp_shower .title {
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.comp_shower .heroOverlay {
+  background: linear-gradient(
+    to top,
+    rgba(58, 50, 44, 0.42) 0%,
+    rgba(58, 50, 44, 0.1) 45%,
+    transparent 72%
+  );
+}
+
+.comp_academic .heroOverlay {
+  background: linear-gradient(
+    to top,
+    rgba(30, 41, 59, 0.48) 0%,
+    rgba(30, 41, 59, 0.12) 48%,
+    transparent 76%
+  );
+}
+
+/* Composition body rhythm — storytelling cadence differs by family */
+.comp_heritage .body {
+  gap: 1.55rem;
+}
+
+.comp_gala .body {
+  gap: 1.85rem;
+}
+
+.comp_concert .body {
+  gap: 1.35rem;
+}
+
+.comp_academic .body {
+  gap: 1.7rem;
+}
+
+.comp_shower .body {
+  gap: 1.45rem;
+}
+
+.comp_celebration .body {
+  gap: 1.25rem;
+}
+
+.comp_heritage .actionsBlock,
+.comp_academic .actionsBlock {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+}
+
+.comp_concert .actionsBlock,
+.comp_celebration .actionsBlock {
+  margin-top: 0.15rem;
+}
+
+.comp_gala .actionsBlock {
+  border-top: 1px solid color-mix(in srgb, var(--ix3-accent) 35%, transparent);
+  padding-top: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.comp_shower .actionsBlock {
+  padding-top: 0.75rem;
+}
+
+/* Frame modes — distinct structural silhouettes */
+.frame_card .surface {
+  /* default card already applied */
+}
+
+.frame_folio .frame {
+  max-width: 42rem;
+}
+
+.frame_folio .surface {
+  border-radius: 0.15rem;
+  box-shadow:
+    0 0 0 1px var(--ix3-border),
+    0 0 0 8px color-mix(in srgb, var(--ix3-accent) 10%, transparent),
+    0 24px 60px rgba(15, 15, 15, 0.1);
+}
+
+.frame_bleed .frame {
+  max-width: 56rem;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.frame_bleed .surface {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow: none;
+}
+
+.frame_bleed .body {
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+}
+
+.frame_ticket .surface {
+  border-radius: 1.15rem;
+  background-image: radial-gradient(circle at 0 55%, transparent 10px, var(--ix3-surface) 11px),
+    radial-gradient(circle at 100% 55%, transparent 10px, var(--ix3-surface) 11px);
+  background-size: 100% 100%;
+}
+
+.frame_ticket .hero {
+  border-bottom: 1px dashed var(--ix3-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell,
+  .surface {
+    transition: none !important;
+  }
+}

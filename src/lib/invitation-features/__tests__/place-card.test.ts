@@ -169,7 +169,7 @@ test("a disabled feature or a disabled card always wins over visibility", () => 
   assert.equal(shouldShowPlaceCard(config({ enabled: false }), true, true), false);
 });
 
-/* ── capacity copy (personalized, exact additional-guest count) ────────── */
+/* ── capacity copy (exact total guest count) ───────────────────────────── */
 
 test("unassigned invitations leave capacity blank", () => {
   assert.equal(formatAllowanceCopy("", 19), "");
@@ -179,31 +179,31 @@ test("unassigned invitations leave capacity blank", () => {
 test("single-guest capacity addresses the invited guest only", () => {
   assert.equal(
     formatAllowanceCopy("", 1, { assigned: true }),
-    "This invitation admits only you."
+    "1 guest total"
   );
   assert.equal(
     formatAllowanceCopy(PLACE_CARD_DEFAULTS.allowanceDisplayWording, 1, {
       assigned: true,
     }),
-    "This invitation admits only you."
+    "1 guest total"
   );
 });
 
-test("companion access shows the exact additional-guest allowance", () => {
+test("companion access shows the exact total guest allowance", () => {
   assert.equal(
     formatAllowanceCopy("This invitation admits {n} guests", 2, { assigned: true }),
-    "This invitation admits you and 1 additional guest."
+    "2 guests total"
   );
   assert.equal(
     formatAllowanceCopy("", 3, { assigned: true }),
-    "This invitation admits you and 2 additional guests."
+    "3 guests total"
   );
 });
 
 test("organiser templates cannot override the guest-facing capacity line", () => {
   assert.equal(
     formatAllowanceCopy("This table seats {n} guests", 8, { assigned: true }),
-    "This invitation admits you and 7 additional guests."
+    "8 guests total"
   );
 });
 
@@ -334,14 +334,14 @@ test("the view model binds config, recipient and live capacity together", () => 
 
   assert.equal(model.heading, "A place is reserved for you");
   assert.equal(model.recipientLine, "Ama Mensah");
-  assert.equal(model.allowanceCopy, "This invitation admits you and 2 additional guests.");
+  assert.equal(model.allowanceCopy, "3 guests total");
   assert.equal(model.isGroup, true);
   assert.equal("arrivalCopy" in model, false, "guest place cards must not expose arrival copy");
 });
 
 test("single-guest view models keep the exclusive capacity line", () => {
   const model = buildPlaceCardViewModel(config(), recipient({ partySize: 1 }), party({ allowance: 1 }));
-  assert.equal(model.allowanceCopy, "This invitation admits only you.");
+  assert.equal(model.allowanceCopy, "1 guest total");
   assert.equal(model.isGroup, false);
 });
 
@@ -385,8 +385,8 @@ test("an already-published invitation reflects the current companion allocation"
   const before = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 3 }));
   const after = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 4 }));
 
-  assert.equal(before.allowanceCopy, "This invitation admits you and 2 additional guests.");
-  assert.equal(after.allowanceCopy, "This invitation admits you and 3 additional guests.");
+  assert.equal(before.allowanceCopy, "3 guests total");
+  assert.equal(after.allowanceCopy, "4 guests total");
 });
 
 /* ── shared feature layer + template adapters ──────────────────────────── */

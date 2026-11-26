@@ -40,7 +40,7 @@ export function InvitationActions({
   const btnClass = buttonStyle
     ? styledInvitationButton(buttonStyle, variant, "text-xs")
     : variant === "dark"
-      ? "border-white/30 text-white hover:bg-white/10"
+      ? "border-white/45 bg-transparent text-white hover:bg-white/15 hover:text-white"
       : "";
 
   const calendarEvent: CalendarEventInput = {

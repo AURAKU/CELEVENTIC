@@ -15,10 +15,10 @@ describe("rsvp party slots", () => {
     assert.equal(clampAttendingCount(9, 3), 3);
   });
 
-  it("explains capacity for solo and plus-one invitations", () => {
-    assert.match(rsvpPartyCapacityLine(1), /only you/i);
-    assert.match(rsvpPartyCapacityLine(2), /1 companion/i);
-    assert.match(rsvpPartyCapacityLine(4), /3 companions/i);
+  it("states exact total guest capacity for solo and plus-one invitations", () => {
+    assert.equal(rsvpPartyCapacityLine(1), "1 guest total");
+    assert.equal(rsvpPartyCapacityLine(2), "2 guests total");
+    assert.equal(rsvpPartyCapacityLine(4), "4 guests total");
   });
 
   it("reports remaining invitation seats while choosing a party size", () => {
@@ -31,6 +31,15 @@ describe("rsvp party slots", () => {
     assert.equal(partial.remaining, 2);
     assert.match(partial.summary, /just you/i);
     assert.match(partial.detail, /2 seats/i);
+  });
+
+  it("keeps Confirming status labels from mid-word wrapping (P1-7)", () => {
+    const solo = rsvpPartySlotGuidance(1, 1);
+    assert.match(solo.summary, /^Confirming\u00A01 seat$/);
+
+    const party = rsvpPartySlotGuidance(3, 2);
+    assert.match(party.summary, /^Confirming\u00A02 of 3 seats/);
+    assert.equal(party.summary.includes("Confirming "), false);
   });
 
   it("thanks acceptances with the confirmed headcount", () => {

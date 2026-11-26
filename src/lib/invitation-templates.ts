@@ -351,6 +351,324 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       },
     },
   },
+  {
+    slug: "ix3-editorial-wedding",
+    name: "Experience 3.0 · Editorial Wedding",
+    description:
+      "Ivory editorial wedding reference with monogram opening, personalized welcome, RSVP and directions",
+    category: "wedding",
+    preview: { gradient: "from-stone-100 via-amber-50 to-stone-50", accent: "#8a6a3d" },
+    config: {
+      layout: "ix3-editorial-wedding",
+      layoutVersion: 1,
+      colors: {
+        primary: "#1c1917",
+        secondary: "#8a6a3d",
+        accent: "#8a6a3d",
+        background: "#f7f2ea",
+        text: "#1c1917",
+      },
+      fonts: {
+        heading: "Playfair Display",
+        script: "Cormorant Garamond",
+        body: "Cormorant Garamond",
+        eyebrow: "Inter",
+      },
+      animation: "fade",
+      ornament: "gold-frame",
+      introText: "A celebration of marriage",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "editorial-underline",
+        fullScreen: true,
+        headingSize: 28,
+        bodySize: 16,
+        scriptSize: 24,
+      },
+    },
+  },
+  {
+    slug: "ix3-brand-launch",
+    name: "Experience 3.0 · Premium Brand Launch",
+    description:
+      "Dark product-launch reference with cinematic open, VIP welcome, RSVP and venue actions",
+    category: "corporate",
+    preview: { gradient: "from-neutral-950 via-neutral-900 to-black", accent: "#e7e5e4" },
+    config: {
+      layout: "ix3-brand-launch",
+      layoutVersion: 1,
+      colors: {
+        primary: "#f5f5f4",
+        secondary: "#e7e5e4",
+        accent: "#e7e5e4",
+        background: "#070708",
+        text: "#f5f5f4",
+      },
+      fonts: {
+        heading: "Inter",
+        script: "Inter",
+        body: "Inter",
+        eyebrow: "Inter",
+      },
+      animation: "fade",
+      ornament: "none",
+      introText: "Private launch experience",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "minimal-text",
+        fullScreen: true,
+        headingSize: 26,
+        bodySize: 14,
+        scriptSize: 18,
+      },
+    },
+  },
+  {
+    slug: "ix3-memorial",
+    name: "Experience 3.0 · Contemporary Memorial",
+    description:
+      "Quiet memorial reference with portrait opening, tribute copy, attendance and directions",
+    category: "funeral",
+    preview: { gradient: "from-stone-200 via-stone-100 to-amber-50", accent: "#57534e" },
+    config: {
+      layout: "ix3-memorial",
+      layoutVersion: 1,
+      colors: {
+        primary: "#292524",
+        secondary: "#57534e",
+        accent: "#57534e",
+        background: "#efeae3",
+        text: "#292524",
+      },
+      fonts: {
+        heading: "Cormorant Garamond",
+        script: "Cormorant Garamond",
+        body: "Cormorant Garamond",
+        eyebrow: "Inter",
+      },
+      animation: "fade",
+      ornament: "none",
+      introText: "A service of remembrance",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "pearl",
+        fullScreen: true,
+        headingSize: 26,
+        bodySize: 16,
+        scriptSize: 22,
+      },
+    },
+  },
+  {
+    slug: "ix3-heritage-marriage",
+    name: "Experience 3.0 · Heritage Luxury Marriage",
+    description: "Warm parchment ceremonial marriage with envelope opening and programme timeline",
+    category: "wedding",
+    preview: { gradient: "from-amber-100 via-orange-50 to-stone-100", accent: "#9a5b2e" },
+    config: {
+      layout: "ix3-heritage-marriage",
+      layoutVersion: 1,
+      colors: {
+        primary: "#2a1c14",
+        secondary: "#9a5b2e",
+        accent: "#9a5b2e",
+        background: "#f3ebe1",
+        text: "#2a1c14",
+      },
+      fonts: {
+        heading: "Playfair Display",
+        script: "Cormorant Garamond",
+        body: "Cormorant Garamond",
+        eyebrow: "Inter",
+      },
+      animation: "fade",
+      ornament: "gold-frame",
+      introText: "In the tradition of our families",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "pearl",
+        fullScreen: true,
+        headingSize: 28,
+        bodySize: 16,
+        scriptSize: 24,
+      },
+    },
+  },
+  {
+    slug: "ix3-birthday-celebration",
+    name: "Experience 3.0 · Contemporary Birthday",
+    description: "Night celebration birthday with violet palette, countdown and venue actions",
+    category: "birthday",
+    preview: { gradient: "from-fuchsia-950 via-purple-950 to-black", accent: "#f0a6ff" },
+    config: {
+      layout: "ix3-birthday-celebration",
+      layoutVersion: 1,
+      colors: {
+        primary: "#f8f0ff",
+        secondary: "#f0a6ff",
+        accent: "#f0a6ff",
+        background: "#12091a",
+        text: "#f8f0ff",
+      },
+      fonts: {
+        heading: "Inter",
+        script: "Inter",
+        body: "Inter",
+        eyebrow: "Inter",
+      },
+      animation: "fade",
+      ornament: "none",
+      introText: "You're invited to celebrate",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "minimal-text",
+        fullScreen: true,
+        headingSize: 28,
+        bodySize: 15,
+        scriptSize: 20,
+      },
+    },
+  },
+  {
+    slug: "ix3-corporate-gala",
+    name: "Experience 3.0 · Executive Gala",
+    description: "Navy and gold executive gala with programme timeline and VIP welcome",
+    category: "corporate",
+    preview: { gradient: "from-slate-950 via-blue-950 to-black", accent: "#d4af37" },
+    config: {
+      layout: "ix3-corporate-gala",
+      layoutVersion: 1,
+      colors: {
+        primary: "#eef3ff",
+        secondary: "#d4af37",
+        accent: "#d4af37",
+        background: "#0b1220",
+        text: "#eef3ff",
+      },
+      fonts: {
+        heading: "Inter",
+        script: "Inter",
+        body: "Inter",
+        eyebrow: "Inter",
+      },
+      animation: "fade",
+      ornament: "none",
+      introText: "Executive evening",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "minimal-text",
+        fullScreen: true,
+        headingSize: 24,
+        bodySize: 14,
+        scriptSize: 18,
+      },
+    },
+  },
+  {
+    slug: "ix3-concert-night",
+    name: "Experience 3.0 · Immersive Concert",
+    description: "Stage-forward concert night with cyan accent glow and set timing",
+    category: "concert",
+    preview: { gradient: "from-black via-slate-950 to-cyan-950", accent: "#22d3ee" },
+    config: {
+      layout: "ix3-concert-night",
+      layoutVersion: 1,
+      colors: {
+        primary: "#fafafa",
+        secondary: "#22d3ee",
+        accent: "#22d3ee",
+        background: "#050505",
+        text: "#fafafa",
+      },
+      fonts: {
+        heading: "Inter",
+        script: "Inter",
+        body: "Inter",
+        eyebrow: "Inter",
+      },
+      animation: "fade",
+      ornament: "none",
+      introText: "Live performance",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "minimal-text",
+        fullScreen: true,
+        headingSize: 28,
+        bodySize: 14,
+        scriptSize: 18,
+      },
+    },
+  },
+  {
+    slug: "ix3-graduation",
+    name: "Experience 3.0 · Academic Prestige",
+    description: "Commencement invitation with portrait opening and ceremony order",
+    category: "private",
+    preview: { gradient: "from-stone-100 via-blue-50 to-stone-200", accent: "#1d4ed8" },
+    config: {
+      layout: "ix3-graduation",
+      layoutVersion: 1,
+      colors: {
+        primary: "#1f2937",
+        secondary: "#1d4ed8",
+        accent: "#1d4ed8",
+        background: "#f4f1ea",
+        text: "#1f2937",
+      },
+      fonts: {
+        heading: "Playfair Display",
+        script: "Playfair Display",
+        body: "Inter",
+        eyebrow: "Inter",
+      },
+      animation: "fade",
+      ornament: "none",
+      introText: "Commencement invitation",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "editorial-underline",
+        fullScreen: true,
+        headingSize: 28,
+        bodySize: 15,
+        scriptSize: 22,
+      },
+    },
+  },
+  {
+    slug: "ix3-baby-shower",
+    name: "Experience 3.0 · Modern Baby Shower",
+    description: "Soft modern shower with rounded surfaces and gentle schedule",
+    category: "private",
+    preview: { gradient: "from-rose-50 via-stone-50 to-orange-50", accent: "#c49589" },
+    config: {
+      layout: "ix3-baby-shower",
+      layoutVersion: 1,
+      colors: {
+        primary: "#3f3a36",
+        secondary: "#c49589",
+        accent: "#c49589",
+        background: "#f7f3ef",
+        text: "#3f3a36",
+      },
+      fonts: {
+        heading: "Cormorant Garamond",
+        script: "Cormorant Garamond",
+        body: "Cormorant Garamond",
+        eyebrow: "Inter",
+      },
+      animation: "fade",
+      ornament: "none",
+      introText: "A soft gathering",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "pearl",
+        fullScreen: true,
+        headingSize: 28,
+        bodySize: 16,
+        scriptSize: 24,
+      },
+    },
+  },
 ];
 
 export function getTemplatePreset(slug: string): InvitationTemplatePreset | undefined {
@@ -556,15 +874,34 @@ export function applyCatalogCreativeIdentity(
 }
 
 export function parseCoupleNames(title: string, hostName: string) {
+  // Prefer configured partner names (host) over title prefixes like "The Marriage of …".
+  const hostParts = hostName
+    .split(/\s*[&+]\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (hostParts.length >= 2) {
+    return { name1: hostParts[0]!, name2: hostParts[1]! };
+  }
+
   const cleaned = title
     .replace(/the\s+wedding\s+(and\s+reception\s+)?of\s+/i, "")
+    .replace(/the\s+marriage\s+(ceremony\s+)?of\s+/i, "")
     .replace(/wedding\s+of\s+/i, "")
+    .replace(/marriage\s+of\s+/i, "")
     .trim();
   const match = cleaned.match(/^(.+?)\s*[&+]\s*(.+)$/i);
-  if (match) return { name1: match[1].trim(), name2: match[2].trim() };
-  const hostParts = hostName.split(/\s*[&+]\s*/);
-  if (hostParts.length >= 2) return { name1: hostParts[0].trim(), name2: hostParts[1].trim() };
+  if (match) return { name1: match[1]!.trim(), name2: match[2]!.trim() };
   return { name1: cleaned || hostName, name2: "" };
+}
+
+/** First letter of the first given name — safe for monograms. */
+export function coupleMonogramInitials(name1: string, name2?: string | null): string {
+  const initial = (value: string) => {
+    const token = value.trim().split(/\s+/)[0] ?? "";
+    return (token[0] ?? "").toUpperCase();
+  };
+  if (name2?.trim()) return `${initial(name1)}${initial(name2)}`;
+  return initial(name1) || "C";
 }
 
 export function formatInvitationDateParts(dateStr: string) {

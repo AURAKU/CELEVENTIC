@@ -1,0 +1,206 @@
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.gateCinematic {
+  background-image:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(34, 211, 238, 0.12), transparent),
+    radial-gradient(ellipse 50% 40% at 80% 100%, rgba(244, 63, 94, 0.08), transparent);
+}
+
+.gateEnvelope {
+  background-image: radial-gradient(
+    ellipse 60% 40% at 50% 0%,
+    rgba(143, 79, 36, 0.08),
+    transparent
+  );
+}
+
+.panel {
+  display: flex;
+  max-width: 28rem;
+  width: min(100%, 28rem);
+  flex-direction: column;
+  align-items: center;
+  gap: 1.55rem;
+  text-align: center;
+  animation: ix3GateIn 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.copy {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--ix3-eyebrow, ui-sans-serif, system-ui, sans-serif);
+  font-size: 0.68rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ix3-heading, Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(1.85rem, 5vw, 2.45rem);
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+}
+
+.titleEnvelope {
+  margin: 0;
+  font-family: var(--ix3-heading, Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(1.85rem, 5vw, 2.45rem);
+  line-height: 1.12;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.titleCinematic {
+  margin: 0;
+  font-family: var(--ix3-heading, ui-sans-serif, system-ui, sans-serif);
+  font-weight: 700;
+  font-size: clamp(1.55rem, 4.5vw, 2.15rem);
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--ix3-body, Georgia, serif);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.monogram {
+  display: flex;
+  height: 5.5rem;
+  width: 5.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-family: var(--ix3-heading, Georgia, serif);
+  font-size: 1.25rem;
+  letter-spacing: 0.22em;
+  animation: ix3MonoIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.envelopeSeal {
+  position: relative;
+  display: flex;
+  height: 5.75rem;
+  width: 5.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-family: var(--ix3-heading, Georgia, serif);
+  font-size: 1.15rem;
+  letter-spacing: 0.2em;
+  animation: ix3MonoIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.envelopeSeal::before {
+  content: "";
+  position: absolute;
+  inset: -0.55rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  opacity: 0.28;
+}
+
+.portrait {
+  width: min(72vw, 14rem);
+  aspect-ratio: 3 / 4;
+  border-radius: 1rem;
+  object-fit: cover;
+  animation: ix3MonoIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.primary,
+.skip {
+  min-height: 2.75rem;
+  transition: letter-spacing 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+.primary:hover {
+  letter-spacing: 0.34em;
+}
+
+.primary:active,
+.skip:active {
+  transform: scale(0.98);
+}
+
+.primary:focus-visible,
+.skip:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+@keyframes ix3GateIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ix3MonoIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .monogram,
+  .envelopeSeal,
+  .portrait {
+    animation: none !important;
+  }
+
+  .primary,
+  .skip {
+    transition: none !important;
+  }
+
+  .gate {
+    backdrop-filter: none;
+  }
+}
+
+.gateSoft {
+  background-image:
+    radial-gradient(ellipse 55% 40% at 50% 0%, rgba(196, 164, 132, 0.18), transparent),
+    radial-gradient(ellipse 40% 35% at 20% 100%, rgba(255, 250, 246, 0.55), transparent);
+}
+
+.titleSoft {
+  margin: 0;
+  font-family: var(--ix3-heading, Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(1.9rem, 5.2vw, 2.55rem);
+  line-height: 1.15;
+  font-style: italic;
+  letter-spacing: 0.015em;
+}

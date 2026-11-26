@@ -135,24 +135,38 @@ export function InvitationRsvpPanel({
   }, [invitationId, guestId, seededStatus, seededAttending, allowance]);
 
   async function handleRsvp(response: "ACCEPTED" | "DECLINED" | "MAYBE") {
-    if (isPreviewInvitationId(invitationId)) {
-      setError("Preview mode, RSVP works on your published invitation link.");
+    setError("");
+    const cappedAttending = clampAttendingCount(attendingCount, allowance);
+    if (!guestName.trim()) {
+      setError(t("rsvp.name_required"));
       return;
     }
-    setError("");
+
+    /**
+     * Sandbox / Studio preview IDs never call `/api/rsvp`.
+     * Persist locally so guest-journey QA can verify Accept → thank-you → reload
+     * without touching production guests, payments, or messaging.
+     */
+    if (isPreviewInvitationId(invitationId)) {
+      setLoading(true);
+      setConfirmedAttending(cappedAttending);
+      setRsvpStatus(response);
+      writePersistedRsvp(invitationId, guestId, {
+        status: response,
+        attendingCount: cappedAttending,
+      });
+      onSubmitted?.(response);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    const cappedAttending = clampAttendingCount(attendingCount, allowance);
     const contact = {
       ...(showEmail ? { email: email.trim() || undefined } : {}),
       ...(showPhone ? { phone: phone.trim() || undefined } : {}),
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
     const note = guestMessage?.trim();
-    if (!guestName.trim()) {
-      setError(t("rsvp.name_required"));
-      setLoading(false);
-      return;
-    }
 
     const payload = guestId
       ? {
@@ -187,8 +201,9 @@ export function InvitationRsvpPanel({
   const btnClass = buttonStyle
     ? styledInvitationButton(buttonStyle, variant === "dark" ? "dark" : "light", "px-4")
     : variant === "dark"
-      ? "border-white/30 text-white hover:bg-white/10"
+      ? "border-white/45 bg-transparent text-white hover:bg-white/15 hover:text-white"
       : "";
+  const isSandboxPreview = isPreviewInvitationId(invitationId);
   const fieldClass = memorial
     ? "inv-rsvp-field"
     : variant === "dark"
@@ -217,7 +232,16 @@ export function InvitationRsvpPanel({
         role="status"
         aria-live="polite"
         data-testid="rsvp-guest-feedback"
+        data-sandbox={isSandboxPreview ? "true" : undefined}
       >
+        {isSandboxPreview ? (
+          <p
+            className="text-[10px] uppercase tracking-[0.22em] opacity-70 mb-1"
+            data-testid="rsvp-sandbox-badge"
+          >
+            Sandbox RSVP · test data only
+          </p>
+        ) : null}
         <p
           className={
             fashion
@@ -436,7 +460,11 @@ export function InvitationRsvpPanel({
                   <Minus className="h-4 w-4" />
                 </Button>
               )}
-              <div className={fashion ? "ff-rsvp-party-copy" : "flex-1 text-center"}>
+              <div
+                className={
+                  fashion ? "ff-rsvp-party-copy" : "min-w-[9.5rem] flex-1 px-1 text-center"
+                }
+              >
                 <p
                   className={
                     fashion
@@ -455,7 +483,18 @@ export function InvitationRsvpPanel({
                       ? "ff-rsvp-party-summary"
                       : memorial
                         ? "inv-rsvp-party-summary"
-                        : "text-xs opacity-80"
+                        : "text-xs leading-snug opacity-80"
+                  }
+                  data-testid="rsvp-party-summary"
+                  style={
+                    fashion || memorial
+                      ? undefined
+                      : {
+                          overflowWrap: "normal",
+                          wordBreak: "normal",
+                          hyphens: "manual",
+                          whiteSpace: "normal",
+                        }
                   }
                 >
                   {slotGuidance.summary}
@@ -516,6 +555,7 @@ export function InvitationRsvpPanel({
               key={choice.id}
               type="button"
               className={`ff-rsvp-choice ff-rsvp-choice--${choice.tone}`}
+              data-testid={`rsvp-choice-${choice.id}`}
               onClick={() => void handleRsvp(choice.id)}
               disabled={loading}
             >
@@ -536,6 +576,7 @@ export function InvitationRsvpPanel({
                 key={choice.id}
                 type="button"
                 className={`inv-rsvp-choice inv-rsvp-choice--${choice.tone}`}
+                data-testid={`rsvp-choice-${choice.id}`}
                 onClick={() => void handleRsvp(choice.id)}
                 disabled={loading}
               >
@@ -558,6 +599,7 @@ export function InvitationRsvpPanel({
             size="sm"
             variant="outline"
             className={btnClass}
+            data-testid="rsvp-choice-ACCEPTED"
             onClick={() => handleRsvp("ACCEPTED")}
             disabled={loading}
           >
@@ -567,6 +609,7 @@ export function InvitationRsvpPanel({
             size="sm"
             variant="outline"
             className={btnClass}
+            data-testid="rsvp-choice-DECLINED"
             onClick={() => handleRsvp("DECLINED")}
             disabled={loading}
           >
@@ -576,6 +619,7 @@ export function InvitationRsvpPanel({
             size="sm"
             variant="outline"
             className={btnClass}
+            data-testid="rsvp-choice-MAYBE"
             onClick={() => handleRsvp("MAYBE")}
             disabled={loading}
           >

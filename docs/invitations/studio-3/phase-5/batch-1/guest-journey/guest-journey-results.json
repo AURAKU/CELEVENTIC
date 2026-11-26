@@ -1,0 +1,253 @@
+{
+  "capturedAt": "2026-11-24T19:09:44.295Z",
+  "base": "http://127.0.0.1:3002",
+  "criterion": "End-to-end guest experience acceptance (sandbox): open → intro → details → RSVP → QR; mobile+desktop; persist; no production writes",
+  "results": [
+    {
+      "layout": "ix3-heritage-marriage",
+      "viewport": "mobile",
+      "ok": true,
+      "steps": {
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-heritage-marriage",
+      "viewport": "desktop",
+      "ok": true,
+      "steps": {
+        "retriedAfter5xx": true,
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-birthday-celebration",
+      "viewport": "mobile",
+      "ok": true,
+      "steps": {
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-birthday-celebration",
+      "viewport": "desktop",
+      "ok": true,
+      "steps": {
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-corporate-gala",
+      "viewport": "mobile",
+      "ok": true,
+      "steps": {
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-corporate-gala",
+      "viewport": "desktop",
+      "ok": true,
+      "steps": {
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-concert-night",
+      "viewport": "mobile",
+      "ok": true,
+      "steps": {
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-concert-night",
+      "viewport": "desktop",
+      "ok": true,
+      "steps": {
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-graduation",
+      "viewport": "mobile",
+      "ok": true,
+      "steps": {
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-graduation",
+      "viewport": "desktop",
+      "ok": true,
+      "steps": {
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-baby-shower",
+      "viewport": "mobile",
+      "ok": true,
+      "steps": {
+        "retriedAfter5xx": true,
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    },
+    {
+      "layout": "ix3-baby-shower",
+      "viewport": "desktop",
+      "ok": true,
+      "steps": {
+        "retriedAfter5xx": true,
+        "http": 200,
+        "openingPresentOrSkipped": true,
+        "openingDismissed": true,
+        "personalizedGuest": true,
+        "eventDetails": true,
+        "qrVisible": true,
+        "mapsOrActions": true,
+        "rsvpControlPresent": true,
+        "rsvpThankYou": true,
+        "rsvpSandboxBadge": true,
+        "rsvpPersistedAfterReload": true,
+        "noDecorativeOnly": true
+      },
+      "errors": []
+    }
+  ],
+  "warnings": [],
+  "passed": 12,
+  "total": 12
+}

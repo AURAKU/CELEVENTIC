@@ -11,11 +11,8 @@ export function clampAttendingCount(attending: number, allowance: number): numbe
 
 export function rsvpPartyCapacityLine(allowance: number): string {
   const max = Math.max(1, Math.trunc(allowance) || 1);
-  if (max === 1) return "This invitation admits only you.";
-  const companions = max - 1;
-  return companions === 1
-    ? "This invitation admits you and 1 companion."
-    : `This invitation admits you and ${companions} companions.`;
+  // Exact total admitted — no "you and N additional" phrasing.
+  return max === 1 ? "1 guest total" : `${max} guests total`;
 }
 
 /**
@@ -36,7 +33,8 @@ export function rsvpPartySlotGuidance(allowance: number, attending: number): {
 
   if (max === 1) {
     return {
-      summary: "Confirming 1 seat",
+      // NBSP keeps "Confirming" with its count so narrow columns wrap at spaces only.
+      summary: "Confirming\u00A01 seat",
       detail: "This invitation is for you alone.",
       companions: 0,
       remaining: 0,
@@ -46,10 +44,10 @@ export function rsvpPartySlotGuidance(allowance: number, attending: number): {
 
   const summary =
     companions === 0
-      ? `Confirming 1 of ${max} seats · just you`
+      ? `Confirming\u00A01 of ${max} seats · just you`
       : companions === 1
-        ? `Confirming ${confirmed} of ${max} seats · you + 1 companion`
-        : `Confirming ${confirmed} of ${max} seats · you + ${companions} companions`;
+        ? `Confirming\u00A0${confirmed} of ${max} seats · you + 1 companion`
+        : `Confirming\u00A0${confirmed} of ${max} seats · you + ${companions} companions`;
 
   const detail =
     remaining === 0

@@ -1,0 +1,190 @@
+{
+  "capturedAt": "2026-11-20T01:38:57.417Z",
+  "results": [
+    {
+      "layout": "ix3-heritage-marriage",
+      "mobile": {
+        "opening": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-heritage-marriage-mobile-01-opening.jpg",
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-heritage-marriage-mobile-02-hero.jpg",
+        "mid": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-heritage-marriage-mobile-03-story.jpg",
+        "rsvp": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-heritage-marriage-mobile-04-rsvp.jpg",
+        "confirmation": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-heritage-marriage-mobile-05-confirm.jpg"
+      },
+      "desktop": {
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-heritage-marriage-desktop-02-hero.jpg"
+      },
+      "functional": {
+        "openingGatePresent": true,
+        "openingDismissed": true,
+        "rsvpVisible": true,
+        "rsvpConfirmationText": false,
+        "guestPersonalized": true,
+        "hasDinnerLeak": false,
+        "hasCountdown": true,
+        "hasQr": true,
+        "hasMaps": true,
+        "hasShare": true,
+        "hasCalendar": true,
+        "mobileOverflow": false,
+        "desktopOverflow": false,
+        "desktopGuest": true
+      },
+      "status": 200,
+      "tabletEvidence": "docs/invitations/studio-3/phase-5/batch-1/screenshots/after/ix3-heritage-marriage-w768.png"
+    },
+    {
+      "layout": "ix3-corporate-gala",
+      "mobile": {
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-corporate-gala-mobile-02-hero.jpg",
+        "mid": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-corporate-gala-mobile-03-story.jpg",
+        "rsvp": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-corporate-gala-mobile-04-rsvp.jpg",
+        "confirmation": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-corporate-gala-mobile-05-confirm.jpg"
+      },
+      "desktop": {
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-corporate-gala-desktop-02-hero.jpg"
+      },
+      "functional": {
+        "openingGatePresent": false,
+        "openingDismissed": true,
+        "rsvpVisible": true,
+        "rsvpConfirmationText": false,
+        "guestPersonalized": true,
+        "hasDinnerLeak": false,
+        "hasCountdown": true,
+        "hasQr": true,
+        "hasMaps": true,
+        "hasShare": true,
+        "hasCalendar": true,
+        "mobileOverflow": false,
+        "desktopOverflow": false,
+        "desktopGuest": true
+      },
+      "status": 200,
+      "tabletEvidence": "docs/invitations/studio-3/phase-5/batch-1/screenshots/after/ix3-corporate-gala-w768.png"
+    },
+    {
+      "layout": "ix3-baby-shower",
+      "mobile": {
+        "opening": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-baby-shower-mobile-01-opening.jpg",
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-baby-shower-mobile-02-hero.jpg",
+        "mid": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-baby-shower-mobile-03-story.jpg",
+        "rsvp": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-baby-shower-mobile-04-rsvp.jpg",
+        "confirmation": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-baby-shower-mobile-05-confirm.jpg"
+      },
+      "desktop": {
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-baby-shower-desktop-02-hero.jpg"
+      },
+      "functional": {
+        "openingGatePresent": true,
+        "openingDismissed": true,
+        "rsvpVisible": true,
+        "rsvpConfirmationText": false,
+        "guestPersonalized": true,
+        "hasDinnerLeak": false,
+        "hasCountdown": true,
+        "hasQr": true,
+        "hasMaps": true,
+        "hasShare": true,
+        "hasCalendar": true,
+        "mobileOverflow": false,
+        "desktopOverflow": false,
+        "desktopGuest": true
+      },
+      "status": 200,
+      "tabletEvidence": "docs/invitations/studio-3/phase-5/batch-1/screenshots/after/ix3-baby-shower-w768.png"
+    },
+    {
+      "layout": "ix3-graduation",
+      "mobile": {
+        "opening": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-graduation-mobile-01-opening.jpg",
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-graduation-mobile-02-hero.jpg",
+        "mid": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-graduation-mobile-03-story.jpg",
+        "rsvp": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-graduation-mobile-04-rsvp.jpg",
+        "confirmation": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-graduation-mobile-05-confirm.jpg"
+      },
+      "desktop": {
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-graduation-desktop-02-hero.jpg"
+      },
+      "functional": {
+        "openingGatePresent": true,
+        "openingDismissed": true,
+        "rsvpVisible": true,
+        "rsvpConfirmationText": false,
+        "guestPersonalized": true,
+        "hasDinnerLeak": false,
+        "hasCountdown": true,
+        "hasQr": true,
+        "hasMaps": true,
+        "hasShare": true,
+        "hasCalendar": true,
+        "mobileOverflow": false,
+        "desktopOverflow": false,
+        "desktopGuest": true
+      },
+      "status": 200,
+      "tabletEvidence": "docs/invitations/studio-3/phase-5/batch-1/screenshots/after/ix3-graduation-w768.png"
+    },
+    {
+      "layout": "ix3-birthday-celebration",
+      "mobile": {
+        "opening": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-birthday-celebration-mobile-01-opening.jpg",
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-birthday-celebration-mobile-02-hero.jpg",
+        "mid": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-birthday-celebration-mobile-03-story.jpg",
+        "rsvp": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-birthday-celebration-mobile-04-rsvp.jpg",
+        "confirmation": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-birthday-celebration-mobile-05-confirm.jpg"
+      },
+      "desktop": {
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-birthday-celebration-desktop-02-hero.jpg"
+      },
+      "functional": {
+        "openingGatePresent": true,
+        "openingDismissed": true,
+        "rsvpVisible": true,
+        "rsvpConfirmationText": false,
+        "guestPersonalized": true,
+        "hasDinnerLeak": false,
+        "hasCountdown": true,
+        "hasQr": true,
+        "hasMaps": true,
+        "hasShare": true,
+        "hasCalendar": true,
+        "mobileOverflow": false,
+        "desktopOverflow": false,
+        "desktopGuest": true
+      },
+      "status": 200,
+      "tabletEvidence": "docs/invitations/studio-3/phase-5/batch-1/screenshots/after/ix3-birthday-celebration-w768.png"
+    },
+    {
+      "layout": "ix3-concert-night",
+      "mobile": {
+        "opening": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-concert-night-mobile-01-opening.jpg",
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-concert-night-mobile-02-hero.jpg",
+        "mid": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-concert-night-mobile-03-story.jpg",
+        "rsvp": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-concert-night-mobile-04-rsvp.jpg",
+        "confirmation": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-concert-night-mobile-05-confirm.jpg"
+      },
+      "desktop": {
+        "hero": "docs/invitations/studio-3/phase-5/batch-1/acceptance-audit/ix3-concert-night-desktop-02-hero.jpg"
+      },
+      "functional": {
+        "openingGatePresent": true,
+        "openingDismissed": true,
+        "rsvpVisible": true,
+        "rsvpConfirmationText": false,
+        "guestPersonalized": true,
+        "hasDinnerLeak": false,
+        "hasCountdown": true,
+        "hasQr": true,
+        "hasMaps": true,
+        "hasShare": true,
+        "hasCalendar": true,
+        "mobileOverflow": false,
+        "desktopOverflow": false,
+        "desktopGuest": true
+      },
+      "status": 200,
+      "tabletEvidence": "docs/invitations/studio-3/phase-5/batch-1/screenshots/after/ix3-concert-night-w768.png"
+    }
+  ]
+}

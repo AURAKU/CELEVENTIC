@@ -1,87 +1,51 @@
 "use client";
 
-import type { InvitationRenderProps } from "@/types/invitation-design";
-import { ClassicGoldTemplate } from "./templates/classic-gold";
-import { ArchGreenTemplate } from "./templates/arch-green";
-import { RusticLaceTemplate } from "./templates/rustic-lace";
-import { BohoHexagonTemplate } from "./templates/boho-hexagon";
-import { LuxuryRingsTemplate } from "./templates/luxury-rings";
-import { CustomMediaTemplate } from "./templates/custom-media";
-import { PassportLuxeTemplate } from "./templates/passport-luxe";
-import { GlassAcrylicTemplate } from "./templates/glass-acrylic";
-import { FloralGardenTemplate } from "./templates/floral-garden";
-import { TraditionalMarriageCeremonyTemplate } from "./templates/traditional-marriage-ceremony";
-import { ForeverAfarisWeddingTemplate } from "./templates/forever-afaris-wedding";
-import { LuxuryFashionFlagshipTemplate } from "./templates/luxury-fashion-flagship";
-import { AureliaEditorialWeddingTemplate } from "./templates/aurelia-editorial-wedding";
-import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
-import { InvitationMediaProvider } from "./invitation-media-context";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
 import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
 import { PartyAdmissionSwitch } from "@/components/admission/party-admission-switch";
 import { PlaceCard } from "@/components/invitation/place-card";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import { isAureliaEditorialLayout } from "@/lib/experience/aurelia-editorial";
+import { resolveLayoutVersion } from "@/lib/invitation/layout-version";
+import {
+  getExperience3Layout,
+  resolveInvitationLayoutBranch,
+} from "@/lib/invitation/studio3/experience-registry";
+import { Experience3Fallback } from "@/components/invitation/experience3-fallback";
+import { LegacyInvitationLayout } from "@/components/invitation/legacy-invitation-layout";
+import { InvitationMediaProvider } from "./invitation-media-context";
+import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer-types";
+import "@/components/invitation/experience3/register-references";
 
-export type InvitationRendererProps = InvitationRenderProps & {
-  interactiveMedia?: boolean;
-  /** Optional organizer email, used by themed templates (e.g. traditional marriage merge) */
-  contactEmail?: string | null;
-  /** Portal section presence, quiet journey links (traditional marriage) */
-  hasGiftsSection?: boolean;
-  hasTimelineSection?: boolean;
-  /** Guest-facing gallery URLs for templates that render their own gallery */
-  galleryUrls?: string[];
-  /** Live Gift Wallet placement, when the event has an active campaign. */
-  giftUrl?: string | null;
-  giftQrImageUrl?: string | null;
-  giftTitle?: string | null;
-  giftSubtitle?: string | null;
-  giftCtaLabel?: string | null;
-  giftPrivacyNote?: string | null;
-  guestQrToken?: string | null;
-  eventId?: string | null;
-};
+export type { InvitationRendererProps } from "@/components/invitation/invitation-renderer-types";
+
+function resolveInvitationLayoutContent(props: InvitationRendererProps) {
+  const branch = resolveInvitationLayoutBranch(props.design);
+
+  if (branch.mode === "legacy") {
+    return <LegacyInvitationLayout {...props} />;
+  }
+
+  const Experience3Layout = getExperience3Layout(props.design.layout, branch.version);
+  if (Experience3Layout) {
+    return <Experience3Layout {...props} />;
+  }
+
+  return (
+    <Experience3Fallback
+      layout={props.design.layout}
+      layoutVersion={resolveLayoutVersion(props.design)}
+    />
+  );
+}
 
 export function InvitationRenderer({ interactiveMedia = false, ...props }: InvitationRendererProps) {
+  const renderProps = { ...props, interactiveMedia };
   const templatePlacesCardAfterHero =
     props.design.layout === "traditional-marriage-ceremony" ||
     props.design.layout === "forever-afaris-wedding";
   const templateOmitsSharedPlaceCard = isAureliaEditorialLayout(props.design.layout);
-  const content = isCinematicLayout(props.design.layout) ? (
-    <CinematicTemplate {...props} />
-  ) : (() => {
-    switch (props.design.layout) {
-      case "traditional-marriage-ceremony":
-        return <TraditionalMarriageCeremonyTemplate {...props} />;
-      case "forever-afaris-wedding":
-        return <ForeverAfarisWeddingTemplate {...props} />;
-      case "luxury-fashion-flagship":
-        return <LuxuryFashionFlagshipTemplate {...props} />;
-      case "aurelia-editorial-wedding":
-      case "seraphine-champagne-wedding":
-        return <AureliaEditorialWeddingTemplate {...props} />;
-      case "passport-luxe":
-        return <PassportLuxeTemplate {...props} />;
-      case "glass-acrylic":
-        return <GlassAcrylicTemplate {...props} />;
-      case "floral-garden":
-        return <FloralGardenTemplate {...props} />;
-      case "arch-green":
-        return <ArchGreenTemplate {...props} />;
-      case "rustic-lace":
-        return <RusticLaceTemplate {...props} />;
-      case "boho-hexagon":
-        return <BohoHexagonTemplate {...props} />;
-      case "luxury-rings":
-        return <LuxuryRingsTemplate {...props} />;
-      case "custom-media":
-        return <CustomMediaTemplate {...props} />;
-      case "classic-gold":
-      default:
-        return <ClassicGoldTemplate {...props} />;
-    }
-  })();
+  const content = resolveInvitationLayoutContent(renderProps);
 
   return (
     <div className="invitation-copy-root">
