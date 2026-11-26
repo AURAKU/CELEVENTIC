@@ -96,7 +96,7 @@ export function Ix3CorporateGalaTemplate(props: InvitationRendererProps) {
             className={styles.note}
             style={{ letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.72rem" }}
           >
-            {props.event.message ||
+            {props.invitation.message ||
               "Recognition, conversation, and refined hospitality—an executive evening with quiet authority."}
           </p>
         </section>

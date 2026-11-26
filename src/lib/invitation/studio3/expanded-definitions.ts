@@ -58,7 +58,7 @@ export const IX3_BIRTHDAY_CELEBRATION: Experience3Definition = {
     { id: "rsvp", module: "rsvp", featureKey: "RSVP", label: "RSVP" },
     { id: "actions", module: "actions", label: "Actions" },
   ],
-  motionIntensity: 0.8,
+  motionIntensity: 0.75,
   audioDefaultEnabled: false,
 };
 

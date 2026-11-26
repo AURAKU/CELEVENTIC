@@ -58,7 +58,11 @@ export type CeleYouSubscriberProtectionVerdict = {
 
 const TRUTH = new Set(["1", "true", "yes", "on"]);
 
-function readFlag(env: NodeJS.ProcessEnv, name: string, fallback: boolean): boolean {
+function readFlag(
+  env: NodeJS.ProcessEnv | Record<string, string | undefined>,
+  name: string,
+  fallback: boolean
+): boolean {
   const raw = env[name];
   if (raw == null || raw.trim() === "") return fallback;
   return TRUTH.has(raw.trim().toLowerCase());
@@ -66,7 +70,7 @@ function readFlag(env: NodeJS.ProcessEnv, name: string, fallback: boolean): bool
 
 /** Safe defaults: Free + trial for eligible new users; never auto-apply to legacy paid accounts. */
 export function resolveCeleYouSubscriptionFeatureFlags(
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env
 ): CeleYouSubscriptionFeatureFlags {
   return {
     freePlanEnabled: readFlag(env, "CELEYOU_FEATURE_FREE_PLAN", true),

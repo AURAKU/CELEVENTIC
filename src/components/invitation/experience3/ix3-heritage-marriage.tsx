@@ -85,7 +85,7 @@ export function Ix3HeritageMarriageTemplate(props: InvitationRendererProps) {
       <Experience3SectionReveal delay={1}>
         <section aria-label="Heritage note">
           <p className={styles.note}>
-            {props.event.message ||
+            {props.invitation.message ||
               "With reverence for custom and the warmth of family, we invite you to witness the joining of two houses—libation, blessing, and celebration shared together."}
           </p>
         </section>

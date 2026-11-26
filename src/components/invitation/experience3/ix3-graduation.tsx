@@ -99,7 +99,7 @@ export function Ix3GraduationTemplate(props: InvitationRendererProps) {
       <Experience3SectionReveal delay={1}>
         <section aria-label="Milestone narrative">
           <p className={styles.note}>
-            {props.event.message ||
+            {props.invitation.message ||
               "This invitation marks a milestone earned—procession, recognition, and a gathering of the people who carried the journey."}
           </p>
         </section>

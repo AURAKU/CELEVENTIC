@@ -18,9 +18,9 @@ export function Experience3DateLockup({
   label = "The day",
 }: {
   weekday: string;
-  day: string;
+  day: string | number;
   month: string;
-  year: string;
+  year: string | number;
   time?: string | null;
   tone?: Tone;
   label?: string;

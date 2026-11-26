@@ -26,8 +26,8 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
   const giftDetail =
     typeof (props.event as { giftNote?: string }).giftNote === "string"
       ? (props.event as { giftNote?: string }).giftNote
-      : props.event.message?.toLowerCase().includes("gift")
-        ? props.event.message
+      : props.invitation.message?.toLowerCase().includes("gift")
+        ? props.invitation.message
         : null;
 
   const beats = [
@@ -86,7 +86,7 @@ export function Ix3BabyShowerTemplate(props: InvitationRendererProps) {
           eyebrow="Our story"
           title="Something tender is beginning"
           body={
-            props.event.message ||
+            props.invitation.message ||
             "We are gathering close friends and family to celebrate this chapter—soft laughter, gentle company, and room to share in the joy ahead."
           }
         />

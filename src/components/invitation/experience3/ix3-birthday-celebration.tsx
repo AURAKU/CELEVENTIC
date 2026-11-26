@@ -118,7 +118,7 @@ export function Ix3BirthdayCelebrationTemplate(props: InvitationRendererProps) {
       </Experience3SectionReveal>
       <Experience3SectionReveal delay={1}>
         <Experience3SoftCard tone="dark" title={`For ${celebrant}`}>
-          {props.event.message ||
+          {props.invitation.message ||
             "This celebration is personal—toasts, dancing, and the kind of joy you only get once a year. Bring your energy and your favourite stories."}
         </Experience3SoftCard>
       </Experience3SectionReveal>
