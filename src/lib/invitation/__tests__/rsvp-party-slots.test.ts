@@ -16,9 +16,9 @@ describe("rsvp party slots", () => {
   });
 
   it("states exact total guest capacity for solo and plus-one invitations", () => {
-    assert.equal(rsvpPartyCapacityLine(1), "1 guest total");
-    assert.equal(rsvpPartyCapacityLine(2), "2 guests total");
-    assert.equal(rsvpPartyCapacityLine(4), "4 guests total");
+    assert.equal(rsvpPartyCapacityLine(1), "1 guest only");
+    assert.equal(rsvpPartyCapacityLine(2), "2 guests only");
+    assert.equal(rsvpPartyCapacityLine(4), "4 guests only");
   });
 
   it("reports remaining invitation seats while choosing a party size", () => {

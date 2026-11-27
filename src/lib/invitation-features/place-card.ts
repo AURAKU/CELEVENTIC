@@ -243,8 +243,8 @@ export function resolvePlaceCardConfig(
  * Guest-facing invitation capacity.
  *
  * Unassigned invitations show nothing. Assigned invitations state the exact
- * total number of people admitted on this invitation — never "you and N
- * additional", which guests misread as the companion count alone.
+ * admitted headcount on this invitation — never "you and N additional",
+ * which guests misread as the companion count alone.
  */
 export function formatAllowanceCopy(
   _template: string,
@@ -253,7 +253,7 @@ export function formatAllowanceCopy(
 ): string {
   if (!opts?.assigned) return "";
   const capacity = Math.max(1, Math.trunc(partySize));
-  return capacity === 1 ? "1 guest total" : `${capacity} guests total`;
+  return capacity === 1 ? "1 guest only" : `${capacity} guests only`;
 }
 
 export interface PlaceCardRecipientInput {

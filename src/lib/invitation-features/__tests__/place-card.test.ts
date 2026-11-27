@@ -179,31 +179,31 @@ test("unassigned invitations leave capacity blank", () => {
 test("single-guest capacity addresses the invited guest only", () => {
   assert.equal(
     formatAllowanceCopy("", 1, { assigned: true }),
-    "1 guest total"
+    "1 guest only"
   );
   assert.equal(
     formatAllowanceCopy(PLACE_CARD_DEFAULTS.allowanceDisplayWording, 1, {
       assigned: true,
     }),
-    "1 guest total"
+    "1 guest only"
   );
 });
 
 test("companion access shows the exact total guest allowance", () => {
   assert.equal(
     formatAllowanceCopy("This invitation admits {n} guests", 2, { assigned: true }),
-    "2 guests total"
+    "2 guests only"
   );
   assert.equal(
     formatAllowanceCopy("", 3, { assigned: true }),
-    "3 guests total"
+    "3 guests only"
   );
 });
 
 test("organiser templates cannot override the guest-facing capacity line", () => {
   assert.equal(
     formatAllowanceCopy("This table seats {n} guests", 8, { assigned: true }),
-    "8 guests total"
+    "8 guests only"
   );
 });
 
@@ -334,14 +334,14 @@ test("the view model binds config, recipient and live capacity together", () => 
 
   assert.equal(model.heading, "A place is reserved for you");
   assert.equal(model.recipientLine, "Ama Mensah");
-  assert.equal(model.allowanceCopy, "3 guests total");
+  assert.equal(model.allowanceCopy, "3 guests only");
   assert.equal(model.isGroup, true);
   assert.equal("arrivalCopy" in model, false, "guest place cards must not expose arrival copy");
 });
 
 test("single-guest view models keep the exclusive capacity line", () => {
   const model = buildPlaceCardViewModel(config(), recipient({ partySize: 1 }), party({ allowance: 1 }));
-  assert.equal(model.allowanceCopy, "1 guest total");
+  assert.equal(model.allowanceCopy, "1 guest only");
   assert.equal(model.isGroup, false);
 });
 
@@ -385,8 +385,8 @@ test("an already-published invitation reflects the current companion allocation"
   const before = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 3 }));
   const after = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 4 }));
 
-  assert.equal(before.allowanceCopy, "3 guests total");
-  assert.equal(after.allowanceCopy, "4 guests total");
+  assert.equal(before.allowanceCopy, "3 guests only");
+  assert.equal(after.allowanceCopy, "4 guests only");
 });
 
 /* ── shared feature layer + template adapters ──────────────────────────── */
