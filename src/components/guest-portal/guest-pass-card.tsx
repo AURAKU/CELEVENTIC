@@ -241,11 +241,19 @@ export function GuestPassCard({
         {count ? (
           <p
             className={cn(
-              "mx-auto mt-4 inline-flex items-center rounded-full border px-3.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em]",
+              "mx-auto mt-4 inline-flex items-baseline gap-1.5 rounded-full border px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em]",
               palette.badge
             )}
+            aria-label={count.label}
           >
-            {count.label}
+            <span>Admits</span>
+            <span
+              className="text-[1.15rem] font-bold leading-none tracking-normal tabular-nums sm:text-[1.25rem]"
+              data-testid="guest-pass-admit-count"
+            >
+              {count.capacity}
+            </span>
+            <span>{count.capacity === 1 ? "guest" : "guests"}</span>
           </p>
         ) : null}
 
