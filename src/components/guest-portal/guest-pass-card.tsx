@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { formatAllowanceCopy } from "@/lib/invitation-features/place-card";
 import { parseAssignedGuestGreeting } from "@/lib/social/social-guest";
 import {
   isAureliaEditorialLayout,
@@ -31,7 +30,6 @@ const TONE: Record<
     nameGiven: string;
     nameFamily: string;
     flourish: string;
-    admits: string;
     badge: string;
   }
 > = {
@@ -49,7 +47,6 @@ const TONE: Record<
     nameGiven: "text-[#5A453C]",
     nameFamily: "text-[#352019]",
     flourish: "text-[#B69A63]",
-    admits: "text-[#5A453C]",
     badge: "border-[#B69A63]/45 bg-[#FFFCF6] text-[#7A5E32]",
   },
   seraphine: {
@@ -66,7 +63,6 @@ const TONE: Record<
     nameGiven: "text-[#2C3A2E]",
     nameFamily: "text-[#1E2A22]",
     flourish: "text-[#C5B48A]",
-    admits: "text-[#3F5344]",
     badge: "border-[#C5B48A]/50 bg-[#FFFEFA] text-[#3F5344]",
   },
   classic: {
@@ -83,7 +79,6 @@ const TONE: Record<
     nameGiven: "text-[#0F172A]",
     nameFamily: "text-[#0F172A]",
     flourish: "text-[#D4A63A]",
-    admits: "text-slate-600",
     badge: "border-[#D4A63A]/40 bg-[#FFFCF5] text-[#8A6A1A]",
   },
 };
@@ -200,7 +195,6 @@ export function GuestPassCard({
   const greeting = parseAssignedGuestGreeting(guestName);
   const assigned = Boolean(greeting);
   const capacity = Math.max(1, Math.trunc(partyAllowance || 1));
-  const admits = formatAllowanceCopy("", capacity, { assigned });
   const count = assigned ? formatPassAdmitCount(capacity) : null;
   const palette = TONE[toneFor(layout)];
   const dearLine = greeting
@@ -252,15 +246,6 @@ export function GuestPassCard({
             )}
           >
             {count.label}
-          </p>
-        ) : null}
-
-        {admits ? (
-          <p
-            className={cn("mx-auto mt-3 max-w-[22rem] text-[1.02rem] leading-relaxed", palette.admits)}
-            style={{ fontFamily: "var(--font-eb-garamond), var(--font-cormorant), serif" }}
-          >
-            {admits}
           </p>
         ) : null}
 
